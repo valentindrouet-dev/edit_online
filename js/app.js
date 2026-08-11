@@ -2,22 +2,22 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.8';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.9';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, objLabel,
-  buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf,
-} from './data.js?v=1.8';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.8';
-import { elIcon } from './icons.js?v=1.8';
-import { renderCarte, renderPlan, tc } from './cards.js?v=1.8';
+  buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, appliquerMinutages,
+} from './data.js?v=1.9';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.9';
+import { elIcon } from './icons.js?v=1.9';
+import { renderCarte, renderPlan, tc, objHTML, cadrageIcon } from './cards.js?v=1.9';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.8';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.8';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.8';
-import { campagne } from './lab.js?v=1.8';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.8';
+} from './engine.js?v=1.9';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.9';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.9';
+import { campagne } from './lab.js?v=1.9';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.9';
 
 const app = document.getElementById('app');
 
@@ -48,7 +48,14 @@ store.joueurs.forEach((j, i) => {
   if (!COULEURS_JOUEURS.includes(j.couleur)) j.couleur = COULEURS_JOUEURS[i % COULEURS_JOUEURS.length];
 });
 
-function sauverCfg() { LS.set('cfg', store.cfg); }
+// Les minutages réglés dans Matériel surchargent ceux du matériel imprimé.
+if (!store.cfg.minutages) store.cfg.minutages = {};
+appliquerMinutages(store.cfg.minutages);
+
+function sauverCfg() {
+  LS.set('cfg', store.cfg);
+  appliquerMinutages(store.cfg.minutages);
+}
 function sauverJoueurs() { LS.set('joueurs', store.joueurs); }
 
 // --- Chrome ----------------------------------------------------------------
@@ -317,6 +324,7 @@ function vuePartie() {
           </div>`).join('')}
 
         <div class="panneau"><h2>Score de ${j.nom}</h2>${tableauScore(sc[p])}</div>
+        <div class="panneau"><h2>Icônes du banc</h2>${blocRecensement(sc[p])}</div>
         <div class="panneau"><h2>Bandeaux du banc</h2>${listeObjectifs(sc[p])}</div>
 
         <div class="panneau" style="padding:14px 16px">
@@ -376,7 +384,7 @@ function bancBloc(st, i, titre, interactif) {
 
   return `<div class="panneau">
     <h2>${titre}</h2>
-    <div class="banc" data-banc="${i}">${morceaux.join('')}</div>
+    <div class="banc" data-banc="${i}"><div class="banc-piste">${morceaux.join('')}</div></div>
   </div>`;
 }
 
@@ -475,11 +483,33 @@ function tableauScore(s) {
   </table>`;
 }
 
+/** Chaque bandeau posé, avec ses icônes et ce qu'il rapporte. */
 function listeObjectifs(s) {
   if (!s.lignes.length) return '<p class="aide">Aucun bandeau visible sur le banc.</p>';
   return `<table class="tableau-score">
-    ${s.lignes.map((l) => `<tr><td>${objLabel(l.obj)}</td><td>${l.pts}</td></tr>`).join('')}
+    ${s.lignes.map((l) => `<tr>
+      <td>${objHTML(l.obj)}</td>
+      <td title="${objLabel(l.obj)}">${l.pts}</td>
+    </tr>`).join('')}
   </table>`;
+}
+
+/** Le recensement des icônes du banc : ce que l'on compterait à la main. */
+function blocRecensement(s) {
+  const r = s.recensement;
+  const compte = (icone, n, titre) =>
+    `<span class="compte ${n ? '' : 'zero'}" title="${titre}">${icone}${n}</span>`;
+  return `<div class="recensement">
+    ${ELEMENT_IDS.map((e) => compte(elIcon(e, 22), r.elements[e], ELEMENTS[e].label)).join('')}
+  </div>
+  <div class="recensement" style="margin-top:8px">
+    ${['PL', 'PM', 'GP'].map((f) => compte(cadrageIcon(f), r.cadrages[f], FORMATS[f].label)).join('')}
+    ${compte(cadrageIcon('TR'), r.raccords, 'Cartes Raccord')}
+  </div>
+  <div class="recensement" style="margin-top:8px">
+    ${compte(elIcon('MORT', 22), r.morts, 'Plans de mort')}
+    ${compte(elIcon('NEANT', 22), r.sansPersonnage, 'Plans sans personnage')}
+  </div>`;
 }
 
 // --- Interactions ----------------------------------------------------------
@@ -591,9 +621,9 @@ function vueFin() {
     <div class="panneau">
       <h2>Les bancs de montage</h2>
       ${st.joueurs.map((j, i) => `<h3>${j.nom}</h3>
-        <div class="banc" style="margin-bottom:12px">
+        <div class="banc" style="margin-bottom:12px"><div class="banc-piste">
           ${st.bancs[i].sequences.map((seq) => `<div class="sequence">${seq.map((pl) => renderPlan(pl)).join('')}</div>`).join('<div class="ecart"></div>')}
-        </div>`).join('')}
+        </div></div>`).join('')}
     </div>
     <div class="rangee-boutons">
       <button class="cta" style="max-width:320px" id="rejouer">Rejouer</button>
@@ -635,14 +665,16 @@ function vueMateriel() {
       </div>`)).join('')}</div>
       <p class="aide" style="margin-top:14px">8 cartes dans la boîte, en 2 versions recto-verso.
       L’appariement des faces est une hypothèse tirée de l’ordre du PDF.</p>`;
+  } else if (materielFiltre === 'TIMING') {
+    contenu = vueMinutages();
   } else {
     contenu = `<table class="tbl">
       <tr><th>#</th><th>Famille</th><th class="num">Minutage</th><th>PM n°</th><th>Éléments du Plan Moyen</th><th>GP n°</th><th>Éléments du Gros Plan</th><th>Bandeau du Gros Plan</th></tr>
       ${SCENES.map((s) => `<tr>
         <td>${s.idx}</td><td>${s.famille}</td><td class="num">${tc(s.tc)}</td>
-        <td>${s.pmNum}</td><td>${s.pm.el.map((e) => ELEMENTS[e].label).join(', ') || '—'}</td>
-        <td>${s.gpNum}</td><td>${s.gp.el.map((e) => ELEMENTS[e].label).join(', ') || '—'}</td>
-        <td>${objLabel(s.gp.obj)}</td></tr>`).join('')}
+        <td>${s.pmNum}</td><td>${s.pm.el.map((e) => elIcon(e, 20)).join('') || '—'}</td>
+        <td>${s.gpNum}</td><td>${s.gp.el.map((e) => elIcon(e, 20)).join('') || '—'}</td>
+        <td>${objHTML(s.gp.obj)}</td></tr>`).join('')}
     </table>`;
   }
 
@@ -656,7 +688,7 @@ function vueMateriel() {
       l’accueil les remplace au besoin par la lecture nue — minutage, pastilles et bandeau seuls.</p>
       <div class="filtre-barre" style="margin-top:16px">
         ${[['DOUBLE', 'PM / GP — recto'], ['VERSO', 'PM / GP — verso'], ['PL', 'Plans Larges'],
-           ['DEPART', 'Plans de départ'], ['TABLE', 'Tableau des scènes']]
+           ['DEPART', 'Plans de départ'], ['TABLE', 'Tableau des scènes'], ['TIMING', 'Minutages']]
           .map(([k, l]) => `<button class="pill" data-f="${k}" style="${materielFiltre === k ? 'background:var(--violet);color:#fff;border-color:var(--violet)' : ''}">${l}</button>`).join('')}
       </div>
       ${contenu}
@@ -667,6 +699,53 @@ function vueMateriel() {
   app.querySelectorAll('[data-f]').forEach((b) => b.addEventListener('click', () => {
     materielFiltre = b.dataset.f; vueMateriel();
   }));
+  app.querySelectorAll('[data-minutage]').forEach((el) => el.addEventListener('change', () => {
+    const num = el.dataset.minutage;
+    const v = el.value.trim();
+    if (v === '' || Number(v) === Number(el.dataset.defaut)) delete store.cfg.minutages[num];
+    else store.cfg.minutages[num] = Math.max(0, Math.min(99, parseInt(v, 10) || 0));
+    sauverCfg(); vueMateriel();
+  }));
+  const rz = app.querySelector('#minutages-reset');
+  if (rz) rz.addEventListener('click', () => { store.cfg.minutages = {}; sauverCfg(); vueMateriel(); });
+}
+
+/**
+ * Les minutages, réglables plan par plan. Ils ne conditionnent aucune pose :
+ * ils ne servent qu'aux objectifs qui rapportent selon le minutage, et se
+ * règlent ici pour en mesurer l'effet.
+ */
+function vueMinutages() {
+  const lignes = [];
+  for (const s of SCENES) {
+    lignes.push({ num: s.pmNum, defaut: s.tc, quoi: `Plan Moyen ${s.pmNum}`, famille: s.famille });
+    lignes.push({ num: s.gpNum, defaut: s.tc, quoi: `Gros Plan ${s.gpNum}`, famille: s.famille });
+  }
+  for (const p of PLANS_LARGES) lignes.push({ num: p.num, defaut: p.tc, quoi: `Plan Large ${p.num}`, famille: 'PLAN LARGE' });
+  for (const d of DEPARTS) for (const f of d.faces) {
+    lignes.push({ num: f.num, defaut: f.tc, quoi: `Plan de départ ${f.num}`, famille: 'DÉPART' });
+  }
+  const modifies = Object.keys(store.cfg.minutages || {}).length;
+
+  return `<p class="aide">Le minutage n'est plus une image imprimée : c'est une valeur que
+  l'application contrôle. Elle ne conditionne aucun placement — elle n'entre en jeu que dans les
+  objectifs qui rapportent selon le minutage, réglables dans <b>Variables › Chronologie</b>.</p>
+  <div class="barre-outils" style="margin:14px 0">
+    <span class="info">${modifies} minutage${modifies > 1 ? 's' : ''} modifié${modifies > 1 ? 's' : ''}</span>
+    <button class="pill" id="minutages-reset" ${modifies ? '' : 'disabled'}>↺ Revenir au matériel imprimé</button>
+  </div>
+  <div class="grille-minutages">
+    ${lignes.map((l) => {
+      const val = store.cfg.minutages?.[l.num];
+      const actuel = val === undefined ? l.defaut : val;
+      return `<label class="minutage ${val === undefined ? '' : 'modifie'}">
+        <span class="q">${l.quoi}</span>
+        <input type="number" min="0" max="99" value="${actuel}"
+          data-minutage="${l.num}" data-defaut="${l.defaut}">
+        <span class="tc-apercu">${tc(actuel)}</span>
+      </label>`;
+    }).join('')}
+  </div>`;
 }
 
 // ===========================================================================

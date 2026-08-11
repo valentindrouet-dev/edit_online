@@ -26,10 +26,12 @@ index.html              amorçage : demande la version publiée, puis charge le 
 version.json            version publiée, relue hors cache (généré)
 sw.js                   service worker réseau d'abord
 outils/versionner.mjs   estampille les modules avant publication
+outils/extraire-visuels.py  régénère illustrations et icônes depuis les PDF
 css/styles.css
 assets/pm/<num>.webp   visuels des moitiés Plan Moyen  (33)
 assets/gp/<num>.webp   visuels des moitiés Gros Plan   (33)
 assets/pl/<num>.webp   visuels des Plans Larges et des Plans de départ (18)
+assets/icones/<ID>.webp  les huit pastilles découpées dans les cartes
 js/version.js    version du site et journal des modifications
 js/regles.js     règles du jeu, versionnées à part du site
 js/data.js       matériel : éléments, 33 scènes, 14 Plans Larges, 8 Plans de départ, 50 cartes PM/GP
@@ -83,15 +85,36 @@ Pour appliquer une modification de règle :
 
 `REGLES_VERSION` et le texte en vigueur suivent automatiquement la première entrée.
 
-## Les illustrations
+## Les visuels
 
-Les 84 visuels sont extraits des PDF d'impression (`pdftoppm` à 150 dpi, puis WebP qualité 80) et
-nommés par numéro de plan : `assets/gp/317.webp`, `assets/pm/201.webp`, `assets/pl/103.webp`.
-Poids total 1,6 Mo. Le nom du fichier est la seule convention à respecter — remplacer un fichier
-suffit à mettre la carte à jour, sans toucher au code.
+Une carte n'apporte que son **illustration**. Tout le reste — minutage, pastilles, bandeau
+d'objectif, libellé de cadrage — est redessiné par l'application à partir de ses propres données,
+et n'apparaît donc jamais deux fois.
 
-La case **Illustrations** de l'accueil bascule entre la carte imprimée et la lecture nue (minutage,
-pastilles et bandeau dessinés par l'application), utile pour lire le matériel sans l'image.
+`outils/extraire-visuels.py <dossier-des-pdf>` régénère l'ensemble :
+
+- les **illustrations** sont recadrées à 69 % de la hauteur, au-dessus de la zone d'information,
+  et la boîte du minutage imprimé est repeinte en noir — l'application redessine le minutage
+  exactement au même endroit ;
+- les **huit pastilles** (Héroïne, Ennemi, Allié, Objet, Arme, Véhicule, Mort, Plan sans
+  personnage) sont découpées à même les cartes, pour que l'application affiche partout les icônes
+  imprimées et non des approximations.
+
+La géométrie relevée sur les cartes est en tête du script : illustration jusqu'à 69 %, languette
+des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %, puis le libellé. Le rendu des cartes reprend
+ces mêmes proportions, et sa taille de police est calée sur la hauteur (hauteur = 14,33 em) pour
+que les proportions tiennent à toutes les échelles.
+
+Le nom du fichier est la seule convention à respecter — remplacer `assets/gp/317.webp` suffit à
+mettre la carte à jour. La case **Illustrations** de l'accueil masque les images sans toucher aux
+informations de jeu.
+
+## Les minutages
+
+Le minutage n'est plus une image : c'est une donnée que l'application contrôle, affichée en police
+d'afficheur. Il se règle plan par plan dans **Matériel › Minutages** — la surcharge vit dans
+`cfg.minutages`, indexée par numéro de plan. Il ne conditionne aucun placement ; il n'entre en jeu
+que dans les objectifs qui rapportent selon le minutage (**Variables › Chronologie**).
 
 ## Le modèle de jeu
 

@@ -13,13 +13,23 @@
 // Les versions précédentes du texte restent lisibles dans l'onglet
 // « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.8';
-import { elIcon } from './icons.js?v=1.8';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.9';
+import { elIcon } from './icons.js?v=1.9';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.13.1',
+    date: '11/08/2026',
+    origine: 'Précision demandée par l’auteur',
+    corps: (c) => corps_0_13_1(c),
+    items: [
+      'Le placement des cartes ne dépend pas du minutage : on pose où l’on veut, dans les limites des règles de pose. Le minutage n’impose donc aucun ordre chronologique.',
+      'En revanche, certaines cartes rapportent des points en fonction du minutage des plans du montage.',
+    ],
+  },
   {
     v: '0.13',
     date: '11/08/2026',
@@ -133,6 +143,19 @@ function corps_0_13(c) {
     bouts d’une séquence, ou la droite seulement) ; ce que représente le symbole ✕ noir de la famille
     Mort ; le rôle exact du minutage ; l’appariement recto-verso des Plans de départ.
   </div>`;
+}
+
+// --- v0.13.1 ---------------------------------------------------------------
+// Ajoute la précision sur le minutage, mise en évidence par maj().
+
+function corps_0_13_1(c) {
+  return corps_0_13(c).replace(
+    '<h3>Les Raccords</h3>',
+    `${majBloc('0.13.1', `<b>Le minutage.</b> Le placement des cartes ne dépend pas du minutage des
+    Cartes Plan : on pose où l'on veut, dans les limites des règles de pose ci-dessus, sans avoir à
+    respecter l'ordre chronologique du film. En revanche, certaines cartes font gagner des points
+    en fonction du minutage des plans du montage.`)}
+    <h3>Les Raccords</h3>`);
 }
 
 const portee = (c) => (c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence');

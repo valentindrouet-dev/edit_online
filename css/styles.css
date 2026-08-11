@@ -180,8 +180,9 @@ button { font-family: inherit; }
 
 /* --- Cartes --------------------------------------------------------------- */
 
-/* Tout l'intérieur d'une carte est exprimé en em : changer la largeur et la
-   taille de police de `.carte` suffit à mettre la carte à l'échelle. */
+/* Tout l'intérieur d'une carte est exprimé en em, et la taille de police est
+   calée sur la HAUTEUR : hauteur = 14.33 em. Les proportions reprennent alors
+   exactement la carte imprimée, quelle que soit l'échelle d'affichage. */
 .carte {
   display: flex; gap: .2em; width: 300px; aspect-ratio: 317 / 227;
   background: #111; border-radius: 9px; padding: .2em; box-shadow: var(--ombre);
@@ -197,17 +198,7 @@ button { font-family: inherit; }
   position: relative; border-radius: 6px; overflow: hidden;
   display: flex; flex-direction: column; min-width: 0;
   background-color: #e9f2dc;
-  background-size: cover; background-position: center;
 }
-/* Sans illustration : on retombe sur la lecture purement informative. */
-body.sans-illus .moitie { background-image: none !important; }
-/* Avec l'illustration, minutage, pastilles et bandeau sont déjà imprimés
-   dessus : les calques de l'application feraient doublon. */
-body:not(.sans-illus) .moitie > .tcode,
-body:not(.sans-illus) .moitie > .pastilles,
-body:not(.sans-illus) .moitie > .bandeau,
-body:not(.sans-illus) .moitie > .libelle,
-body:not(.sans-illus) .moitie > .titre-transition { display: none; }
 .carte > .moitie { flex: var(--flex); }
 .moitie.f-PM { background-color: #fdf0d3; }
 .moitie.f-GP { background-color: #fbdfd2; }
@@ -215,33 +206,35 @@ body:not(.sans-illus) .moitie > .titre-transition { display: none; }
 .moitie.transition { background-color: #1a1a1e; }
 .moitie.depart { background-color: #d8ecf7; }
 
-.moitie .corps { flex: 1 1 auto; min-height: 0; }
-.moitie .tcode {
-  position: absolute; top: .3em; left: .3em; z-index: 2;
-  background: #0d0d10; color: #ff3b30; font-weight: 800; font-size: .62em;
-  padding: .2em .35em; border-radius: .3em; letter-spacing: .06em;
-  font-family: "SFMono-Regular", "Consolas", monospace;
-  border: 1px solid #33343c; line-height: 1.15;
-}
-.moitie .tcode.bleu { color: #38bdf8; }
-.moitie .titre-transition {
-  position: absolute; inset: 24% .4em auto; text-align: center; color: #fff;
-  font-family: Georgia, "Times New Roman", serif; font-size: 1.05em; font-style: italic;
-  line-height: 1.2;
-}
-.moitie .pastilles {
-  display: flex; gap: .12em; padding: .2em .25em; background: rgba(255,255,255,.42);
-  border-top-right-radius: .4em; align-self: flex-start; max-width: 100%;
-  flex-wrap: wrap;
-}
-.moitie.transition .pastilles { background: rgba(255,255,255,.14); }
-.pastille { display: block; flex: 0 0 auto; width: 1.5em; height: 1.5em; }
-.pastille-num { display: block; flex: 0 0 auto; width: 1.45em; height: 1.45em; }
+/* Bandes verticales, dans les proportions de la carte imprimée. */
+.illus     { flex: 0 0 69%;   position: relative; background-size: 100% 100%; background-repeat: no-repeat; }
+.pastilles { flex: 0 0 9.5%;  display: flex; align-items: center; gap: .09em; padding: 0 .18em;
+             background: rgba(255,255,255,.5); overflow: hidden; }
+.bandeau   { flex: 0 0 15.2%; display: flex; align-items: center; justify-content: center;
+             gap: .22em; overflow: hidden; background: var(--fmt-gp); }
+.libelle   { flex: 0 0 6.3%;  display: flex; align-items: center; justify-content: center; }
 
-.bandeau {
-  display: flex; align-items: center; justify-content: center; gap: .22em;
-  padding: .18em .2em; background: var(--fmt-gp); height: 1.95em; overflow: hidden;
+body.sans-illus .illus { background-image: none !important; }
+.moitie.transition .pastilles { background: rgba(255,255,255,.14); }
+
+/* Le minutage, calé sur la boîte imprimée qu'il remplace. */
+.moitie .tcode {
+  position: absolute; top: .302em; left: .288em; width: 3.89em; height: 1.242em;
+  display: flex; align-items: center; justify-content: center;
+  background: #0d0d10; color: #ff3b30; font-weight: 700; font-size: 1em;
+  border-radius: .3em; letter-spacing: .04em; border: 1px solid #3a3b44;
+  font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
 }
+.moitie .tcode::first-line { line-height: 1; }
+.moitie .tcode { font-size: .78em; }
+.moitie .tcode.bleu { color: #38bdf8; }
+
+/* Pastilles : taille libre par défaut, ajustée à la bande dans les cartes. */
+.pastille { display: block; width: 1.5em; height: 1.5em; object-fit: contain; flex: 0 0 auto; }
+.pastille-num { display: block; width: 1.45em; height: 1.45em; flex: 0 0 auto; }
+.pastilles .pastille { height: 100%; width: auto; }
+.bandeau .pastille, .bandeau .pastille-num { height: 76%; width: auto; }
+
 .moitie.f-PM .bandeau, .moitie.f-PL .bandeau { background: var(--fmt-pm); }
 .moitie.f-PL .bandeau { background: var(--fmt-pl); }
 .moitie.depart .bandeau { background: #7fc4e8; }
@@ -255,16 +248,45 @@ body:not(.sans-illus) .moitie > .titre-transition { display: none; }
 .tag-gris { background: #4a4a52; color: #d8d8de; }
 .tag-blanc { background: #f2f2f4; color: #1b1b20; white-space: nowrap; }
 .tag-fmt { background: #17171b; color: var(--c); }
-.bandeau .paire { display: inline-flex; align-items: center; }
-.bandeau .paire i { width: .4em; height: .28em; background: #e8e8ec; display: block; }
-.bandeau .barre { position: relative; display: inline-flex; }
-.bandeau .barre b { position: absolute; inset: 0; display: grid; place-items: center; color: #e11d48; font-size: 1.2em; }
+.paire { display: inline-flex; align-items: center; height: 100%; }
+.paire i { width: .4em; height: .28em; background: #e8e8ec; display: block; }
+.barre { position: relative; display: inline-flex; align-items: center; height: 100%; }
+.barre b { position: absolute; inset: 0; display: grid; place-items: center; color: #e11d48; font-size: 1.2em; }
 
 .moitie .libelle {
   text-align: center; font-size: .46em; font-weight: 800; letter-spacing: .07em;
-  text-transform: uppercase; color: var(--c); background: #0f0f12; padding: .3em .2em;
-  line-height: 1.1; white-space: nowrap; overflow: hidden;
+  text-transform: uppercase; color: var(--c); background: #0f0f12; padding: 0 .4em;
+  line-height: 1.1; white-space: nowrap; overflow: hidden; width: 100%;
 }
+
+/* L'objectif hors carte : tableaux de score, règles, matériel. */
+.obj-html { display: inline-flex; align-items: center; gap: 5px; vertical-align: middle; }
+.obj-html .x, .obj-html .si { font-weight: 800; color: var(--encre-doux); font-size: .85em; }
+.obj-html .tag { font-size: .62rem; font-weight: 800; padding: 3px 6px; border-radius: 4px;
+  text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; }
+.obj-html .pastille, .obj-html .pastille-num { width: 22px; height: 22px; }
+.obj-html .paire i { width: 6px; height: 4px; background: #b9b4c4; }
+
+/* Jeton de cadrage, pour les colonnes de score. */
+.jeton-cadrage {
+  display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px;
+  font-size: .62rem; font-weight: 800; color: #fff; letter-spacing: .02em;
+}
+.j-PL { background: var(--fmt-pl); }
+.j-PM { background: var(--fmt-pm); }
+.j-GP { background: var(--fmt-gp); }
+.j-TR { background: var(--fmt-tr); }
+
+/* Tableau de recensement : une icône, un compte. */
+.recensement { display: flex; flex-wrap: wrap; gap: 6px; }
+.recensement .compte {
+  display: inline-flex; align-items: center; gap: 6px; background: #fff;
+  border: 1px solid var(--gris-clair); border-radius: 999px; padding: 4px 11px 4px 5px;
+  font-weight: 700; font-size: .86rem; color: var(--encre);
+}
+.recensement .compte.zero { opacity: .38; }
+.recensement .compte .pastille { width: 22px; height: 22px; }
+
 
 /* --- Partie --------------------------------------------------------------- */
 
@@ -288,12 +310,17 @@ body:not(.sans-illus) .moitie > .titre-transition { display: none; }
   display: flex; gap: 0; overflow-x: auto; padding: 12px; border-radius: var(--r-s);
   background: linear-gradient(180deg, #2a2530, #1d1a24); min-height: 176px; align-items: stretch;
 }
+/* La piste garde l'ensemble des cartes centré : avec margin auto, le contenu
+   reste au milieu tant qu'il tient, et devient défilable sans se coller à
+   gauche quand il dépasse — ce que justify-content: center ne permet pas. */
+.banc-piste { display: flex; align-items: stretch; margin: auto; }
+
 /* Le banc de montage : des séquences séparées par un écart. */
 .banc .sequence {
   display: flex; gap: 2px; align-items: stretch; flex: 0 0 auto;
   padding: 4px; border-radius: 8px; background: rgba(255,255,255,.06);
 }
-.banc .moitie { height: 152px; border-radius: 5px; flex: 0 0 auto; font-size: 10.2px; }
+.banc .moitie { height: 152px; border-radius: 5px; flex: 0 0 auto; font-size: 10.61px; }
 .banc .moitie.f-GP { width: 71px; }
 .banc .moitie.f-PM { width: 141px; }
 .banc .moitie.f-PL { width: 212px; }
@@ -310,7 +337,7 @@ body:not(.sans-illus) .moitie > .titre-transition { display: none; }
 .fente-btn:hover { background: rgba(249,115,22,.45); border-color: var(--orange); color: #fff; }
 
 /* Un plan présenté seul (choix de face, Plan de départ) garde sa proportion. */
-.carte.solo { width: auto; aspect-ratio: auto; font-size: 10.6px; }
+.carte.solo { width: auto; aspect-ratio: auto; font-size: 11.03px; }
 .carte.solo .moitie { flex: 0 0 auto; height: 158px; }
 .carte.solo .moitie.f-GP { width: 74px; }
 .carte.solo .moitie.f-PM { width: 147px; }
@@ -326,6 +353,8 @@ body:not(.sans-illus) .moitie > .titre-transition { display: none; }
 .dos-pioche:hover { transform: translateY(-3px); box-shadow: var(--ombre-forte); }
 
 .main-cartes { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; padding: 8px 0; }
+.main-cartes .item { text-align: center; }
+.main-cartes .item .lg { font-size: .78rem; color: var(--gris); margin-top: 8px; }
 
 .mini-joueur {
   border-radius: var(--r-s); padding: 12px 14px; margin-bottom: 10px;
@@ -420,8 +449,10 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .regles h3 { color: var(--encre); margin-top: 28px; font-size: 1.12rem; }
 .regles ul { padding-left: 22px; }
 .regles li { margin-bottom: 7px; }
+/* Le violet est réservé aux modifications de règle : les encarts ordinaires
+   restent neutres pour que la distinction saute aux yeux. */
 .regles .encart {
-  background: var(--violet-pale); border-left: 4px solid var(--violet); border-radius: 0 10px 10px 0;
+  background: #f4f2f7; border-left: 4px solid var(--gris); border-radius: 0 10px 10px 0;
   padding: 14px 18px; margin: 18px 0; color: var(--encre);
 }
 .regles .encart.attention { background: var(--orange-pale); border-left-color: var(--orange); }
@@ -480,4 +511,23 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 #maj-bandeau button {
   border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer;
   background: linear-gradient(180deg, #fb923c, #f97316); color: #fff; font-weight: 700;
+}
+
+/* --- Réglage des minutages ------------------------------------------------ */
+
+.grille-minutages {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px;
+}
+.minutage {
+  display: flex; align-items: center; gap: 10px; background: #fff;
+  border: 1px solid var(--gris-clair); border-radius: 10px; padding: 7px 10px;
+}
+.minutage.modifie { border-color: var(--violet-clair); background: #faf7ff; }
+.minutage .q { flex: 1 1 auto; font-size: .86rem; color: var(--encre-doux); }
+.minutage input { width: 62px; padding: 5px 7px; border-radius: 8px;
+  border: 1px solid var(--gris-clair); font-size: .9rem; color: var(--encre); }
+.tc-apercu {
+  background: #0d0d10; color: #ff3b30; font-weight: 700; font-size: .74rem;
+  padding: 3px 7px; border-radius: 5px; letter-spacing: .05em; border: 1px solid #3a3b44;
+  font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
 }

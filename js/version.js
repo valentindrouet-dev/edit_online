@@ -1,8 +1,21 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.8';
-export const BUILD_DATE = '2026-08-11 19:05';
+export const VERSION = '1.9';
+export const BUILD_DATE = '2026-08-11 20:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.9',
+    date: '11/08/2026',
+    items: [
+      "Les cartes n’apportent plus que leur illustration : le minutage, les pastilles, le bandeau d’objectif et le libellé de cadrage sont entièrement redessinés par l’application. Les visuels sont recadrés au-dessus de la zone d’information et leur minutage imprimé est effacé.",
+      "Les pastilles affichées sont les vraies : les huit icônes — Héroïne, Ennemi, Allié, Objet, Arme, Véhicule, Mort, Plan sans personnage — sont découpées à même les cartes des PDF d’impression.",
+      "Le minutage devient une variable : il s’affiche en police d’afficheur et se règle plan par plan dans Matériel › Minutages, pour mesurer son effet sur l’équilibrage.",
+      "Nouveau panneau « Icônes du banc » : l’application recense les éléments, les cadrages, les Cartes Raccord, les plans de mort et les plans sans personnage, et les affiche avec leurs icônes.",
+      "Les colonnes de score montrent chaque bandeau avec ses icônes plutôt qu’en toutes lettres.",
+      "Le banc de montage reste centré : le Plan de départ s’ouvre au milieu, et l’ensemble demeure centré même quand on pose à gauche.",
+      "Règles v0.13.1 : le placement ne dépend pas du minutage, mais certaines cartes rapportent selon le minutage des plans du montage.",
+    ],
+  },
   {
     v: '1.8',
     date: '11/08/2026',

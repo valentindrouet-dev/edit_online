@@ -216,6 +216,25 @@ export function buildDeparts() {
   return out;
 }
 
+// --- Minutages ajustables --------------------------------------------------
+// Le minutage n'est plus une image imprimée mais une donnée que l'application
+// contrôle : il s'affiche en police d'afficheur, et se règle plan par plan
+// depuis l'écran Matériel pour mesurer son effet sur l'équilibrage.
+// La surcharge est indexée par numéro de plan, tous formats confondus.
+
+export const MINUTAGES = {};
+
+export function tcDe(num, defaut) {
+  const v = MINUTAGES[num];
+  return v === undefined || v === null || v === '' ? defaut : Number(v);
+}
+
+/** Remplace la table de surcharge (appelée au chargement et à chaque réglage). */
+export function appliquerMinutages(table) {
+  for (const k of Object.keys(MINUTAGES)) delete MINUTAGES[k];
+  Object.assign(MINUTAGES, table || {});
+}
+
 // --- Accès aux moitiés -----------------------------------------------------
 
 /** Une moitié posée : cadrage, minutage, éléments, objectif. */
@@ -230,7 +249,7 @@ export function halfInfo(sceneIdx, format, opts = {}) {
     dual: !!opts.dual,
     titre: s.titre || null,
     famille: s.famille,
-    tc: s.tc,
+    tc: tcDe(format === 'GP' ? s.gpNum : s.pmNum, s.tc),
     el: side.el.slice(),
     obj: side.obj || null,
     mort: !!s.mort,
@@ -256,7 +275,7 @@ export function plHalf(carte) {
     dual: false,
     titre: null,
     famille: 'PLAN LARGE',
-    tc: carte.tc,
+    tc: tcDe(carte.num, carte.tc),
     el: carte.el.slice(),
     obj: carte.obj || null,
     mort: false,

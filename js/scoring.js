@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, objPortee } from './data.js?v=1.8';
+import { PERSONNAGES, ELEMENT_IDS, objPortee } from './data.js?v=1.9';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -141,6 +141,7 @@ export function compter(banc, cfg) {
     total,
     detail,
     lignes,
+    recensement: recenser(banc),
     plans: montage.length,
     sequences: banc.sequences.length,
     cartesRaccord: montage.filter(estRaccord).length,
@@ -148,6 +149,38 @@ export function compter(banc, cfg) {
     jonctions: jr,
     chronoOrdre: ch.ordre,
     chronoContre: ch.contre,
+  };
+}
+
+/**
+ * Recensement des icônes du banc : ce que l'on compterait à la main sur la
+ * table. Sert de base de lecture aux colonnes de score.
+ */
+export function recenser(banc) {
+  const plans = tousLesPlans(banc);
+  const elements = Object.fromEntries(ELEMENT_IDS.map((e) => [e, 0]));
+  const cadrages = { PL: 0, PM: 0, GP: 0 };
+  let morts = 0, sansPersonnage = 0, raccords = 0;
+
+  for (const p of plans) {
+    for (const e of p.el) if (elements[e] !== undefined) elements[e]++;
+    if (cadrages[p.format] !== undefined) cadrages[p.format]++;
+    if (p.mort) morts++;
+    if (!p.el.some((e) => PERSONNAGES.includes(e))) sansPersonnage++;
+    if (estRaccord(p)) raccords++;
+  }
+
+  return {
+    plans: plans.length,
+    elements,
+    cadrages,
+    morts,
+    sansPersonnage,
+    raccords,
+    sequences: banc.sequences.length,
+    plusLongue: banc.sequences.reduce((m, s) => Math.max(m, s.length), 0),
+    // Les bandeaux visibles, dans l'ordre de lecture du banc.
+    bandeaux: plans.filter((p) => p.obj).map((p) => p.obj),
   };
 }
 
