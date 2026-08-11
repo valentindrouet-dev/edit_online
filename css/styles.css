@@ -268,9 +268,21 @@ body:not(.sans-illus) .moitie > .titre-transition { display: none; }
 
 /* --- Partie --------------------------------------------------------------- */
 
-.plateau { display: grid; grid-template-columns: 236px minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
-.plateau > * { min-width: 0; }
-@media (max-width: 1150px) { .plateau { grid-template-columns: 1fr; } }
+/* La table de jeu : zone d'action à gauche, colonne d'infos à droite, et les
+   bancs de montage en dessous, sur toute la largeur de la page. */
+.table-jeu { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+.table-jeu > * { min-width: 0; }
+@media (max-width: 1000px) { .table-jeu { grid-template-columns: 1fr; } }
+
+/* Les groupes de dérushage se rangent côte à côte tant que la place le permet. */
+.derushage-groupes { display: flex; flex-wrap: wrap; gap: 10px 34px; align-items: flex-start; }
+.derushage-groupe h3 { margin: 8px 0 10px; font-size: .95rem; }
+.derushage-cartes { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+
+/* La colonne d'infos reste compacte pour ne pas repousser les bancs. */
+.colonne-info .journal { max-height: 170px; }
+.colonne-info .panneau { padding: 14px 16px; margin-bottom: 12px; }
+.colonne-info .mini-joueur { margin-bottom: 8px; }
 
 .banc {
   display: flex; gap: 0; overflow-x: auto; padding: 12px; border-radius: var(--r-s);

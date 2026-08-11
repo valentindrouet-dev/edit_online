@@ -293,12 +293,15 @@ function vuePartie() {
     <div class="bandeau-tour">
       <span>Tour <b>${Math.min(st.tour, st.cfg.tours)} / ${st.cfg.tours}</b></span><span>·</span>
       <span><b>${PHASES[st.phase]}</b></span><span>·</span>
-      <span>Graine <b>${st.seed}</b></span><span>·</span>
       <span style="color:${encreDe(j.couleur)}"><b>${j.nom}</b>${humaine ? '' : ' réfléchit…'}</span>
     </div>
 
-    <div class="plateau">
-      <div>
+    <div class="table-jeu">
+      <div class="zone-action">
+        <div class="panneau"><h2>${PHASES[st.phase]}</h2>${zone}</div>
+      </div>
+
+      <div class="colonne-info">
         ${st.joueurs.map((jj, i) => `
           <div class="mini-joueur ${i === p ? 'actif' : ''}">
             <div class="entete">
@@ -313,28 +316,24 @@ function vuePartie() {
             ${i === p ? '<span class="badge-tour">À elle de jouer</span>' : ''}
           </div>`).join('')}
 
+        <div class="panneau"><h2>Score de ${j.nom}</h2>${tableauScore(sc[p])}</div>
+        <div class="panneau"><h2>Bandeaux du banc</h2>${listeObjectifs(sc[p])}</div>
+
         <div class="panneau" style="padding:14px 16px">
           <h2>Journal</h2>
           <div class="journal">
-            ${st.journal.slice(-14).reverse().map((l) => `<div class="l"><b>T${l.tour}</b> · ${l.texte}</div>`).join('')}
+            ${st.journal.slice(-8).reverse().map((l) => `<div class="l"><b>T${l.tour}</b> · ${l.texte}</div>`).join('')}
           </div>
         </div>
-      </div>
 
-      <div>
-        ${st.joueurs.map((jj, i) => bancBloc(st, i, `Banc de ${jj.nom}`, i === p && humaine && st.phase === 'MONTAGE')).join('')}
-        <div class="panneau"><h2>${PHASES[st.phase]}</h2>${zone}</div>
-      </div>
-
-      <div>
-        <div class="panneau"><h2>Score de ${j.nom}</h2>${tableauScore(sc[p])}</div>
-        <div class="panneau"><h2>Bandeaux du banc</h2>${listeObjectifs(sc[p])}</div>
         <div class="barre-outils">
           <button class="pill" id="undo" ${store.undo ? '' : 'disabled'}>↩ Annuler</button>
           <button class="pill" id="quitter">Quitter</button>
         </div>
       </div>
     </div>
+
+    ${st.joueurs.map((jj, i) => bancBloc(st, i, `Banc de ${jj.nom}`, i === p && humaine && st.phase === 'MONTAGE')).join('')}
   </div>
   ${pied()}`);
 
@@ -413,23 +412,27 @@ function zoneDepart(st, p) {
 
 function zoneDerushage(st) {
   const options = optionsDerushage(st);
-  const bloc = (titre, liste, vide) => `
-    <h3>${titre}</h3>
-    <div class="main-cartes">${liste.length ? liste : `<div class="aide">${vide}</div>`}</div>`;
+  const groupe = (titre, contenu) => `
+    <div class="derushage-groupe">
+      <h3>${titre}</h3>
+      <div class="derushage-cartes">${contenu || '<div class="aide">Épuisé</div>'}</div>
+    </div>`;
 
   const chutierPL = options.filter((o) => o.source === 'CHUTIER_PL')
-    .map((o) => `<div class="item"><div data-derush="${enc(o)}">${renderCarte(o.carte, false, { small: true, clickable: true })}</div></div>`).join('');
+    .map((o) => `<div data-derush="${enc(o)}">${renderCarte(o.carte, false, { small: true, clickable: true })}</div>`).join('');
   const chutierPM = options.filter((o) => o.source === 'CHUTIER_PMGP')
-    .map((o) => `<div class="item"><div data-derush="${enc(o)}">${renderCarte(o.carte, false, { small: true, clickable: true })}</div></div>`).join('');
+    .map((o) => `<div data-derush="${enc(o)}">${renderCarte(o.carte, false, { small: true, clickable: true })}</div>`).join('');
   const pioches = options.filter((o) => !o.carte)
     .map((o) => `<button class="dos-pioche" data-derush="${enc(o)}">
       <span>Pioche</span><b>${o.source === 'PIOCHE_PL' ? 'Plans Larges' : 'PM / GP'}</b>
       <span>${o.source === 'PIOCHE_PL' ? st.piochePL.length : st.piochePMGP.length} cartes</span></button>`).join('');
 
-  return `<p class="aide">Pioche une carte : dans un des deux chutiers, ou à l’aveugle sur une pioche.</p>
-    ${bloc('Chutier Plans Larges', chutierPL, 'Chutier épuisé')}
-    ${bloc('Chutier Plans Moyens / Gros Plans', chutierPM, 'Chutier épuisé')}
-    ${pioches ? `<h3>Pioches</h3><div class="main-cartes">${pioches}</div>` : ''}`;
+  return `<p class="aide" style="margin-bottom:12px">Pioche une carte : dans un des deux chutiers, ou à l’aveugle sur une pioche.</p>
+  <div class="derushage-groupes">
+    ${groupe('Chutier Plans Larges', chutierPL)}
+    ${groupe('Chutier Plans Moyens / Gros Plans', chutierPM)}
+    ${pioches ? groupe('Pioches', pioches) : ''}
+  </div>`;
 }
 
 const enc = (o) => encodeURIComponent(JSON.stringify({ source: o.source, index: o.index }));

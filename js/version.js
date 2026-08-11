@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.6';
-export const BUILD_DATE = '2026-08-11 17:50';
+export const VERSION = '1.7';
+export const BUILD_DATE = '2026-08-11 18:20';
 
 export const CHANGELOG = [
+  {
+    v: '1.7',
+    date: '11/08/2026',
+    items: [
+      "La table de jeu est réorganisée : les bancs de montage occupent toute la largeur de la page, les uns sous les autres, et restent visibles en permanence.",
+      "La zone de draft — choix du Plan de départ, dérushage, montage — est placée au-dessus des bancs ; les chutiers et pioches s’y rangent côte à côte pour rester compacts.",
+      "Les panneaux d’information (joueuses, score, bandeaux du banc, journal, annuler et quitter) sont réunis en une seule colonne, à droite.",
+      "La graine n’est plus affichée pendant la partie.",
+    ],
+  },
   {
     v: '1.6',
     date: '11/08/2026',
