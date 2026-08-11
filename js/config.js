@@ -71,7 +71,23 @@ export const PROFILS_IA = {
   STRATEGE:  { id: 'STRATEGE',  label: 'IA — Stratège',  profondeur: 2, bruit: 0.0 },
 };
 
-export const COULEURS_JOUEURS = ['#8b5cf6', '#f97316', '#0ea5e9', '#22c55e'];
+// Palette des joueuses : violet, bleu, rose, orange, en teintes pastel.
+// `clair` habille la pastille, `encre` sert au texte, où le pastel manquerait
+// de contraste.
+export const PALETTE_JOUEURS = [
+  { nom: 'Violet', clair: '#c3b1f2', encre: '#7c5cd6' },
+  { nom: 'Bleu',   clair: '#a7cdf5', encre: '#3f7fc4' },
+  { nom: 'Rose',   clair: '#f5b3cd', encre: '#cf5f92' },
+  { nom: 'Orange', clair: '#fbc79a', encre: '#d47b2c' },
+];
+
+export const COULEURS_JOUEURS = PALETTE_JOUEURS.map((p) => p.clair);
+
+/** Teinte lisible sur fond blanc pour une couleur de joueuse. */
+export function encreDe(couleur) {
+  const p = PALETTE_JOUEURS.find((x) => x.clair === couleur);
+  return p ? p.encre : couleur;
+}
 
 export function cloneConfig(src = DEFAULTS) {
   return JSON.parse(JSON.stringify(src));

@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.3';
-export const BUILD_DATE = '2026-08-11 16:05';
+export const VERSION = '1.4';
+export const BUILD_DATE = '2026-08-11 16:55';
 
 export const CHANGELOG = [
+  {
+    v: '1.4',
+    date: '11/08/2026',
+    items: [
+      "Les règles du jeu sont versionnées à part du site : la page Règles affiche la version en vigueur (v0.13) et garde chaque version précédente, texte intégral compris, dans un onglet « Versions des règles ».",
+      "À la prochaine modification de règle, le passage changé s’affichera en violet avec le numéro de version qui l’a introduit.",
+      "Nouvelle palette des joueuses, en pastel : violet, bleu, rose, orange. Les noms restent lisibles grâce à une teinte d’encre assortie.",
+      "L’accueil est resserré sur une colonne : joueuses, bouton Commencer la partie, options de partie, puis réglages rapides.",
+      "Le sous-titre crédite l’auteur, et les blocs Personnages et éléments, Le matériel ainsi que les textes d’explication disparaissent de l’accueil — tout est dans l’onglet Matériel.",
+    ],
+  },
   {
     v: '1.3',
     date: '11/08/2026',

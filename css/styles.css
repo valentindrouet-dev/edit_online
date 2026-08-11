@@ -95,6 +95,7 @@ button { font-family: inherit; }
 
 .wrap { max-width: 1180px; margin: 0 auto; padding: 0 22px 60px; }
 .wrap.large { max-width: 1500px; }
+.wrap.etroit { max-width: 660px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
 @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
 
@@ -128,7 +129,10 @@ button { font-family: inherit; }
   background: #fff; font-size: .92rem; color: var(--encre); cursor: pointer;
 }
 .puces { display: flex; gap: 6px; }
-.puce { width: 22px; height: 22px; border-radius: 7px; border: 2px solid transparent; cursor: pointer; }
+.puce {
+  width: 22px; height: 22px; border-radius: 7px; border: 2px solid transparent; cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(36,29,51,.14);
+}
 .puce.on { border-color: var(--encre); box-shadow: 0 0 0 2px #fff inset; }
 .btn-x {
   border: 1px solid var(--gris-clair); background: #fff; border-radius: 9px;
@@ -318,7 +322,10 @@ body:not(.sans-illus) .moitie > .titre-transition { display: none; }
 .mini-joueur.actif { border-color: var(--orange); background: #fff8f1; }
 .mini-joueur .entete { display: flex; align-items: center; gap: 8px; font-weight: 700; }
 .mini-joueur .pt { margin-left: auto; font-size: 1.15rem; font-weight: 800; }
-.point-couleur { width: 11px; height: 11px; border-radius: 50%; flex: 0 0 auto; }
+.point-couleur {
+  width: 12px; height: 12px; border-radius: 50%; flex: 0 0 auto;
+  box-shadow: inset 0 0 0 1px rgba(36,29,51,.2);
+}
 .badge-bot { font-size: .68rem; background: var(--violet-pale); color: var(--violet); padding: 2px 7px; border-radius: 999px; font-weight: 700; }
 .badge-tour { display: inline-block; margin-top: 8px; font-size: .7rem; font-weight: 700; background: var(--orange-pale); color: #c2410c; padding: 3px 9px; border-radius: 999px; }
 
@@ -417,3 +424,33 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .modale h2 { font-size: 1.2rem; text-transform: none; letter-spacing: 0; color: var(--encre); margin-bottom: 6px; }
 
 .vide { text-align: center; color: var(--gris); padding: 40px 20px; }
+
+/* --- Règles versionnées --------------------------------------------------- */
+
+/* Un passage modifié depuis la version de référence. */
+.regle-maj { color: var(--violet); font-weight: 600; }
+.regle-maj::after {
+  content: attr(data-v); margin-left: 6px; vertical-align: .12em;
+  background: var(--violet-pale); color: var(--violet); border-radius: 999px;
+  padding: 2px 7px; font-size: .68rem; font-weight: 700; letter-spacing: .02em;
+  white-space: nowrap;
+}
+.regle-maj-bloc {
+  position: relative; color: var(--violet); border-left: 4px solid var(--violet);
+  background: var(--violet-pale); border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 18px 0;
+}
+.regle-maj-bloc::before {
+  content: attr(data-v); position: absolute; top: -10px; right: 14px;
+  background: var(--violet); color: #fff; border-radius: 999px; padding: 2px 9px;
+  font-size: .68rem; font-weight: 700;
+}
+
+/* Le journal des règles suit le code couleur violet des modifications. */
+.version-bloc.regle.actuelle {
+  background: linear-gradient(180deg, #f6f2ff, #fdfcff); border: 1px solid var(--violet-clair);
+}
+.version-bloc.regle .num { color: var(--violet); }
+.version-bloc.regle .etiquette { background: var(--violet-pale); color: var(--violet); }
+.texte-archive {
+  margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--gris-clair);
+}

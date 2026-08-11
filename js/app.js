@@ -7,7 +7,7 @@ import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf,
 } from './data.js';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, cloneConfig } from './config.js';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js';
 import { elIcon } from './icons.js';
 import { renderCarte, renderPlan, tc } from './cards.js';
 import {
@@ -17,6 +17,7 @@ import {
 import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js';
 import { compter, SOURCES_LABEL } from './scoring.js';
 import { campagne } from './lab.js';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js';
 
 const app = document.getElementById('app');
 
@@ -40,6 +41,12 @@ const store = {
   formatChoisi: null,   // 'GP' | 'PM' | 'PL' pendant la phase de montage
   undo: null,
 };
+
+// Les parties enregistrées avant la palette pastel gardaient d'anciennes
+// teintes : on les réaligne sur la palette courante, siège par siège.
+store.joueurs.forEach((j, i) => {
+  if (!COULEURS_JOUEURS.includes(j.couleur)) j.couleur = COULEURS_JOUEURS[i % COULEURS_JOUEURS.length];
+});
 
 function sauverCfg() { LS.set('cfg', store.cfg); }
 function sauverJoueurs() { LS.set('joueurs', store.joueurs); }
@@ -96,85 +103,62 @@ function vueAccueil() {
   <div class="hero">
     <h1>${titre}</h1>
     <div class="credits">
-      Un jeu édité par <b>Big Budi Games</b><br>
-      Vous êtes monteuse. Assemblez vos Cartes Plan dans votre banc de montage pour composer le meilleur film.
+      Un jeu de <b>Valentin Drouet</b><br>
+      Édité par <b>Big Budi Games</b>
     </div>
   </div>
-  <div class="wrap">
-    <div class="grid2">
-      <div>
-        <div class="panneau">
-          <h2>Joueuses</h2>
-          <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
-            <div class="segments" id="seg-n">
-              ${[1, 2, 3, 4].map((i) => `<button class="${i === n ? 'on' : ''}" data-n="${i}">${i}</button>`).join('')}
-            </div>
-            <span class="aide">${n} joueuse${n > 1 ? 's' : ''}${n === 1 ? ' — solo, hors règles officielles' : ''}</span>
-          </div>
-          <div id="liste-joueurs">${store.joueurs.map((j, i) => ligneJoueur(j, i)).join('')}</div>
-          <p class="aide" style="margin-bottom:0">
-            Chacune monte son film sur son propre banc. Les IA jouent seules — la Novice regarde le coup
-            immédiat, l’Équilibrée compare tous ses placements, la Stratège anticipe ce que les chutiers
-            lui offriront au tour suivant.
-          </p>
+  <div class="wrap etroit">
+    <div class="panneau">
+      <h2>Joueuses</h2>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+        <div class="segments" id="seg-n">
+          ${[1, 2, 3, 4].map((i) => `<button class="${i === n ? 'on' : ''}" data-n="${i}">${i}</button>`).join('')}
         </div>
-
-        <div class="panneau">
-          <h2>Options de partie</h2>
-          <div class="chips">
-            ${chip('illustrations', 'Illustrations sur les cartes')}
-            ${chip('premierJoueurAleatoire', '1re joueuse aléatoire')}
-            ${chip('piocheDirectePMGP', 'Pioche PM / GP au sommet')}
-            ${chip('piocheDirectePL', 'Pioche Plans Larges au sommet')}
-            ${chip('raccordConnecte', 'Les Raccords soudent les séquences')}
-            ${chip('generiqueBloque', 'Le Générique ferme le montage')}
-            ${chip('plContigu', 'Deux Plans Larges peuvent se toucher')}
-          </div>
-          <div class="champ" style="margin-top:14px">
-            <label>Graine de partie <small>vide = tirage aléatoire</small></label>
-            <input type="text" id="graine" value="${store.cfg.graine || ''}" placeholder="aléatoire"
-              style="width:150px;padding:7px 9px;border-radius:9px;border:1px solid var(--gris-clair)">
-          </div>
-        </div>
-
-        <button class="cta" id="go">Commencer la partie</button>
+        <span class="aide">${n} joueuse${n > 1 ? 's' : ''}${n === 1 ? ' — solo, hors règles officielles' : ''}</span>
       </div>
+      <div id="liste-joueurs">${store.joueurs.map((j, i) => ligneJoueur(j, i)).join('')}</div>
+    </div>
 
-      <div>
-        <div class="panneau">
-          <h2>Réglages rapides</h2>
-          ${[
-            ['tours', 'Plans à poser', 1, 30],
-            ['chutierPMGP', 'Chutier PM / GP', 0, 8],
-            ['chutierPL', 'Chutier Plans Larges', 0, 8],
-            ['departProposes', 'Plans de départ proposés', 1, 4],
-          ].map(([k, l, min, max]) => `
-            <div class="champ"><label>${l}</label>
-              <input type="number" data-cfg="${k}" value="${store.cfg[k]}" min="${min}" max="${max}"></div>`).join('')}
-          <div class="champ">
-            <label>Portée des bandeaux <small>hors Raccord et Générique</small></label>
-            <select data-cfg="porteeParDefaut">
-              <option value="MONTAGE" ${store.cfg.porteeParDefaut === 'MONTAGE' ? 'selected' : ''}>Le montage entier</option>
-              <option value="SEQUENCE" ${store.cfg.porteeParDefaut === 'SEQUENCE' ? 'selected' : ''}>La séquence porteuse</option>
-            </select>
-          </div>
-          <p class="aide" style="margin-top:14px">
-            Le reste — valeur de chaque objectif, composition du paquet, variantes — est dans <b>Variables</b>.
-          </p>
-        </div>
+    <button class="cta" id="go">Commencer la partie</button>
 
-        <div class="panneau">
-          <h2>Personnages et éléments</h2>
-          <div class="legende-el">
-            ${ELEMENT_IDS.map((e) => `<div class="e">${elIcon(e, 30)}<span>${ELEMENTS[e].label}</span></div>`).join('')}
-          </div>
-        </div>
-
-        <div class="panneau">
-          <h2>Le matériel</h2>
-          ${resumePaquet()}
-        </div>
+    <div class="panneau" style="margin-top:20px">
+      <h2>Options de partie</h2>
+      <div class="chips">
+        ${chip('illustrations', 'Illustrations sur les cartes')}
+        ${chip('premierJoueurAleatoire', '1re joueuse aléatoire')}
+        ${chip('piocheDirectePMGP', 'Pioche PM / GP au sommet')}
+        ${chip('piocheDirectePL', 'Pioche Plans Larges au sommet')}
+        ${chip('raccordConnecte', 'Les Raccords soudent les séquences')}
+        ${chip('generiqueBloque', 'Le Générique ferme le montage')}
+        ${chip('plContigu', 'Deux Plans Larges peuvent se toucher')}
       </div>
+      <div class="champ" style="margin-top:14px">
+        <label>Graine de partie <small>vide = tirage aléatoire</small></label>
+        <input type="text" id="graine" value="${store.cfg.graine || ''}" placeholder="aléatoire"
+          style="width:150px;padding:7px 9px;border-radius:9px;border:1px solid var(--gris-clair)">
+      </div>
+    </div>
+
+    <div class="panneau">
+      <h2>Réglages rapides</h2>
+      ${[
+        ['tours', 'Plans à poser', 1, 30],
+        ['chutierPMGP', 'Chutier PM / GP', 0, 8],
+        ['chutierPL', 'Chutier Plans Larges', 0, 8],
+        ['departProposes', 'Plans de départ proposés', 1, 4],
+      ].map(([k, l, min, max]) => `
+        <div class="champ"><label>${l}</label>
+          <input type="number" data-cfg="${k}" value="${store.cfg[k]}" min="${min}" max="${max}"></div>`).join('')}
+      <div class="champ">
+        <label>Portée des bandeaux <small>hors Raccord et Générique</small></label>
+        <select data-cfg="porteeParDefaut">
+          <option value="MONTAGE" ${store.cfg.porteeParDefaut === 'MONTAGE' ? 'selected' : ''}>Le montage entier</option>
+          <option value="SEQUENCE" ${store.cfg.porteeParDefaut === 'SEQUENCE' ? 'selected' : ''}>La séquence porteuse</option>
+        </select>
+      </div>
+      <p class="aide" style="margin-top:14px">
+        Le reste — valeur de chaque objectif, composition du paquet, variantes — est dans <b>Variables</b>.
+      </p>
     </div>
 
     <div class="rangee-boutons">
@@ -206,7 +190,8 @@ function ligneJoueur(j, i) {
   return `<div class="ligne-joueur" data-i="${i}">
     <input type="text" value="${j.nom}" data-champ="nom" maxlength="16">
     <div class="puces">
-      ${COULEURS_JOUEURS.map((c) => `<div class="puce ${c === j.couleur ? 'on' : ''}" style="background:${c}" data-couleur="${c}"></div>`).join('')}
+      ${PALETTE_JOUEURS.map((p) => `<div class="puce ${p.clair === j.couleur ? 'on' : ''}" style="background:${p.clair}"
+        data-couleur="${p.clair}" title="${p.nom}"></div>`).join('')}
     </div>
     <select data-champ="type">
       <option value="HUMAIN" ${j.type === 'HUMAIN' ? 'selected' : ''}>Humaine</option>
@@ -303,7 +288,7 @@ function vuePartie() {
       <span>Tour <b>${Math.min(st.tour, st.cfg.tours)} / ${st.cfg.tours}</b></span><span>·</span>
       <span><b>${PHASES[st.phase]}</b></span><span>·</span>
       <span>Graine <b>${st.seed}</b></span><span>·</span>
-      <span style="color:${j.couleur}"><b>${j.nom}</b>${humaine ? '' : ' réfléchit…'}</span>
+      <span style="color:${encreDe(j.couleur)}"><b>${j.nom}</b>${humaine ? '' : ' réfléchit…'}</span>
     </div>
 
     <div class="plateau">
@@ -679,89 +664,61 @@ function vueMateriel() {
 // RÈGLES
 // ===========================================================================
 
+let reglesOnglet = 'texte';
+let regleDepliee = null;   // version dont on affiche le texte intégral
+
 function vueRegles() {
   const c = store.cfg;
+  const corps = reglesOnglet === 'texte'
+    ? `<div class="regles">${corpsRegles(c)}</div>`
+    : versionsRegles();
+
   html(`${topbar('#/regles')}
   <div class="wrap">
-    <div class="panneau regles">
-      <h2>Règles du jeu — v0.13</h2>
-
-      <p>Vous incarnez une monteuse de cinéma. Votre objectif est d’assembler des Cartes Plan dans votre
-      <b>banc de montage</b> pour créer la meilleure séquence de film. De 2 à 4 joueuses.</p>
-
-      <h3>Matériel</h3>
-      <ul>
-        <li>8 cartes <b>Plan de départ</b> (2 versions, recto-verso)</li>
-        <li>14 cartes <b>Plan Large</b></li>
-        <li>50 cartes <b>Plan Moyen / Gros Plan</b></li>
-      </ul>
-      <p>Une carte sans jonction est un Plan Large. Une carte à une jonction se divise en un Plan Moyen
-      (2/3 de la carte) et un Gros Plan (1/3). Chaque plan porte un <b>cadrage</b>, des <b>personnages</b>
-      (Héroïne, Ennemi, Allié) et des <b>éléments</b> (Arme, Objet, Véhicule), plus son minutage.</p>
-      <div class="legende-el">
-        ${ELEMENT_IDS.map((e) => `<div class="e">${elIcon(e, 30)}<span>${ELEMENTS[e].label}</span></div>`).join('')}
+    <div class="panneau">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+        <h2 style="margin:0">Règles du jeu</h2>
+        <span class="version-pill">v${REGLES_VERSION}</span>
       </div>
-
-      <h3>Mise en place</h3>
-      <ul>
-        <li>Chaque joueuse reçoit ${c.departProposes} cartes Plan de départ, en pose une dans son banc et défausse l’autre.</li>
-        <li>Les Plans Larges forment une pioche et un <b>chutier</b> de ${c.chutierPL || 'autant de cartes que de joueuses'}.</li>
-        <li>Les Plans Moyens / Gros Plans forment une pioche et un chutier de ${c.chutierPMGP || 'autant de cartes que de joueuses'}.</li>
-        <li>La dernière joueuse à avoir vu un bon film commence — ici, tirage au sort.</li>
-      </ul>
-
-      <h3>Phase A — Le Dérushage</h3>
-      <p>Chacune à son tour pioche <b>une</b> Carte Plan : dans le chutier des Plans Larges, dans le chutier
-      des Plans Moyens / Gros Plans, ou sur la pioche des Plans Moyens / Gros Plans.</p>
-
-      <h3>Phase B — Le Montage</h3>
-      <p>Chacune ajoute la carte dérushée à son banc.</p>
-      <div class="encart">
-        <b>Carte Plan Moyen / Gros Plan.</b> Elle se glisse <b>sous</b> les cartes précédentes en recouvrant
-        l’une de ses deux parties : un seul de ses deux plans reste visible, c’est celui qui comptera.
-        On ne peut jamais dissimuler entièrement une carte, ni écarter une carte sans la jouer.
+      <div class="filtre-barre" style="margin-bottom:20px">
+        ${[['texte', 'Les règles'], ['versions', `Versions des règles (${REGLES_HISTORIQUE.length})`]]
+          .map(([k, l]) => `<button class="pill" data-onglet="${k}"
+            style="${reglesOnglet === k ? 'background:var(--violet);color:#fff;border-color:var(--violet)' : ''}">${l}</button>`).join('')}
       </div>
-      <div class="encart">
-        <b>Carte Plan Large.</b> Elle représente le climax d’une séquence : la poser oblige à ouvrir une
-        <b>nouvelle séquence</b>, non adjacente aux cartes déjà posées. Deux Plans Larges ne peuvent jamais
-        se toucher — il faut un Plan Moyen / Gros Plan ou un Raccord entre eux.
-      </div>
-
-      <h3>Les Raccords</h3>
-      <ul>
-        <li><b>Raccord</b> — connecte deux séquences et démultiplie donc la valeur des cartes.
-        Il rapporte 1 point par carte de sa séquence.</li>
-        <li><b>Générique</b> (Ouverture ou Fermeture) — ouvre ou ferme le film : aucun plan ne peut être
-        posé avant ou après lui. Il rapporte 2 points par Carte Raccord du montage.</li>
-      </ul>
-
-      <h3>Fin de partie</h3>
-      <p>La partie s’arrête quand toutes les joueuses ont posé leur ${c.tours}e plan. On inscrit alors les
-      points rapportés par chaque <b>plan visible</b> ; le plus haut total l’emporte.</p>
-
-      <h3>Décompte des bandeaux</h3>
-      <table class="tbl">
-        <tr><th>Bandeau</th><th>Ce qu’il rapporte</th><th>Portée</th></tr>
-        <tr><td><b>n × Raccord</b></td><td>n points par Carte Raccord</td><td>Le montage</td></tr>
-        <tr><td><b>n × ◀ Plan ▶</b></td><td>n points par carte</td><td>Sa séquence</td></tr>
-        <tr><td><b>n × cadrage</b></td><td>n points par plan de ce cadrage</td><td>${c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence'} ⚙</td></tr>
-        <tr><td><b>n × élément</b></td><td>n points par plan portant cet élément</td><td>${c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence'} ⚙</td></tr>
-        <tr><td><b>n × deux éléments liés</b></td><td>n points par paire de plans voisins</td><td>Séquence</td></tr>
-        <tr><td><b>n × 💀</b></td><td>n points par plan de mort</td><td>${c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence'} ⚙</td></tr>
-        <tr><td><b>n × ✕</b></td><td>n points par plan sans personnage</td><td>${c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence'} ⚙</td></tr>
-        <tr><td><b>n si élément barré</b></td><td>n points si l’élément est absent</td><td>Le montage</td></tr>
-      </table>
-
-      <div class="encart attention">
-        <b>Points restés ouverts.</b> Les règles ne fixent la portée que pour le Raccord (« dans sa
-        séquence ») et le Générique (« dans le montage ») ; les autres bandeaux sont lus ici sur le montage
-        entier, réglable dans <b>Variables</b> ⚙. Restent aussi à confirmer : le sens de pose autorisé
-        (les deux bouts d’une séquence, ou la droite seulement), ce que représente le symbole ✕ noir de la
-        famille Mort, le rôle exact du minutage, et l’appariement recto-verso des Plans de départ.
-      </div>
+      ${corps}
     </div>
   </div>
   ${pied()}`);
+
+  app.querySelectorAll('[data-onglet]').forEach((b) => b.addEventListener('click', () => {
+    reglesOnglet = b.dataset.onglet; vueRegles();
+  }));
+  app.querySelectorAll('[data-deplie]').forEach((b) => b.addEventListener('click', () => {
+    regleDepliee = regleDepliee === b.dataset.deplie ? null : b.dataset.deplie;
+    vueRegles();
+  }));
+}
+
+function versionsRegles() {
+  return `<p class="aide" style="margin-bottom:20px">
+    La version des règles est indépendante de celle du site. Elle part de la <b>v${REGLES_HISTORIQUE[REGLES_HISTORIQUE.length - 1].v}</b>
+    fournie par l’auteur ; chaque modification demandée l’incrémente. Dans l’onglet <b>Les règles</b>,
+    les passages modifiés s’affichent <span class="regle-maj" data-v="ainsi">en violet</span>, avec le
+    numéro de version qui les a introduits.
+  </p>
+  ${REGLES_HISTORIQUE.map((v, i) => `
+    <div class="version-bloc regle ${i === 0 ? 'actuelle' : ''}">
+      <span class="num">v${v.v}</span><span class="date">${v.date}</span>
+      ${i === 0 ? '<span class="etiquette">version en vigueur</span>' : ''}
+      <div class="aide" style="margin-top:6px">${v.origine}</div>
+      <ul>${v.items.map((x) => `<li>${x}</li>`).join('')}</ul>
+      <button class="pill" data-deplie="${v.v}">
+        ${regleDepliee === v.v ? '▾ Masquer le texte' : '▸ Lire le texte de la v' + v.v}
+      </button>
+      ${regleDepliee === v.v
+        ? `<div class="regles texte-archive">${corpsVersion(v.v, store.cfg)}</div>`
+        : ''}
+    </div>`).join('')}`;
 }
 
 // ===========================================================================

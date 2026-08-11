@@ -27,7 +27,8 @@ css/styles.css
 assets/pm/<num>.webp   visuels des moitiés Plan Moyen  (33)
 assets/gp/<num>.webp   visuels des moitiés Gros Plan   (33)
 assets/pl/<num>.webp   visuels des Plans Larges et des Plans de départ (18)
-js/version.js    numéro de version et journal des modifications
+js/version.js    version du site et journal des modifications
+js/regles.js     règles du jeu, versionnées à part du site
 js/data.js       matériel : éléments, 33 scènes, 14 Plans Larges, 8 Plans de départ, 50 cartes PM/GP
 js/config.js     variables par défaut, profils d'IA, description des réglages
 js/icons.js      pastilles des personnages et éléments en SVG
@@ -38,6 +39,21 @@ js/ai.js         Novice, Équilibré, Stratège
 js/lab.js        simulation par lots et agrégats statistiques
 js/app.js        routage et écrans
 ```
+
+## Les règles, versionnées
+
+La version des règles (**v0.13**) est indépendante de celle du site. Elle vit dans `js/regles.js`,
+où chaque version garde son texte intégral — les versions passées restent donc consultables dans
+l'onglet « Versions des règles » de la page Règles, et pas seulement résumées.
+
+Pour appliquer une modification de règle :
+
+1. dupliquer `corps_0_13` en `corps_0_13_1` ;
+2. y entourer le passage changé d'un `maj('0.13.1', '…')` — il s'affiche en violet, avec le numéro
+   de version en pastille (`majBloc` pour un paragraphe entier) ;
+3. ajouter l'entrée correspondante **en tête** de `REGLES_HISTORIQUE`.
+
+`REGLES_VERSION` et le texte en vigueur suivent automatiquement la première entrée.
 
 ## Les illustrations
 
