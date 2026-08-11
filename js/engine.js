@@ -1,11 +1,13 @@
 // ---------------------------------------------------------------------------
-// EDIT — moteur de jeu
+// EDIT — moteur de jeu (règles v0.13)
 // ---------------------------------------------------------------------------
+// Un tour se joue en deux phases : le DÉRUSHAGE, où chaque joueuse pioche une
+// carte, puis le MONTAGE, où chacune la pose dans son banc.
 
 import {
-  buildCartesDoubles, buildPlansLarges, faceHalves, plHalf, SCENE_BY_IDX,
+  buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX,
 } from './data.js';
-import { compter } from './scoring.js';
+import { compter, bancVide } from './scoring.js';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -26,7 +28,7 @@ export function rng(seed) {
 }
 
 export function nouvelleGraine(rand = Math.random) {
-  const mots = ['edit', 'coupe', 'raccord', 'champ', 'plan', 'rushes', 'banc', 'montage'];
+  const mots = ['edit', 'coupe', 'raccord', 'champ', 'plan', 'rushes', 'banc', 'montage', 'chutier'];
   return `${mots[Math.floor(rand() * mots.length)]}-${Math.floor(rand() * 9000 + 1000)}`;
 }
 
@@ -54,78 +56,79 @@ export function construirePaquet(cfg) {
   }
 
   const larges = [];
-  const pls = buildPlansLarges();
   for (let k = 0; k < cfg.exemplairesPL; k++) {
-    for (const c of pls) {
+    for (const c of buildPlansLarges()) {
       if (cfg.retirerBrouillons && c.brouillon) continue;
       larges.push({ ...c, id: k ? `${c.id}#${k + 1}` : c.id });
     }
   }
 
-  return { doubles, larges };
+  return { doubles, larges, departs: buildDeparts() };
 }
 
-// --- Moitiés d'une carte ---------------------------------------------------
+// --- Plans visibles d'une carte -------------------------------------------
 
-export function halvesOf(carte, verso) {
-  if (carte.type === 'PL') return [plHalf(carte)];
-  return faceHalves(carte, verso);
+/** Les deux plans qu'une carte double peut laisser visibles. */
+export function plansVisibles(carte) {
+  if (carte.type !== 'DOUBLE') return [plHalf(carte)];
+  const m = moitiesDe(carte);
+  return [m.GP, m.PM];
+}
+
+function planPose(carte, format, role) {
+  const plan = carte.type === 'DOUBLE' ? moitiesDe(carte)[format] : plHalf(carte);
+  const copie = { ...plan, el: plan.el.slice(), carteId: carte.id };
+  // La moitié Générique à double lecture est une Ouverture à gauche, des
+  // Crédits à droite.
+  if (copie.dual && role) copie.transition = role;
+  return copie;
 }
 
 // --- Création d'une partie -------------------------------------------------
 
-/**
- * joueurs : [{ nom, couleur, type: 'HUMAIN' | 'NOVICE' | 'EQUILIBRE' | 'STRATEGE' }]
- */
 export function creerPartie(joueurs, cfg, graine) {
   const seed = graine || nouvelleGraine();
   const rand = rng(seed);
-  const { doubles, larges } = construirePaquet(cfg);
-
-  const departs = larges.filter((c) => c.depart);
-  const reste = larges.filter((c) => !c.depart);
-
-  let pioche = melanger(cfg.planLargeEnMain ? doubles.concat(reste) : doubles, rand);
-  const departsMel = melanger(departs, rand);
+  const { doubles, larges, departs } = construirePaquet(cfg);
+  const n = joueurs.length;
 
   const state = {
     seed,
     cfg,
     joueurs: joueurs.map((j, i) => ({ ...j, idx: i })),
-    mains: joueurs.map(() => []),
-    bancs: joueurs.map(() => []),
-    poses: joueurs.map(() => []),
-    pioche,
-    defausse: [],
+    bancs: joueurs.map(() => bancVide()),
+    posees: joueurs.map(() => 0),
+    mains: joueurs.map(() => []),        // la carte dérushée du tour
+    departsProposes: joueurs.map(() => []),
+    piochePL: melanger(larges, rand),
+    piochePMGP: melanger(doubles, rand),
+    chutierPL: [],
+    chutierPMGP: [],
     tour: 1,
+    phase: 'DEPART',                     // DEPART | DERUSHAGE | MONTAGE
     courant: 0,
     finie: false,
     journal: [],
     debut: Date.now(),
   };
 
-  if (cfg.premierJoueurAleatoire) state.courant = Math.floor(rand() * joueurs.length);
+  const tPL = cfg.chutierPL || n;
+  const tPM = cfg.chutierPMGP || n;
+  for (let i = 0; i < tPL && state.piochePL.length; i++) state.chutierPL.push(state.piochePL.shift());
+  for (let i = 0; i < tPM && state.piochePMGP.length; i++) state.chutierPMGP.push(state.piochePMGP.shift());
+
+  if (cfg.premierJoueurAleatoire) state.courant = Math.floor(rand() * n);
   state.premier = state.courant;
 
-  if (cfg.bancCommun) {
-    state.bancCommun = [];
-    state.posesCommun = [];
-  }
-
-  // Plan de départ
-  if (cfg.planDepart && departsMel.length) {
-    joueurs.forEach((_, i) => {
-      const c = departsMel[i % departsMel.length];
-      poser(state, i, { carte: c, verso: false, cote: 'droite' }, true);
-    });
-  }
-
-  // Mains de départ
+  // Chaque joueuse reçoit ses Plans de départ et en choisira un.
+  const pileDeparts = melanger(departs, rand);
   joueurs.forEach((_, i) => {
-    for (let k = 0; k < cfg.mainDepart; k++) piocher(state, i);
+    for (let k = 0; k < cfg.departProposes && pileDeparts.length; k++) {
+      state.departsProposes[i].push(pileDeparts.shift());
+    }
   });
 
-  journal(state, `Partie lancée — graine ${seed} · ${joueurs.length} joueur${joueurs.length > 1 ? 's' : ''}`);
+  journal(state, `Partie lancée — graine ${seed} · ${n} joueuse${n > 1 ? 's' : ''}`);
   return state;
 }
 
@@ -134,92 +137,211 @@ function journal(state, texte, joueur = null) {
   if (state.journal.length > 400) state.journal.shift();
 }
 
-export function piocher(state, p) {
-  if (!state.pioche.length) return null;
-  const c = state.pioche.shift();
-  state.mains[p].push(c);
-  return c;
+// --- Choix du Plan de départ ----------------------------------------------
+
+export function choixDepart(state, p) {
+  const out = [];
+  state.departsProposes[p].forEach((carte, i) => {
+    carte.faces.forEach((face, f) => {
+      out.push({ type: 'DEPART', carte, carteIdx: i, face: f, plan: plHalf({ ...face, depart: true }) });
+    });
+  });
+  return out;
 }
 
-// --- Coups légaux ----------------------------------------------------------
+export function poserDepart(state, p, choix) {
+  const plan = { ...choix.plan, carteId: `${choix.carte.id}f${choix.face}`, depart: true };
+  state.bancs[p] = { sequences: [[plan]], ouverture: false, fermeture: false };
+  state.departsProposes[p] = [];
+  journal(state, `${state.joueurs[p].nom} ouvre son banc avec le Plan de départ ${plan.num}`, p);
+}
 
-export function bancDe(state, p) {
-  return state.cfg.bancCommun ? state.bancCommun : state.bancs[p];
+export function departsFaits(state) {
+  return state.bancs.every((b) => b.sequences.length > 0);
+}
+
+// --- Phase A : le Dérushage ------------------------------------------------
+
+export function optionsDerushage(state) {
+  const cfg = state.cfg;
+  const out = [];
+  state.chutierPL.forEach((c, i) => out.push({ source: 'CHUTIER_PL', index: i, carte: c }));
+  state.chutierPMGP.forEach((c, i) => out.push({ source: 'CHUTIER_PMGP', index: i, carte: c }));
+  if (cfg.piocheDirectePMGP && state.piochePMGP.length) out.push({ source: 'PIOCHE_PMGP', carte: null });
+  if (cfg.piocheDirectePL && state.piochePL.length) out.push({ source: 'PIOCHE_PL', carte: null });
+  return out;
+}
+
+export function derusher(state, p, choix) {
+  let carte = null;
+  if (choix.source === 'CHUTIER_PL') {
+    carte = state.chutierPL.splice(choix.index, 1)[0];
+    if (state.piochePL.length) state.chutierPL.push(state.piochePL.shift());
+  } else if (choix.source === 'CHUTIER_PMGP') {
+    carte = state.chutierPMGP.splice(choix.index, 1)[0];
+    if (state.piochePMGP.length) state.chutierPMGP.push(state.piochePMGP.shift());
+  } else if (choix.source === 'PIOCHE_PMGP') {
+    carte = state.piochePMGP.shift();
+  } else if (choix.source === 'PIOCHE_PL') {
+    carte = state.piochePL.shift();
+  }
+  if (!carte) return null;
+  state.mains[p] = [carte];
+  const quoi = carte.type === 'PL' ? `Plan Large ${carte.num}` : `carte ${carte.gpNum} | ${carte.pmNum}`;
+  journal(state, `${state.joueurs[p].nom} dérushe une ${quoi}`, p);
+  return carte;
+}
+
+// --- Phase B : le Montage --------------------------------------------------
+
+function estPL(plan) { return plan.format === 'PL'; }
+
+/** Le Plan Large ne peut pas toucher un autre Plan Large. */
+function poseAutorisee(cfg, voisin, plan) {
+  if (cfg.plContigu) return true;
+  return !(voisin && estPL(voisin) && estPL(plan));
 }
 
 export function coupsPossibles(state, p) {
   const cfg = state.cfg;
-  const banc = bancDe(state, p);
+  const banc = state.bancs[p];
+  const carte = state.mains[p][0];
+  if (!carte) return [];
   const out = [];
-  const faces = cfg.retournement ? [false, true] : [false];
 
-  for (const carte of state.mains[p]) {
-    const facesCarte = carte.type === 'PL' ? [false] : faces;
-    for (const verso of facesCarte) {
-      if (banc.length === 0) { out.push({ carte, verso, cote: 'droite', pos: 0 }); continue; }
-      if (cfg.sensPose === 'droite') {
-        out.push({ carte, verso, cote: 'droite', pos: banc.length });
-      } else if (cfg.sensPose === 'bords') {
-        out.push({ carte, verso, cote: 'gauche', pos: 0 });
-        out.push({ carte, verso, cote: 'droite', pos: banc.length });
-      } else {
-        for (let i = 0; i <= banc.length; i++) out.push({ carte, verso, cote: 'libre', pos: i });
+  const bloqueGauche = cfg.generiqueBloque && banc.ouverture;
+  const bloqueDroite = cfg.generiqueBloque && banc.fermeture;
+
+  const variantes = carte.type === 'DOUBLE' ? ['GP', 'PM'] : ['PL'];
+
+  for (const format of variantes) {
+    const brut = carte.type === 'DOUBLE' ? moitiesDe(carte)[format] : plHalf(carte);
+
+    // Un Plan Large ouvre toujours une nouvelle séquence.
+    if (format === 'PL' && cfg.plNouvelleSequence) {
+      for (let i = 0; i <= banc.sequences.length; i++) {
+        if (i === 0 && bloqueGauche) continue;
+        if (i === banc.sequences.length && bloqueDroite) continue;
+        out.push({ carte, format, action: 'NOUVELLE_SEQUENCE', pos: i });
+      }
+      continue;
+    }
+
+    // Une moitié Générique se pose en tête ou en fin de montage.
+    if (brut.transition === 'OUVERTURE' || brut.transition === 'CREDITS' || brut.dual) {
+      const roles = brut.dual ? ['OUVERTURE', 'CREDITS'] : [brut.transition];
+      for (const role of roles) {
+        if (role === 'OUVERTURE' && !banc.ouverture && banc.sequences.length) {
+          out.push({ carte, format, action: 'GENERIQUE', role, pos: 0 });
+        }
+        if (role === 'CREDITS' && !banc.fermeture && banc.sequences.length) {
+          out.push({ carte, format, action: 'GENERIQUE', role, pos: banc.sequences.length - 1 });
+        }
+      }
+      if (!brut.dual) continue;
+    }
+
+    // Une Carte Raccord peut souder deux séquences voisines.
+    if (cfg.raccordConnecte && brut.transition === 'RACCORD') {
+      for (let i = 0; i < banc.sequences.length - 1; i++) {
+        const g = banc.sequences[i], d = banc.sequences[i + 1];
+        if (!poseAutorisee(cfg, g[g.length - 1], brut) || !poseAutorisee(cfg, d[0], brut)) continue;
+        out.push({ carte, format, action: 'SOUDER', pos: i });
       }
     }
+
+    // Pose ordinaire : au bout d'une séquence existante.
+    banc.sequences.forEach((seq, i) => {
+      const cotes = cfg.sensPose === 'droite' ? ['droite'] : ['gauche', 'droite'];
+      for (const cote of cotes) {
+        if (cote === 'gauche' && i === 0 && bloqueGauche) continue;
+        if (cote === 'droite' && i === banc.sequences.length - 1 && bloqueDroite) continue;
+        const voisin = cote === 'gauche' ? seq[0] : seq[seq.length - 1];
+        if (!poseAutorisee(cfg, voisin, brut)) continue;
+        out.push({ carte, format, action: 'ETENDRE', seq: i, cote });
+      }
+    });
+
+    // Si le banc est vide (variante sans Plan de départ), on ouvre une séquence.
+    if (!banc.sequences.length) out.push({ carte, format, action: 'NOUVELLE_SEQUENCE', pos: 0 });
   }
+
   return out;
 }
 
-// --- Pose ------------------------------------------------------------------
-
-export function poser(state, p, coup, silencieux = false) {
-  const { carte, verso } = coup;
-  const cfg = state.cfg;
-  const halves = halvesOf(carte, verso).map((h) => ({ ...h, carteId: carte.id, verso }));
-  const banc = bancDe(state, p);
-  const poses = cfg.bancCommun ? state.posesCommun : state.poses[p];
-
-  let pos = coup.pos;
-  if (coup.cote === 'gauche') pos = 0;
-  else if (coup.cote === 'droite') pos = banc.length;
-
-  banc.splice(pos, 0, ...halves);
-  poses.push({ carte, verso, pos, joueur: p, tour: state.tour });
-
-  // Retire la carte de la main
-  const k = state.mains[p].findIndex((c) => c.id === carte.id);
-  if (k >= 0) state.mains[p].splice(k, 1);
-
-  if (!silencieux) {
-    const nom = state.joueurs[p].nom;
-    const desc = carte.type === 'PL'
-      ? `Plan Large ${carte.num}`
-      : `${halves[0].format === 'GP' ? 'GP' : 'PM'} ${halves[0].num} | ${halves[1].format === 'GP' ? 'GP' : 'PM'} ${halves[1].num}`;
-    journal(state, `${nom} pose ${desc} ${coup.cote === 'gauche' ? 'à gauche' : coup.cote === 'droite' ? 'à droite' : `en position ${pos}`}`, p);
+/** Applique un coup sur un banc. Renvoie le banc modifié (muté). */
+export function appliquer(banc, coup, cfg) {
+  const plan = planPose(coup.carte, coup.format, coup.role);
+  switch (coup.action) {
+    case 'NOUVELLE_SEQUENCE':
+      banc.sequences.splice(coup.pos, 0, [plan]);
+      break;
+    case 'ETENDRE':
+      if (coup.cote === 'gauche') banc.sequences[coup.seq].unshift(plan);
+      else banc.sequences[coup.seq].push(plan);
+      break;
+    case 'SOUDER': {
+      const g = banc.sequences[coup.pos], d = banc.sequences[coup.pos + 1];
+      banc.sequences.splice(coup.pos, 2, g.concat([plan], d));
+      break;
+    }
+    case 'GENERIQUE':
+      if (coup.role === 'OUVERTURE') {
+        banc.sequences[0].unshift(plan);
+        banc.ouverture = true;
+      } else {
+        const last = banc.sequences[banc.sequences.length - 1];
+        last.push(plan);
+        banc.fermeture = true;
+      }
+      break;
+    default:
+      break;
   }
-  return halves;
+  return banc;
 }
 
-// --- Enchaînement des tours -----------------------------------------------
+export function poser(state, p, coup) {
+  appliquer(state.bancs[p], coup, state.cfg);
+  state.posees[p]++;
+  state.mains[p] = [];
+  const quoi = coup.format === 'PL' ? `Plan Large ${coup.carte.num}`
+    : `${coup.format === 'GP' ? 'Gros Plan' : 'Plan Moyen'} ${coup.format === 'GP' ? coup.carte.gpNum : coup.carte.pmNum}`;
+  const ou = {
+    NOUVELLE_SEQUENCE: 'en ouvrant une séquence',
+    ETENDRE: coup.cote === 'gauche' ? 'à gauche d’une séquence' : 'à droite d’une séquence',
+    SOUDER: 'en soudant deux séquences',
+    GENERIQUE: coup.role === 'OUVERTURE' ? 'en ouverture du film' : 'en fin de film',
+  }[coup.action];
+  journal(state, `${state.joueurs[p].nom} monte un ${quoi} ${ou}`, p);
+}
 
-export function finDeTour(state) {
-  const cfg = state.cfg;
-  const p = state.courant;
-  while (state.mains[p].length < cfg.mainMax && state.pioche.length) piocher(state, p);
+// --- Enchaînement ----------------------------------------------------------
 
-  const dernier = (state.courant + 1) % state.joueurs.length === state.premier;
-  state.courant = (state.courant + 1) % state.joueurs.length;
-  if (dernier) state.tour++;
+/** Passe à la joueuse suivante, change de phase et détecte la fin. */
+export function avancer(state) {
+  const n = state.joueurs.length;
+  state.courant = (state.courant + 1) % n;
 
-  const finTours = cfg.tours > 0 && state.tour > cfg.tours;
-  const finPioche = cfg.piocheFinPartie && !state.pioche.length
-    && state.joueurs.every((_, i) => state.mains[i].length === 0);
-  const plusDeCoup = state.joueurs.every((_, i) => state.mains[i].length === 0);
+  if (state.courant === state.premier) {
+    if (state.phase === 'DEPART') state.phase = 'DERUSHAGE';
+    else if (state.phase === 'DERUSHAGE') state.phase = 'MONTAGE';
+    else {
+      state.tour++;
+      state.phase = 'DERUSHAGE';
+      if (state.tour > state.cfg.tours) {
+        state.finie = true;
+        state.duree = Date.now() - state.debut;
+        journal(state, 'Fin du montage — décompte');
+      }
+    }
+  }
 
-  if (finTours || finPioche || plusDeCoup) {
+  // Plus rien à dérusher : la partie s'arrête aussi.
+  if (!state.finie && state.phase === 'DERUSHAGE' && !optionsDerushage(state).length) {
     state.finie = true;
     state.duree = Date.now() - state.debut;
-    journal(state, 'Fin de partie — décompte');
+    journal(state, 'Plus aucune carte disponible — fin du montage');
   }
   return state.finie;
 }
@@ -227,21 +349,12 @@ export function finDeTour(state) {
 // --- Scores ----------------------------------------------------------------
 
 export function scores(state) {
-  return state.joueurs.map((j, i) => {
-    const banc = bancDe(state, i);
-    if (state.cfg.bancCommun) {
-      // Banc commun : chaque joueur ne marque que les plans qu'il a posés.
-      const miens = new Set(state.posesCommun.filter((x) => x.joueur === i).map((x) => x.carte.id));
-      const vue = banc.map((h) => (miens.has(h.carteId) ? h : { ...h, obj: null }));
-      return compter(vue, state.cfg);
-    }
-    return compter(banc, state.cfg);
-  });
+  return state.bancs.map((b) => compter(b, state.cfg));
 }
 
 export function classement(state) {
   const sc = scores(state);
   return state.joueurs
     .map((j, i) => ({ joueur: j, idx: i, ...sc[i] }))
-    .sort((a, b) => b.total - a.total || b.nbRaccords - a.nbRaccords);
+    .sort((a, b) => b.total - a.total || b.cartesRaccord - a.cartesRaccord);
 }

@@ -4,18 +4,18 @@
 
 import { VERSION, BUILD_DATE, CHANGELOG } from './version.js';
 import {
-  ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, objLabel,
-  buildCartesDoubles, buildPlansLarges, halfInfo, plHalf,
+  ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, objLabel,
+  buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf,
 } from './data.js';
 import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, cloneConfig } from './config.js';
 import { elIcon } from './icons.js';
-import { renderCarte, renderMoitie, tc } from './cards.js';
+import { renderCarte, renderPlan, tc } from './cards.js';
 import {
-  creerPartie, coupsPossibles, poser, finDeTour, scores, classement,
-  bancDe, nouvelleGraine, construirePaquet, halvesOf,
+  creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
+  coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
 } from './engine.js';
-import { choisirCoup } from './ai.js';
-import { compter, raccorde, SOURCES_LABEL } from './scoring.js';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js';
+import { compter, SOURCES_LABEL } from './scoring.js';
 import { campagne } from './lab.js';
 
 const app = document.getElementById('app');
@@ -37,7 +37,7 @@ const store = {
   partie: null,
   labo: null,
   laboEnCours: false,
-  selection: null,
+  formatChoisi: null,   // 'GP' | 'PM' | 'PL' pendant la phase de montage
   undo: null,
 };
 
@@ -74,9 +74,7 @@ function topbar(actif) {
   </div>`;
 }
 
-function pied() {
-  return `<div class="pied">Version ${VERSION} — compilée le ${BUILD_DATE}</div>`;
-}
+const pied = () => `<div class="pied">Version ${VERSION} — compilée le ${BUILD_DATE}</div>`;
 
 function html(s) {
   app.innerHTML = s;
@@ -98,38 +96,37 @@ function vueAccueil() {
     <h1>${titre}</h1>
     <div class="credits">
       Un jeu édité par <b>Big Budi Games</b><br>
-      Placez vos Plans dans le banc de montage, raccordez, montez le film.
+      Vous êtes monteuse. Assemblez vos Cartes Plan dans votre banc de montage pour composer le meilleur film.
     </div>
   </div>
   <div class="wrap">
     <div class="grid2">
       <div>
         <div class="panneau">
-          <h2>Joueurs</h2>
+          <h2>Joueuses</h2>
           <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
             <div class="segments" id="seg-n">
               ${[1, 2, 3, 4].map((i) => `<button class="${i === n ? 'on' : ''}" data-n="${i}">${i}</button>`).join('')}
             </div>
-            <span class="aide">${n} joueur${n > 1 ? 's' : ''}</span>
+            <span class="aide">${n} joueuse${n > 1 ? 's' : ''}${n === 1 ? ' — solo, hors règles officielles' : ''}</span>
           </div>
-          <div id="liste-joueurs">
-            ${store.joueurs.map((j, i) => ligneJoueur(j, i)).join('')}
-          </div>
+          <div id="liste-joueurs">${store.joueurs.map((j, i) => ligneJoueur(j, i)).join('')}</div>
           <p class="aide" style="margin-bottom:0">
-            Chaque joueur monte son propre film sur son banc de montage. Les IA jouent seules —
-            la Novice prend le meilleur coup immédiat, l’Équilibrée compare tous ses placements,
-            la Stratège anticipe le coup suivant et garde ses bouts de banc ouverts.
+            Chacune monte son film sur son propre banc. Les IA jouent seules — la Novice regarde le coup
+            immédiat, l’Équilibrée compare tous ses placements, la Stratège anticipe ce que les chutiers
+            lui offriront au tour suivant.
           </p>
         </div>
 
         <div class="panneau">
           <h2>Options de partie</h2>
           <div class="chips">
-            ${chip('premierJoueurAleatoire', '1er joueur aléatoire')}
-            ${chip('retournement', 'Retournement des cartes')}
-            ${chip('planDepart', 'Plan de départ')}
-            ${chip('planLargeEnMain', 'Plans Larges dans la pioche')}
-            ${chip('bancCommun', 'Banc de montage commun')}
+            ${chip('premierJoueurAleatoire', '1re joueuse aléatoire')}
+            ${chip('piocheDirectePMGP', 'Pioche PM / GP au sommet')}
+            ${chip('piocheDirectePL', 'Pioche Plans Larges au sommet')}
+            ${chip('raccordConnecte', 'Les Raccords soudent les séquences')}
+            ${chip('generiqueBloque', 'Le Générique ferme le montage')}
+            ${chip('plContigu', 'Deux Plans Larges peuvent se toucher')}
           </div>
           <div class="champ" style="margin-top:14px">
             <label>Graine de partie <small>vide = tirage aléatoire</small></label>
@@ -145,42 +142,34 @@ function vueAccueil() {
         <div class="panneau">
           <h2>Réglages rapides</h2>
           ${[
-            ['mainMax', 'Cartes en main', 1, 10],
-            ['tours', 'Nombre de tours', 0, 30],
-            ['raccordMin', 'Éléments pour un raccord', 1, 4],
-            ['chronoBonus', 'Bonus de chronologie', 0, 10],
+            ['tours', 'Plans à poser', 1, 30],
+            ['chutierPMGP', 'Chutier PM / GP', 0, 8],
+            ['chutierPL', 'Chutier Plans Larges', 0, 8],
+            ['departProposes', 'Plans de départ proposés', 1, 4],
           ].map(([k, l, min, max]) => `
-            <div class="champ">
-              <label>${l}</label>
-              <input type="number" data-cfg="${k}" value="${store.cfg[k]}" min="${min}" max="${max}">
-            </div>`).join('')}
+            <div class="champ"><label>${l}</label>
+              <input type="number" data-cfg="${k}" value="${store.cfg[k]}" min="${min}" max="${max}"></div>`).join('')}
           <div class="champ">
-            <label>Sens de pose</label>
-            <select data-cfg="sensPose">
-              <option value="bords" ${store.cfg.sensPose === 'bords' ? 'selected' : ''}>Aux deux bouts</option>
-              <option value="droite" ${store.cfg.sensPose === 'droite' ? 'selected' : ''}>À droite seulement</option>
-              <option value="libre" ${store.cfg.sensPose === 'libre' ? 'selected' : ''}>N’importe où</option>
+            <label>Portée des bandeaux <small>hors Raccord et Générique</small></label>
+            <select data-cfg="porteeParDefaut">
+              <option value="MONTAGE" ${store.cfg.porteeParDefaut === 'MONTAGE' ? 'selected' : ''}>Le montage entier</option>
+              <option value="SEQUENCE" ${store.cfg.porteeParDefaut === 'SEQUENCE' ? 'selected' : ''}>La séquence porteuse</option>
             </select>
           </div>
           <p class="aide" style="margin-top:14px">
-            Toutes les autres variables — valeur de chaque objectif, composition du paquet,
-            bonus de film complet — sont dans <b>Variables</b>.
+            Le reste — valeur de chaque objectif, composition du paquet, variantes — est dans <b>Variables</b>.
           </p>
         </div>
 
         <div class="panneau">
-          <h2>Les six éléments</h2>
+          <h2>Personnages et éléments</h2>
           <div class="legende-el">
             ${ELEMENT_IDS.map((e) => `<div class="e">${elIcon(e, 30)}<span>${ELEMENTS[e].label}</span></div>`).join('')}
           </div>
-          <p class="aide" style="margin-bottom:0">
-            Deux plans voisins qui partagent au moins ${store.cfg.raccordMin} élément${store.cfg.raccordMin > 1 ? 's' : ''}
-            forment un <b>raccord</b>. C’est le cœur du montage.
-          </p>
         </div>
 
         <div class="panneau">
-          <h2>Le paquet</h2>
+          <h2>Le matériel</h2>
           ${resumePaquet()}
         </div>
       </div>
@@ -198,7 +187,7 @@ function vueAccueil() {
     const cible = +b.dataset.n;
     while (store.joueurs.length < cible) {
       const i = store.joueurs.length;
-      store.joueurs.push({ nom: ['Val', 'Justine', 'Claude', 'Marie-Laure'][i] || `Joueur ${i + 1}`, couleur: COULEURS_JOUEURS[i], type: 'EQUILIBRE' });
+      store.joueurs.push({ nom: ['Val', 'Justine', 'Claude', 'Marie-Laure'][i] || `Joueuse ${i + 1}`, couleur: COULEURS_JOUEURS[i], type: 'EQUILIBRE' });
     }
     store.joueurs.length = cible;
     sauverJoueurs(); vueAccueil();
@@ -207,10 +196,7 @@ function vueAccueil() {
   brancherJoueurs();
   brancherChips();
   brancherChamps(vueAccueil);
-
-  app.querySelector('#graine').addEventListener('change', (e) => {
-    store.cfg.graine = e.target.value.trim(); sauverCfg();
-  });
+  app.querySelector('#graine').addEventListener('change', (e) => { store.cfg.graine = e.target.value.trim(); sauverCfg(); });
   app.querySelector('#go').addEventListener('click', lancerPartie);
 }
 
@@ -221,7 +207,7 @@ function ligneJoueur(j, i) {
       ${COULEURS_JOUEURS.map((c) => `<div class="puce ${c === j.couleur ? 'on' : ''}" style="background:${c}" data-couleur="${c}"></div>`).join('')}
     </div>
     <select data-champ="type">
-      <option value="HUMAIN" ${j.type === 'HUMAIN' ? 'selected' : ''}>Humain</option>
+      <option value="HUMAIN" ${j.type === 'HUMAIN' ? 'selected' : ''}>Humaine</option>
       ${Object.values(PROFILS_IA).map((p) => `<option value="${p.id}" ${j.type === p.id ? 'selected' : ''}>${p.label}</option>`).join('')}
     </select>
   </div>`;
@@ -231,8 +217,7 @@ function brancherJoueurs() {
   app.querySelectorAll('.ligne-joueur').forEach((row) => {
     const i = +row.dataset.i;
     row.querySelectorAll('[data-champ]').forEach((el) => el.addEventListener('change', () => {
-      store.joueurs[i][el.dataset.champ] = el.value;
-      sauverJoueurs();
+      store.joueurs[i][el.dataset.champ] = el.value; sauverJoueurs();
     }));
     row.querySelectorAll('[data-couleur]').forEach((p) => p.addEventListener('click', () => {
       const c = p.dataset.couleur;
@@ -251,8 +236,7 @@ function chip(k, label) {
 
 function brancherChips(apres) {
   app.querySelectorAll('[data-chip]').forEach((el) => el.addEventListener('change', () => {
-    store.cfg[el.dataset.chip] = el.checked;
-    sauverCfg();
+    store.cfg[el.dataset.chip] = el.checked; sauverCfg();
     el.closest('.chip').classList.toggle('on', el.checked);
     if (apres) apres();
   }));
@@ -271,12 +255,10 @@ function brancherChamps(apres) {
 
 function resumePaquet() {
   const { doubles, larges } = construirePaquet(store.cfg);
-  const departs = larges.filter((c) => c.depart).length;
   return `<table class="tbl">
-    <tr><td>Cartes doubles (Gros Plan | Plan Moyen)</td><td class="num">${doubles.length}</td></tr>
-    <tr><td>Plans Larges</td><td class="num">${larges.length - departs}</td></tr>
-    <tr><td>Plans de départ</td><td class="num">${departs}</td></tr>
-    <tr><td><b>Total en pioche</b></td><td class="num"><b>${doubles.length + (store.cfg.planLargeEnMain ? larges.length - departs : 0)}</b></td></tr>
+    <tr><td>Cartes Plan Moyen / Gros Plan</td><td class="num">${doubles.length}</td></tr>
+    <tr><td>Cartes Plan Large</td><td class="num">${larges.length}</td></tr>
+    <tr><td>Cartes Plan de départ</td><td class="num">8 <span class="aide">(2 versions)</span></td></tr>
   </table>`;
 }
 
@@ -286,10 +268,16 @@ function resumePaquet() {
 
 function lancerPartie() {
   store.partie = creerPartie(store.joueurs.map((j) => ({ ...j })), cloneConfig(store.cfg), store.cfg.graine || nouvelleGraine());
-  store.selection = null;
+  store.formatChoisi = null;
   store.undo = null;
   location.hash = '#/partie';
 }
+
+const PHASES = {
+  DEPART: 'Mise en place — choix du Plan de départ',
+  DERUSHAGE: 'Phase A — Dérushage',
+  MONTAGE: 'Phase B — Montage',
+};
 
 function vuePartie() {
   const st = store.partie;
@@ -298,19 +286,22 @@ function vuePartie() {
 
   const p = st.courant;
   const j = st.joueurs[p];
-  const humain = j.type === 'HUMAIN';
+  const humaine = j.type === 'HUMAIN';
   const sc = scores(st);
+
+  let zone;
+  if (!humaine) zone = '<div class="vide">L’IA joue…</div>';
+  else if (st.phase === 'DEPART') zone = zoneDepart(st, p);
+  else if (st.phase === 'DERUSHAGE') zone = zoneDerushage(st);
+  else zone = zoneMontage(st, p);
 
   html(`${topbar('#/partie')}
   <div class="wrap large">
     <div class="bandeau-tour">
-      <span>Tour <b>${st.tour}${st.cfg.tours ? ` / ${st.cfg.tours}` : ''}</b></span>
-      <span>·</span>
-      <span>Graine <b>${st.seed}</b></span>
-      <span>·</span>
-      <span>Pioche <b>${st.pioche.length}</b></span>
-      <span>·</span>
-      <span style="color:${j.couleur}"><b>${j.nom}</b> ${humain ? '— à toi de jouer' : '— réfléchit…'}</span>
+      <span>Tour <b>${Math.min(st.tour, st.cfg.tours)} / ${st.cfg.tours}</b></span><span>·</span>
+      <span><b>${PHASES[st.phase]}</b></span><span>·</span>
+      <span>Graine <b>${st.seed}</b></span><span>·</span>
+      <span style="color:${j.couleur}"><b>${j.nom}</b>${humaine ? '' : ' réfléchit…'}</span>
     </div>
 
     <div class="plateau">
@@ -324,9 +315,9 @@ function vuePartie() {
               <span class="pt">${sc[i].total}</span>
             </div>
             <div class="aide" style="font-size:.78rem;margin-top:4px">
-              ${sc[i].longueur} plan${sc[i].longueur > 1 ? 's' : ''} · ${sc[i].nbRaccords} raccord${sc[i].nbRaccords > 1 ? 's' : ''} · ${st.mains[i].length} en main
+              ${sc[i].plans} plan${sc[i].plans > 1 ? 's' : ''} · ${sc[i].sequences} séquence${sc[i].sequences > 1 ? 's' : ''} · ${sc[i].cartesRaccord} raccord${sc[i].cartesRaccord > 1 ? 's' : ''}
             </div>
-            ${i === p ? '<span class="badge-tour">À lui de jouer</span>' : ''}
+            ${i === p ? '<span class="badge-tour">À elle de jouer</span>' : ''}
           </div>`).join('')}
 
         <div class="panneau" style="padding:14px 16px">
@@ -338,24 +329,13 @@ function vuePartie() {
       </div>
 
       <div>
-        ${st.cfg.bancCommun ? bancBloc(st, 0, 'Banc de montage commun') : st.joueurs.map((jj, i) => bancBloc(st, i, `Banc de ${jj.nom}`)).join('')}
-
-        <div class="panneau">
-          <h2>Main de ${j.nom}</h2>
-          ${humain ? mainBloc(st, p) : '<div class="vide">L’IA joue…</div>'}
-          ${humain ? barreActions(st) : ''}
-        </div>
+        ${st.joueurs.map((jj, i) => bancBloc(st, i, `Banc de ${jj.nom}`, i === p && humaine && st.phase === 'MONTAGE')).join('')}
+        <div class="panneau"><h2>${PHASES[st.phase]}</h2>${zone}</div>
       </div>
 
       <div>
-        <div class="panneau">
-          <h2>Score de ${j.nom}</h2>
-          ${tableauScore(sc[p])}
-        </div>
-        <div class="panneau">
-          <h2>Objectifs sur le banc</h2>
-          ${listeObjectifs(sc[p])}
-        </div>
+        <div class="panneau"><h2>Score de ${j.nom}</h2>${tableauScore(sc[p])}</div>
+        <div class="panneau"><h2>Bandeaux du banc</h2>${listeObjectifs(sc[p])}</div>
         <div class="barre-outils">
           <button class="pill" id="undo" ${store.undo ? '' : 'disabled'}>↩ Annuler</button>
           <button class="pill" id="quitter">Quitter</button>
@@ -365,44 +345,42 @@ function vuePartie() {
   </div>
   ${pied()}`);
 
-  brancherPartie(st, humain);
-
-  if (!humain) {
-    setTimeout(() => jouerIA(), Math.max(120, st.cfg.vitesseIA || 400));
-  }
+  brancherPartie(st, humaine);
+  if (!humaine) setTimeout(() => jouerIA(), Math.max(80, st.cfg.vitesseIA || 400));
 }
 
-/** Les plans d'un banc, avec la marque verte aux jonctions qui raccordent. */
-function bancPlans(banc, cfg, iconSize = 16) {
-  return banc.map((h, k) => {
-    const suite = k < banc.length - 1
-      ? (raccorde(h, banc[k + 1], cfg) ? '<div class="raccord-marque" title="Raccord"></div>' : '<div class="coupe-marque"></div>')
-      : '';
-    return renderMoitie(h, { iconSize }) + suite;
-  }).join('');
-}
+// --- Le banc ---------------------------------------------------------------
 
-function bancBloc(st, i, titre) {
-  const banc = bancDe(st, i);
-  const cfg = st.cfg;
-  const monTour = st.courant === i || cfg.bancCommun;
-  const sel = store.selection;
-  const peutPoser = monTour && sel && st.joueurs[st.courant].type === 'HUMAIN';
+function bancBloc(st, i, titre, interactif) {
+  const banc = st.bancs[i];
+  const coups = interactif && store.formatChoisi
+    ? coupsPossibles(st, i).filter((c) => c.format === store.formatChoisi)
+    : [];
+
+  const fente = (liste) => {
+    if (!liste.length) return '<div class="ecart"></div>';
+    return `<div class="ecart actif">${liste.map((c) => `
+      <button class="fente-btn" data-coup="${encodeURIComponent(JSON.stringify(sansCarte(c)))}">${etiquetteCoup(c)}</button>`).join('')}</div>`;
+  };
 
   const morceaux = [];
-  if (peutPoser && (cfg.sensPose === 'bords' || cfg.sensPose === 'libre') && banc.length) {
-    morceaux.push(`<div class="fente" data-pos="0"></div>`);
+  if (!banc.sequences.length) {
+    morceaux.push('<div class="vide" style="color:#8a8496">Banc vide</div>');
   }
-  banc.forEach((h, k) => {
-    morceaux.push(renderMoitie(h, { iconSize: 18 }));
-    if (k < banc.length - 1) {
-      const r = raccorde(h, banc[k + 1], cfg);
-      morceaux.push(r ? '<div class="raccord-marque" title="Raccord"></div>' : '<div class="coupe-marque"></div>');
-      if (peutPoser && cfg.sensPose === 'libre') morceaux.push(`<div class="fente" data-pos="${k + 1}"></div>`);
-    }
+  banc.sequences.forEach((seq, si) => {
+    // Écart avant cette séquence : nouvelle séquence, soudure, générique.
+    morceaux.push(fente(coups.filter((c) => (c.action === 'NOUVELLE_SEQUENCE' && c.pos === si)
+      || (c.action === 'SOUDER' && c.pos === si - 1)
+      || (c.action === 'GENERIQUE' && c.role === 'OUVERTURE' && si === 0))));
+    morceaux.push(`<div class="sequence">`);
+    morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche')));
+    seq.forEach((plan) => morceaux.push(renderPlan(plan)));
+    morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'droite')));
+    morceaux.push('</div>');
   });
-  if (peutPoser) morceaux.push(`<div class="fente" data-pos="${banc.length}"></div>`);
-  if (!banc.length && !peutPoser) morceaux.push('<div class="vide" style="color:#8a8496">Banc vide</div>');
+  const n = banc.sequences.length;
+  morceaux.push(fente(coups.filter((c) => (c.action === 'NOUVELLE_SEQUENCE' && c.pos === n)
+    || (c.action === 'GENERIQUE' && c.role === 'CREDITS'))));
 
   return `<div class="panneau">
     <h2>${titre}</h2>
@@ -410,97 +388,150 @@ function bancBloc(st, i, titre) {
   </div>`;
 }
 
-function mainBloc(st, p) {
-  const sel = store.selection;
-  return `<div class="main-cartes">
-    ${st.mains[p].map((c) => {
-      const verso = sel && sel.carteId === c.id ? sel.verso : false;
-      return renderCarte(c, verso, {
-        small: true, clickable: true,
-        selected: sel && sel.carteId === c.id,
-      });
-    }).join('') || '<div class="vide">Plus de cartes en main</div>'}
+function sansCarte(c) {
+  const { carte, ...reste } = c;
+  return reste;
+}
+
+function etiquetteCoup(c) {
+  switch (c.action) {
+    case 'NOUVELLE_SEQUENCE': return '＋ séquence';
+    case 'SOUDER': return '⛓ souder';
+    case 'GENERIQUE': return c.role === 'OUVERTURE' ? '▶ ouverture' : '■ fin';
+    default: return c.cote === 'gauche' ? '◀' : '▶';
+  }
+}
+
+// --- Phase de mise en place -----------------------------------------------
+
+function zoneDepart(st, p) {
+  const options = choixDepart(st, p);
+  return `<p class="aide" style="margin-bottom:14px">Deux versions te sont proposées, recto et verso.
+  Choisis le plan qui ouvrira ton banc — l’autre carte est défaussée.</p>
+  <div class="main-cartes">
+    ${options.map((o, k) => `<div class="item">
+      <div class="carte solo clickable" data-depart="${k}">${renderPlan(o.plan)}</div>
+      <div class="lg">Version ${o.carte.version} — face ${o.face + 1}</div>
+    </div>`).join('')}
   </div>`;
 }
 
-function barreActions(st) {
-  const sel = store.selection;
-  const cfg = st.cfg;
-  if (!sel) return `<p class="aide" style="text-align:center;margin:10px 0 0">Choisis une carte, puis clique sur l’emplacement voulu dans ton banc.</p>`;
-  const carte = st.mains[st.courant].find((c) => c.id === sel.carteId);
-  const peutRetourner = cfg.retournement && carte && carte.type !== 'PL';
-  return `<div class="barre-outils" style="justify-content:center;margin-top:12px">
-    ${peutRetourner ? `<button class="pill" id="flip">⟲ Retourner la carte</button>` : ''}
-    ${cfg.sensPose !== 'libre' ? `
-      <button class="pill" data-poser="gauche" ${cfg.sensPose === 'droite' ? 'disabled' : ''}>◀ Poser à gauche</button>
-      <button class="pill" data-poser="droite">Poser à droite ▶</button>` : ''}
-    <button class="pill" id="deselect">Annuler la sélection</button>
-  </div>`;
+// --- Phase A ---------------------------------------------------------------
+
+function zoneDerushage(st) {
+  const options = optionsDerushage(st);
+  const bloc = (titre, liste, vide) => `
+    <h3>${titre}</h3>
+    <div class="main-cartes">${liste.length ? liste : `<div class="aide">${vide}</div>`}</div>`;
+
+  const chutierPL = options.filter((o) => o.source === 'CHUTIER_PL')
+    .map((o) => `<div class="item"><div data-derush="${enc(o)}">${renderCarte(o.carte, false, { small: true, clickable: true })}</div></div>`).join('');
+  const chutierPM = options.filter((o) => o.source === 'CHUTIER_PMGP')
+    .map((o) => `<div class="item"><div data-derush="${enc(o)}">${renderCarte(o.carte, false, { small: true, clickable: true })}</div></div>`).join('');
+  const pioches = options.filter((o) => !o.carte)
+    .map((o) => `<button class="dos-pioche" data-derush="${enc(o)}">
+      <span>Pioche</span><b>${o.source === 'PIOCHE_PL' ? 'Plans Larges' : 'PM / GP'}</b>
+      <span>${o.source === 'PIOCHE_PL' ? st.piochePL.length : st.piochePMGP.length} cartes</span></button>`).join('');
+
+  return `<p class="aide">Pioche une carte : dans un des deux chutiers, ou à l’aveugle sur une pioche.</p>
+    ${bloc('Chutier Plans Larges', chutierPL, 'Chutier épuisé')}
+    ${bloc('Chutier Plans Moyens / Gros Plans', chutierPM, 'Chutier épuisé')}
+    ${pioches ? `<h3>Pioches</h3><div class="main-cartes">${pioches}</div>` : ''}`;
 }
+
+const enc = (o) => encodeURIComponent(JSON.stringify({ source: o.source, index: o.index }));
+
+// --- Phase B ---------------------------------------------------------------
+
+function zoneMontage(st, p) {
+  const carte = st.mains[p][0];
+  if (!carte) return '<div class="vide">Aucune carte dérushée.</div>';
+
+  const options = carte.type === 'DOUBLE'
+    ? [['GP', moitiesDe(carte).GP], ['PM', moitiesDe(carte).PM]]
+    : [['PL', plHalf(carte)]];
+
+  if (!store.formatChoisi && options.length === 1) store.formatChoisi = options[0][0];
+
+  return `<p class="aide" style="margin-bottom:14px">
+    ${carte.type === 'DOUBLE'
+      ? 'La carte se glisse sous les précédentes : un seul de ses deux plans restera visible. Choisis lequel, puis son emplacement dans ton banc.'
+      : 'Un Plan Large ouvre toujours une nouvelle séquence, détachée du reste du montage.'}
+  </p>
+  <div class="main-cartes">
+    ${options.map(([f, plan]) => `
+      <div class="item">
+        <div class="carte solo clickable ${store.formatChoisi === f ? "sel" : ""}" data-format="${f}">${renderPlan(plan)}</div>
+        <div class="lg">${FORMATS[f].label} n°${plan.num}${plan.obj ? ` · ${objLabel(plan.obj)}` : ' · sans bandeau'}</div>
+      </div>`).join('')}
+  </div>
+  ${store.formatChoisi ? '<p class="aide" style="text-align:center;margin-top:12px">Clique sur un emplacement de ton banc.</p>' : ''}`;
+}
+
+// --- Panneaux de score -----------------------------------------------------
 
 function tableauScore(s) {
   const lignes = Object.entries(s.detail).filter(([, v]) => v !== 0);
   return `<table class="tableau-score">
-    ${lignes.map(([k, v]) => `<tr><td>${SOURCES_LABEL[k]}</td><td>${v > 0 ? '+' : ''}${v}</td></tr>`).join('') || '<tr><td class="aide">Aucun point pour l’instant</td><td>0</td></tr>'}
+    ${lignes.map(([k, v]) => `<tr><td>${SOURCES_LABEL[k]}</td><td>${v > 0 ? '+' : ''}${v}</td></tr>`).join('')
+      || '<tr><td class="aide">Aucun point pour l’instant</td><td>0</td></tr>'}
     <tr class="total"><td>Total</td><td>${s.total}</td></tr>
   </table>`;
 }
 
 function listeObjectifs(s) {
-  if (!s.lignes.length) return '<p class="aide">Aucun bandeau d’objectif posé.</p>';
+  if (!s.lignes.length) return '<p class="aide">Aucun bandeau visible sur le banc.</p>';
   return `<table class="tableau-score">
     ${s.lignes.map((l) => `<tr><td>${objLabel(l.obj)}</td><td>${l.pts}</td></tr>`).join('')}
   </table>`;
 }
 
-function brancherPartie(st, humain) {
+// --- Interactions ----------------------------------------------------------
+
+function brancherPartie(st, humaine) {
   const q = (s) => app.querySelector(s);
 
-  app.querySelectorAll('.carte.clickable').forEach((el) => el.addEventListener('click', () => {
-    const id = el.dataset.carte;
-    if (store.selection && store.selection.carteId === id) store.selection = null;
-    else store.selection = { carteId: id, verso: false };
+  app.querySelectorAll('[data-depart]').forEach((el) => el.addEventListener('click', () => {
+    store.undo = JSON.stringify(st);
+    poserDepart(st, st.courant, choixDepart(st, st.courant)[+el.dataset.depart]);
+    if (avancer(st)) return terminer();
     vuePartie();
   }));
 
-  app.querySelectorAll('.fente').forEach((el) => el.addEventListener('click', () => {
-    const pos = +el.dataset.pos;
-    jouerHumain({ pos, cote: 'libre' });
+  app.querySelectorAll('[data-derush]').forEach((el) => el.addEventListener('click', () => {
+    const choix = JSON.parse(decodeURIComponent(el.dataset.derush));
+    store.undo = JSON.stringify(st);
+    derusher(st, st.courant, choix);
+    store.formatChoisi = null;
+    if (avancer(st)) return terminer();
+    vuePartie();
   }));
 
-  app.querySelectorAll('[data-poser]').forEach((el) => el.addEventListener('click', () => {
-    jouerHumain({ cote: el.dataset.poser, pos: 0 });
-  }));
-
-  if (q('#flip')) q('#flip').addEventListener('click', () => {
-    store.selection.verso = !store.selection.verso; vuePartie();
+  app.querySelectorAll('[data-format]').forEach((el) => {
+    if (!el.classList.contains('carte')) return;
+    el.addEventListener('click', () => { store.formatChoisi = el.dataset.format; vuePartie(); });
   });
-  if (q('#deselect')) q('#deselect').addEventListener('click', () => { store.selection = null; vuePartie(); });
+
+  app.querySelectorAll('[data-coup]').forEach((el) => el.addEventListener('click', () => {
+    const partiel = JSON.parse(decodeURIComponent(el.dataset.coup));
+    const carte = st.mains[st.courant][0];
+    store.undo = JSON.stringify(st);
+    poser(st, st.courant, { ...partiel, carte });
+    store.formatChoisi = null;
+    if (avancer(st)) return terminer();
+    vuePartie();
+  }));
+
   if (q('#undo')) q('#undo').addEventListener('click', () => {
-    if (store.undo) { store.partie = JSON.parse(store.undo); store.undo = null; store.selection = null; vuePartie(); }
+    if (store.undo) { store.partie = JSON.parse(store.undo); store.undo = null; store.formatChoisi = null; vuePartie(); }
   });
   if (q('#quitter')) q('#quitter').addEventListener('click', () => {
     if (confirm('Quitter la partie en cours ?')) { store.partie = null; location.hash = '#/'; }
   });
 
-  if (humain) {
-    document.onkeydown = (e) => {
-      if (e.key === 'r' || e.key === 'R') { if (store.selection) { store.selection.verso = !store.selection.verso; vuePartie(); } }
-      if (e.key === 'Escape') { store.selection = null; vuePartie(); }
-    };
-  } else document.onkeydown = null;
-}
-
-function jouerHumain(cible) {
-  const st = store.partie;
-  if (!store.selection) return;
-  const carte = st.mains[st.courant].find((c) => c.id === store.selection.carteId);
-  if (!carte) return;
-  store.undo = JSON.stringify(st);
-  poser(st, st.courant, { carte, verso: store.selection.verso, cote: cible.cote, pos: cible.pos });
-  store.selection = null;
-  if (finDeTour(st)) return terminer();
-  vuePartie();
+  document.onkeydown = humaine ? (e) => {
+    if (e.key === 'Escape') { store.formatChoisi = null; vuePartie(); }
+  } : null;
 }
 
 function jouerIA() {
@@ -508,12 +539,17 @@ function jouerIA() {
   if (!st || st.finie) return;
   const p = st.courant;
   if (st.joueurs[p].type === 'HUMAIN') return;
-  const coups = coupsPossibles(st, p);
-  if (coups.length) {
-    const coup = choisirCoup(st, p) || coups[0];
-    poser(st, p, coup);
+
+  if (st.phase === 'DEPART') {
+    const d = choisirDepart(st, p); if (d) poserDepart(st, p, d);
+  } else if (st.phase === 'DERUSHAGE') {
+    const o = choisirDerushage(st, p) || optionsDerushage(st)[0]; if (o) derusher(st, p, o);
+  } else {
+    const coups = coupsPossibles(st, p);
+    if (coups.length) poser(st, p, choisirCoup(st, p) || coups[0]);
+    else st.mains[p] = [];
   }
-  if (finDeTour(st)) return terminer();
+  if (avancer(st)) return terminer();
   vuePartie();
 }
 
@@ -524,9 +560,8 @@ function terminer() {
     date: new Date().toISOString(),
     seed: st.seed,
     joueurs: st.joueurs.map((j) => ({ nom: j.nom, type: j.type, couleur: j.couleur })),
-    scores: cl.map((c) => ({ nom: c.joueur.nom, total: c.total, raccords: c.nbRaccords, longueur: c.longueur })),
-    tours: st.tour - 1,
-    cfg: { mainMax: st.cfg.mainMax, tours: st.cfg.tours, raccordMin: st.cfg.raccordMin, sensPose: st.cfg.sensPose },
+    scores: cl.map((c) => ({ nom: c.joueur.nom, total: c.total, plans: c.plans, sequences: c.sequences })),
+    tours: Math.min(st.tour, st.cfg.tours),
   });
   store.historique = store.historique.slice(0, 60);
   LS.set('historique', store.historique);
@@ -537,19 +572,19 @@ function vueFin() {
   const st = store.partie;
   const cl = classement(st);
   html(`${topbar('#/partie')}
-  <div class="wrap">
-    <div class="hero"><h1 style="font-size:2.2rem;letter-spacing:.12em">FIN DU MONTAGE</h1>
+  <div class="wrap large">
+    <div class="hero"><h1 style="font-size:2.1rem;letter-spacing:.12em">FIN DU MONTAGE</h1>
       <div class="credits">${cl[0].joueur.nom} l’emporte avec <b>${cl[0].total} points</b>.</div>
     </div>
     <div class="panneau">
       <h2>Classement</h2>
       <table class="tbl">
-        <tr><th>#</th><th>Joueur</th><th>Profil</th><th class="num">Plans</th><th class="num">Raccords</th><th class="num">Score</th></tr>
+        <tr><th>#</th><th>Joueuse</th><th>Profil</th><th class="num">Plans</th><th class="num">Séquences</th><th class="num">Raccords</th><th class="num">Score</th></tr>
         ${cl.map((c, i) => `<tr>
           <td>${i + 1}</td>
           <td><span class="point-couleur" style="background:${c.joueur.couleur};display:inline-block;margin-right:6px"></span>${c.joueur.nom}</td>
-          <td>${c.joueur.type === 'HUMAIN' ? 'Humain' : PROFILS_IA[c.joueur.type].label}</td>
-          <td class="num">${c.longueur}</td><td class="num">${c.nbRaccords}</td>
+          <td>${c.joueur.type === 'HUMAIN' ? 'Humaine' : PROFILS_IA[c.joueur.type].label}</td>
+          <td class="num">${c.plans}</td><td class="num">${c.sequences}</td><td class="num">${c.cartesRaccord}</td>
           <td class="num"><b>${c.total}</b></td>
         </tr>`).join('')}
       </table>
@@ -558,10 +593,11 @@ function vueFin() {
       ${cl.map((c) => `<div class="panneau"><h2>Détail — ${c.joueur.nom}</h2>${tableauScore(c)}</div>`).join('')}
     </div>
     <div class="panneau">
-      <h2>Les bancs</h2>
-      ${st.cfg.bancCommun
-        ? `<div class="banc">${bancPlans(st.bancCommun, st.cfg)}</div>`
-        : st.joueurs.map((j, i) => `<h3>${j.nom}</h3><div class="banc" style="margin-bottom:12px">${bancPlans(st.bancs[i], st.cfg)}</div>`).join('')}
+      <h2>Les bancs de montage</h2>
+      ${st.joueurs.map((j, i) => `<h3>${j.nom}</h3>
+        <div class="banc" style="margin-bottom:12px">
+          ${st.bancs[i].sequences.map((seq) => `<div class="sequence">${seq.map((pl) => renderPlan(pl)).join('')}</div>`).join('<div class="ecart"></div>')}
+        </div>`).join('')}
     </div>
     <div class="rangee-boutons">
       <button class="cta" style="max-width:320px" id="rejouer">Rejouer</button>
@@ -584,33 +620,33 @@ function vueMateriel() {
   const larges = buildPlansLarges();
 
   let contenu = '';
-  if (materielFiltre === 'DOUBLE') {
+  if (materielFiltre === 'DOUBLE' || materielFiltre === 'VERSO') {
+    const verso = materielFiltre === 'VERSO';
     contenu = `<div class="galerie">${doubles.map((c, i) => `
-      <div class="item">
-        ${renderCarte(c, false, { small: true })}
-        <div class="lg">Carte ${i + 1} · GP ${c.gpNum} | PM ${c.pmNum}</div>
-      </div>`).join('')}</div>`;
-  } else if (materielFiltre === 'VERSO') {
-    contenu = `<div class="galerie">${doubles.map((c, i) => `
-      <div class="item">
-        ${renderCarte(c, true, { small: true })}
-        <div class="lg">Carte ${i + 1} — verso</div>
+      <div class="item">${renderCarte(c, verso, { small: true })}
+        <div class="lg">Carte ${i + 1} · GP ${c.gpNum} | PM ${c.pmNum}${verso ? ' — verso' : ''}</div>
       </div>`).join('')}</div>`;
   } else if (materielFiltre === 'PL') {
     contenu = `<div class="galerie">${larges.map((c) => `
-      <div class="item">
-        ${renderCarte(c, false, { small: true })}
-        <div class="lg">Plan Large ${c.num}${c.depart ? ' · départ' : ''}${c.brouillon ? ' · à compléter' : ''}</div>
+      <div class="item">${renderCarte(c, false, { small: true })}
+        <div class="lg">Plan Large ${c.num}${c.brouillon ? ' · à compléter' : ''}</div>
       </div>`).join('')}</div>`;
+  } else if (materielFiltre === 'DEPART') {
+    contenu = `<div class="galerie">${DEPARTS.flatMap((d) => d.faces.map((f, k) => `
+      <div class="item">
+        <div class="carte solo">${renderPlan(plHalf({ ...f, depart: true }))}</div>
+        <div class="lg">Version ${d.type} — face ${k + 1}</div>
+      </div>`)).join('')}</div>
+      <p class="aide" style="margin-top:14px">8 cartes dans la boîte, en 2 versions recto-verso.
+      L’appariement des faces est une hypothèse tirée de l’ordre du PDF.</p>`;
   } else {
     contenu = `<table class="tbl">
-      <tr><th>#</th><th>Famille</th><th class="num">Minutage</th><th>PM n°</th><th>Éléments PM</th><th>GP n°</th><th>Éléments GP</th><th>Objectif du Gros Plan</th></tr>
+      <tr><th>#</th><th>Famille</th><th class="num">Minutage</th><th>PM n°</th><th>Éléments du Plan Moyen</th><th>GP n°</th><th>Éléments du Gros Plan</th><th>Bandeau du Gros Plan</th></tr>
       ${SCENES.map((s) => `<tr>
         <td>${s.idx}</td><td>${s.famille}</td><td class="num">${tc(s.tc)}</td>
         <td>${s.pmNum}</td><td>${s.pm.el.map((e) => ELEMENTS[e].label).join(', ') || '—'}</td>
         <td>${s.gpNum}</td><td>${s.gp.el.map((e) => ELEMENTS[e].label).join(', ') || '—'}</td>
-        <td>${objLabel(s.gp.obj)}</td>
-      </tr>`).join('')}
+        <td>${objLabel(s.gp.obj)}</td></tr>`).join('')}
     </table>`;
   }
 
@@ -618,14 +654,14 @@ function vueMateriel() {
   <div class="wrap large">
     <div class="panneau">
       <h2>Matériel</h2>
-      <p class="aide">
-        50 cartes recto-verso — au recto le Gros Plan à gauche et le Plan Moyen à droite, au verso l’inverse,
-        avec les mêmes deux moitiés. 18 Plans Larges, dont 4 Plans de départ. Les illustrations ne sont pas
-        reproduites : seuls le minutage, les pastilles d’éléments et le bandeau d’objectif comptent pour jouer.
-      </p>
+      <p class="aide">50 cartes Plan Moyen / Gros Plan — au recto le Gros Plan à gauche et le Plan Moyen à
+      droite, au verso l’inverse, avec les mêmes deux moitiés. 14 Plans Larges, 8 Plans de départ en
+      2 versions. Les illustrations ne sont pas reproduites : seuls le minutage, les pastilles et le
+      bandeau comptent pour jouer.</p>
       <div class="filtre-barre" style="margin-top:16px">
-        ${[['DOUBLE', 'Cartes doubles — recto'], ['VERSO', 'Cartes doubles — verso'], ['PL', 'Plans Larges'], ['TABLE', 'Tableau des scènes']]
-          .map(([k, l]) => `<button class="pill ${materielFiltre === k ? 'actif' : ''}" data-f="${k}" style="${materielFiltre === k ? 'background:var(--violet);color:#fff;border-color:var(--violet)' : ''}">${l}</button>`).join('')}
+        ${[['DOUBLE', 'PM / GP — recto'], ['VERSO', 'PM / GP — verso'], ['PL', 'Plans Larges'],
+           ['DEPART', 'Plans de départ'], ['TABLE', 'Tableau des scènes']]
+          .map(([k, l]) => `<button class="pill" data-f="${k}" style="${materielFiltre === k ? 'background:var(--violet);color:#fff;border-color:var(--violet)' : ''}">${l}</button>`).join('')}
       </div>
       ${contenu}
     </div>
@@ -646,88 +682,81 @@ function vueRegles() {
   html(`${topbar('#/regles')}
   <div class="wrap">
     <div class="panneau regles">
-      <h2>Règles du jeu</h2>
+      <h2>Règles du jeu — v0.13</h2>
 
-      <div class="encart attention">
-        <b>Règles reconstituées.</b> Le document de règles n’était pas joint aux fichiers partagés :
-        ce qui suit est déduit du matériel (bandeaux d’objectif, minutages, formats, répartition v0.13).
-        Tous les points marqués d’un ⚙ sont des variables ajustables dans l’écran <b>Variables</b> —
-        il suffira de les recaler quand les règles officielles seront fournies.
-      </div>
+      <p>Vous incarnez une monteuse de cinéma. Votre objectif est d’assembler des Cartes Plan dans votre
+      <b>banc de montage</b> pour créer la meilleure séquence de film. De 2 à 4 joueuses.</p>
 
-      <h3>But du jeu</h3>
-      <p>Chaque joueur monte son film sur son <b>banc de montage</b>, une ligne de plans posés les uns
-      à la suite des autres. On marque des points en remplissant les objectifs inscrits sur les bandeaux
-      des plans posés. Le meilleur monteur gagne.</p>
-
-      <h3>Le matériel</h3>
+      <h3>Matériel</h3>
       <ul>
-        <li><b>Plan Large</b> — une carte pleine largeur, une seule face.</li>
-        <li><b>Carte double</b> — deux moitiés qui se rejoignent : un <b>Gros Plan</b> (un tiers de carte)
-        et un <b>Plan Moyen</b> (deux tiers). L’ensemble fait la taille d’un Plan Large. Recto : Gros Plan
-        à gauche, Plan Moyen à droite. Verso : l’inverse, mêmes deux moitiés.</li>
-        <li>Chaque moitié porte son <b>minutage</b> en haut à gauche, de 00:00 à 99:00 : la place de ce plan
-        dans le film.</li>
-        <li>Seuls les <b>Gros Plans</b> et quelques Plans Larges portent un <b>bandeau d’objectif</b>.</li>
+        <li>8 cartes <b>Plan de départ</b> (2 versions, recto-verso)</li>
+        <li>14 cartes <b>Plan Large</b></li>
+        <li>50 cartes <b>Plan Moyen / Gros Plan</b></li>
       </ul>
-
-      <h3>Les six éléments</h3>
+      <p>Une carte sans jonction est un Plan Large. Une carte à une jonction se divise en un Plan Moyen
+      (2/3 de la carte) et un Gros Plan (1/3). Chaque plan porte un <b>cadrage</b>, des <b>personnages</b>
+      (Héroïne, Ennemi, Allié) et des <b>éléments</b> (Arme, Objet, Véhicule), plus son minutage.</p>
       <div class="legende-el">
         ${ELEMENT_IDS.map((e) => `<div class="e">${elIcon(e, 30)}<span>${ELEMENTS[e].label}</span></div>`).join('')}
       </div>
-      <p>Les pastilles en bas à gauche de chaque plan disent quels éléments y figurent, de un à six.</p>
 
       <h3>Mise en place</h3>
       <ul>
-        <li>Chaque joueur reçoit un <b>Plan de départ</b>, posé sur son banc. ⚙</li>
-        <li>On mélange le reste du paquet et chacun prend <b>${c.mainDepart} cartes</b> en main. ⚙</li>
-        <li>Le premier joueur est ${c.premierJoueurAleatoire ? 'tiré au sort' : 'le premier de la liste'}. ⚙</li>
+        <li>Chaque joueuse reçoit ${c.departProposes} cartes Plan de départ, en pose une dans son banc et défausse l’autre.</li>
+        <li>Les Plans Larges forment une pioche et un <b>chutier</b> de ${c.chutierPL || 'autant de cartes que de joueuses'}.</li>
+        <li>Les Plans Moyens / Gros Plans forment une pioche et un chutier de ${c.chutierPMGP || 'autant de cartes que de joueuses'}.</li>
+        <li>La dernière joueuse à avoir vu un bon film commence — ici, tirage au sort.</li>
       </ul>
 
-      <h3>Tour de jeu</h3>
-      <ol>
-        <li>Le joueur choisit une carte de sa main${c.retournement ? ' et sa face (recto ou verso)' : ''}.</li>
-        <li>Il la pose ${c.sensPose === 'bords' ? '<b>à gauche ou à droite</b> de son banc' : c.sensPose === 'droite' ? '<b>à droite</b> de son banc' : '<b>où il veut</b> dans son banc'}. ⚙</li>
-        <li>Il complète sa main à <b>${c.mainMax} cartes</b>. ⚙</li>
-      </ol>
+      <h3>Phase A — Le Dérushage</h3>
+      <p>Chacune à son tour pioche <b>une</b> Carte Plan : dans le chutier des Plans Larges, dans le chutier
+      des Plans Moyens / Gros Plans, ou sur la pioche des Plans Moyens / Gros Plans.</p>
 
+      <h3>Phase B — Le Montage</h3>
+      <p>Chacune ajoute la carte dérushée à son banc.</p>
       <div class="encart">
-        <b>Le raccord.</b> Deux plans voisins qui partagent au moins
-        <b>${c.raccordMin} élément${c.raccordMin > 1 ? 's' : ''}</b> forment un <b>raccord</b> ⚙ :
-        la jonction s’allume en vert sur le banc. La moitié « Raccord » raccorde avec n’importe quoi
-        ${c.raccordJoker ? '(actif)' : '(désactivé)'}. ⚙
+        <b>Carte Plan Moyen / Gros Plan.</b> Elle se glisse <b>sous</b> les cartes précédentes en recouvrant
+        l’une de ses deux parties : un seul de ses deux plans reste visible, c’est celui qui comptera.
+        On ne peut jamais dissimuler entièrement une carte, ni écarter une carte sans la jouer.
+      </div>
+      <div class="encart">
+        <b>Carte Plan Large.</b> Elle représente le climax d’une séquence : la poser oblige à ouvrir une
+        <b>nouvelle séquence</b>, non adjacente aux cartes déjà posées. Deux Plans Larges ne peuvent jamais
+        se toucher — il faut un Plan Moyen / Gros Plan ou un Raccord entre eux.
       </div>
 
-      <h3>Fin de partie</h3>
-      <p>La partie s’arrête ${c.tours > 0 ? `après <b>${c.tours} tours</b>` : 'quand la pioche est épuisée'}
-      ⚙, ou dès que plus personne n’a de carte en main. On décompte alors.</p>
-
-      <h3>Décompte</h3>
-      <p>Chaque bandeau posé sur le banc est évalué sur l’ensemble du film monté :</p>
-      <table class="tbl">
-        <tr><th>Bandeau</th><th>Ce qu’il rapporte</th></tr>
-        <tr><td><b>n × Raccord</b></td><td>n points par raccord du film</td></tr>
-        <tr><td><b>n × ◀ Plan ▶</b></td><td>n points par plan directement voisin de la carte porteuse</td></tr>
-        <tr><td><b>n × Plan Large / Plan Moyen / Gros Plan</b></td><td>n points par plan de ce format dans le film</td></tr>
-        <tr><td><b>n × élément</b></td><td>n points par plan qui porte cet élément</td></tr>
-        <tr><td><b>n × deux éléments liés</b></td><td>n points par paire de plans voisins portant ces deux éléments</td></tr>
-        <tr><td><b>n × 💀</b></td><td>n points par plan de mort</td></tr>
-        <tr><td><b>n × ✕</b></td><td>n points par plan sans aucun personnage</td></tr>
-        <tr><td><b>n si élément barré</b></td><td>n points si cet élément n’apparaît nulle part dans le film</td></tr>
-      </table>
-      <p style="margin-top:14px">S’y ajoutent, si elles sont activées ⚙ : les points fixes par raccord
-      (${c.raccordPoints}), le bonus de chronologie (${c.chronoBonus} par paire de plans dans l’ordre du film
-      et ${c.chronoMalus} de malus par paire à contresens), les points de pose (${c.pointsParPlan} par plan)
-      et le bonus de film complet (${c.bonusFilmComplet} points à partir de ${c.longueurCible} plans).</p>
-
-      <h3>À confirmer avec les règles officielles</h3>
+      <h3>Les Raccords</h3>
       <ul>
-        <li>Le nombre exact d’éléments partagés qui fait un raccord.</li>
-        <li>Le rôle du minutage : simple décor, contrainte de pose, ou source de points.</li>
-        <li>Le sens de pose autorisé et la possibilité d’insérer un plan au milieu du banc.</li>
-        <li>Ce que représente exactement le symbole ✕ noir des bandeaux de la famille Mort.</li>
-        <li>Le nom des six éléments — les libellés actuels sont provisoires.</li>
+        <li><b>Raccord</b> — connecte deux séquences et démultiplie donc la valeur des cartes.
+        Il rapporte 1 point par carte de sa séquence.</li>
+        <li><b>Générique</b> (Ouverture ou Fermeture) — ouvre ou ferme le film : aucun plan ne peut être
+        posé avant ou après lui. Il rapporte 2 points par Carte Raccord du montage.</li>
       </ul>
+
+      <h3>Fin de partie</h3>
+      <p>La partie s’arrête quand toutes les joueuses ont posé leur ${c.tours}e plan. On inscrit alors les
+      points rapportés par chaque <b>plan visible</b> ; le plus haut total l’emporte.</p>
+
+      <h3>Décompte des bandeaux</h3>
+      <table class="tbl">
+        <tr><th>Bandeau</th><th>Ce qu’il rapporte</th><th>Portée</th></tr>
+        <tr><td><b>n × Raccord</b></td><td>n points par Carte Raccord</td><td>Le montage</td></tr>
+        <tr><td><b>n × ◀ Plan ▶</b></td><td>n points par carte</td><td>Sa séquence</td></tr>
+        <tr><td><b>n × cadrage</b></td><td>n points par plan de ce cadrage</td><td>${c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence'} ⚙</td></tr>
+        <tr><td><b>n × élément</b></td><td>n points par plan portant cet élément</td><td>${c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence'} ⚙</td></tr>
+        <tr><td><b>n × deux éléments liés</b></td><td>n points par paire de plans voisins</td><td>Séquence</td></tr>
+        <tr><td><b>n × 💀</b></td><td>n points par plan de mort</td><td>${c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence'} ⚙</td></tr>
+        <tr><td><b>n × ✕</b></td><td>n points par plan sans personnage</td><td>${c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence'} ⚙</td></tr>
+        <tr><td><b>n si élément barré</b></td><td>n points si l’élément est absent</td><td>Le montage</td></tr>
+      </table>
+
+      <div class="encart attention">
+        <b>Points restés ouverts.</b> Les règles ne fixent la portée que pour le Raccord (« dans sa
+        séquence ») et le Générique (« dans le montage ») ; les autres bandeaux sont lus ici sur le montage
+        entier, réglable dans <b>Variables</b> ⚙. Restent aussi à confirmer : le sens de pose autorisé
+        (les deux bouts d’une séquence, ou la droite seulement), ce que représente le symbole ✕ noir de la
+        famille Mort, le rôle exact du minutage, et l’appariement recto-verso des Plans de départ.
+      </div>
     </div>
   </div>
   ${pied()}`);
@@ -742,8 +771,8 @@ function vueVariables() {
   <div class="wrap">
     <div class="panneau">
       <h2>Variables de la partie</h2>
-      <p class="aide">Tout ce qui pilote le déroulé et le décompte. Les changements sont enregistrés
-      et s’appliquent à la prochaine partie comme aux campagnes du Laboratoire.</p>
+      <p class="aide">Tout ce qui pilote le déroulé et le décompte. Les changements sont enregistrés et
+      s’appliquent à la prochaine partie comme aux campagnes du Laboratoire.</p>
       <div class="barre-outils" style="margin-top:14px">
         <button class="pill" id="reset">↺ Revenir aux valeurs par défaut</button>
         <button class="pill" id="export">Exporter en JSON</button>
@@ -752,16 +781,12 @@ function vueVariables() {
     </div>
 
     <div class="grid2">
-      ${SCHEMA.map((g) => `
-        <div class="panneau">
-          <h2>${g.groupe}</h2>
-          ${g.champs.map((f) => champ(f)).join('')}
-        </div>`).join('')}
+      ${SCHEMA.map((g) => `<div class="panneau"><h2>${g.groupe}</h2>${g.champs.map(champ).join('')}</div>`).join('')}
 
       <div class="panneau">
-        <h2>Objectifs pris en compte</h2>
-        <p class="aide" style="margin-bottom:12px">Décocher un type de bandeau le neutralise :
-        pratique pour mesurer sa contribution réelle au score.</p>
+        <h2>Bandeaux pris en compte</h2>
+        <p class="aide" style="margin-bottom:12px">Décocher un type de bandeau le neutralise : pratique pour
+        mesurer sa contribution réelle au score.</p>
         <div class="chips">
           ${Object.keys(store.cfg.objectifsActifs).map((k) => {
             const on = store.cfg.objectifsActifs[k];
@@ -772,7 +797,6 @@ function vueVariables() {
 
       <div class="panneau">
         <h2>Familles de scènes</h2>
-        <p class="aide" style="margin-bottom:12px">Retirer une famille du paquet.</p>
         <div class="chips">
           ${Object.keys(store.cfg.filtreFamilles).map((k) => {
             const on = store.cfg.filtreFamilles[k];
@@ -796,9 +820,7 @@ function vueVariables() {
   app.querySelectorAll('[data-fam]').forEach((el) => el.addEventListener('change', () => {
     store.cfg.filtreFamilles[el.dataset.fam] = el.checked; sauverCfg(); vueVariables();
   }));
-  app.querySelector('#reset').addEventListener('click', () => {
-    store.cfg = cloneConfig(DEFAULTS); sauverCfg(); vueVariables();
-  });
+  app.querySelector('#reset').addEventListener('click', () => { store.cfg = cloneConfig(DEFAULTS); sauverCfg(); vueVariables(); });
   app.querySelector('#export').addEventListener('click', () => {
     const blob = new Blob([JSON.stringify(store.cfg, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -830,22 +852,16 @@ function champ(f) {
 function repartitionElements() {
   const { doubles, larges } = construirePaquet(store.cfg);
   const compte = Object.fromEntries(ELEMENT_IDS.map((e) => [e, 0]));
-  let moities = 0;
-  for (const c of doubles) {
-    for (const h of [halfInfo(c.gpScene, 'GP'), halfInfo(c.pmScene, 'PM')]) {
-      moities++; for (const e of h.el) compte[e]++;
-    }
-  }
-  for (const c of larges) { moities++; for (const e of c.el) compte[e]++; }
+  let plans = 0;
+  for (const c of doubles) for (const h of Object.values(moitiesDe(c))) { plans++; for (const e of h.el) compte[e]++; }
+  for (const c of larges) { plans++; for (const e of c.el) compte[e]++; }
   const max = Math.max(...Object.values(compte)) || 1;
-  return `<h3>Éléments dans le paquet <span class="aide">(${moities} plans)</span></h3>
+  return `<h3>Éléments dans le paquet <span class="aide">(${plans} plans)</span></h3>
   <div class="barres">
-    ${ELEMENT_IDS.map((e) => `
-      <div class="barre-l">
-        <span style="display:flex;align-items:center;gap:8px">${elIcon(e, 22)} ${ELEMENTS[e].label}</span>
-        <div class="piste"><div class="jauge" style="width:${(compte[e] / max) * 100}%"></div></div>
-        <span class="val">${compte[e]}</span>
-      </div>`).join('')}
+    ${ELEMENT_IDS.map((e) => `<div class="barre-l">
+      <span style="display:flex;align-items:center;gap:8px">${elIcon(e, 22)} ${ELEMENTS[e].label}</span>
+      <div class="piste"><div class="jauge" style="width:${(compte[e] / max) * 100}%"></div></div>
+      <span class="val">${compte[e]}</span></div>`).join('')}
   </div>`;
 }
 
@@ -861,10 +877,10 @@ function vueLabo() {
   <div class="wrap large">
     <div class="panneau">
       <h2>Laboratoire d’équilibrage</h2>
-      <p class="aide">Rejoue des centaines de parties avec les variables courantes et les profils d’IA
-      choisis sur l’accueil. Aucune interface, aucun humain : uniquement des chiffres.</p>
+      <p class="aide">Rejoue des centaines de parties avec les variables courantes et les profils d’IA choisis
+      sur l’accueil. Aucune interface, aucune humaine : uniquement des chiffres.</p>
       <div class="barre-outils" style="margin-top:16px">
-        <span class="info">Table : ${store.joueurs.map((j) => `${j.nom} (${j.type === 'HUMAIN' ? 'remplacé par Équilibré' : PROFILS_IA[j.type].label.replace('IA — ', '')})`).join(' · ')}</span>
+        <span class="info">Table : ${store.joueurs.map((j) => `${j.nom} (${j.type === 'HUMAIN' ? 'remplacée par Équilibré' : PROFILS_IA[j.type].label.replace('IA — ', '')})`).join(' · ')}</span>
       </div>
       <div class="barre-outils">
         <label class="info">Parties&nbsp;
@@ -888,10 +904,9 @@ async function lancerLabo() {
   store.laboEnCours = true;
   vueLabo();
   const barre = app.querySelector('#prog i');
-  const res = await campagne(joueurs, cloneConfig(store.cfg), laboNb, {
+  store.labo = await campagne(joueurs, cloneConfig(store.cfg), laboNb, {
     onProgress: (fait, total) => { if (barre) barre.style.width = `${(fait / total) * 100}%`; },
   });
-  store.labo = res;
   store.laboEnCours = false;
   vueLabo();
 }
@@ -904,12 +919,12 @@ function resultatsLabo(r) {
     <div class="stats-grille">
       ${tuile('Score moyen', t(r.global.moy), `écart-type ${t(r.global.ecart)}`)}
       ${tuile('Score médian', r.global.med, `de ${r.global.min} à ${r.global.max}`, 'orange')}
-      ${tuile('Longueur du film', t(r.longueur.moy), 'plans par banc', 'vert')}
-      ${tuile('Raccords', t(r.raccords.moy), 'par banc')}
-      ${tuile('Tours joués', t(r.tours.moy), 'par partie', 'orange')}
+      ${tuile('Plans visibles', t(r.plans.moy), 'par banc', 'vert')}
+      ${tuile('Séquences', t(r.sequences.moy), `plus longue : ${t(r.plusLongue.moy)} plans`)}
+      ${tuile('Cartes Raccord', t(r.raccords.moy), 'par banc', 'orange')}
       ${tuile('Parties serrées', `${Math.round(r.tauxSerre * 100)} %`, '3 points ou moins d’écart', 'vert')}
       ${tuile('Égalités', `${Math.round(r.tauxEgalite * 100)} %`, 'en tête')}
-      ${tuile('Écart 1er / dernier', t(r.ecartVainqueur.moy), `max ${r.ecartVainqueur.max}`, 'orange')}
+      ${tuile('Écart 1re / dernière', t(r.ecartVainqueur.moy), `max ${r.ecartVainqueur.max}`, 'orange')}
     </div>
   </div>
 
@@ -945,23 +960,20 @@ function resultatsLabo(r) {
           <td class="num"><b>${Math.round(s.tauxVictoire * 100)} %</b></td>
         </tr>`).join('')}
       </table>
-      <p class="aide" style="margin-top:10px">Avec un premier joueur aléatoire, des taux de victoire
-      qui s’écartent nettement de ${Math.round(100 / r.parSiege.length)} % signalent un déséquilibre de position
-      ou de profil.</p>
+      <p class="aide" style="margin-top:10px">Avec une première joueuse tirée au sort, des taux qui s’écartent
+      nettement de ${Math.round(100 / r.parSiege.length)} % signalent un déséquilibre de position ou de profil.</p>
     </div>
 
     <div class="panneau">
       <h2>Force des profils d’IA</h2>
       <div class="barres">
-        ${r.profils.map((p) => `
-          <div class="barre-l">
-            <span>${PROFILS_IA[p.type] ? PROFILS_IA[p.type].label : p.type}</span>
-            <div class="piste"><div class="jauge" style="width:${Math.min(100, p.taux * 100)}%"></div></div>
-            <span class="val">${Math.round(p.taux * 100)} %</span>
-          </div>`).join('')}
+        ${r.profils.map((p) => `<div class="barre-l">
+          <span>${PROFILS_IA[p.type] ? PROFILS_IA[p.type].label : p.type}</span>
+          <div class="piste"><div class="jauge" style="width:${Math.min(100, p.taux * 100)}%"></div></div>
+          <span class="val">${Math.round(p.taux * 100)} %</span></div>`).join('')}
       </div>
-      <p class="aide" style="margin-top:10px">Taux de victoire par profil. Si le Stratège ne bat pas
-      nettement le Novice, les décisions du jeu pèsent peu — c’est le premier signal d’équilibrage à corriger.</p>
+      <p class="aide" style="margin-top:10px">Taux de victoire par profil. Si le Stratège ne bat pas nettement
+      le Novice, les décisions du jeu pèsent peu — c’est le premier signal d’équilibrage à corriger.</p>
     </div>
   </div>`;
 }
@@ -971,7 +983,7 @@ function tuile(k, v, s, cls = '') {
 }
 
 // ===========================================================================
-// HISTORIQUE
+// HISTORIQUE / VERSIONS
 // ===========================================================================
 
 function vueHistorique() {
@@ -981,12 +993,10 @@ function vueHistorique() {
     <div class="panneau">
       <h2>Historique des parties</h2>
       ${h.length ? `<table class="tbl">
-        <tr><th>Date</th><th>Graine</th><th>Joueurs</th><th class="num">Tours</th><th>Scores</th></tr>
+        <tr><th>Date</th><th>Graine</th><th class="num">Joueuses</th><th class="num">Tours</th><th>Scores</th></tr>
         ${h.map((g) => `<tr>
           <td>${new Date(g.date).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</td>
-          <td>${g.seed}</td>
-          <td>${g.joueurs.length}</td>
-          <td class="num">${g.tours}</td>
+          <td>${g.seed}</td><td class="num">${g.joueurs.length}</td><td class="num">${g.tours}</td>
           <td>${g.scores.map((s, i) => `${i === 0 ? '🏆 ' : ''}${s.nom} <b>${s.total}</b>`).join(' · ')}</td>
         </tr>`).join('')}
       </table>
@@ -1000,10 +1010,6 @@ function vueHistorique() {
     if (confirm('Vider l’historique ?')) { store.historique = []; LS.set('historique', []); vueHistorique(); }
   });
 }
-
-// ===========================================================================
-// VERSIONS
-// ===========================================================================
 
 function vueVersions() {
   html(`${topbar('#/versions')}
@@ -1036,9 +1042,8 @@ const ROUTES = {
 };
 
 function route() {
-  const h = location.hash || '#/';
   document.onkeydown = null;
-  (ROUTES[h] || vueAccueil)();
+  (ROUTES[location.hash || '#/'] || vueAccueil)();
   window.scrollTo(0, 0);
 }
 

@@ -1,34 +1,41 @@
 // ---------------------------------------------------------------------------
 // EDIT — décompte
 // ---------------------------------------------------------------------------
-// Un banc de montage est une suite de « plans » (les moitiés posées, de gauche
-// à droite). Chaque plan connaît son format, son minutage, ses éléments et,
-// pour les Gros Plans et certains Plans Larges, son bandeau d'objectif.
+// Le banc de montage est une suite de SÉQUENCES. Chaque séquence est une suite
+// de plans visibles, de gauche à droite. Une carte posée ne laisse voir qu'un
+// seul de ses plans : l'autre moitié passe sous les cartes voisines.
+//
+// Les bandeaux se lisent dans leur propre séquence — c'est tout l'intérêt des
+// Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
+// Seul le Générique compte sur le montage entier.
 
-const PERSONNAGES = ['FILLE', 'TUEUR', 'HOMME'];
+import { PERSONNAGES, objPortee } from './data.js';
 
-/** Deux plans voisins raccordent-ils ? */
-export function raccorde(a, b, cfg) {
+export function bancVide() {
+  return { sequences: [], ouverture: false, fermeture: false };
+}
+
+export function tousLesPlans(banc) {
+  return banc.sequences.flat();
+}
+
+export function estRaccord(p) {
+  return !!p.transition;
+}
+
+/** Deux plans voisins partagent-ils assez d'éléments ? (variante hors règles) */
+export function raccordeParElement(a, b, cfg) {
   if (!a || !b) return false;
-  if (cfg.raccordJoker && (a.transition === 'RACCORD' || b.transition === 'RACCORD')) return true;
   let n = 0;
   for (const e of a.el) if (b.el.includes(e)) n++;
-  return n >= cfg.raccordMin;
+  return n >= (cfg.raccordMin || 1);
 }
 
-/** Liste des index i tels que banc[i] et banc[i+1] raccordent. */
-export function raccords(banc, cfg) {
-  const out = [];
-  for (let i = 0; i < banc.length - 1; i++) if (raccorde(banc[i], banc[i + 1], cfg)) out.push(i);
-  return out;
-}
-
-/** Paires voisines portant les deux éléments demandés. */
-function pairesAdjacentes(banc, els) {
+function pairesAdjacentes(plans, els) {
   const [x, y] = els;
   let n = 0;
-  for (let i = 0; i < banc.length - 1; i++) {
-    const a = banc[i], b = banc[i + 1];
+  for (let i = 0; i < plans.length - 1; i++) {
+    const a = plans[i], b = plans[i + 1];
     if (x === y) {
       if (a.el.includes(x) && b.el.includes(y)) n++;
     } else if ((a.el.includes(x) && b.el.includes(y)) || (a.el.includes(y) && b.el.includes(x))) {
@@ -38,81 +45,95 @@ function pairesAdjacentes(banc, els) {
   return n;
 }
 
-/** Valeur d'un bandeau posé en position `pos` du banc. */
-export function valeurObjectif(obj, banc, pos, cfg, ctx) {
+/**
+ * Valeur d'un bandeau porté par `sequence`, lu dans le banc `banc`.
+ * La portée est la séquence porteuse, sauf pour le Générique — ou si les
+ * variables imposent la portée « montage entier ».
+ */
+export function valeurObjectif(obj, sequence, banc, cfg) {
   if (!obj) return 0;
   if (cfg.objectifsActifs && cfg.objectifsActifs[obj.kind] === false) return 0;
+
+  const montage = tousLesPlans(banc);
+  const large = objPortee(obj) === 'MONTAGE' || cfg.porteeParDefaut === 'MONTAGE';
+  const portee = large ? montage : sequence;
+  const groupes = large ? banc.sequences : [sequence];
   const n = obj.n;
+
   switch (obj.kind) {
     case 'RACCORD':
-      return n * ctx.nbRaccords;
-    case 'PLAN': {
-      let v = 0;
-      if (pos > 0) v++;
-      if (pos < banc.length - 1) v++;
-      return n * v;
-    }
+      // Le Générique rapporte n points par Carte Raccord du montage.
+      return n * montage.filter(estRaccord).length;
+    case 'PLAN':
+      // Le Raccord rapporte n points par carte de sa séquence.
+      return n * sequence.length;
     case 'FORMAT':
-      return n * banc.filter((p) => p.format === obj.format).length;
+      return n * portee.filter((p) => p.format === obj.format).length;
     case 'ELEMENT':
-      return n * banc.filter((p) => p.el.includes(obj.el)).length;
+      return n * portee.filter((p) => p.el.includes(obj.el)).length;
     case 'PAIRE':
-      return n * pairesAdjacentes(banc, obj.els);
+      // Une paire ne se lit qu'entre deux plans voisins d'une même séquence.
+      return n * groupes.reduce((s, g) => s + pairesAdjacentes(g, obj.els), 0);
     case 'MORT':
-      return n * banc.filter((p) => p.mort).length;
+      return n * portee.filter((p) => p.mort).length;
     case 'NEANT':
-      return n * banc.filter((p) => !p.el.some((e) => PERSONNAGES.includes(e))).length;
+      return n * portee.filter((p) => !p.el.some((e) => PERSONNAGES.includes(e))).length;
     case 'ABSENT':
-      return banc.some((p) => p.el.includes(obj.el)) ? 0 : n;
+      return montage.some((p) => p.el.includes(obj.el)) ? 0 : n;
     default:
       return 0;
   }
 }
 
-/** Bonus/malus de chronologie sur les paires voisines. */
 function chrono(banc, cfg) {
   if (!cfg.chronoBonus && !cfg.chronoMalus) return { pts: 0, ordre: 0, contre: 0 };
   let ordre = 0, contre = 0;
-  for (let i = 0; i < banc.length - 1; i++) {
-    const a = banc[i], b = banc[i + 1];
-    if (cfg.chronoIgnoreZero && (a.tc === 0 || b.tc === 0)) continue;
-    if (b.tc > a.tc) ordre++;
-    else if (b.tc < a.tc) contre++;
+  for (const seq of banc.sequences) {
+    for (let i = 0; i < seq.length - 1; i++) {
+      const a = seq[i], b = seq[i + 1];
+      if (cfg.chronoIgnoreZero && (a.tc === 0 || b.tc === 0)) continue;
+      if (b.tc > a.tc) ordre++;
+      else if (b.tc < a.tc) contre++;
+    }
   }
   return { pts: ordre * cfg.chronoBonus - contre * cfg.chronoMalus, ordre, contre };
 }
 
-/**
- * Décompte complet d'un banc.
- * Renvoie le total et la ventilation des points par source, pour le
- * Laboratoire comme pour le panneau de score en partie.
- */
+function jonctionsRaccordees(banc, cfg) {
+  if (!cfg.raccordElement) return 0;
+  let n = 0;
+  for (const seq of banc.sequences) {
+    for (let i = 0; i < seq.length - 1; i++) if (raccordeParElement(seq[i], seq[i + 1], cfg)) n++;
+  }
+  return n;
+}
+
+/** Décompte complet d'un banc, ventilé par source. */
 export function compter(banc, cfg) {
-  const rc = raccords(banc, cfg);
-  const ctx = { nbRaccords: rc.length };
+  const montage = tousLesPlans(banc);
   const mult = cfg.multiplicateurObjectif ?? 1;
 
   const detail = {
     RACCORD: 0, PLAN: 0, FORMAT: 0, ELEMENT: 0, PAIRE: 0,
-    MORT: 0, NEANT: 0, ABSENT: 0, CHRONO: 0, POSE: 0, RACCORD_FIXE: 0, COMPLET: 0,
+    MORT: 0, NEANT: 0, ABSENT: 0, CHRONO: 0, POSE: 0, JONCTION: 0,
   };
   const lignes = [];
 
-  banc.forEach((p, i) => {
-    if (!p.obj) return;
-    const brut = valeurObjectif(p.obj, banc, i, cfg, ctx);
-    const pts = Math.round(brut * mult);
-    if (pts !== 0 || brut !== 0) {
+  banc.sequences.forEach((seq, si) => {
+    seq.forEach((p) => {
+      if (!p.obj) return;
+      if (p.depart && !cfg.scorerDepart) return;
+      const pts = Math.round(valeurObjectif(p.obj, seq, banc, cfg) * mult);
       detail[p.obj.kind] += pts;
-      lignes.push({ pos: i, obj: p.obj, pts, plan: p });
-    }
+      lignes.push({ sequence: si, obj: p.obj, pts, plan: p });
+    });
   });
 
-  detail.POSE = banc.length * (cfg.pointsParPlan || 0);
-  detail.RACCORD_FIXE = rc.length * (cfg.raccordPoints || 0);
+  detail.POSE = montage.length * (cfg.pointsParPlan || 0);
+  const jr = jonctionsRaccordees(banc, cfg);
+  detail.JONCTION = jr * (cfg.raccordElementPoints || 0);
   const ch = chrono(banc, cfg);
   detail.CHRONO = ch.pts;
-  detail.COMPLET = banc.length >= cfg.longueurCible ? (cfg.bonusFilmComplet || 0) : 0;
 
   const total = Object.values(detail).reduce((a, b) => a + b, 0);
 
@@ -120,18 +141,20 @@ export function compter(banc, cfg) {
     total,
     detail,
     lignes,
-    raccords: rc,
-    nbRaccords: rc.length,
+    plans: montage.length,
+    sequences: banc.sequences.length,
+    cartesRaccord: montage.filter(estRaccord).length,
+    plusLongue: banc.sequences.reduce((m, s) => Math.max(m, s.length), 0),
+    jonctions: jr,
     chronoOrdre: ch.ordre,
     chronoContre: ch.contre,
-    longueur: banc.length,
   };
 }
 
 export const SOURCES_LABEL = {
-  RACCORD: 'Objectifs Raccord',
-  PLAN: 'Objectifs ◀ Plan ▶',
-  FORMAT: 'Objectifs de format',
+  RACCORD: 'Génériques (par Carte Raccord)',
+  PLAN: 'Raccords (par carte de la séquence)',
+  FORMAT: 'Objectifs de cadrage',
   ELEMENT: 'Objectifs d’élément',
   PAIRE: 'Objectifs de paire',
   MORT: 'Objectifs Mort',
@@ -139,6 +162,5 @@ export const SOURCES_LABEL = {
   ABSENT: 'Objectifs d’absence',
   CHRONO: 'Chronologie',
   POSE: 'Points de pose',
-  RACCORD_FIXE: 'Raccords (points fixes)',
-  COMPLET: 'Film complet',
+  JONCTION: 'Jonctions raccordées',
 };
