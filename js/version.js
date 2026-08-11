@@ -1,8 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.4';
-export const BUILD_DATE = '2026-08-11 16:55';
+export const VERSION = '1.5';
+export const BUILD_DATE = '2026-08-11 17:20';
 
 export const CHANGELOG = [
+  {
+    v: '1.5',
+    date: '11/08/2026',
+    items: [
+      "L’accueil repasse sur deux colonnes : les joueuses et le bouton Commencer la partie à gauche, les options de partie et les réglages rapides à droite.",
+    ],
+  },
   {
     v: '1.4',
     date: '11/08/2026',

@@ -107,58 +107,64 @@ function vueAccueil() {
       Édité par <b>Big Budi Games</b>
     </div>
   </div>
-  <div class="wrap etroit">
-    <div class="panneau">
-      <h2>Joueuses</h2>
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
-        <div class="segments" id="seg-n">
-          ${[1, 2, 3, 4].map((i) => `<button class="${i === n ? 'on' : ''}" data-n="${i}">${i}</button>`).join('')}
+  <div class="wrap">
+    <div class="grid2">
+      <div>
+        <div class="panneau">
+          <h2>Joueuses</h2>
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+            <div class="segments" id="seg-n">
+              ${[1, 2, 3, 4].map((i) => `<button class="${i === n ? 'on' : ''}" data-n="${i}">${i}</button>`).join('')}
+            </div>
+            <span class="aide">${n} joueuse${n > 1 ? 's' : ''}${n === 1 ? ' — solo, hors règles officielles' : ''}</span>
+          </div>
+          <div id="liste-joueurs">${store.joueurs.map((j, i) => ligneJoueur(j, i)).join('')}</div>
         </div>
-        <span class="aide">${n} joueuse${n > 1 ? 's' : ''}${n === 1 ? ' — solo, hors règles officielles' : ''}</span>
-      </div>
-      <div id="liste-joueurs">${store.joueurs.map((j, i) => ligneJoueur(j, i)).join('')}</div>
-    </div>
 
-    <button class="cta" id="go">Commencer la partie</button>
+        <button class="cta" id="go">Commencer la partie</button>
+      </div>
 
-    <div class="panneau" style="margin-top:20px">
-      <h2>Options de partie</h2>
-      <div class="chips">
-        ${chip('illustrations', 'Illustrations sur les cartes')}
-        ${chip('premierJoueurAleatoire', '1re joueuse aléatoire')}
-        ${chip('piocheDirectePMGP', 'Pioche PM / GP au sommet')}
-        ${chip('piocheDirectePL', 'Pioche Plans Larges au sommet')}
-        ${chip('raccordConnecte', 'Les Raccords soudent les séquences')}
-        ${chip('generiqueBloque', 'Le Générique ferme le montage')}
-        ${chip('plContigu', 'Deux Plans Larges peuvent se toucher')}
-      </div>
-      <div class="champ" style="margin-top:14px">
-        <label>Graine de partie <small>vide = tirage aléatoire</small></label>
-        <input type="text" id="graine" value="${store.cfg.graine || ''}" placeholder="aléatoire"
-          style="width:150px;padding:7px 9px;border-radius:9px;border:1px solid var(--gris-clair)">
-      </div>
-    </div>
+      <div>
+        <div class="panneau">
+          <h2>Options de partie</h2>
+          <div class="chips">
+            ${chip('illustrations', 'Illustrations sur les cartes')}
+            ${chip('premierJoueurAleatoire', '1re joueuse aléatoire')}
+            ${chip('piocheDirectePMGP', 'Pioche PM / GP au sommet')}
+            ${chip('piocheDirectePL', 'Pioche Plans Larges au sommet')}
+            ${chip('raccordConnecte', 'Les Raccords soudent les séquences')}
+            ${chip('generiqueBloque', 'Le Générique ferme le montage')}
+            ${chip('plContigu', 'Deux Plans Larges peuvent se toucher')}
+          </div>
+          <div class="champ" style="margin-top:14px">
+            <label>Graine de partie <small>vide = tirage aléatoire</small></label>
+            <input type="text" id="graine" value="${store.cfg.graine || ''}" placeholder="aléatoire"
+              style="width:150px;padding:7px 9px;border-radius:9px;border:1px solid var(--gris-clair)">
+          </div>
+        </div>
 
-    <div class="panneau">
-      <h2>Réglages rapides</h2>
-      ${[
-        ['tours', 'Plans à poser', 1, 30],
-        ['chutierPMGP', 'Chutier PM / GP', 0, 8],
-        ['chutierPL', 'Chutier Plans Larges', 0, 8],
-        ['departProposes', 'Plans de départ proposés', 1, 4],
-      ].map(([k, l, min, max]) => `
-        <div class="champ"><label>${l}</label>
-          <input type="number" data-cfg="${k}" value="${store.cfg[k]}" min="${min}" max="${max}"></div>`).join('')}
-      <div class="champ">
-        <label>Portée des bandeaux <small>hors Raccord et Générique</small></label>
-        <select data-cfg="porteeParDefaut">
-          <option value="MONTAGE" ${store.cfg.porteeParDefaut === 'MONTAGE' ? 'selected' : ''}>Le montage entier</option>
-          <option value="SEQUENCE" ${store.cfg.porteeParDefaut === 'SEQUENCE' ? 'selected' : ''}>La séquence porteuse</option>
-        </select>
+        <div class="panneau">
+          <h2>Réglages rapides</h2>
+          ${[
+            ['tours', 'Plans à poser', 1, 30],
+            ['chutierPMGP', 'Chutier PM / GP', 0, 8],
+            ['chutierPL', 'Chutier Plans Larges', 0, 8],
+            ['departProposes', 'Plans de départ proposés', 1, 4],
+          ].map(([k, l, min, max]) => `
+            <div class="champ"><label>${l}</label>
+              <input type="number" data-cfg="${k}" value="${store.cfg[k]}" min="${min}" max="${max}"></div>`).join('')}
+          <div class="champ">
+            <label>Portée des bandeaux <small>hors Raccord et Générique</small></label>
+            <select data-cfg="porteeParDefaut">
+              <option value="MONTAGE" ${store.cfg.porteeParDefaut === 'MONTAGE' ? 'selected' : ''}>Le montage entier</option>
+              <option value="SEQUENCE" ${store.cfg.porteeParDefaut === 'SEQUENCE' ? 'selected' : ''}>La séquence porteuse</option>
+            </select>
+          </div>
+          <p class="aide" style="margin-top:14px">
+            Le reste — valeur de chaque objectif, composition du paquet, variantes — est dans <b>Variables</b>.
+          </p>
+        </div>
       </div>
-      <p class="aide" style="margin-top:14px">
-        Le reste — valeur de chaque objectif, composition du paquet, variantes — est dans <b>Variables</b>.
-      </p>
     </div>
 
     <div class="rangee-boutons">
