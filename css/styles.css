@@ -454,3 +454,18 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .texte-archive {
   margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--gris-clair);
 }
+
+/* --- Bandeau de mise à jour ------------------------------------------------ */
+
+#maj-bandeau {
+  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+  z-index: 90; display: flex; align-items: center; gap: 12px;
+  background: var(--encre); color: #fff; border-radius: 999px;
+  padding: 10px 12px 10px 20px; font-size: .92rem; box-shadow: var(--ombre-forte);
+  max-width: calc(100vw - 30px);
+}
+#maj-bandeau b { color: var(--orange-clair); }
+#maj-bandeau button {
+  border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer;
+  background: linear-gradient(180deg, #fb923c, #f97316); color: #fff; font-weight: 700;
+}

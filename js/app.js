@@ -1014,3 +1014,56 @@ function route() {
 
 window.addEventListener('hashchange', route);
 route();
+
+// ===========================================================================
+// Veille de version
+// ===========================================================================
+// js/version.js est relu régulièrement en contournant tous les caches. Si une
+// version plus récente que celle en cours d'exécution est publiée, la page se
+// recharge une fois d'elle-même (garde anti-boucle : un seul essai par
+// version) ; si le rechargement ne suffit pas — cache tenace —, un bandeau
+// propose un rechargement forcé.
+
+async function versionPubliee() {
+  const r = await fetch(`js/version.js?t=${Date.now()}`, { cache: 'no-store' });
+  const m = (await r.text()).match(/VERSION\s*=\s*'([^']+)'/);
+  return m ? m[1] : null;
+}
+
+function bandeauMiseAJour(v) {
+  if (document.getElementById('maj-bandeau')) return;
+  const b = document.createElement('div');
+  b.id = 'maj-bandeau';
+  b.innerHTML = `Version <b>${v}</b> disponible — vous êtes en v${VERSION}.
+    <button id="maj-recharger">Recharger</button>`;
+  document.body.appendChild(b);
+  document.getElementById('maj-recharger').addEventListener('click', async () => {
+    // Grand ménage : caches du service worker, puis rechargement.
+    if (window.caches) {
+      const cles = await caches.keys();
+      await Promise.all(cles.map((k) => caches.delete(k)));
+    }
+    location.reload();
+  });
+}
+
+async function veilleVersion() {
+  try {
+    if (store.partie && !store.partie.finie) return; // jamais en pleine partie
+    const v = await versionPubliee();
+    if (!v || v === VERSION) return;
+    const K = 'edit.rechargePour';
+    if (localStorage.getItem(K) !== v) {
+      localStorage.setItem(K, v);
+      location.reload();
+    } else {
+      bandeauMiseAJour(v);
+    }
+  } catch { /* hors ligne : on retentera */ }
+}
+
+veilleVersion();
+setInterval(veilleVersion, 60 * 1000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') veilleVersion();
+});

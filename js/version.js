@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.5';
-export const BUILD_DATE = '2026-08-11 17:20';
+export const VERSION = '1.6';
+export const BUILD_DATE = '2026-08-11 17:50';
 
 export const CHANGELOG = [
+  {
+    v: '1.6',
+    date: '11/08/2026',
+    items: [
+      "Fini les versions périmées au rafraîchissement : un service worker force chaque fichier à repasser par le réseau — le cache de dix minutes de l’hébergeur et celui du navigateur ne retiennent plus rien. En contrepartie, le site reste consultable hors ligne sur sa dernière version chargée.",
+      "Le site surveille lui-même js/version.js : dès qu’une version plus récente est publiée, la page se recharge une fois automatiquement (jamais en pleine partie) ; si un cache tenace résiste, un bandeau propose un rechargement forcé qui vide tous les caches.",
+      "Un fichier .nojekyll accélère la mise en ligne sur GitHub Pages.",
+    ],
+  },
   {
     v: '1.5',
     date: '11/08/2026',
