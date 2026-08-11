@@ -3,7 +3,7 @@
 // Pas d'illustration : seule l'information de jeu est représentée.
 // ---------------------------------------------------------------------------
 
-import { ELEMENTS } from './data.js';
+import { ELEMENTS } from './data.js?v=1.8';
 
 const GLYPHS = {
   // La Fille — silhouette à queue de cheval

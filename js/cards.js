@@ -5,8 +5,8 @@
 // d'objectif suffisent à jouer. Les proportions reprennent le matériel réel —
 // un Gros Plan (1/3) et un Plan Moyen (2/3) forment un Plan Large.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel } from './data.js';
-import { elIcon, numIcon } from './icons.js';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel } from './data.js?v=1.8';
+import { elIcon, numIcon } from './icons.js?v=1.8';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;

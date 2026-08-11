@@ -22,7 +22,10 @@ dossier (`python3 -m http.server`).
 ## Organisation du code
 
 ```
-index.html
+index.html              amorçage : demande la version publiée, puis charge le code
+version.json            version publiée, relue hors cache (généré)
+sw.js                   service worker réseau d'abord
+outils/versionner.mjs   estampille les modules avant publication
 css/styles.css
 assets/pm/<num>.webp   visuels des moitiés Plan Moyen  (33)
 assets/gp/<num>.webp   visuels des moitiés Gros Plan   (33)
@@ -39,6 +42,31 @@ js/ai.js         Novice, Équilibré, Stratège
 js/lab.js        simulation par lots et agrégats statistiques
 js/app.js        routage et écrans
 ```
+
+## Publier une version
+
+Le navigateur met chaque module en cache **par son URL**. Si une seule adresse ne change pas d'une
+version à l'autre, il peut resservir l'ancien fichier — c'est ainsi qu'une v1.7 a pu s'afficher avec
+la mise en page de la v1.6. Deux mécanismes s'en chargent :
+
+1. `outils/versionner.mjs` estampille toutes les URL de modules avec le numéro de version
+   (`./data.js?v=1.8`), renomme le cache du service worker et écrit `version.json` ;
+2. `index.html` ne cite **aucune** version : il demande d'abord `version.json` hors cache, puis
+   construit l'adresse du module principal. Même servi depuis le cache, il ouvre donc la dernière
+   version publiée.
+
+La routine de publication tient en trois gestes :
+
+```bash
+# 1. mettre à jour VERSION et BUILD_DATE dans js/version.js, ajouter l'entrée au CHANGELOG
+# 2. estampiller
+node outils/versionner.mjs
+# 3. commiter et pousser
+```
+
+En complément, la page relit `version.json` toutes les minutes et à chaque retour sur l'onglet :
+une version plus récente déclenche un rechargement sur une adresse neuve, sauf en pleine partie où
+un bandeau propose la mise à jour.
 
 ## Les règles, versionnées
 

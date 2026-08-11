@@ -2,22 +2,22 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.8';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf,
-} from './data.js';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js';
-import { elIcon } from './icons.js';
-import { renderCarte, renderPlan, tc } from './cards.js';
+} from './data.js?v=1.8';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.8';
+import { elIcon } from './icons.js?v=1.8';
+import { renderCarte, renderPlan, tc } from './cards.js?v=1.8';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js';
-import { compter, SOURCES_LABEL } from './scoring.js';
-import { campagne } from './lab.js';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js';
+} from './engine.js?v=1.8';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.8';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.8';
+import { campagne } from './lab.js?v=1.8';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.8';
 
 const app = document.getElementById('app');
 
@@ -1028,9 +1028,21 @@ route();
 // propose un rechargement forcé.
 
 async function versionPubliee() {
-  const r = await fetch(`js/version.js?t=${Date.now()}`, { cache: 'no-store' });
-  const m = (await r.text()).match(/VERSION\s*=\s*'([^']+)'/);
-  return m ? m[1] : null;
+  // version.json est écrit par outils/versionner.mjs et relu hors de tout
+  // cache : il dit la version réellement publiée, indépendamment des modules
+  // que le navigateur a pu garder en mémoire.
+  const r = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' });
+  if (!r.ok) return null;
+  return (await r.json()).version || null;
+}
+
+/** Repart sur une adresse neuve : le document lui-même échappe ainsi au cache. */
+async function rechargerPropre(v) {
+  if (window.caches) {
+    const cles = await caches.keys();
+    await Promise.all(cles.map((k) => caches.delete(k)));
+  }
+  location.replace(`${location.pathname}?v=${v}${location.hash}`);
 }
 
 function bandeauMiseAJour(v) {
@@ -1040,25 +1052,18 @@ function bandeauMiseAJour(v) {
   b.innerHTML = `Version <b>${v}</b> disponible — vous êtes en v${VERSION}.
     <button id="maj-recharger">Recharger</button>`;
   document.body.appendChild(b);
-  document.getElementById('maj-recharger').addEventListener('click', async () => {
-    // Grand ménage : caches du service worker, puis rechargement.
-    if (window.caches) {
-      const cles = await caches.keys();
-      await Promise.all(cles.map((k) => caches.delete(k)));
-    }
-    location.reload();
-  });
+  document.getElementById('maj-recharger').addEventListener('click', () => rechargerPropre(v));
 }
 
 async function veilleVersion() {
   try {
-    if (store.partie && !store.partie.finie) return; // jamais en pleine partie
     const v = await versionPubliee();
     if (!v || v === VERSION) return;
+    if (store.partie && !store.partie.finie) { bandeauMiseAJour(v); return; }
     const K = 'edit.rechargePour';
     if (localStorage.getItem(K) !== v) {
       localStorage.setItem(K, v);
-      location.reload();
+      rechargerPropre(v);
     } else {
       bandeauMiseAJour(v);
     }

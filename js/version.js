@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.7';
-export const BUILD_DATE = '2026-08-11 18:20';
+export const VERSION = '1.8';
+export const BUILD_DATE = '2026-08-11 19:05';
 
 export const CHANGELOG = [
+  {
+    v: '1.8',
+    date: '11/08/2026',
+    items: [
+      "Correction du vrai défaut de mise à jour : la v1.7 pouvait s’afficher avec la mise en page de la v1.6, parce que le navigateur gardait un app.js périmé à côté d’un version.js à jour — et le contrôle de version, qui comparait version.js à lui-même, n’y voyait rien.",
+      "Toutes les adresses de modules portent désormais le numéro de version : à chaque publication elles changent toutes, et le cache ne peut plus resservir l’ancien code.",
+      "La page d’amorçage ne cite plus aucune version : elle demande au serveur laquelle est publiée, puis charge le code correspondant. Même servie depuis le cache, elle ouvre donc toujours la dernière version.",
+      "Le contrôle de version s’appuie sur un fichier version.json relu hors de tout cache, et le rechargement repart sur une adresse neuve pour que le document lui-même échappe au cache.",
+      "Une mise à jour détectée en pleine partie n’interrompt plus rien : elle propose un bandeau au lieu de recharger.",
+    ],
+  },
   {
     v: '1.7',
     date: '11/08/2026',
