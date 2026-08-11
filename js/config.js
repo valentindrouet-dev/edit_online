@@ -57,6 +57,9 @@ export const DEFAULTS = {
   },
   poidsElements: Object.fromEntries(ELEMENT_IDS.map((e) => [e, 1])),
 
+  // --- Affichage -----------------------------------------------------------
+  illustrations: true,    // les visuels imprimés sur les cartes
+
   // --- Divers --------------------------------------------------------------
   graine: '',
   vitesseIA: 500,

@@ -192,14 +192,24 @@ button { font-family: inherit; }
 .moitie {
   position: relative; border-radius: 6px; overflow: hidden;
   display: flex; flex-direction: column; min-width: 0;
-  background: #e9f2dc;
+  background-color: #e9f2dc;
+  background-size: cover; background-position: center;
 }
+/* Sans illustration : on retombe sur la lecture purement informative. */
+body.sans-illus .moitie { background-image: none !important; }
+/* Avec l'illustration, minutage, pastilles et bandeau sont déjà imprimés
+   dessus : les calques de l'application feraient doublon. */
+body:not(.sans-illus) .moitie > .tcode,
+body:not(.sans-illus) .moitie > .pastilles,
+body:not(.sans-illus) .moitie > .bandeau,
+body:not(.sans-illus) .moitie > .libelle,
+body:not(.sans-illus) .moitie > .titre-transition { display: none; }
 .carte > .moitie { flex: var(--flex); }
-.moitie.f-PM { background: #fdf0d3; }
-.moitie.f-GP { background: #fbdfd2; }
-.moitie.f-PL { background: #e7f2d8; }
-.moitie.transition { background: #1a1a1e; }
-.moitie.depart { background: #d8ecf7; }
+.moitie.f-PM { background-color: #fdf0d3; }
+.moitie.f-GP { background-color: #fbdfd2; }
+.moitie.f-PL { background-color: #e7f2d8; }
+.moitie.transition { background-color: #1a1a1e; }
+.moitie.depart { background-color: #d8ecf7; }
 
 .moitie .corps { flex: 1 1 auto; min-height: 0; }
 .moitie .tcode {

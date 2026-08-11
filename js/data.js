@@ -235,6 +235,7 @@ export function halfInfo(sceneIdx, format, opts = {}) {
     obj: side.obj || null,
     mort: !!s.mort,
     num: format === 'GP' ? s.gpNum : s.pmNum,
+    image: `assets/${format === 'GP' ? 'gp' : 'pm'}/${format === 'GP' ? s.gpNum : s.pmNum}.webp`,
   };
 }
 
@@ -261,5 +262,6 @@ export function plHalf(carte) {
     mort: false,
     num: carte.num,
     depart: !!carte.depart,
+    image: `assets/pl/${carte.num}.webp`,
   };
 }

@@ -24,6 +24,9 @@ dossier (`python3 -m http.server`).
 ```
 index.html
 css/styles.css
+assets/pm/<num>.webp   visuels des moitiés Plan Moyen  (33)
+assets/gp/<num>.webp   visuels des moitiés Gros Plan   (33)
+assets/pl/<num>.webp   visuels des Plans Larges et des Plans de départ (18)
 js/version.js    numéro de version et journal des modifications
 js/data.js       matériel : éléments, 33 scènes, 14 Plans Larges, 8 Plans de départ, 50 cartes PM/GP
 js/config.js     variables par défaut, profils d'IA, description des réglages
@@ -35,6 +38,16 @@ js/ai.js         Novice, Équilibré, Stratège
 js/lab.js        simulation par lots et agrégats statistiques
 js/app.js        routage et écrans
 ```
+
+## Les illustrations
+
+Les 84 visuels sont extraits des PDF d'impression (`pdftoppm` à 150 dpi, puis WebP qualité 80) et
+nommés par numéro de plan : `assets/gp/317.webp`, `assets/pm/201.webp`, `assets/pl/103.webp`.
+Poids total 1,6 Mo. Le nom du fichier est la seule convention à respecter — remplacer un fichier
+suffit à mettre la carte à jour, sans toucher au code.
+
+La case **Illustrations** de l'accueil bascule entre la carte imprimée et la lecture nue (minutage,
+pastilles et bandeau dessinés par l'application), utile pour lire le matériel sans l'image.
 
 ## Le modèle de jeu
 

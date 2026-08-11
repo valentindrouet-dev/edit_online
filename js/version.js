@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.2';
-export const BUILD_DATE = '2026-08-11 15:10';
+export const VERSION = '1.3';
+export const BUILD_DATE = '2026-08-11 16:05';
 
 export const CHANGELOG = [
+  {
+    v: '1.3',
+    date: '11/08/2026',
+    items: [
+      "Les cartes portent leurs illustrations : les 84 visuels sont extraits des PDF d’impression et servis en WebP, 1,6 Mo pour l’ensemble du matériel.",
+      "Une case « Illustrations » sur l’accueil bascule entre la carte imprimée et la lecture nue — minutage, pastilles et bandeau seuls — pour travailler l’équilibrage sans se laisser distraire par l’image.",
+      "Les visuels confirment la correspondance page ↔ numéro de plan : les minutages et les personnages imprimés coïncident avec les données du tableau de répartition.",
+      "Les Plans Larges 101 et 102 apparaissent pour ce qu’ils sont — des gabarits verts sans illustration ni pastilles, à compléter.",
+    ],
+  },
   {
     v: '1.2',
     date: '11/08/2026',

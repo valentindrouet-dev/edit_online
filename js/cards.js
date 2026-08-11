@@ -43,7 +43,10 @@ export function renderPlan(h, opts = {}) {
   const flex = large ? '1 1 100%' : (h.format === 'GP' ? '0 0 33.6%' : '1 1 66.4%');
   const titre = h.titre ? `<div class="titre-transition">${h.titre}</div>` : '';
   const label = h.depart ? 'Plan de départ' : (h.transition ? h.transition.toLowerCase() : F.label);
-  return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"
+  // L'image est posée en style inline : dans une variable CSS, url() se
+  // résoudrait contre la feuille de style et non contre le document.
+  const img = h.image ? `background-image:url('${h.image}');` : '';
+  return `<div class="${cls}" style="--flex:${flex};${img}" data-format="${h.format}" data-num="${h.num}"
       title="${objLabel(h.obj) || label}">
     <div class="tcode ${h.tc === 0 || h.transition ? 'bleu' : ''}">${tc(h.tc)}</div>
     ${titre}

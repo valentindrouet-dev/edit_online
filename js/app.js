@@ -77,6 +77,7 @@ function topbar(actif) {
 const pied = () => `<div class="pied">Version ${VERSION} — compilée le ${BUILD_DATE}</div>`;
 
 function html(s) {
+  document.body.classList.toggle('sans-illus', !store.cfg.illustrations);
   app.innerHTML = s;
   app.querySelectorAll('[data-go]').forEach((el) => {
     el.addEventListener('click', () => { location.hash = el.dataset.go; });
@@ -121,6 +122,7 @@ function vueAccueil() {
         <div class="panneau">
           <h2>Options de partie</h2>
           <div class="chips">
+            ${chip('illustrations', 'Illustrations sur les cartes')}
             ${chip('premierJoueurAleatoire', '1re joueuse aléatoire')}
             ${chip('piocheDirectePMGP', 'Pioche PM / GP au sommet')}
             ${chip('piocheDirectePL', 'Pioche Plans Larges au sommet')}
@@ -194,7 +196,7 @@ function vueAccueil() {
   }));
 
   brancherJoueurs();
-  brancherChips();
+  brancherChips(vueAccueil);
   brancherChamps(vueAccueil);
   app.querySelector('#graine').addEventListener('change', (e) => { store.cfg.graine = e.target.value.trim(); sauverCfg(); });
   app.querySelector('#go').addEventListener('click', lancerPartie);
@@ -656,8 +658,8 @@ function vueMateriel() {
       <h2>Matériel</h2>
       <p class="aide">50 cartes Plan Moyen / Gros Plan — au recto le Gros Plan à gauche et le Plan Moyen à
       droite, au verso l’inverse, avec les mêmes deux moitiés. 14 Plans Larges, 8 Plans de départ en
-      2 versions. Les illustrations ne sont pas reproduites : seuls le minutage, les pastilles et le
-      bandeau comptent pour jouer.</p>
+      2 versions. Les visuels sont extraits des PDF d’impression ; la case <b>Illustrations</b> de
+      l’accueil les remplace au besoin par la lecture nue — minutage, pastilles et bandeau seuls.</p>
       <div class="filtre-barre" style="margin-top:16px">
         ${[['DOUBLE', 'PM / GP — recto'], ['VERSO', 'PM / GP — verso'], ['PL', 'Plans Larges'],
            ['DEPART', 'Plans de départ'], ['TABLE', 'Tableau des scènes']]
