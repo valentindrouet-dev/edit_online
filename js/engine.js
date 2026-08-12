@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.15';
-import { compter, bancVide } from './scoring.js?v=1.15';
+} from './data.js?v=1.16';
+import { compter, bancVide } from './scoring.js?v=1.16';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -71,11 +71,12 @@ export function construirePaquet(cfg) {
 
 // --- Plans visibles d'une carte -------------------------------------------
 
-/** Les deux plans qu'une carte double peut laisser visibles. */
-export function plansVisibles(carte) {
+/** Les plans qu'une carte peut laisser visibles — deux par face. */
+export function plansVisibles(carte, face) {
   if (carte.type !== 'DOUBLE') return [plHalf(carte)];
-  const m = moitiesDe(carte);
-  return [m.GP, m.PM];
+  if (face) { const m = moitiesDe(carte, face); return [m.GP, m.PM]; }
+  const r = moitiesDe(carte, 'R'), v = moitiesDe(carte, 'V');
+  return [r.GP, r.PM, v.GP, v.PM];
 }
 
 function planPose(carte, format, role, face) {

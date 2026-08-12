@@ -2,23 +2,23 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.15';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.16';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
-} from './data.js?v=1.15';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.15';
-import { elIcon } from './icons.js?v=1.15';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.15';
+} from './data.js?v=1.16';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.16';
+import { elIcon } from './icons.js?v=1.16';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.16';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.15';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.15';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.15';
-import { campagne } from './lab.js?v=1.15';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.15';
+} from './engine.js?v=1.16';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.16';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.16';
+import { campagne } from './lab.js?v=1.16';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.16';
 
 const app = document.getElementById('app');
 
@@ -889,9 +889,10 @@ const mat = {
   vue: 'CARTES',        // CARTES | GP | PM | PL | DEPART | TABLE | STATS
   tri: 'num',
   filtres: { face: '', icone: '', pouvoir: '', tcMin: '', tcMax: '', etat: '', actif: '', famille: '' },
-  plans: new Set(),     // clés des plans sélectionnés
+  plans: new Set(),     // clés des plans sélectionnés — survit au changement de vue
   cartes: new Set(),    // identifiants des cartes sélectionnées
   ancre: null,          // dernier clic, pour la sélection au shift
+  ancreVue: null,       // et la vue où il a eu lieu
 };
 
 const VUES = [
@@ -1129,6 +1130,8 @@ function galerieMateriel() {
   const vues = trier(toutes.filter(passeFiltres));
   const f = mat.filtres;
   const sel = (t) => (t.genre === 'PLAN' ? mat.plans.has(t.cle) : mat.cartes.has(t.id));
+  const visibles = new Set(toutes.flatMap((t) => plansTuile(t).map((h) => h.cle)));
+  const horsVue = [...mat.plans].filter((c) => !visibles.has(c)).length;
 
   const opt = (v, l, on) => `<option value="${v}" ${on ? 'selected' : ''}>${l}</option>`;
 
@@ -1171,10 +1174,11 @@ function galerieMateriel() {
 
   <div class="barre-selection">
     <span class="info">${vues.length} / ${toutes.length} affichée${toutes.length > 1 ? 's' : ''}
-      · <b>${mat.plans.size} plan${mat.plans.size > 1 ? 's' : ''} sélectionné${mat.plans.size > 1 ? 's' : ''}</b></span>
+      · <b>${mat.plans.size} plan${mat.plans.size > 1 ? 's' : ''} sélectionné${mat.plans.size > 1 ? 's' : ''}</b>${
+        horsVue ? ` <span class="aide">dont ${horsVue} hors de cette vue</span>` : ''}</span>
     <button class="pill mini" id="sel-tout">Tout sélectionner</button>
     <button class="pill mini" id="sel-rien" ${mat.plans.size ? '' : 'disabled'}>Ne rien sélectionner</button>
-    <span class="aide">clic pour ajouter ou retirer · maj+clic pour une plage</span>
+    <span class="aide">clic pour choisir · maj+clic pour ajouter ou étendre la sélection</span>
   </div>
 
   ${vues.length ? `<div class="galerie">${vues.map((t, i) => {
@@ -1629,8 +1633,10 @@ function brancherMateriel() {
     majTuiles();
   };
 
+  // La sélection survit au changement de vue : on peut régler d'un coup des
+  // Gros Plans et des Plans Moyens pris dans deux galeries différentes.
   app.querySelectorAll('[data-vue]').forEach((b) => b.addEventListener('click', () => {
-    mat.vue = b.dataset.vue; mat.ancre = null; refaire();
+    mat.vue = b.dataset.vue; refaire();
   }));
 
   app.querySelectorAll('[data-jeu]').forEach((b) => b.addEventListener('click', () => {
@@ -1649,16 +1655,25 @@ function brancherMateriel() {
     mat.tri = 'num'; refaire();
   });
 
+  // Un clic simple remplace la sélection ; maj+clic l'étend, du dernier plan
+  // cliqué jusqu'à celui-ci, sans rien perdre de ce qui était déjà pris —
+  // même choisi dans une autre vue.
   const tuiles = trier(tuilesDe(mat.vue).filter(passeFiltres));
   app.querySelectorAll('[data-tuile]').forEach((el) => el.addEventListener('click', (ev) => {
     const rang = +el.dataset.rang;
-    if (ev.shiftKey && mat.ancre !== null) {
-      const [a, b] = [Math.min(mat.ancre, rang), Math.max(mat.ancre, rang)];
-      for (let i = a; i <= b; i++) ajouterTuile(tuiles[i]);
+    if (ev.shiftKey) {
+      if (mat.ancre !== null && mat.ancreVue === mat.vue) {
+        const [a, b] = [Math.min(mat.ancre, rang), Math.max(mat.ancre, rang)];
+        for (let i = a; i <= b; i++) ajouterTuile(tuiles[i]);
+      } else {
+        basculerTuile(tuiles[rang]);
+      }
     } else {
-      basculerTuile(tuiles[rang]);
-      mat.ancre = rang;
+      mat.plans.clear(); mat.cartes.clear();
+      ajouterTuile(tuiles[rang]);
     }
+    mat.ancre = rang;
+    mat.ancreVue = mat.vue;
     refaire();
   }));
 

@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel } from './data.js?v=1.15';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.15';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel } from './data.js?v=1.16';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.16';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -86,9 +86,10 @@ export function renderPlan(h, opts = {}) {
 
 /** Une carte entière. `verso` échange la position des deux moitiés. */
 export function renderCarte(carte, verso, opts = {}) {
-  const plans = carte.type === 'DOUBLE'
-    ? (verso ? [moitiesDe(carte).PM, moitiesDe(carte).GP] : [moitiesDe(carte).GP, moitiesDe(carte).PM])
-    : [plHalf(carte)];
+  // Le verso ne se contente pas d'inverser les deux moitiés du recto : ce sont
+  // d'autres plans, avec leur propre minutage. Il faut donc les demander.
+  const m = carte.type === 'DOUBLE' ? moitiesDe(carte, verso ? 'V' : 'R') : null;
+  const plans = m ? (verso ? [m.PM, m.GP] : [m.GP, m.PM]) : [plHalf(carte)];
   const cls = ['carte', opts.selected ? 'sel' : '', opts.small ? 'small' : '', opts.tiny ? 'tiny' : '',
     opts.clickable ? 'clickable' : '', opts.moitiesChoisissables ? 'choix-moitie' : ''].join(' ');
   return `<div class="${cls}" data-carte="${carte.id}" data-verso="${verso ? 1 : 0}">
@@ -124,9 +125,11 @@ export function renderDos(libelle, reste, opts = {}) {
   </div>`;
 }
 
-/** Fiche texte d'une carte, pour l'écran Matériel. */
+/** Fiche texte d'une carte, ses quatre plans — deux par face. */
 export function ficheCarte(carte) {
-  const plans = carte.type === 'DOUBLE' ? Object.values(moitiesDe(carte)) : [plHalf(carte)];
+  const plans = carte.type === 'DOUBLE'
+    ? [...Object.values(moitiesDe(carte, 'R')), ...Object.values(moitiesDe(carte, 'V'))]
+    : [plHalf(carte)];
   return plans.map((h) => {
     const els = h.el.map((e) => ELEMENTS[e].label).join(', ') || '—';
     return `${h.transition || FORMATS[h.format].label} n°${h.num} · ${tc(h.tc)} · ${els}`;

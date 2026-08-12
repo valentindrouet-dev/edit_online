@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.15';
-export const BUILD_DATE = '2026-08-12 20:10';
+export const VERSION = '1.16';
+export const BUILD_DATE = '2026-08-12 21:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.16',
+    date: '12/08/2026',
+    items: [
+      "Correction : le verso d’une carte se contentait d’inverser les deux moitiés du recto au lieu d’aller chercher les plans du verso. Un Gros Plan réglé à 25:00 au recto et 20:00 au verso affichait donc 25:00 des deux côtés. Les deux faces montrent désormais chacune ses propres plans, sur les cartes reconstituées comme dans l’aperçu de l’éditeur.",
+      "La sélection survit au changement de vue : on règle d’un coup des Gros Plans et des Plans Moyens pris dans deux galeries différentes. Le compteur dit combien de plans sont sélectionnés hors de la vue courante.",
+      "Un clic simple remplace la sélection ; maj+clic l’étend, du dernier plan cliqué jusqu’à celui-ci, ou ajoute un plan isolé.",
+    ],
+  },
   {
     v: '1.15',
     date: '12/08/2026',

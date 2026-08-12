@@ -159,9 +159,11 @@ Cinq vues de galerie : les cartes Plan Moyen / Gros Plan, les **Gros Plans seuls
 Moyens seuls** (recto et verso y figurent séparément, moitiés orphelines comprises), les Plans
 Larges et les Plans de départ. Plus **Tableau complet** et **Statistiques**.
 
-La **sélection est multiple** : clic pour ajouter ou retirer, maj+clic pour une plage, plus « tout
-sélectionner ». Le panneau se règle alors exactement comme celui d'un plan seul, chaque geste partant
-aussitôt sur toute la sélection — rien à confirmer. Une icône que seule une partie de la sélection
+La **sélection est multiple** : un clic simple la remplace, maj+clic l'étend — du dernier plan cliqué
+jusqu'à celui-ci, ou un plan isolé de plus. Elle **survit au changement de vue**, si bien qu'on règle
+d'un coup des Gros Plans et des Plans Moyens pris dans deux galeries différentes ; le compteur dit
+combien de plans sont sélectionnés hors de la vue courante. Le panneau se règle alors exactement
+comme celui d'un plan seul, chaque geste partant aussitôt sur toute la sélection — rien à confirmer. Une icône que seule une partie de la sélection
 porte est marquée **partielle** : un clic la donne à tous, un second la retire de tous.
 
 Un **numéro de plan désigne le même plan partout**. Le Plan Moyen 201 est porté par trois cartes ;
