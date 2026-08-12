@@ -378,7 +378,10 @@ body.sans-illus .illus { background-image: none !important; }
 .fente-btn:hover { background: rgba(249,115,22,.45); border-color: var(--orange); color: #fff; }
 
 /* Un plan présenté seul (choix de face, Plan de départ) garde sa proportion. */
-.carte.solo { width: auto; aspect-ratio: auto; font-size: 12.7px; }
+/* Une carte qui ne porte qu'un plan se règle sur lui : `auto` la ferait
+   s'étirer à la largeur disponible et laisserait le fond noir de la carte
+   dépasser à droite d'un Gros Plan. */
+.carte.solo { width: fit-content; aspect-ratio: auto; font-size: 12.7px; }
 .carte.solo .moitie { flex: 0 0 auto; height: 182px; }
 .carte.solo .moitie.f-GP { width: 85px; }
 .carte.solo .moitie.f-PM { width: 169px; }
@@ -626,7 +629,10 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 .filtre-barre .pill.on { background: var(--violet); color: #fff; border-color: var(--violet); }
 
-.galerie .vignette { cursor: pointer; border-radius: 12px; padding: 8px; transition: .12s; }
+/* La vignette se règle sur sa carte : le libellé passe à la ligne plutôt que
+   d'élargir la tuile — décisif sur un Gros Plan, large de trois doigts. */
+.galerie .vignette { cursor: pointer; border-radius: 12px; padding: 8px; transition: .12s; width: min-content; }
+.galerie .vignette .lg { line-height: 1.35; }
 .galerie .vignette:hover { background: var(--violet-pale); }
 .galerie .vignette.sel { background: var(--violet-pale); box-shadow: inset 0 0 0 2px var(--violet); }
 .galerie .vignette.retouchee .lg { color: var(--violet); font-weight: 700; }
@@ -803,3 +809,9 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
   background: var(--gris-clair); color: var(--encre-doux);
 }
 .jeton-materiel.modifie { background: var(--violet); color: #fff; }
+
+/* Une pastille que seule une partie de la sélection porte. */
+.choix-icones .ic.partiel {
+  opacity: .78; border-style: dashed; border-color: var(--violet-clair);
+  background: repeating-linear-gradient(135deg, #fff 0 5px, var(--violet-pale) 5px 10px);
+}

@@ -2,23 +2,23 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.13';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.14';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle,
-} from './data.js?v=1.13';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.13';
-import { elIcon } from './icons.js?v=1.13';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.13';
+} from './data.js?v=1.14';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.14';
+import { elIcon } from './icons.js?v=1.14';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.14';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.13';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.13';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.13';
-import { campagne } from './lab.js?v=1.13';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.13';
+} from './engine.js?v=1.14';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.14';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.14';
+import { campagne } from './lab.js?v=1.14';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.14';
 
 const app = document.getElementById('app');
 
@@ -1275,7 +1275,7 @@ function blocPlan(h) {
 
     <div class="champ-bloc">
       <span class="ch-lg">Icônes</span>
-      ${choixIcones(h.el, h.mort, `data-plan-icone="${h.cle}"`, `data-plan-mort="${h.cle}"`)}
+      ${choixIcones([h], `data-plan-icone="${h.cle}"`, `data-plan-mort="${h.cle}"`)}
       ${memeEl ? '' : `<div class="imp-rappel ligne">imprimé :
         ${imp.el.map((e) => elIcon(e, 20)).join('') || 'aucune icône'}${imp.mort ? elIcon('MORT', 20) : ''}</div>`}
     </div>
@@ -1286,41 +1286,36 @@ function blocPlan(h) {
   </div>`;
 }
 
-/** Le formulaire d'un lot : ce qu'on applique s'applique à toute la sélection. */
+/**
+ * Le formulaire d'un lot. Il se manie comme celui d'un plan seul : chaque
+ * réglage part aussitôt sur toute la sélection, sans bouton à confirmer.
+ * Une icône que seule une partie des plans porte est marquée « partielle » —
+ * un clic la donne alors à tous.
+ */
 function blocLot(plans) {
   const memes = (f) => { const v = JSON.stringify(f(plans[0])); return plans.every((p) => JSON.stringify(f(p)) === v); };
   const tcCommun = memes((p) => p.tc) ? plans[0].tc : '';
   const nRetouches = plans.filter((p) => retoucheDe(p.cle)).length;
-  const obj = objLotCourant(plans);
 
   return `<div class="bloc-plan lot">
     <div class="bp-tete">
       <b>Régler les ${plans.length} plans d’un coup</b>
       <button class="pill mini" data-lot-reset="1" ${nRetouches ? '' : 'disabled'}>↺ imprimé (${nRetouches})</button>
     </div>
-    <p class="aide">Chaque réglage ne part que sur son bouton <b>Appliquer</b> : rien ne bouge tant
-    qu’on n’a pas cliqué.</p>
+    <p class="aide">Tout ce qui est réglé ici part aussitôt sur les ${plans.length} plans.</p>
 
     <label class="champ-ligne">
       <span>Minutage</span>
-      <input type="number" min="0" max="99" step="1" value="${tcCommun}" id="lot-tc" placeholder="—">
-      <button class="pill mini" data-lot="tc">Appliquer</button>
+      <input type="number" min="0" max="99" step="1" value="${tcCommun}" data-lot-tc="1" placeholder="—">
+      ${tcCommun === '' ? '<span class="aide">minutages différents</span>' : `<span class="tc-apercu">${tc(tcCommun)}</span>`}
     </label>
 
     <div class="champ-bloc">
       <span class="ch-lg">Icônes</span>
-      ${choixIcones(lotIcones(plans), plans.every((p) => p.mort), 'data-lot-icone="1"', 'data-lot-mort="1"')}
-      <div class="rangee-mini" style="margin-top:8px">
-        <button class="pill mini" data-lot="el-ajout">Ajouter aux plans</button>
-        <button class="pill mini" data-lot="el-retire">Retirer des plans</button>
-        <button class="pill mini" data-lot="el-remplace">Remplacer</button>
-        <button class="pill mini" data-lot="mort">Marquer la mort</button>
-        <button class="pill mini" data-lot="mort-non">Enlever la mort</button>
-      </div>
+      ${choixIcones(plans, 'data-lot-icone="1"', 'data-lot-mort="1"')}
     </div>
 
-    ${blocPouvoir(obj, 'lot')}
-    <div class="rangee-mini"><button class="pill mini" data-lot="obj">Appliquer le pouvoir aux ${plans.length} plans</button></div>
+    ${blocPouvoir(objCommunDe(plans), 'lot')}
 
     <div class="liste-lot">
       ${plans.map((p) => `<span class="jeton ${retoucheDe(p.cle) ? 'mod' : ''}" data-oter="${p.cle}"
@@ -1329,16 +1324,32 @@ function blocLot(plans) {
   </div>`;
 }
 
-/** Les icônes cochées dans un lot : celles que tous les plans portent. */
-function lotIcones(plans) {
-  return ELEMENT_IDS.filter((e) => plans.every((p) => p.el.includes(e)));
+/** Le pouvoir commun à une sélection, ou rien si les plans divergent. */
+function objCommunDe(plans) {
+  const v = JSON.stringify(plans[0].obj || null);
+  return plans.every((p) => JSON.stringify(p.obj || null) === v) ? plans[0].obj : null;
 }
 
-function choixIcones(el, mort, attrIcone, attrMort) {
+/**
+ * Les pastilles d'un plan ou d'une sélection. « on » = tous les plans la
+ * portent, « partiel » = certains seulement.
+ */
+function choixIcones(plans, attrIcone, attrMort) {
+  const etat = (test) => {
+    const n = plans.filter(test).length;
+    return n === 0 ? '' : n === plans.length ? 'on' : 'partiel';
+  };
+  const titre = (l, e) => (e === 'partiel' ? `${l} — sur une partie de la sélection seulement` : l);
   return `<div class="choix-icones">
-    ${ELEMENT_IDS.map((e) => `<button class="ic ${el.includes(e) ? 'on' : ''}"
-      data-icone="${e}" ${attrIcone} title="${ELEMENTS[e].label}">${elIcon(e, 26)}</button>`).join('')}
-    <button class="ic sep ${mort ? 'on' : ''}" ${attrMort} title="Plan de mort">${elIcon('MORT', 26)}</button>
+    ${ELEMENT_IDS.map((e) => {
+      const s = etat((p) => p.el.includes(e));
+      return `<button class="ic ${s}" data-icone="${e}" ${attrIcone}
+        title="${titre(ELEMENTS[e].label, s)}">${elIcon(e, 26)}</button>`;
+    }).join('')}
+    ${(() => {
+      const s = etat((p) => p.mort);
+      return `<button class="ic sep ${s}" ${attrMort} title="${titre('Plan de mort', s)}">${elIcon('MORT', 26)}</button>`;
+    })()}
   </div>`;
 }
 
@@ -1601,7 +1612,7 @@ function brancherMateriel() {
   if (tout) tout.addEventListener('click', () => { tuiles.forEach(ajouterTuile); refaire(); });
   const rien = app.querySelector('#sel-rien');
   if (rien) rien.addEventListener('click', () => {
-    mat.plans.clear(); mat.cartes.clear(); mat.ancre = null; oublierObjLot(); refaire();
+    mat.plans.clear(); mat.cartes.clear(); mat.ancre = null; refaire();
   });
 
   const ex = app.querySelector('#mat-export');
@@ -1612,14 +1623,12 @@ function brancherMateriel() {
 
 function ajouterTuile(t) {
   if (!t) return;
-  oublierObjLot();
   plansTuile(t).forEach((h) => mat.plans.add(h.cle));
   if (t.genre === 'CARTE') mat.cartes.add(t.id);
 }
 
 function basculerTuile(t) {
   if (!t) return;
-  oublierObjLot();
   const cles = plansTuile(t).map((h) => h.cle);
   const dedans = cles.every((c) => mat.plans.has(c));
   if (dedans) {
@@ -1678,12 +1687,9 @@ function brancherEditeur(refaire) {
   // Le pouvoir : en solo il s'applique au fil des changements, en lot il
   // attend son bouton.
   app.querySelectorAll('[data-champ-obj]').forEach((el) => el.addEventListener('change', () => {
-    if (el.dataset.champObj === 'lot') {
-      objLot = majObjBrouillon(objLotCourant(plans), el.dataset.part);
-      objLotTouche = true;
-      return refaire();
-    }
-    majObjectif([el.dataset.champObj], el.dataset.part, el.value); sauverCfg(); refaire();
+    const cibles = el.dataset.champObj === 'lot' ? plans.map((p) => p.cle) : [el.dataset.champObj];
+    majObjectif(cibles, el.dataset.part, el.value);
+    sauverCfg(); refaire();
   }));
 
   app.querySelectorAll('[data-paire]').forEach((el) => el.addEventListener('change', () => {
@@ -1705,62 +1711,33 @@ function brancherEditeur(refaire) {
 }
 
 // --- Le lot -----------------------------------------------------------------
-// Le pouvoir d'un lot se compose à part : on le construit dans le formulaire,
-// il ne part sur les plans qu'au clic sur Appliquer. Tant qu'on n'y a pas
-// touché, le formulaire montre le pouvoir commun à la sélection.
-
-let objLot = null;
-let objLotTouche = false;
-
-function objLotCourant(plans) {
-  if (objLotTouche) return objLot;
-  const v = JSON.stringify(plans[0].obj || null);
-  return plans.every((p) => JSON.stringify(p.obj || null) === v) ? plans[0].obj : null;
-}
-
-function oublierObjLot() { objLot = null; objLotTouche = false; }
-
-function majObjBrouillon(courant, part) {
-  const lire = (p) => app.querySelector(`[data-champ-obj="lot"][data-part="${p}"]`);
-  const val = (p) => { const e = lire(p); return e ? e.value : null; };
-  if (part === 'kind') return construireObj(val('kind'), courant);
-  if (!courant) return courant;
-  const o = JSON.parse(JSON.stringify(courant));
-  if (part === 'n') o.n = borne(val('n'));
-  else if (part === 'format') o.format = val('format');
-  else if (part === 'el') o.el = val('el');
-  else if (part === 'el0') o.els = [val('el0'), o.els[1]];
-  else if (part === 'el1') o.els = [o.els[0], val('el1')];
-  return o;
-}
+// Rien à confirmer : un lot se règle exactement comme un plan seul, chaque
+// geste partant aussitôt sur toute la sélection.
 
 function brancherLot(plans, refaire) {
   const cles = plans.map((p) => p.cle);
 
+  const bTc = app.querySelector('[data-lot-tc]');
+  if (bTc) bTc.addEventListener('change', () => { appliquerTc(cles, bTc.value); sauverCfg(); refaire(); });
+
+  // Une icône que tous portent se retire de tous ; sinon elle est donnée à
+  // tous — c'est ce que le clic sur une pastille partielle veut dire.
   app.querySelectorAll('[data-lot-icone]').forEach((el) => el.addEventListener('click', () => {
-    el.classList.toggle('on'); // le lot ne s'applique qu'au bouton
-  }));
-  const bMort = app.querySelector('[data-lot-mort]');
-  if (bMort) bMort.addEventListener('click', () => bMort.classList.toggle('on'));
-
-  const cochees = () => [...app.querySelectorAll('[data-lot-icone].on')].map((e) => e.dataset.icone);
-
-  app.querySelectorAll('[data-lot]').forEach((el) => el.addEventListener('click', () => {
-    const quoi = el.dataset.lot;
-    if (quoi === 'tc') appliquerTc(cles, app.querySelector('#lot-tc').value);
-    else if (quoi === 'el-remplace') poserIcones(cles, cochees());
-    else if (quoi === 'el-ajout' || quoi === 'el-retire') {
-      const ic = cochees();
-      for (const p of plans) {
-        const set = new Set(p.el);
-        for (const e of ic) { if (quoi === 'el-ajout') set.add(e); else set.delete(e); }
-        poserIcones([p.cle], ELEMENT_IDS.filter((e) => set.has(e)));
-      }
-    } else if (quoi === 'mort') poserMort(cles, true);
-    else if (quoi === 'mort-non') poserMort(cles, false);
-    else if (quoi === 'obj') poserObj(cles, objLotCourant(plans));
+    const e = el.dataset.icone;
+    const tous = plans.every((p) => p.el.includes(e));
+    for (const p of plans) {
+      const set = new Set(p.el);
+      if (tous) set.delete(e); else set.add(e);
+      poserIcones([p.cle], ELEMENT_IDS.filter((x) => set.has(x)));
+    }
     sauverCfg(); refaire();
   }));
+
+  const bMort = app.querySelector('[data-lot-mort]');
+  if (bMort) bMort.addEventListener('click', () => {
+    poserMort(cles, !plans.every((p) => p.mort));
+    sauverCfg(); refaire();
+  });
 
   const rz = app.querySelector('[data-lot-reset]');
   if (rz) rz.addEventListener('click', () => {
@@ -1770,7 +1747,6 @@ function brancherLot(plans, refaire) {
 
   app.querySelectorAll('[data-oter]').forEach((el) => el.addEventListener('click', () => {
     mat.plans.delete(el.dataset.oter);
-    oublierObjLot();
     vueMateriel();
   }));
 }
@@ -1838,11 +1814,15 @@ function construireObj(kind, actuel) {
   }[kind]();
 }
 
-/** Recompose le bandeau d'un plan à partir de la pièce que l'on vient de changer. */
+/**
+ * Recompose le bandeau à partir de la pièce que l'on vient de changer. Sur
+ * une sélection, la base est le pouvoir que tous les plans ont en commun —
+ * c'est celui que le formulaire montre.
+ */
 function majObjectif(cles, part, valeur) {
-  const cle = cles[0];
-  const p = surLeModifie(() => planDeCle(cle));
-  const actuel = p ? p.obj : null;
+  const plans = surLeModifie(() => cles.map(planDeCle).filter(Boolean));
+  if (!plans.length) return;
+  const actuel = objCommunDe(plans);
 
   if (part === 'kind') return poserObj(cles, construireObj(valeur, actuel));
   if (!actuel) return;

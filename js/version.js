@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.13';
-export const BUILD_DATE = '2026-08-12 17:20';
+export const VERSION = '1.14';
+export const BUILD_DATE = '2026-08-12 18:40';
 
 export const CHANGELOG = [
+  {
+    v: '1.14',
+    date: '12/08/2026',
+    items: [
+      "Une carte qui ne porte qu’un plan se règle sur lui : le fond noir de la carte ne dépasse plus à droite d’un Gros Plan ni de certains Plans Moyens. Les vignettes d’une galerie ont toutes la même largeur, le libellé passant à la ligne au lieu de l’élargir.",
+      "Le réglage en lot ne demande plus rien à confirmer : minutage, icônes, marqueur de mort et pouvoir partent aussitôt sur toute la sélection, exactement comme sur un plan seul.",
+      "Une icône que seule une partie de la sélection porte est marquée « partielle » — un clic la donne alors à tous, un second la retire de tous.",
+    ],
+  },
   {
     v: '1.13',
     date: '12/08/2026',

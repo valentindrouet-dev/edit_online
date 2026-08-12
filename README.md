@@ -156,8 +156,13 @@ Moyens seuls** (recto et verso y figurent séparément, moitiés orphelines comp
 Larges et les Plans de départ. Plus **Tableau complet** et **Statistiques**.
 
 La **sélection est multiple** : clic pour ajouter ou retirer, maj+clic pour une plage, plus « tout
-sélectionner ». Un minutage, des icônes (ajouter, retirer ou remplacer) ou un pouvoir s'appliquent
-alors d'un coup à toute la sélection — chaque réglage attend son bouton **Appliquer**.
+sélectionner ». Le panneau se règle alors exactement comme celui d'un plan seul, chaque geste partant
+aussitôt sur toute la sélection — rien à confirmer. Une icône que seule une partie de la sélection
+porte est marquée **partielle** : un clic la donne à tous, un second la retire de tous.
+
+Un **numéro de plan désigne le même plan partout**. Le Plan Moyen 201 est porté par trois cartes ;
+le régler une fois le règle sur les trois, car la retouche est indexée par sa clé et non par la
+carte qui l'accueille. Seules les faces sont distinctes : `201R` et `201V`.
 
 **Tri** par numéro, minutage ou famille. **Filtres** par icône, type de pouvoir, plage de minutage,
 famille, état (à l'imprimé / retouché) et composition de la boîte.
