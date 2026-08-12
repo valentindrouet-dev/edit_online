@@ -136,6 +136,10 @@ tous deux de cette valeur**, et c'est l'éditeur qui reçoit les vraies valeurs 
 
 ### Ce qui se règle, plan par plan
 
+- son **numéro** — renumérotable à la main. Ce n'est qu'une étiquette : l'identité d'un plan reste
+  son numéro imprimé, qui sert de clé et désigne son illustration, donc renuméroter ne casse aucun
+  appariement. Deux plans peuvent porter le même numéro ; un bandeau rouge en tête d'écran les
+  signale, et le tableau rappelle le numéro imprimé à côté du nouveau ;
 - son **minutage** — une donnée, plus une image ; il ne conditionne aucun placement et n'entre en jeu
   que dans les objectifs qui rapportent selon le minutage (**Variables › Chronologie**) ;
 - ses **icônes** — les six éléments, plus le marqueur de plan de mort ;
@@ -164,8 +168,13 @@ Un **numéro de plan désigne le même plan partout**. Le Plan Moyen 201 est por
 le régler une fois le règle sur les trois, car la retouche est indexée par sa clé et non par la
 carte qui l'accueille. Seules les faces sont distinctes : `201R` et `201V`.
 
-**Tri** par numéro, minutage ou famille. **Filtres** par icône, type de pouvoir, plage de minutage,
-famille, état (à l'imprimé / retouché) et composition de la boîte.
+**Tri** par numéro, minutage ou famille. **Filtres** par face (recto et verso, recto seulement,
+verso seulement — dans la vue des cartes il les retourne toutes du même côté), icône, type de
+pouvoir, plage de minutage, famille, état (à l'imprimé / retouché) et composition de la boîte.
+
+Deux boutons de nettoyage — **Enlever toutes les icônes** et **Enlever le pouvoir** — valent pour un
+plan comme pour toute une sélection. Ils posent la valeur « rien », ce qui n'est pas la même chose
+que revenir à l'imprimé.
 
 ### Statistiques
 

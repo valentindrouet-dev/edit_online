@@ -2,23 +2,23 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.14';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.15';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
-  appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle,
-} from './data.js?v=1.14';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.14';
-import { elIcon } from './icons.js?v=1.14';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.14';
+  appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
+} from './data.js?v=1.15';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.15';
+import { elIcon } from './icons.js?v=1.15';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.15';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.14';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.14';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.14';
-import { campagne } from './lab.js?v=1.14';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.14';
+} from './engine.js?v=1.15';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.15';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.15';
+import { campagne } from './lab.js?v=1.15';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.15';
 
 const app = document.getElementById('app');
 
@@ -888,7 +888,7 @@ function vueFin() {
 const mat = {
   vue: 'CARTES',        // CARTES | GP | PM | PL | DEPART | TABLE | STATS
   tri: 'num',
-  filtres: { icone: '', pouvoir: '', tcMin: '', tcMax: '', etat: '', actif: '', famille: '' },
+  filtres: { face: '', icone: '', pouvoir: '', tcMin: '', tcMax: '', etat: '', actif: '', famille: '' },
   plans: new Set(),     // clés des plans sélectionnés
   cartes: new Set(),    // identifiants des cartes sélectionnées
   ancre: null,          // dernier clic, pour la sélection au shift
@@ -971,7 +971,7 @@ function cartesDe(vue) {
       return {
         id: c.id, type: 'DOUBLE', carte: c, rang: i,
         plans: [r.GP, r.PM, v.GP, v.PM],
-        libelle: `Carte ${i + 1} · GP ${c.gpNum} | PM ${c.pmNum}`,
+        libelle: `Carte ${i + 1} · GP ${r.GP.num} | PM ${r.PM.num}`,
       };
     });
   });
@@ -1009,7 +1009,12 @@ function plansTuile(t) {
 
 function passeFiltres(t) {
   const f = mat.filtres;
-  const plans = plansTuile(t);
+  // Le filtre de face écarte les plans de l'autre face ; sur une carte, qui
+  // porte les deux, il ne choisit que la face montrée.
+  const plans = f.face && t.genre === 'PLAN'
+    ? plansTuile(t).filter((h) => h.face === f.face)
+    : plansTuile(t);
+  if (!plans.length) return false;
   const un = (test) => plans.some(test);
 
   if (f.icone) {
@@ -1065,6 +1070,7 @@ function vueMateriel() {
   <div class="materiel-2col wrap large">
     <div class="panneau">
       <h2>Matériel</h2>
+      ${alerteDoublons()}
       ${barreJeu()}
       <div class="filtre-barre" style="margin-top:12px">
         ${VUES.map(([k, l]) => `<button class="pill ${mat.vue === k ? 'on' : ''}" data-vue="${k}">${l}</button>`).join('')}
@@ -1077,6 +1083,23 @@ function vueMateriel() {
 
   brancherApercu();
   brancherMateriel();
+}
+
+/**
+ * Renuméroter est libre, mais deux plans qui portent le même numéro se
+ * confondent sur la table : on le dit en clair, en tête d'écran.
+ */
+function alerteDoublons() {
+  const d = surLeModifie(doublonsNumeros);
+  if (!d.length) return '';
+  const nom = (s) => `${FORMATS[s.slice(0, 2)].label} ${s.slice(2)}`;
+  return `<div class="alerte-doublons">
+    <b>⚠ ${d.length} numéro${d.length > 1 ? 's' : ''} en double dans le matériel modifié</b>
+    <ul>${d.map((x) => `<li><b>n°${x.num}</b> — porté par ${x.plans.map(nom).join(', ')}</li>`).join('')}</ul>
+    <span class="aide">Rien n’est cassé : le numéro n’est qu’une étiquette, l’identité d’un plan
+    reste son numéro imprimé. Mais deux plans qui l’affichent en même temps sont indiscernables
+    à la lecture.</span>
+  </div>`;
 }
 
 /** Quel jeu de matériel se joue, et combien il porte de retouches. */
@@ -1112,6 +1135,11 @@ function galerieMateriel() {
   return `<div class="barre-filtres">
     <label>Tri
       <select data-filtre="tri">${TRIS.map(([k, l]) => opt(k, l, mat.tri === k)).join('')}</select></label>
+    <label>Afficher
+      <select data-filtre="face">
+        ${opt('', 'recto et verso', !f.face)}${opt('R', 'recto seulement', f.face === 'R')}
+        ${opt('V', 'verso seulement', f.face === 'V')}
+      </select></label>
     <label>Icône
       <select data-filtre="icone">
         ${opt('', 'toutes', !f.icone)}
@@ -1168,7 +1196,7 @@ function htmlTuileBrut(t) {
   const hors = t.genre === 'CARTE' && estDesactivee(t.id);
   const visuel = t.genre === 'PLAN'
     ? `<div class="carte solo small">${renderPlan(t.plan)}</div>`
-    : (t.type === 'DOUBLE' ? renderCarte(t.carte, false, { small: true })
+    : (t.type === 'DOUBLE' ? renderCarte(t.carte, mat.filtres.face === 'V', { small: true })
       : `<div class="carte solo small">${renderPlan(t.plans[0])}</div>`);
   const etats = [retouche ? '<b class="et-mod">retouché</b>' : '', hors ? '<b class="et-hors">écartée</b>' : '']
     .filter(Boolean).join(' · ');
@@ -1260,11 +1288,21 @@ function blocPlan(h) {
   const imp = h.imprime;
   const memeEl = h.el.length === imp.el.length && h.el.every((x, k) => x === imp.el[k]) && h.mort === imp.mort;
 
+  const enDouble = doublonsNumeros().some((d) => d.num === h.num);
+
   return `<div class="bloc-plan ${r ? 'retouche' : ''}" data-plan="${h.cle}">
     <div class="bp-tete">
       <b>${h.quoi}</b>
       <button class="pill mini" data-plan-reset="${h.cle}" ${r ? '' : 'disabled'}>↺ imprimé</button>
     </div>
+
+    <label class="champ-ligne">
+      <span>Numéro</span>
+      <input type="number" min="1" max="999" step="1" value="${h.num}" data-champ-num="${h.cle}"
+        class="${enDouble ? 'en-double' : ''}">
+      ${h.num !== imp.num ? `<span class="imp-rappel">imprimé ${imp.num}</span>` : ''}
+      ${enDouble ? '<span class="alerte-mini">déjà pris</span>' : ''}
+    </label>
 
     <label class="champ-ligne">
       <span>Minutage</span>
@@ -1276,11 +1314,18 @@ function blocPlan(h) {
     <div class="champ-bloc">
       <span class="ch-lg">Icônes</span>
       ${choixIcones([h], `data-plan-icone="${h.cle}"`, `data-plan-mort="${h.cle}"`)}
+      <div class="rangee-mini" style="margin-top:8px">
+        <button class="pill mini" data-vider="el" data-cles="${h.cle}"
+          ${h.el.length || h.mort ? '' : 'disabled'}>Enlever toutes les icônes</button>
+      </div>
       ${memeEl ? '' : `<div class="imp-rappel ligne">imprimé :
         ${imp.el.map((e) => elIcon(e, 20)).join('') || 'aucune icône'}${imp.mort ? elIcon('MORT', 20) : ''}</div>`}
     </div>
 
     ${blocPouvoir(h.obj, h.cle)}
+    <div class="rangee-mini">
+      <button class="pill mini" data-vider="obj" data-cles="${h.cle}" ${h.obj ? '' : 'disabled'}>Enlever le pouvoir</button>
+    </div>
     ${memeObjectif(h.obj, imp.obj) ? '' : `<div class="imp-rappel ligne">imprimé :
       ${imp.obj ? `${objHTML(imp.obj, 20)} ${objLabel(imp.obj)}` : 'bandeau vide'}</div>`}
   </div>`;
@@ -1293,6 +1338,7 @@ function blocPlan(h) {
  * un clic la donne alors à tous.
  */
 function blocLot(plans) {
+  const cles = plans.map((p) => p.cle).join(' ');
   const memes = (f) => { const v = JSON.stringify(f(plans[0])); return plans.every((p) => JSON.stringify(f(p)) === v); };
   const tcCommun = memes((p) => p.tc) ? plans[0].tc : '';
   const nRetouches = plans.filter((p) => retoucheDe(p.cle)).length;
@@ -1313,9 +1359,17 @@ function blocLot(plans) {
     <div class="champ-bloc">
       <span class="ch-lg">Icônes</span>
       ${choixIcones(plans, 'data-lot-icone="1"', 'data-lot-mort="1"')}
+      <div class="rangee-mini" style="margin-top:8px">
+        <button class="pill mini" data-vider="el" data-cles="${cles}"
+          ${plans.some((p) => p.el.length || p.mort) ? '' : 'disabled'}>Enlever toutes les icônes</button>
+      </div>
     </div>
 
     ${blocPouvoir(objCommunDe(plans), 'lot')}
+    <div class="rangee-mini">
+      <button class="pill mini" data-vider="obj" data-cles="${cles}"
+        ${plans.some((p) => p.obj) ? '' : 'disabled'}>Enlever le pouvoir des ${plans.length} plans</button>
+    </div>
 
     <div class="liste-lot">
       ${plans.map((p) => `<span class="jeton ${retoucheDe(p.cle) ? 'mod' : ''}" data-oter="${p.cle}"
@@ -1389,7 +1443,7 @@ function blocPouvoir(o, ou) {
 function appariement(carte) {
   const liste = (format, choisi) => moitiesDisponibles(format).map((m) => `
     <option value="${m.num}" ${m.num === choisi ? 'selected' : ''}>
-      ${m.num} — ${m.titre || m.famille.toLowerCase()}
+      ${m.affiche}${m.affiche === m.num ? '' : ` (imprimé ${m.num})`} — ${m.titre || m.famille.toLowerCase()}
     </option>`).join('');
 
   return `<div class="bloc-plan appariement ${carte.appariementModifie ? 'retouche' : ''}">
@@ -1424,7 +1478,7 @@ function tableauPlans(cat) {
     <thead><tr><th>N°</th><th>Face</th><th>Plan</th><th>Famille</th><th class="num">Minutage</th>
       <th>Icônes</th><th>Pouvoir</th><th>État</th></tr></thead>
     <tbody>${cat.map((p) => `<tr class="${p.modifie ? 'ligne-retouchee' : ''}">
-      <td class="num">${p.num}</td>
+      <td class="num">${p.num}${p.num !== p.numOrigine ? ` <span class="aide">(imprimé ${p.numOrigine})</span>` : ''}</td>
       <td>${p.face ? (p.face === 'R' ? 'recto' : 'verso') : '—'}</td>
       <td>${FORMATS[p.format].label}${p.titre ? ` <span class="aide">${p.titre}</span>` : ''}</td>
       <td>${p.famille}</td>
@@ -1591,7 +1645,7 @@ function brancherMateriel() {
 
   const raz = app.querySelector('#filtres-raz');
   if (raz) raz.addEventListener('click', () => {
-    mat.filtres = { icone: '', pouvoir: '', tcMin: '', tcMax: '', etat: '', actif: '', famille: '' };
+    mat.filtres = { face: '', icone: '', pouvoir: '', tcMin: '', tcMax: '', etat: '', actif: '', famille: '' };
     mat.tri = 'num'; refaire();
   });
 
@@ -1665,6 +1719,20 @@ function brancherEditeur(refaire) {
     appliquerTc([el.dataset.champTc], el.value); sauverCfg(); refaire();
   }));
 
+  // Renuméroter ne touche qu'un plan : appliquer le même numéro à toute une
+  // sélection ne ferait que des doublons.
+  app.querySelectorAll('[data-champ-num]').forEach((el) => el.addEventListener('change', () => {
+    const cle = el.dataset.champNum;
+    const v = Math.max(1, Math.min(999, parseInt(el.value, 10) || 0));
+    surLeModifie(() => {
+      const p = planDeCle(cle);
+      retoucher(cle, 'num', p && p.imprime.num === v ? undefined : v);
+    });
+    sauverCfg();
+    // Un doublon change le bandeau d'alerte : on repeint tout l'écran.
+    vueMateriel();
+  }));
+
   app.querySelectorAll('[data-plan-icone]').forEach((el) => el.addEventListener('click', () => {
     const cle = el.dataset.planIcone;
     const p = surLeModifie(() => planDeCle(cle));
@@ -1682,6 +1750,15 @@ function brancherEditeur(refaire) {
 
   app.querySelectorAll('[data-plan-reset]').forEach((el) => el.addEventListener('click', () => {
     delete store.cfg.materiel.plans[el.dataset.planReset]; sauverCfg(); refaire();
+  }));
+
+  // Vider les icônes ou le pouvoir : la valeur devient « rien », ce qui n'est
+  // pas la même chose que revenir à l'imprimé.
+  app.querySelectorAll('[data-vider]').forEach((el) => el.addEventListener('click', () => {
+    const cles = el.dataset.cles.split(' ').filter(Boolean);
+    if (el.dataset.vider === 'el') { poserIcones(cles, []); poserMort(cles, false); }
+    else poserObj(cles, null);
+    sauverCfg(); refaire();
   }));
 
   // Le pouvoir : en solo il s'applique au fil des changements, en lot il

@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.14';
-export const BUILD_DATE = '2026-08-12 18:40';
+export const VERSION = '1.15';
+export const BUILD_DATE = '2026-08-12 20:10';
 
 export const CHANGELOG = [
+  {
+    v: '1.15',
+    date: '12/08/2026',
+    items: [
+      "Nouveau filtre « Afficher » : recto et verso, recto seulement ou verso seulement. Dans les vues par cadrage il ne garde que les plans de la face demandée ; dans la vue des cartes, il retourne toutes les cartes du même côté.",
+      "Le numéro d’un plan se renumérote à la main. Ce n’est qu’une étiquette : l’identité d’un plan reste son numéro imprimé, qui sert de clé et désigne son illustration, donc renuméroter ne casse aucun appariement.",
+      "Les numéros portés par plus d’un plan sont signalés par un bandeau rouge en tête de l’écran Matériel, et le champ fautif est marqué « déjà pris ». Le tableau complet et son export rappellent le numéro imprimé à côté du nouveau.",
+      "Deux boutons de nettoyage dans l’éditeur : « Enlever toutes les icônes » et « Enlever le pouvoir ». Ils valent pour un plan comme pour toute une sélection — de quoi remettre à plat les pouvoirs de plusieurs cartes d’un coup.",
+    ],
+  },
   {
     v: '1.14',
     date: '12/08/2026',

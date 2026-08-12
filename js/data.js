@@ -299,6 +299,17 @@ export function mortDe(cle, defaut) {
   return !s || s.mort === undefined ? !!defaut : !!s.mort;
 }
 
+/**
+ * Le numéro affiché d'un plan. Ce n'est qu'une étiquette : l'identité d'un
+ * plan reste son numéro imprimé, qui sert de clé et désigne son illustration.
+ * Renuméroter ne casse donc aucun appariement — et deux plans peuvent porter
+ * le même numéro, l'éditeur se contentant de le signaler.
+ */
+export function numDe(cle, defaut) {
+  const s = sur(cle);
+  return !s || s.num === undefined || s.num === null || s.num === '' ? defaut : Number(s.num);
+}
+
 /** L'appariement d'une carte double : imprimé, ou celui qu'on lui a donné. */
 export function paireDe(i, defaut) {
   const p = SURCHARGES.paires[i];
@@ -326,9 +337,11 @@ export function halfInfo(sceneIdx, format, opts = {}) {
   const s = SCENE_BY_IDX[sceneIdx];
   if (!s) return null;
   const side = format === 'GP' ? s.gp : s.pm;
-  const num = format === 'GP' ? s.gpNum : s.pmNum;
+  // Le numéro imprimé est l'identité du plan : il fait la clé et désigne son
+  // illustration. `num` n'est que l'étiquette, renumérotable.
+  const origine = format === 'GP' ? s.gpNum : s.pmNum;
   const face = opts.face || 'R';
-  const cle = cleplan(num, face);
+  const cle = cleplan(origine, face);
   return {
     scene: s.idx,
     format,
@@ -342,8 +355,9 @@ export function halfInfo(sceneIdx, format, opts = {}) {
     el: elDe(cle, side.el),
     obj: objDe(cle, side.obj),
     mort: mortDe(cle, s.mort),
-    num,
-    image: `assets/${format === 'GP' ? 'gp' : 'pm'}/${num}.webp`,
+    num: numDe(cle, origine),
+    numOrigine: origine,
+    image: `assets/${format === 'GP' ? 'gp' : 'pm'}/${origine}.webp`,
   };
 }
 
@@ -374,7 +388,8 @@ export function plHalf(carte) {
     el: elDe(cle, carte.el),
     obj: objDe(cle, carte.obj),
     mort: mortDe(cle, false),
-    num: carte.num,
+    num: numDe(cle, carte.num),
+    numOrigine: carte.num,
     depart: !!carte.depart,
     image: `assets/pl/${carte.num}.webp`,
   };
@@ -386,15 +401,19 @@ export function plHalf(carte) {
 
 export function catalogue() {
   const out = [];
-  const pousse = (num, face, defauts, format, famille, extra = {}) => {
-    const cle = cleplan(num, face);
+  const pousse = (origine, face, defauts, format, famille, extra = {}) => {
+    const cle = cleplan(origine, face);
+    const num = numDe(cle, origine);
     out.push({
-      cle, num, face, format, famille,
+      cle, num, numOrigine: origine, face, format, famille,
       quoi: `${FORMATS[format].label} ${num}${face ? ` — ${face === 'R' ? 'recto' : 'verso'}` : ''}`,
       tc: tcDe(cle, defauts.tc), el: elDe(cle, defauts.el), obj: objDe(cle, defauts.obj),
       mort: mortDe(cle, defauts.mort), modifie: planModifie(cle),
-      imprime: { tc: defauts.tc, el: (defauts.el || []).slice(), obj: defauts.obj || null, mort: !!defauts.mort },
-      image: `assets/${format === 'PL' ? 'pl' : format === 'GP' ? 'gp' : 'pm'}/${num}.webp`,
+      imprime: {
+        tc: defauts.tc, el: (defauts.el || []).slice(), obj: defauts.obj || null,
+        mort: !!defauts.mort, num: origine,
+      },
+      image: `assets/${format === 'PL' ? 'pl' : format === 'GP' ? 'gp' : 'pm'}/${origine}.webp`,
       ...extra,
     });
   };
@@ -423,14 +442,38 @@ export function planDeCle(cle) {
   return catalogue().find((p) => p.cle === cle) || null;
 }
 
-/** Les moitiés disponibles pour un appariement, par cadrage. */
+/**
+ * Les moitiés disponibles pour un appariement, par cadrage. La valeur reste le
+ * numéro imprimé — c'est lui qui identifie la moitié —, seule l'étiquette suit
+ * une éventuelle renumérotation.
+ */
 export function moitiesDisponibles(format) {
-  return SCENES.map((s) => ({
-    num: format === 'GP' ? s.gpNum : s.pmNum,
-    scene: s.idx,
-    famille: s.famille,
-    titre: s.titre || null,
-  }));
+  return SCENES.map((s) => {
+    const origine = format === 'GP' ? s.gpNum : s.pmNum;
+    return {
+      num: origine,
+      affiche: numDe(cleplan(origine, 'R'), origine),
+      scene: s.idx,
+      famille: s.famille,
+      titre: s.titre || null,
+    };
+  });
+}
+
+/**
+ * Les numéros portés par plus d'un plan. Renuméroter est libre : c'est ici que
+ * l'éditeur va chercher de quoi prévenir.
+ */
+export function doublonsNumeros() {
+  const par = new Map();
+  for (const p of catalogue()) {
+    if (!par.has(p.num)) par.set(p.num, new Set());
+    par.get(p.num).add(`${p.format}${p.numOrigine}`);
+  }
+  return [...par.entries()]
+    .filter(([, s]) => s.size > 1)
+    .map(([num, s]) => ({ num, plans: [...s].sort() }))
+    .sort((a, b) => a.num - b.num);
 }
 
 /**
