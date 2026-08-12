@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX,
-} from './data.js?v=1.9';
-import { compter, bancVide } from './scoring.js?v=1.9';
+} from './data.js?v=2.0';
+import { compter, bancVide } from './scoring.js?v=2.0';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -167,8 +167,15 @@ export function optionsDerushage(state) {
   const out = [];
   state.chutierPL.forEach((c, i) => out.push({ source: 'CHUTIER_PL', index: i, carte: c }));
   state.chutierPMGP.forEach((c, i) => out.push({ source: 'CHUTIER_PMGP', index: i, carte: c }));
-  if (cfg.piocheDirectePMGP && state.piochePMGP.length) out.push({ source: 'PIOCHE_PMGP', carte: null });
-  if (cfg.piocheDirectePL && state.piochePL.length) out.push({ source: 'PIOCHE_PL', carte: null });
+  // Les cartes Plan Moyen / Gros Plan sont recto-verso : une pioche ne peut
+  // pas les cacher, on voit forcément la face du dessus. Les Plans Larges,
+  // eux, ont un vrai dos — leur pioche reste aveugle.
+  if (cfg.piocheDirectePMGP && state.piochePMGP.length) {
+    out.push({ source: 'PIOCHE_PMGP', carte: state.piochePMGP[0], sommet: true });
+  }
+  if (cfg.piocheDirectePL && state.piochePL.length) {
+    out.push({ source: 'PIOCHE_PL', carte: null, sommet: true });
+  }
   return out;
 }
 

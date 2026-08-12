@@ -6,7 +6,7 @@
 // L'application affiche donc exactement les icônes imprimées, partout — sur
 // les cartes comme dans les colonnes de score.
 
-import { ELEMENTS } from './data.js?v=1.9';
+import { ELEMENTS } from './data.js?v=2.0';
 
 const SPECIAUX = {
   MORT:  { label: 'Mort' },

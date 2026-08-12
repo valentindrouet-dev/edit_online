@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel } from './data.js?v=1.9';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.9';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel } from './data.js?v=2.0';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.0';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -54,6 +54,14 @@ function bandeau(obj) {
   return `<div class="bandeau">${contenu}</div>`;
 }
 
+/** Les données que le pop-up de survol affiche en grand. */
+function donneesApercu(h, label) {
+  return encodeURIComponent(JSON.stringify({
+    tc: h.tc, el: h.el, obj: h.obj || null, format: h.format,
+    num: h.num, label, transition: h.transition || null,
+  }));
+}
+
 /** Un plan : moitié de carte, ou Plan Large pleine largeur. */
 export function renderPlan(h, opts = {}) {
   const F = FORMATS[h.transition ? 'TR' : h.format] || FORMATS.PM;
@@ -66,7 +74,7 @@ export function renderPlan(h, opts = {}) {
   // résoudrait contre la feuille de style et non contre le document.
   const fond = h.image ? `background-image:url('${h.image}');` : '';
   return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"
-      title="${objLabel(h.obj) || label}">
+      data-apercu="${donneesApercu(h, label)}">
     <div class="illus" style="${fond}">
       <div class="tcode ${h.tc === 0 || h.transition ? 'bleu' : ''}">${tc(h.tc)}</div>
     </div>
@@ -85,6 +93,21 @@ export function renderCarte(carte, verso, opts = {}) {
     opts.clickable ? 'clickable' : ''].join(' ');
   return `<div class="${cls}" data-carte="${carte.id}" data-verso="${verso ? 1 : 0}">
     ${plans.map((h) => renderPlan(h, opts)).join('')}
+  </div>`;
+}
+
+/**
+ * Le dos d'une pioche, au format d'une carte. Seuls les Plans Larges ont un
+ * vrai dos : les cartes Plan Moyen / Gros Plan étant recto-verso, leur pioche
+ * montre toujours sa face du dessus.
+ */
+export function renderDos(libelle, reste, opts = {}) {
+  const cls = ['carte', 'dos', opts.small ? 'small' : '', opts.clickable ? 'clickable' : ''].join(' ');
+  return `<div class="${cls}">
+    <div class="dos-motif">
+      <span class="dos-titre">${libelle}</span>
+      <span class="dos-reste">${reste} carte${reste > 1 ? 's' : ''}</span>
+    </div>
   </div>`;
 }
 

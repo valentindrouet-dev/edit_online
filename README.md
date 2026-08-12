@@ -116,6 +116,20 @@ d'afficheur. Il se règle plan par plan dans **Matériel › Minutages** — la 
 `cfg.minutages`, indexée par numéro de plan. Il ne conditionne aucun placement ; il n'entre en jeu
 que dans les objectifs qui rapportent selon le minutage (**Variables › Chronologie**).
 
+## La table de jeu
+
+Colonne de gauche : la zone de pioche — les deux pioches à gauche des deux chutiers, toutes au même
+format de carte —, puis les bancs de montage. Colonne de droite : joueuses, score, recensement des
+icônes et bandeaux du banc.
+
+La pioche des **Plans Larges** est face cachée : ces cartes ont un vrai dos. Celle des **Plans
+Moyens / Gros Plans** montre sa face du dessus — ces cartes étant recto-verso, une pioche ne peut
+pas les cacher. L'IA en tient compte : elle évalue cette carte comme une carte connue.
+
+Sur une carte, le survol ouvre un aperçu : minutage en grand, chaque pastille nommée, et le bandeau
+d'objectif avec ce qu'il rapporte. Les illustrations se masquent en cours de partie depuis le
+bandeau de tour.
+
 ## Le modèle de jeu
 
 Un banc de montage est une suite de **séquences**, chaque séquence une suite de **plans visibles**.

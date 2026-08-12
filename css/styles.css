@@ -188,7 +188,7 @@ button { font-family: inherit; }
   background: #111; border-radius: 9px; padding: .2em; box-shadow: var(--ombre);
   transition: .14s; position: relative; font-size: 15px;
 }
-.carte.small { width: 232px; font-size: 11.6px; }
+.carte.small { width: 258px; font-size: 12.9px; }
 .carte.tiny { width: 150px; font-size: 7.5px; }
 .carte.clickable { cursor: pointer; }
 .carte.clickable:hover { transform: translateY(-4px); box-shadow: var(--ombre-forte); }
@@ -207,12 +207,16 @@ button { font-family: inherit; }
 .moitie.depart { background-color: #d8ecf7; }
 
 /* Bandes verticales, dans les proportions de la carte imprimée. */
-.illus     { flex: 0 0 69%;   position: relative; background-size: 100% 100%; background-repeat: no-repeat; }
-.pastilles { flex: 0 0 9.5%;  display: flex; align-items: center; gap: .09em; padding: 0 .18em;
-             background: rgba(255,255,255,.5); overflow: hidden; }
-.bandeau   { flex: 0 0 15.2%; display: flex; align-items: center; justify-content: center;
-             gap: .22em; overflow: hidden; background: var(--fmt-gp); }
-.libelle   { flex: 0 0 6.3%;  display: flex; align-items: center; justify-content: center; }
+/* L'illustration est rognée par le bas (cover, ancrée en haut à gauche) plutôt
+   que comprimée : la boîte du minutage reste ainsi exactement à sa place,
+   quelle que soit la part laissée à l'information. */
+.illus     { flex: 0 0 60%;   position: relative; background-size: cover;
+             background-position: left top; background-repeat: no-repeat; }
+.pastilles { flex: 0 0 14%;   display: flex; align-items: center; gap: .1em; padding: 0 .2em;
+             background: rgba(255,255,255,.62); overflow: hidden; }
+.bandeau   { flex: 0 0 18%;   display: flex; align-items: center; justify-content: center;
+             gap: .24em; overflow: hidden; background: var(--fmt-gp); }
+.libelle   { flex: 0 0 8%;    display: flex; align-items: center; justify-content: center; }
 
 body.sans-illus .illus { background-image: none !important; }
 .moitie.transition .pastilles { background: rgba(255,255,255,.14); }
@@ -226,14 +230,14 @@ body.sans-illus .illus { background-image: none !important; }
   font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
 }
 .moitie .tcode::first-line { line-height: 1; }
-.moitie .tcode { font-size: .78em; }
+.moitie .tcode { font-size: .92em; }
 .moitie .tcode.bleu { color: #38bdf8; }
 
 /* Pastilles : taille libre par défaut, ajustée à la bande dans les cartes. */
 .pastille { display: block; width: 1.5em; height: 1.5em; object-fit: contain; flex: 0 0 auto; }
 .pastille-num { display: block; width: 1.45em; height: 1.45em; flex: 0 0 auto; }
 .pastilles .pastille { height: 100%; width: auto; }
-.bandeau .pastille, .bandeau .pastille-num { height: 76%; width: auto; }
+.bandeau .pastille, .bandeau .pastille-num { height: 82%; width: auto; }
 
 .moitie.f-PM .bandeau, .moitie.f-PL .bandeau { background: var(--fmt-pm); }
 .moitie.f-PL .bandeau { background: var(--fmt-pl); }
@@ -241,7 +245,7 @@ body.sans-illus .illus { background-image: none !important; }
 .moitie.transition .bandeau { background: #3c3c44; }
 .bandeau .x, .bandeau .si { color: #fff; font-weight: 800; font-size: .72em; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
 .bandeau .tag {
-  font-size: .46em; font-weight: 800; letter-spacing: .02em; padding: .25em .45em;
+  font-size: .52em; font-weight: 800; letter-spacing: .02em; padding: .25em .45em;
   border-radius: .3em; text-transform: uppercase; line-height: 1.08; text-align: center;
   max-width: 6.5em; overflow-wrap: anywhere;
 }
@@ -254,7 +258,7 @@ body.sans-illus .illus { background-image: none !important; }
 .barre b { position: absolute; inset: 0; display: grid; place-items: center; color: #e11d48; font-size: 1.2em; }
 
 .moitie .libelle {
-  text-align: center; font-size: .46em; font-weight: 800; letter-spacing: .07em;
+  text-align: center; font-size: .54em; font-weight: 800; letter-spacing: .07em;
   text-transform: uppercase; color: var(--c); background: #0f0f12; padding: 0 .4em;
   line-height: 1.1; white-space: nowrap; overflow: hidden; width: 100%;
 }
@@ -292,14 +296,18 @@ body.sans-illus .illus { background-image: none !important; }
 
 /* La table de jeu : zone d'action à gauche, colonne d'infos à droite, et les
    bancs de montage en dessous, sur toute la largeur de la page. */
-.table-jeu { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+.table-jeu { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 18px; align-items: start; }
+.zone-gauche { min-width: 0; }
 .table-jeu > * { min-width: 0; }
 @media (max-width: 1000px) { .table-jeu { grid-template-columns: 1fr; } }
 
 /* Les groupes de dérushage se rangent côte à côte tant que la place le permet. */
-.derushage-groupes { display: flex; flex-wrap: wrap; gap: 10px 34px; align-items: flex-start; }
-.derushage-groupe h3 { margin: 8px 0 10px; font-size: .95rem; }
-.derushage-cartes { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+/* Pioches en tête, puis les chutiers. On laisse revenir à la ligne plutôt que
+   de défiler : les six cartes doivent rester visibles d'un coup d'œil. */
+.derushage-groupes { display: flex; flex-wrap: wrap; gap: 16px 30px; align-items: flex-start; }
+.derushage-groupe { flex: 0 0 auto; min-width: 0; }
+.derushage-groupe h3 { margin: 0 0 10px; font-size: .95rem; white-space: nowrap; }
+.derushage-cartes { display: flex; flex-wrap: nowrap; gap: 12px; align-items: flex-start; }
 
 /* La colonne d'infos reste compacte pour ne pas repousser les bancs. */
 .colonne-info .journal { max-height: 170px; }
@@ -320,10 +328,10 @@ body.sans-illus .illus { background-image: none !important; }
   display: flex; gap: 2px; align-items: stretch; flex: 0 0 auto;
   padding: 4px; border-radius: 8px; background: rgba(255,255,255,.06);
 }
-.banc .moitie { height: 152px; border-radius: 5px; flex: 0 0 auto; font-size: 10.61px; }
-.banc .moitie.f-GP { width: 71px; }
-.banc .moitie.f-PM { width: 141px; }
-.banc .moitie.f-PL { width: 212px; }
+.banc .moitie { height: 182px; border-radius: 5px; flex: 0 0 auto; font-size: 12.7px; }
+.banc .moitie.f-GP { width: 85px; }
+.banc .moitie.f-PM { width: 169px; }
+.banc .moitie.f-PL { width: 254px; }
 
 .banc .ecart { flex: 0 0 auto; width: 18px; }
 .banc .ecart.actif {
@@ -337,11 +345,23 @@ body.sans-illus .illus { background-image: none !important; }
 .fente-btn:hover { background: rgba(249,115,22,.45); border-color: var(--orange); color: #fff; }
 
 /* Un plan présenté seul (choix de face, Plan de départ) garde sa proportion. */
-.carte.solo { width: auto; aspect-ratio: auto; font-size: 11.03px; }
-.carte.solo .moitie { flex: 0 0 auto; height: 158px; }
-.carte.solo .moitie.f-GP { width: 74px; }
-.carte.solo .moitie.f-PM { width: 147px; }
-.carte.solo .moitie.f-PL { width: 220px; }
+.carte.solo { width: auto; aspect-ratio: auto; font-size: 12.7px; }
+.carte.solo .moitie { flex: 0 0 auto; height: 182px; }
+.carte.solo .moitie.f-GP { width: 85px; }
+.carte.solo .moitie.f-PM { width: 169px; }
+.carte.solo .moitie.f-PL { width: 254px; }
+
+.carte.dos { background: #12101a; }
+.pioche-fermee { position: relative; }
+.pioche-fermee .carte { opacity: .55; filter: grayscale(.4); cursor: not-allowed; }
+.dos-motif {
+  flex: 1 1 auto; border-radius: 6px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: .4em; color: #fff; text-align: center;
+  background: repeating-linear-gradient(45deg, #5b21b6 0 10px, #7c3aed 10px 20px);
+  border: 2px solid #4c1d95;
+}
+.dos-titre { font-weight: 800; font-size: .95em; letter-spacing: .04em; }
+.dos-reste { font-size: .8em; opacity: .85; }
 
 .dos-pioche {
   width: 120px; height: 158px; border-radius: 10px; cursor: pointer; color: #fff;
@@ -531,3 +551,34 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
   padding: 3px 7px; border-radius: 5px; letter-spacing: .05em; border: 1px solid #3a3b44;
   font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
 }
+
+/* --- Aperçu au survol d'une carte ----------------------------------------- */
+
+#apercu-carte {
+  position: fixed; z-index: 120; pointer-events: none; opacity: 0;
+  transition: opacity .12s; min-width: 240px; max-width: 340px;
+  background: rgba(255,255,255,.98); border: 1px solid var(--gris-clair);
+  border-radius: 14px; box-shadow: var(--ombre-forte); padding: 14px 16px;
+}
+#apercu-carte.visible { opacity: 1; }
+.ap-tete { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.ap-tc {
+  background: #0d0d10; color: #ff3b30; font-weight: 700; font-size: 1.15rem;
+  padding: 5px 11px; border-radius: 7px; letter-spacing: .06em; border: 1px solid #3a3b44;
+  font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
+}
+.ap-tc.bleu { color: #38bdf8; }
+.ap-cadrage { font-size: .86rem; color: var(--encre-doux); }
+.ap-icones { display: flex; flex-wrap: wrap; gap: 12px; }
+.ap-icone { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 62px; }
+.ap-icone span { font-size: .72rem; color: var(--encre-doux); text-align: center; line-height: 1.2; }
+.ap-obj {
+  margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--gris-clair);
+  display: flex; flex-direction: column; gap: 8px; align-items: flex-start;
+}
+.ap-obj-visuel .obj-html .pastille, .ap-obj-visuel .obj-html .pastille-num { width: 44px; height: 44px; }
+.ap-obj-visuel .obj-html .tag { font-size: .78rem; padding: 5px 9px; }
+.ap-obj-texte { font-size: .84rem; font-weight: 600; color: var(--encre); }
+.ap-vide { font-size: .82rem; color: var(--gris); margin-top: 8px; }
+
+.pill.mini { padding: 5px 12px; font-size: .82rem; }

@@ -2,22 +2,22 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.9';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.0';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, appliquerMinutages,
-} from './data.js?v=1.9';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.9';
-import { elIcon } from './icons.js?v=1.9';
-import { renderCarte, renderPlan, tc, objHTML, cadrageIcon } from './cards.js?v=1.9';
+} from './data.js?v=2.0';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=2.0';
+import { elIcon } from './icons.js?v=2.0';
+import { renderCarte, renderPlan, renderDos, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=2.0';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.9';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.9';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.9';
-import { campagne } from './lab.js?v=1.9';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.9';
+} from './engine.js?v=2.0';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.0';
+import { compter, SOURCES_LABEL } from './scoring.js?v=2.0';
+import { campagne } from './lab.js?v=2.0';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.0';
 
 const app = document.getElementById('app');
 
@@ -91,6 +91,7 @@ function topbar(actif) {
 const pied = () => `<div class="pied">Version ${VERSION} — compilée le ${BUILD_DATE}</div>`;
 
 function html(s) {
+  if (apercuEl) apercuEl.classList.remove('visible');
   document.body.classList.toggle('sans-illus', !store.cfg.illustrations);
   app.innerHTML = s;
   app.querySelectorAll('[data-go]').forEach((el) => {
@@ -301,11 +302,15 @@ function vuePartie() {
       <span>Tour <b>${Math.min(st.tour, st.cfg.tours)} / ${st.cfg.tours}</b></span><span>·</span>
       <span><b>${PHASES[st.phase]}</b></span><span>·</span>
       <span style="color:${encreDe(j.couleur)}"><b>${j.nom}</b>${humaine ? '' : ' réfléchit…'}</span>
+      <button class="pill mini" id="bascule-illus" title="Afficher ou masquer les illustrations">
+        ${store.cfg.illustrations ? 'Images visibles' : 'Images masquées'}
+      </button>
     </div>
 
     <div class="table-jeu">
-      <div class="zone-action">
-        <div class="panneau"><h2>${PHASES[st.phase]}</h2>${zone}</div>
+      <div class="zone-gauche">
+        <div class="panneau">${zone}</div>
+        ${st.joueurs.map((jj, i) => bancBloc(st, i, `Banc de ${jj.nom}`, i === p && humaine && st.phase === 'MONTAGE')).join('')}
       </div>
 
       <div class="colonne-info">
@@ -327,21 +332,12 @@ function vuePartie() {
         <div class="panneau"><h2>Icônes du banc</h2>${blocRecensement(sc[p])}</div>
         <div class="panneau"><h2>Bandeaux du banc</h2>${listeObjectifs(sc[p])}</div>
 
-        <div class="panneau" style="padding:14px 16px">
-          <h2>Journal</h2>
-          <div class="journal">
-            ${st.journal.slice(-8).reverse().map((l) => `<div class="l"><b>T${l.tour}</b> · ${l.texte}</div>`).join('')}
-          </div>
-        </div>
-
         <div class="barre-outils">
           <button class="pill" id="undo" ${store.undo ? '' : 'disabled'}>↩ Annuler</button>
           <button class="pill" id="quitter">Quitter</button>
         </div>
       </div>
     </div>
-
-    ${st.joueurs.map((jj, i) => bancBloc(st, i, `Banc de ${jj.nom}`, i === p && humaine && st.phase === 'MONTAGE')).join('')}
   </div>
   ${pied()}`);
 
@@ -406,9 +402,7 @@ function etiquetteCoup(c) {
 
 function zoneDepart(st, p) {
   const options = choixDepart(st, p);
-  return `<p class="aide" style="margin-bottom:14px">Deux versions te sont proposées, recto et verso.
-  Choisis le plan qui ouvrira ton banc — l’autre carte est défaussée.</p>
-  <div class="main-cartes">
+  return `<div class="main-cartes">
     ${options.map((o, k) => `<div class="item">
       <div class="carte solo clickable" data-depart="${k}">${renderPlan(o.plan)}</div>
       <div class="lg">Version ${o.carte.version} — face ${o.face + 1}</div>
@@ -426,20 +420,29 @@ function zoneDerushage(st) {
       <div class="derushage-cartes">${contenu || '<div class="aide">Épuisé</div>'}</div>
     </div>`;
 
-  const chutierPL = options.filter((o) => o.source === 'CHUTIER_PL')
-    .map((o) => `<div data-derush="${enc(o)}">${renderCarte(o.carte, false, { small: true, clickable: true })}</div>`).join('');
-  const chutierPM = options.filter((o) => o.source === 'CHUTIER_PMGP')
-    .map((o) => `<div data-derush="${enc(o)}">${renderCarte(o.carte, false, { small: true, clickable: true })}</div>`).join('');
-  const pioches = options.filter((o) => !o.carte)
-    .map((o) => `<button class="dos-pioche" data-derush="${enc(o)}">
-      <span>Pioche</span><b>${o.source === 'PIOCHE_PL' ? 'Plans Larges' : 'PM / GP'}</b>
-      <span>${o.source === 'PIOCHE_PL' ? st.piochePL.length : st.piochePMGP.length} cartes</span></button>`).join('');
+  const carte = (o) => `<div data-derush="${enc(o)}">${renderCarte(o.carte, false, { small: true, clickable: true })}</div>`;
 
-  return `<p class="aide" style="margin-bottom:12px">Pioche une carte : dans un des deux chutiers, ou à l’aveugle sur une pioche.</p>
-  <div class="derushage-groupes">
+  // Les deux pioches sont montrées, au même format que les cartes du chutier.
+  // Celle des Plans Larges reste aveugle — ces cartes ont un vrai dos ; celle
+  // des Plan Moyen / Gros Plan montre sa face du dessus, ces cartes étant
+  // recto-verso. La pioche des Plans Larges n'est cliquable que si les
+  // variables l'autorisent.
+  const sommetPMGP = options.find((o) => o.source === 'PIOCHE_PMGP');
+  const sommetPL = options.find((o) => o.source === 'PIOCHE_PL');
+  const dosPL = st.piochePL.length
+    ? (sommetPL
+      ? `<div data-derush="${enc(sommetPL)}">${renderDos('Plans Larges', st.piochePL.length, { small: true, clickable: true })}</div>`
+      : `<div class="pioche-fermee" title="Cette pioche n’est pas accessible : on ne pioche que dans son chutier.">${renderDos('Plans Larges', st.piochePL.length, { small: true })}</div>`)
+    : '';
+  const pioches = dosPL + (sommetPMGP ? carte(sommetPMGP) : '');
+
+  const chutierPL = options.filter((o) => o.source === 'CHUTIER_PL').map(carte).join('');
+  const chutierPM = options.filter((o) => o.source === 'CHUTIER_PMGP').map(carte).join('');
+
+  return `<div class="derushage-groupes">
+    ${pioches ? groupe('Pioches', pioches) : ''}
     ${groupe('Chutier Plans Larges', chutierPL)}
     ${groupe('Chutier Plans Moyens / Gros Plans', chutierPM)}
-    ${pioches ? groupe('Pioches', pioches) : ''}
   </div>`;
 }
 
@@ -548,6 +551,13 @@ function brancherPartie(st, humaine) {
     vuePartie();
   }));
 
+  const bi = q('#bascule-illus');
+  if (bi) bi.addEventListener('click', () => {
+    store.cfg.illustrations = !store.cfg.illustrations;
+    sauverCfg(); vuePartie();
+  });
+  brancherApercu();
+
   if (q('#undo')) q('#undo').addEventListener('click', () => {
     if (store.undo) { store.partie = JSON.parse(store.undo); store.undo = null; store.formatChoisi = null; vuePartie(); }
   });
@@ -558,6 +568,65 @@ function brancherPartie(st, humaine) {
   document.onkeydown = humaine ? (e) => {
     if (e.key === 'Escape') { store.formatChoisi = null; vuePartie(); }
   } : null;
+}
+
+// ---------------------------------------------------------------------------
+// Aperçu au survol
+// ---------------------------------------------------------------------------
+// Sur une carte de jeu, minutage, pastilles et bandeau restent petits. Le
+// survol en donne une lecture en grand, dans un panneau flottant unique
+// suivant le curseur — hors du banc, donc jamais rogné par son défilement.
+
+let apercuEl = null;
+
+function boiteApercu() {
+  if (!apercuEl) {
+    apercuEl = document.createElement('div');
+    apercuEl.id = 'apercu-carte';
+    document.body.appendChild(apercuEl);
+  }
+  return apercuEl;
+}
+
+function contenuApercu(d) {
+  const cadrage = d.transition ? 'Raccord' : (FORMATS[d.format]?.label || d.format);
+  return `
+    <div class="ap-tete">
+      <span class="ap-tc ${d.tc === 0 || d.transition ? 'bleu' : ''}">${tc(d.tc)}</span>
+      <span class="ap-cadrage">${cadrage} <b>n°${d.num}</b></span>
+    </div>
+    ${d.el.length ? `<div class="ap-icones">
+      ${d.el.map((e) => `<span class="ap-icone">${elIcon(e, 54)}<span>${ELEMENTS[e]?.label || e}</span></span>`).join('')}
+    </div>` : '<div class="ap-vide">Aucun élément</div>'}
+    ${d.obj ? `<div class="ap-obj">
+      <div class="ap-obj-visuel">${objHTML(d.obj, 44)}</div>
+      <div class="ap-obj-texte">${objLabel(d.obj)}</div>
+    </div>` : '<div class="ap-vide">Aucun bandeau</div>'}`;
+}
+
+function placerApercu(e) {
+  const b = boiteApercu();
+  const m = 16;
+  const r = b.getBoundingClientRect();
+  let x = e.clientX + m;
+  let y = e.clientY + m;
+  if (x + r.width > window.innerWidth - 8) x = e.clientX - r.width - m;
+  if (y + r.height > window.innerHeight - 8) y = Math.max(8, e.clientY - r.height - m);
+  b.style.left = `${Math.max(8, x)}px`;
+  b.style.top = `${y}px`;
+}
+
+function brancherApercu() {
+  app.querySelectorAll('[data-apercu]').forEach((el) => {
+    el.addEventListener('mouseenter', (e) => {
+      const b = boiteApercu();
+      b.innerHTML = contenuApercu(JSON.parse(decodeURIComponent(el.dataset.apercu)));
+      b.classList.add('visible');
+      placerApercu(e);
+    });
+    el.addEventListener('mousemove', placerApercu);
+    el.addEventListener('mouseleave', () => boiteApercu().classList.remove('visible'));
+  });
 }
 
 function jouerIA() {
@@ -632,6 +701,7 @@ function vueFin() {
     </div>
   </div>
   ${pied()}`);
+  brancherApercu();
   app.querySelector('#rejouer').addEventListener('click', lancerPartie);
 }
 
@@ -696,6 +766,7 @@ function vueMateriel() {
   </div>
   ${pied()}`);
 
+  brancherApercu();
   app.querySelectorAll('[data-f]').forEach((b) => b.addEventListener('click', () => {
     materielFiltre = b.dataset.f; vueMateriel();
   }));
