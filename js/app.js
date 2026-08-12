@@ -2,23 +2,23 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.12';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.13';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
-  buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo,
-  appliquerMateriel, catalogue, moitiesDisponibles,
-} from './data.js?v=1.12';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.12';
-import { elIcon } from './icons.js?v=1.12';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.12';
+  buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
+  appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle,
+} from './data.js?v=1.13';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.13';
+import { elIcon } from './icons.js?v=1.13';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.13';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.12';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.12';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.12';
-import { campagne } from './lab.js?v=1.12';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.12';
+} from './engine.js?v=1.13';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.13';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.13';
+import { campagne } from './lab.js?v=1.13';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.13';
 
 const app = document.getElementById('app');
 
@@ -62,14 +62,49 @@ function normaliserMateriel() {
     }
     delete store.cfg.minutages;
   }
+  // Avant les faces, une moitié de carte double n'avait qu'une clé : son
+  // numéro. La retouche vaut désormais pour le recto et pour le verso.
+  for (const [k, v] of Object.entries(m.plans)) {
+    if (/^(2|3)\d\d$/.test(k)) {
+      for (const f of ['R', 'V']) if (!m.plans[k + f]) m.plans[k + f] = JSON.parse(JSON.stringify(v));
+      delete m.plans[k];
+    }
+  }
   store.cfg.materiel = m;
+  if (!Array.isArray(store.cfg.cartesDesactivees)) store.cfg.cartesDesactivees = [];
+  if (store.cfg.materielActif !== 'MODIFIE') store.cfg.materielActif = 'IMPRIME';
 }
+
+/**
+ * Le jeu de matériel en vigueur : l'imprimé, ou celui que porte l'éditeur.
+ * Une partie en cours garde celui avec lequel elle a été lancée — changer de
+ * jeu dans l'éditeur ne retourne pas les cartes déjà sur la table.
+ */
+function appliquerJeuActif() {
+  const src = store.partie && !store.partie.finie ? store.partie.cfg : store.cfg;
+  const modifie = src.materielActif === 'MODIFIE';
+  appliquerMateriel(modifie ? src.materiel : null, src.cartesDesactivees);
+}
+
 normaliserMateriel();
-appliquerMateriel(store.cfg.materiel);
+appliquerJeuActif();
 
 function sauverCfg() {
   LS.set('cfg', store.cfg);
-  appliquerMateriel(store.cfg.materiel);
+  appliquerJeuActif();
+}
+
+/**
+ * L'éditeur travaille toujours sur le matériel modifié, même quand c'est
+ * l'imprimé qui se joue : on bascule le temps du calcul, puis on remet. Les
+ * appels s'imbriquent — un rendu de carte en appelle d'autres — donc seul le
+ * plus extérieur bascule et remet.
+ */
+let profondeurModifie = 0;
+
+function surLeModifie(fn) {
+  if (profondeurModifie++ === 0) appliquerMateriel(store.cfg.materiel, store.cfg.cartesDesactivees);
+  try { return fn(); } finally { if (--profondeurModifie === 0) appliquerJeuActif(); }
 }
 function sauverJoueurs() { LS.set('joueurs', store.joueurs); }
 
@@ -147,6 +182,7 @@ function vueAccueil() {
           <div id="liste-joueurs">${store.joueurs.map((j, i) => ligneJoueur(j, i)).join('')}</div>
         </div>
 
+        ${bandeauMateriel()}
         <button class="cta" id="go">Commencer la partie</button>
       </div>
 
@@ -272,12 +308,31 @@ function brancherChamps(apres) {
 }
 
 function resumePaquet() {
-  const { doubles, larges } = construirePaquet(store.cfg);
+  const { doubles, larges, departs } = construirePaquet(store.cfg);
+  const faces = new Set(); departs.forEach((d) => d.faces.forEach((f) => faces.add(f.num)));
   return `<table class="tbl">
     <tr><td>Cartes Plan Moyen / Gros Plan</td><td class="num">${doubles.length}</td></tr>
     <tr><td>Cartes Plan Large</td><td class="num">${larges.length}</td></tr>
-    <tr><td>Cartes Plan de départ</td><td class="num">8 <span class="aide">(2 versions)</span></td></tr>
+    <tr><td>Faces de Plan de départ</td><td class="num">${faces.size}</td></tr>
   </table>`;
+}
+
+/**
+ * Quel jeu de matériel part en partie. Il n'y a pas de retour en arrière
+ * destructeur : l'imprimé et le modifié coexistent, ce bandeau dit lequel
+ * se lance, et l'écran Matériel permet d'en changer.
+ */
+function bandeauMateriel() {
+  const modifie = store.cfg.materielActif === 'MODIFIE';
+  const n = Object.keys(store.cfg.materiel.plans).length + Object.keys(store.cfg.materiel.paires).length;
+  const off = store.cfg.cartesDesactivees.length;
+  return `<div class="bandeau-materiel ${modifie ? 'modifie' : ''}" data-go="#/materiel">
+    <span class="bm-etat">${modifie ? 'Matériel modifié' : 'Matériel imprimé'}</span>
+    <span class="aide">${modifie
+      ? `${n} retouche${n > 1 ? 's' : ''} en jeu`
+      : 'les cartes des PDF, sans retouche'}${off ? ` · ${off} carte${off > 1 ? 's' : ''} écartée${off > 1 ? 's' : ''}` : ''}</span>
+    <span class="bm-lien">changer ›</span>
+  </div>`;
 }
 
 // ===========================================================================
@@ -285,7 +340,10 @@ function resumePaquet() {
 // ===========================================================================
 
 function lancerPartie() {
+  appliquerJeuActif();
   store.partie = creerPartie(store.joueurs.map((j) => ({ ...j })), cloneConfig(store.cfg), store.cfg.graine || nouvelleGraine());
+  // La partie fige son matériel : à partir d'ici c'est le sien qui vaut.
+  appliquerJeuActif();
   store.formatChoisi = null;
   store.undo = null;
   location.hash = '#/partie';
@@ -300,6 +358,7 @@ const PHASES = {
 function vuePartie() {
   const st = store.partie;
   if (!st) { location.hash = '#/'; return; }
+  appliquerJeuActif();
 
   // On ne s'arrête jamais sur le tour d'une IA : ses coups sont résolus d'un
   // bloc avant le rendu, pour rendre la main sans temps mort.
@@ -326,6 +385,9 @@ function vuePartie() {
       <span>Tour <b>${Math.min(st.tour, st.cfg.tours)} / ${st.cfg.tours}</b></span><span>·</span>
       <span><b>${PHASES[st.phase]}</b></span><span>·</span>
       <span style="color:${encreDe(j.couleur)}"><b>${j.nom}</b></span>
+      <span class="jeton-materiel ${st.cfg.materielActif === 'MODIFIE' ? 'modifie' : ''}"
+        title="Le jeu de matériel avec lequel cette partie a été lancée">
+        ${st.cfg.materielActif === 'MODIFIE' ? 'Matériel modifié' : 'Matériel imprimé'}</span>
       <button class="pill mini" id="bascule-illus" title="Afficher ou masquer les illustrations">
         ${store.cfg.illustrations ? 'Images visibles' : 'Images masquées'}
       </button>
@@ -815,15 +877,30 @@ function vueFin() {
 // MATÉRIEL
 // ===========================================================================
 
-// ---------------------------------------------------------------------------
-// L'écran Matériel est aussi l'éditeur du matériel : rien de ce qui est
-// imprimé sur une carte n'est figé. On garde en permanence la galerie sous les
-// yeux à gauche, la carte en cours d'édition à droite. Les retouches vivent
-// dans cfg.materiel, donc elles sont enregistrées et le jeu s'y conforme
-// aussitôt — table de jeu, décompte et Laboratoire compris.
+// L'écran Matériel est aussi l'éditeur du matériel. Deux jeux coexistent en
+// permanence — l'IMPRIMÉ, intouchable, et le MODIFIÉ, qui porte les retouches ;
+// un sélecteur dit lequel se joue, et rien n'est jamais détruit.
+//
+// Une moitié de carte double existe en deux exemplaires, un par face : « 201R »
+// et « 201V » sont deux plans distincts, car le recto et le verso d'une carte
+// ne portent pas le même minutage.
 
-let materielFiltre = 'DOUBLE';
-let materielSel = null;    // { famille: 'DOUBLE'|'PL'|'DEPART', rang } — carte éditée
+const mat = {
+  vue: 'CARTES',        // CARTES | GP | PM | PL | DEPART | TABLE | STATS
+  tri: 'num',
+  filtres: { icone: '', pouvoir: '', tcMin: '', tcMax: '', etat: '', actif: '', famille: '' },
+  plans: new Set(),     // clés des plans sélectionnés
+  cartes: new Set(),    // identifiants des cartes sélectionnées
+  ancre: null,          // dernier clic, pour la sélection au shift
+};
+
+const VUES = [
+  ['CARTES', 'Cartes PM / GP'], ['GP', 'Gros Plans'], ['PM', 'Plans Moyens'],
+  ['PL', 'Plans Larges'], ['DEPART', 'Plans de départ'],
+  ['TABLE', 'Tableau complet'], ['STATS', 'Statistiques'],
+];
+
+const VUES_GALERIE = ['CARTES', 'GP', 'PM', 'PL', 'DEPART'];
 
 // Ce que compte un pouvoir. Les libellés se lisent à la suite du « n × » du
 // bandeau : « 2 × par plan du cadrage — Plan Large ».
@@ -839,76 +916,162 @@ const KINDS = [
   ['ABSENT',  'si l’icône est absente du montage…'],
 ];
 
-// --- La couche de retouches ------------------------------------------------
+const KIND_LABEL = Object.fromEntries(KINDS.map(([k, l]) => [k, l]));
 
-function retoucher(num, champ, valeur) {
+// --- La couche de retouches ------------------------------------------------
+// L'éditeur travaille toujours sur le jeu MODIFIÉ, même quand c'est l'imprimé
+// qui se joue.
+
+function retoucher(cle, champ, valeur) {
   const plans = store.cfg.materiel.plans;
-  const p = plans[num] || (plans[num] = {});
+  const p = plans[cle] || (plans[cle] = {});
   if (valeur === undefined) delete p[champ]; else p[champ] = valeur;
-  if (!Object.keys(p).length) delete plans[num];
-  sauverCfg();
+  if (!Object.keys(p).length) delete plans[cle];
 }
 
-function retoucheDe(num) {
-  return store.cfg.materiel.plans[num] || null;
+function retoucheDe(cle) {
+  return store.cfg.materiel.plans[cle] || null;
 }
 
 function nbRetouches() {
   return Object.keys(store.cfg.materiel.plans).length + Object.keys(store.cfg.materiel.paires).length;
 }
 
-// --- Les cartes, dans l'ordre des galeries ---------------------------------
+function estDesactivee(id) {
+  return store.cfg.cartesDesactivees.includes(id);
+}
 
-function cartesDe(famille) {
-  if (famille === 'PL') return buildPlansLarges();
-  if (famille === 'DEPART') {
-    return DEPARTS.flatMap((d, di) => d.faces.map((f, k) => ({
-      type: 'DEPART_FACE', version: d.type, face: k + 1, di, k, plan: { ...f, depart: true },
-    })));
+function activerCartes(ids, actif) {
+  const d = new Set(store.cfg.cartesDesactivees);
+  for (const id of ids) { if (actif) d.delete(id); else d.add(id); }
+  store.cfg.cartesDesactivees = [...d];
+  sauverCfg();
+}
+
+// --- Le matériel, tel que l'éditeur le voit --------------------------------
+
+/** Les cartes d'une vue, avec leurs plans. Toujours lues sur le jeu modifié. */
+function cartesDe(vue) {
+  return surLeModifie(() => {
+    if (vue === 'PL') {
+      return buildPlansLarges().map((c) => ({
+        id: c.id, type: 'PL', carte: c, plans: [plHalf(c)],
+        libelle: `Plan Large ${c.num}${c.brouillon ? ' · à compléter' : ''}`,
+      }));
+    }
+    if (vue === 'DEPART') {
+      return DEPARTS.flatMap((d) => d.faces.map((f, k) => ({
+        id: `S${d.type}f${f.num}`, type: 'DEPART', carte: { ...f, depart: true },
+        plans: [plHalf({ ...f, depart: true })],
+        libelle: `Plan de départ ${f.num} · version ${d.type} — face ${k + 1}`,
+      })));
+    }
+    return buildCartesDoubles().map((c, i) => {
+      const r = moitiesDe(c, 'R'), v = moitiesDe(c, 'V');
+      return {
+        id: c.id, type: 'DOUBLE', carte: c, rang: i,
+        plans: [r.GP, r.PM, v.GP, v.PM],
+        libelle: `Carte ${i + 1} · GP ${c.gpNum} | PM ${c.pmNum}`,
+      };
+    });
+  });
+}
+
+/**
+ * Les tuiles d'une vue : une carte, ou un plan isolé. Les vues par cadrage
+ * partent du catalogue et non des cartes — les moitiés qu'aucune carte
+ * n'apparie, comme le Générique de fin, s'éditent elles aussi.
+ */
+function tuilesDe(vue) {
+  if (vue === 'GP' || vue === 'PM') {
+    return surLeModifie(() => catalogue()
+      .filter((p) => p.format === vue)
+      .map((p) => ({
+        genre: 'PLAN', cle: p.cle, plan: halfInfo(p.scene, p.format, { face: p.face }),
+        libelle: `${FORMATS[p.format].label} ${p.num} — ${p.face === 'R' ? 'recto' : 'verso'}`,
+      })));
   }
-  return buildCartesDoubles();
+  return cartesDe(vue).map((c) => ({ genre: 'CARTE', ...c, cle: c.id }));
 }
 
-/** Les plans qu'une carte donne à éditer — un pour un Plan Large, deux sinon. */
-function plansEditables(famille, carte) {
-  if (famille === 'DOUBLE') {
-    const m = moitiesDe(carte);
-    return [m.GP, m.PM];
+// --- Tri et filtres ---------------------------------------------------------
+
+const TRIS = [
+  ['num', 'Numéro croissant'], ['num-desc', 'Numéro décroissant'],
+  ['tc', 'Minutage croissant'], ['tc-desc', 'Minutage décroissant'],
+  ['famille', 'Famille'],
+];
+
+/** Les plans d'une tuile — un pour un plan isolé, tous ceux de la carte sinon. */
+function plansTuile(t) {
+  return t.genre === 'PLAN' ? [t.plan] : t.plans;
+}
+
+function passeFiltres(t) {
+  const f = mat.filtres;
+  const plans = plansTuile(t);
+  const un = (test) => plans.some(test);
+
+  if (f.icone) {
+    if (f.icone === 'AUCUNE') { if (!un((h) => !h.el.length)) return false; }
+    else if (f.icone === 'MORT') { if (!un((h) => h.mort)) return false; }
+    else if (!un((h) => h.el.includes(f.icone))) return false;
   }
-  if (famille === 'DEPART') return [plHalf(carte.plan)];
-  return [plHalf(carte)];
+  if (f.pouvoir) {
+    if (f.pouvoir === 'AVEC') { if (!un((h) => h.obj)) return false; }
+    else if (f.pouvoir === 'SANS') { if (!un((h) => !h.obj)) return false; }
+    else if (!un((h) => h.obj && h.obj.kind === f.pouvoir)) return false;
+  }
+  if (f.tcMin !== '' && !un((h) => h.tc >= Number(f.tcMin))) return false;
+  if (f.tcMax !== '' && !un((h) => h.tc <= Number(f.tcMax))) return false;
+  if (f.etat === 'RETOUCHE' && !un((h) => retoucheDe(h.cle))) return false;
+  if (f.etat === 'IMPRIME' && un((h) => retoucheDe(h.cle))) return false;
+  if (f.famille && !un((h) => h.famille === f.famille)) return false;
+
+  // La boîte se compose par carte : le filtre ne s'applique pas à une moitié.
+  if (f.actif && t.genre === 'CARTE') {
+    if (f.actif === 'ACTIVE' && estDesactivee(t.id)) return false;
+    if (f.actif === 'DESACTIVE' && !estDesactivee(t.id)) return false;
+  }
+  return true;
 }
 
-function selectionne(famille, rang) {
-  const liste = cartesDe(famille);
-  return { famille, rang: Math.max(0, Math.min(rang, liste.length - 1)), carte: liste[rang] };
+function trier(tuiles) {
+  const num = (t) => (t.genre === 'PLAN' ? t.plan.num : (t.carte.gpNum ?? t.carte.num));
+  const tcm = (t) => Math.min(...plansTuile(t).map((h) => h.tc));
+  const fam = (t) => plansTuile(t)[0].famille || '';
+  const c = [...tuiles];
+  switch (mat.tri) {
+    case 'num-desc': c.sort((a, b) => num(b) - num(a)); break;
+    case 'tc':       c.sort((a, b) => tcm(a) - tcm(b) || num(a) - num(b)); break;
+    case 'tc-desc':  c.sort((a, b) => tcm(b) - tcm(a) || num(a) - num(b)); break;
+    case 'famille':  c.sort((a, b) => fam(a).localeCompare(fam(b)) || num(a) - num(b)); break;
+    default:         c.sort((a, b) => num(a) - num(b));
+  }
+  return c;
 }
 
-// --- La vue ----------------------------------------------------------------
+const FAMILLES = ['TRANSITION', 'MORT', 'ARME', 'VEHICULE', 'OBJET', 'PERSONNAGE', 'PLAN LARGE', 'DÉPART'];
+
+// --- La vue -----------------------------------------------------------------
 
 function vueMateriel() {
-  const galerie = materielFiltre === 'TABLE' ? tableauMateriel() : galerieMateriel();
-  const n = nbRetouches();
+  let corps;
+  if (mat.vue === 'TABLE') corps = tableauMateriel();
+  else if (mat.vue === 'STATS') corps = vueStats();
+  else corps = surLeModifie(galerieMateriel);
 
   html(`${topbar('#/materiel')}
-  <div class="wrap large">
-    <div class="materiel-2col">
-      <div class="panneau">
-        <h2>Matériel</h2>
-        <div class="barre-outils" style="margin:12px 0 4px">
-          <span class="info">${n ? `${n} retouche${n > 1 ? 's' : ''}` : 'Matériel imprimé, aucune retouche'}</span>
-          <button class="pill" id="mat-export">⭳ Exporter le tableau en PDF</button>
-          <button class="pill" id="mat-reset" ${n ? '' : 'disabled'}>↺ Tout revenir à l’imprimé</button>
-        </div>
-        <div class="filtre-barre" style="margin-top:10px">
-          ${[['DOUBLE', 'Plans Moyens / Gros Plans'], ['PL', 'Plans Larges'],
-             ['DEPART', 'Plans de départ'], ['TABLE', 'Tableau complet']]
-            .map(([k, l]) => `<button class="pill ${materielFiltre === k ? 'on' : ''}" data-f="${k}">${l}</button>`).join('')}
-        </div>
-        ${galerie}
+  <div class="materiel-2col wrap large">
+    <div class="panneau">
+      <h2>Matériel</h2>
+      ${barreJeu()}
+      <div class="filtre-barre" style="margin-top:12px">
+        ${VUES.map(([k, l]) => `<button class="pill ${mat.vue === k ? 'on' : ''}" data-vue="${k}">${l}</button>`).join('')}
       </div>
-      <div class="panneau editeur" id="editeur">${panneauEditeur()}</div>
+      ${corps}
     </div>
+    <div class="panneau editeur" id="editeur">${panneauEditeur()}</div>
   </div>
   ${pied()}`);
 
@@ -916,131 +1079,298 @@ function vueMateriel() {
   brancherMateriel();
 }
 
-/** Une carte de la galerie : son visuel, son libellé et son état. */
-function vignetteMateriel(famille, carte, i) {
-  const marque = plansEditables(famille, carte).some((h) => retoucheDe(h.num))
-    || (famille === 'DOUBLE' && carte.appariementModifie);
-  const visuel = famille === 'DEPART'
-    ? `<div class="carte solo small">${renderPlan(plHalf(carte.plan))}</div>`
-    : renderCarte(carte, false, { small: true });
-  const libelle = famille === 'DOUBLE' ? `Carte ${i + 1} · GP ${carte.gpNum} | PM ${carte.pmNum}`
-    : famille === 'DEPART' ? `Version ${carte.version} — face ${carte.face}`
-    : `Plan Large ${carte.num}${carte.brouillon ? ' · à compléter' : ''}`;
-  return { marque, html: `${visuel}<div class="lg">${libelle}${marque ? ' · retouchée' : ''}</div>` };
+/** Quel jeu de matériel se joue, et combien il porte de retouches. */
+function barreJeu() {
+  const modifie = store.cfg.materielActif === 'MODIFIE';
+  const n = nbRetouches();
+  const off = store.cfg.cartesDesactivees.length;
+  return `<div class="barre-jeu">
+    <span class="bj-lg">Jeu lancé en partie</span>
+    <div class="segments large" id="seg-jeu">
+      <button class="${modifie ? '' : 'on'}" data-jeu="IMPRIME">Imprimé</button>
+      <button class="${modifie ? 'on' : ''}" data-jeu="MODIFIE">Modifié</button>
+    </div>
+    <span class="aide">
+      ${modifie
+        ? `les ${n} retouche${n > 1 ? 's' : ''} de l’éditeur partent en partie`
+        : `le matériel des PDF part en partie ; les ${n} retouche${n > 1 ? 's' : ''} de l’éditeur sont mises de côté, jamais perdues`}
+      ${off ? ` · <b>${off} carte${off > 1 ? 's' : ''} écartée${off > 1 ? 's' : ''}</b> de la boîte, dans les deux jeux` : ''}
+      · la galerie ci-dessous montre et règle toujours le jeu <b>Modifié</b>
+    </span>
+    <button class="pill" id="mat-export">⭳ Exporter le tableau en PDF</button>
+  </div>`;
 }
 
 function galerieMateriel() {
-  const f = materielFiltre;
-  const sel = materielSel && materielSel.famille === f ? materielSel.rang : -1;
+  const toutes = tuilesDe(mat.vue);
+  const vues = trier(toutes.filter(passeFiltres));
+  const f = mat.filtres;
+  const sel = (t) => (t.genre === 'PLAN' ? mat.plans.has(t.cle) : mat.cartes.has(t.id));
 
-  return `<p class="aide" style="margin-top:14px">Clique une carte pour l’éditer — son minutage, ses
-  icônes et son pouvoir. Les deux faces d’une carte Plan Moyen / Gros Plan s’éditent ensemble.</p>
-  <div class="galerie">${cartesDe(f).map((c, i) => {
-    const v = vignetteMateriel(f, c, i);
-    return `<div class="item vignette ${i === sel ? 'sel' : ''} ${v.marque ? 'retouchee' : ''}"
-      data-carte-rang="${i}">${v.html}</div>`;
-  }).join('')}</div>`;
+  const opt = (v, l, on) => `<option value="${v}" ${on ? 'selected' : ''}>${l}</option>`;
+
+  return `<div class="barre-filtres">
+    <label>Tri
+      <select data-filtre="tri">${TRIS.map(([k, l]) => opt(k, l, mat.tri === k)).join('')}</select></label>
+    <label>Icône
+      <select data-filtre="icone">
+        ${opt('', 'toutes', !f.icone)}
+        ${ELEMENT_IDS.map((e) => opt(e, ELEMENTS[e].label, f.icone === e)).join('')}
+        ${opt('MORT', 'Mort', f.icone === 'MORT')}${opt('AUCUNE', 'aucune icône', f.icone === 'AUCUNE')}
+      </select></label>
+    <label>Pouvoir
+      <select data-filtre="pouvoir">
+        ${opt('', 'tous', !f.pouvoir)}${opt('AVEC', 'avec pouvoir', f.pouvoir === 'AVEC')}
+        ${opt('SANS', 'sans pouvoir', f.pouvoir === 'SANS')}
+        ${KINDS.filter(([k]) => k).map(([k, l]) => opt(k, l, f.pouvoir === k)).join('')}
+      </select></label>
+    <label>Minutage
+      <input type="number" min="0" max="99" placeholder="min" value="${f.tcMin}" data-filtre="tcMin">
+      <input type="number" min="0" max="99" placeholder="max" value="${f.tcMax}" data-filtre="tcMax"></label>
+    <label>Famille
+      <select data-filtre="famille">${opt('', 'toutes', !f.famille)}
+        ${FAMILLES.map((x) => opt(x, x, f.famille === x)).join('')}</select></label>
+    <label>État
+      <select data-filtre="etat">${opt('', 'tous', !f.etat)}
+        ${opt('IMPRIME', 'à l’imprimé', f.etat === 'IMPRIME')}${opt('RETOUCHE', 'retouchés', f.etat === 'RETOUCHE')}
+      </select></label>
+    <label>Boîte
+      <select data-filtre="actif">${opt('', 'toutes', !f.actif)}
+        ${opt('ACTIVE', 'activées', f.actif === 'ACTIVE')}${opt('DESACTIVE', 'écartées', f.actif === 'DESACTIVE')}
+      </select></label>
+    <button class="pill mini" id="filtres-raz">↺ filtres</button>
+  </div>
+
+  <div class="barre-selection">
+    <span class="info">${vues.length} / ${toutes.length} affichée${toutes.length > 1 ? 's' : ''}
+      · <b>${mat.plans.size} plan${mat.plans.size > 1 ? 's' : ''} sélectionné${mat.plans.size > 1 ? 's' : ''}</b></span>
+    <button class="pill mini" id="sel-tout">Tout sélectionner</button>
+    <button class="pill mini" id="sel-rien" ${mat.plans.size ? '' : 'disabled'}>Ne rien sélectionner</button>
+    <span class="aide">clic pour ajouter ou retirer · maj+clic pour une plage</span>
+  </div>
+
+  ${vues.length ? `<div class="galerie">${vues.map((t, i) => {
+    const hors = t.genre === 'CARTE' && estDesactivee(t.id);
+    return `<div class="item vignette ${sel(t) ? 'sel' : ''} ${hors ? 'hors-boite' : ''}"
+      data-tuile="${t.cle}" data-rang="${i}">${htmlTuile(t)}</div>`;
+  }).join('')}</div>`
+    : '<p class="aide" style="margin-top:18px">Aucune carte ne passe les filtres.</p>'}`;
 }
 
-// --- Le panneau d'édition --------------------------------------------------
+// Le rendu se fait sur le jeu modifié : c'est lui que l'éditeur montre et
+// règle, même quand c'est l'imprimé qui se joue.
+function htmlTuile(t) {
+  return surLeModifie(() => htmlTuileBrut(t));
+}
+
+function htmlTuileBrut(t) {
+  const retouche = plansTuile(t).some((h) => retoucheDe(h.cle));
+  const hors = t.genre === 'CARTE' && estDesactivee(t.id);
+  const visuel = t.genre === 'PLAN'
+    ? `<div class="carte solo small">${renderPlan(t.plan)}</div>`
+    : (t.type === 'DOUBLE' ? renderCarte(t.carte, false, { small: true })
+      : `<div class="carte solo small">${renderPlan(t.plans[0])}</div>`);
+  const etats = [retouche ? '<b class="et-mod">retouché</b>' : '', hors ? '<b class="et-hors">écartée</b>' : '']
+    .filter(Boolean).join(' · ');
+  return `${visuel}<div class="lg">${t.libelle}${etats ? ` · ${etats}` : ''}</div>`;
+}
+
+// --- Le panneau d'édition ---------------------------------------------------
+
+function plansSelectionnes() {
+  return surLeModifie(() => [...mat.plans].map(planDeCle).filter(Boolean));
+}
 
 function panneauEditeur() {
-  if (!materielSel) {
-    return `<h2>Éditeur</h2>
-      <p class="aide">Choisis une carte dans la galerie pour régler son <b>minutage</b>, ses
-      <b>icônes</b> et son <b>pouvoir</b>. Tout ce qui est réglé ici est enregistré et la partie se
-      joue aussitôt avec les cartes retouchées.</p>`;
-  }
-  const { famille, rang, carte } = selectionne(materielSel.famille, materielSel.rang);
-  const plans = plansEditables(famille, carte);
-
-  // Une carte double se lit des deux côtés : on montre le recto et le verso.
-  let apercu;
-  if (famille === 'DOUBLE') {
-    apercu = `<div class="editeur-faces">
-      <div><div class="f-lg">Recto</div>${renderCarte(carte, false, { small: true })}</div>
-      <div><div class="f-lg">Verso</div>${renderCarte(carte, true, { small: true })}</div>
-    </div>`;
-  } else if (famille === 'DEPART') {
-    apercu = `<div class="editeur-faces"><div><div class="f-lg">Face ${carte.face}</div>
-      <div class="carte solo small">${renderPlan(plHalf(carte.plan))}</div></div></div>`;
-  } else {
-    apercu = `<div class="editeur-faces"><div>${renderCarte(carte, false, { small: true })}</div></div>`;
-  }
-
-  const titre = famille === 'DOUBLE' ? `Carte ${rang + 1}`
-    : famille === 'DEPART' ? `Plan de départ ${carte.version}${carte.face}`
-    : `Plan Large ${carte.num}`;
-
-  return `<h2>${titre}</h2>
-    ${apercu}
-    ${plans.map((h) => blocPlan(h)).join('')}
-    ${famille === 'DOUBLE' ? appariement(carte) : ''}`;
+  return surLeModifie(() => panneauEditeurBrut());
 }
 
-/** Le formulaire d'un plan : minutage, icônes, pouvoir. */
-function blocPlan(h) {
-  const r = retoucheDe(h.num);
-  const nom = h.format === 'PL' ? `Plan ${h.num}` : `${FORMATS[h.format].label} n°${h.num}`;
+function panneauEditeurBrut() {
+  const plans = plansSelectionnes();
+  if (!plans.length) {
+    return `<h2>Éditeur</h2>
+      <p class="aide">Choisis une carte ou un plan dans la galerie pour régler son <b>minutage</b>,
+      ses <b>icônes</b> et son <b>pouvoir</b>. Sélectionnes-en plusieurs pour les régler d’un coup.</p>
+      <p class="aide">L’éditeur écrit toujours dans le jeu <b>Modifié</b>, même quand c’est l’imprimé
+      qui se joue — passer de l’un à l’autre ne détruit rien.</p>`;
+  }
 
-  return `<div class="bloc-plan ${r ? 'retouche' : ''}" data-plan="${h.num}">
+  const carteSeule = mat.cartes.size === 1 ? cartesDe(mat.vue === 'GP' || mat.vue === 'PM' ? 'CARTES' : mat.vue)
+    .find((c) => c.id === [...mat.cartes][0]) : null;
+
+  // Une carte seule s'édite plan par plan — ses deux faces sous les yeux et
+  // ses quatre plans les uns sous les autres. C'est seulement à partir de deux
+  // cartes, ou d'une poignée de moitiés, qu'on passe au réglage en lot.
+  const parPlan = plans.length === 1
+    || (carteSeule && carteSeule.plans.length === plans.length
+        && carteSeule.plans.every((h) => mat.plans.has(h.cle)));
+
+  const titre = plans.length === 1 ? plans[0].quoi
+    : carteSeule ? carteSeule.libelle
+    : `${plans.length} plans sélectionnés`;
+
+  return `<h2>${titre}</h2>
+    ${mat.cartes.size ? blocBoite() : ''}
+    ${carteSeule ? apercuCarte(carteSeule) : ''}
+    ${parPlan ? plansOrdonnes(plans, carteSeule).map(blocPlan).join('') : blocLot(plans)}
+    ${carteSeule && carteSeule.type === 'DOUBLE' ? appariement(carteSeule.carte) : ''}`;
+}
+
+/** Les plans d'une carte se lisent dans l'ordre de ses faces : recto, verso. */
+function plansOrdonnes(plans, carte) {
+  if (!carte) return plans;
+  const rang = new Map(carte.plans.map((h, i) => [h.cle, i]));
+  return [...plans].sort((a, b) => (rang.get(a.cle) ?? 99) - (rang.get(b.cle) ?? 99));
+}
+
+/** Les cartes sélectionnées sont-elles dans la boîte ? */
+function blocBoite() {
+  const ids = [...mat.cartes];
+  const dedans = ids.filter((id) => !estDesactivee(id)).length;
+  const n = ids.length;
+  return `<div class="bloc-plan boite">
+    <div class="bp-tete"><b>${n > 1 ? `${n} cartes` : 'Cette carte'} dans la boîte</b>
+      <span class="aide">${dedans} / ${n} activée${dedans > 1 ? 's' : ''}</span></div>
+    <div class="rangee-mini">
+      <button class="pill mini" data-boite="1" ${dedans === n ? 'disabled' : ''}>✓ Activer</button>
+      <button class="pill mini" data-boite="0" ${dedans === 0 ? 'disabled' : ''}>✕ Écarter de la boîte</button>
+    </div>
+    <p class="aide">Une carte écartée reste éditable mais ne part pas dans le paquet — dans l’un
+    comme dans l’autre jeu de matériel.</p>
+  </div>`;
+}
+
+function apercuCarte(c) {
+  if (c.type !== 'DOUBLE') {
+    return `<div class="editeur-faces"><div>${htmlTuile({ genre: 'CARTE', ...c, cle: c.id }).split('<div class="lg">')[0]}</div></div>`;
+  }
+  return `<div class="editeur-faces">
+    <div><div class="f-lg">Recto</div>${renderCarte(c.carte, false, { small: true })}</div>
+    <div><div class="f-lg">Verso</div>${renderCarte(c.carte, true, { small: true })}</div>
+  </div>`;
+}
+
+/**
+ * Le formulaire d'un plan : minutage, icônes, pouvoir. Chaque valeur qui
+ * s'écarte de l'imprimé le dit — les deux versions restent lisibles côte à
+ * côte, sans avoir à basculer le jeu lancé.
+ */
+function blocPlan(h) {
+  const r = retoucheDe(h.cle);
+  const imp = h.imprime;
+  const memeEl = h.el.length === imp.el.length && h.el.every((x, k) => x === imp.el[k]) && h.mort === imp.mort;
+
+  return `<div class="bloc-plan ${r ? 'retouche' : ''}" data-plan="${h.cle}">
     <div class="bp-tete">
-      <b>${nom}</b>
-      <button class="pill mini" data-plan-reset="${h.num}" ${r ? '' : 'disabled'}>↺ imprimé</button>
+      <b>${h.quoi}</b>
+      <button class="pill mini" data-plan-reset="${h.cle}" ${r ? '' : 'disabled'}>↺ imprimé</button>
     </div>
 
     <label class="champ-ligne">
       <span>Minutage</span>
-      <input type="number" min="0" max="99" step="1" value="${h.tc}" data-champ-tc="${h.num}">
+      <input type="number" min="0" max="99" step="1" value="${h.tc}" data-champ-tc="${h.cle}">
       <span class="tc-apercu">${tc(h.tc)}</span>
+      ${h.tc !== imp.tc ? `<span class="imp-rappel">imprimé ${tc(imp.tc)}</span>` : ''}
     </label>
 
     <div class="champ-bloc">
       <span class="ch-lg">Icônes</span>
-      <div class="choix-icones">
-        ${ELEMENT_IDS.map((e) => `<button class="ic ${h.el.includes(e) ? 'on' : ''}"
-          data-icone="${e}" data-plan-icone="${h.num}" title="${ELEMENTS[e].label}">
-          ${elIcon(e, 26)}</button>`).join('')}
-        <button class="ic sep ${h.mort ? 'on' : ''}" data-plan-mort="${h.num}" title="Plan de mort">
-          ${elIcon('MORT', 26)}</button>
-      </div>
+      ${choixIcones(h.el, h.mort, `data-plan-icone="${h.cle}"`, `data-plan-mort="${h.cle}"`)}
+      ${memeEl ? '' : `<div class="imp-rappel ligne">imprimé :
+        ${imp.el.map((e) => elIcon(e, 20)).join('') || 'aucune icône'}${imp.mort ? elIcon('MORT', 20) : ''}</div>`}
     </div>
 
-    ${blocPouvoir(h)}
+    ${blocPouvoir(h.obj, h.cle)}
+    ${memeObjectif(h.obj, imp.obj) ? '' : `<div class="imp-rappel ligne">imprimé :
+      ${imp.obj ? `${objHTML(imp.obj, 20)} ${objLabel(imp.obj)}` : 'bandeau vide'}</div>`}
   </div>`;
 }
 
-/** X points × <ce qu'on compte>. */
-function blocPouvoir(h) {
-  const o = h.obj;
+/** Le formulaire d'un lot : ce qu'on applique s'applique à toute la sélection. */
+function blocLot(plans) {
+  const memes = (f) => { const v = JSON.stringify(f(plans[0])); return plans.every((p) => JSON.stringify(f(p)) === v); };
+  const tcCommun = memes((p) => p.tc) ? plans[0].tc : '';
+  const nRetouches = plans.filter((p) => retoucheDe(p.cle)).length;
+  const obj = objLotCourant(plans);
+
+  return `<div class="bloc-plan lot">
+    <div class="bp-tete">
+      <b>Régler les ${plans.length} plans d’un coup</b>
+      <button class="pill mini" data-lot-reset="1" ${nRetouches ? '' : 'disabled'}>↺ imprimé (${nRetouches})</button>
+    </div>
+    <p class="aide">Chaque réglage ne part que sur son bouton <b>Appliquer</b> : rien ne bouge tant
+    qu’on n’a pas cliqué.</p>
+
+    <label class="champ-ligne">
+      <span>Minutage</span>
+      <input type="number" min="0" max="99" step="1" value="${tcCommun}" id="lot-tc" placeholder="—">
+      <button class="pill mini" data-lot="tc">Appliquer</button>
+    </label>
+
+    <div class="champ-bloc">
+      <span class="ch-lg">Icônes</span>
+      ${choixIcones(lotIcones(plans), plans.every((p) => p.mort), 'data-lot-icone="1"', 'data-lot-mort="1"')}
+      <div class="rangee-mini" style="margin-top:8px">
+        <button class="pill mini" data-lot="el-ajout">Ajouter aux plans</button>
+        <button class="pill mini" data-lot="el-retire">Retirer des plans</button>
+        <button class="pill mini" data-lot="el-remplace">Remplacer</button>
+        <button class="pill mini" data-lot="mort">Marquer la mort</button>
+        <button class="pill mini" data-lot="mort-non">Enlever la mort</button>
+      </div>
+    </div>
+
+    ${blocPouvoir(obj, 'lot')}
+    <div class="rangee-mini"><button class="pill mini" data-lot="obj">Appliquer le pouvoir aux ${plans.length} plans</button></div>
+
+    <div class="liste-lot">
+      ${plans.map((p) => `<span class="jeton ${retoucheDe(p.cle) ? 'mod' : ''}" data-oter="${p.cle}"
+        title="Retirer de la sélection">${p.num}${p.face || ''} ✕</span>`).join('')}
+    </div>
+  </div>`;
+}
+
+/** Les icônes cochées dans un lot : celles que tous les plans portent. */
+function lotIcones(plans) {
+  return ELEMENT_IDS.filter((e) => plans.every((p) => p.el.includes(e)));
+}
+
+function choixIcones(el, mort, attrIcone, attrMort) {
+  return `<div class="choix-icones">
+    ${ELEMENT_IDS.map((e) => `<button class="ic ${el.includes(e) ? 'on' : ''}"
+      data-icone="${e}" ${attrIcone} title="${ELEMENTS[e].label}">${elIcon(e, 26)}</button>`).join('')}
+    <button class="ic sep ${mort ? 'on' : ''}" ${attrMort} title="Plan de mort">${elIcon('MORT', 26)}</button>
+  </div>`;
+}
+
+/** X points × <ce qu'on compte>. `ou` vaut la clé du plan, ou « lot ». */
+function blocPouvoir(o, ou) {
   const kind = o ? o.kind : '';
   const opt = (v, l, on) => `<option value="${v}" ${on ? 'selected' : ''}>${l}</option>`;
   const elOpts = (choisi) => ELEMENT_IDS.map((e) => opt(e, ELEMENTS[e].label, choisi === e)).join('');
 
   let complement = '';
   if (kind === 'FORMAT') {
-    complement = `<select data-champ-obj="${h.num}" data-part="format">
+    complement = `<select data-champ-obj="${ou}" data-part="format">
       ${['PL', 'PM', 'GP'].map((f) => opt(f, FORMATS[f].label, o.format === f)).join('')}</select>`;
   } else if (kind === 'ELEMENT' || kind === 'ABSENT') {
-    complement = `<select data-champ-obj="${h.num}" data-part="el">${elOpts(o.el)}</select>`;
+    complement = `<select data-champ-obj="${ou}" data-part="el">${elOpts(o.el)}</select>`;
   } else if (kind === 'PAIRE') {
-    complement = `<select data-champ-obj="${h.num}" data-part="el0">${elOpts(o.els[0])}</select>
+    complement = `<select data-champ-obj="${ou}" data-part="el0">${elOpts(o.els[0])}</select>
       <span class="plus">+</span>
-      <select data-champ-obj="${h.num}" data-part="el1">${elOpts(o.els[1])}</select>`;
+      <select data-champ-obj="${ou}" data-part="el1">${elOpts(o.els[1])}</select>`;
   }
 
   return `<div class="champ-bloc">
     <span class="ch-lg">Pouvoir</span>
     <div class="editeur-obj">
       <input type="number" class="pts" min="0" max="20" value="${o ? o.n : 1}"
-        data-champ-obj="${h.num}" data-part="n" ${o ? '' : 'disabled'}>
+        data-champ-obj="${ou}" data-part="n" ${o ? '' : 'disabled'}>
       <span class="x">${kind === 'ABSENT' ? 'si' : '×'}</span>
-      <select data-champ-obj="${h.num}" data-part="kind">
-        ${KINDS.map(([k, l]) => opt(k, l, kind === k)).join('')}
-      </select>
+      <select data-champ-obj="${ou}" data-part="kind">${KINDS.map(([k, l]) => opt(k, l, kind === k)).join('')}</select>
       ${complement}
     </div>
-    <div class="apercu-obj">${o ? `${objHTML(o, 26)}<span class="lit">${objLabel(o)}</span>` : '<span class="aide">Bandeau vide</span>'}</div>
+    <div class="apercu-obj">${o ? `${objHTML(o, 26)}<span class="lit">${objLabel(o)}</span>`
+      : '<span class="aide">Bandeau vide</span>'}</div>
   </div>`;
 }
 
@@ -1060,16 +1390,15 @@ function appariement(carte) {
       <select data-paire="${carte.rang}" data-part="gp">${liste('GP', carte.gpNum)}</select></label>
     <label class="champ-ligne"><span>Plan Moyen</span>
       <select data-paire="${carte.rang}" data-part="pm">${liste('PM', carte.pmNum)}</select></label>
-    <p class="aide">La répartition imprimée est conservée tant qu’on n’y touche pas. La changer ici
-    ne modifie que cette carte.</p>
+    <p class="aide">La répartition imprimée est conservée tant qu’on n’y touche pas.</p>
   </div>`;
 }
 
-// --- Le tableau complet ----------------------------------------------------
+// --- Le tableau complet -----------------------------------------------------
 
 function tableauMateriel() {
-  const cat = catalogue();
-  return `<p class="aide" style="margin-top:14px">L’état courant de tout le matériel, retouches
+  const cat = surLeModifie(catalogue);
+  return `<p class="aide" style="margin-top:14px">L’état courant du jeu <b>Modifié</b>, retouches
   comprises. Le bouton <b>Exporter le tableau en PDF</b> en donne la version imprimable.</p>
   <div class="tbl-defile">${tableauPlans(cat)}</div>
   <h3 style="margin-top:22px">Les 50 cartes Plan Moyen / Gros Plan</h3>
@@ -1081,10 +1410,11 @@ function tableauMateriel() {
 
 function tableauPlans(cat) {
   return `<table class="tbl tbl-materiel">
-    <thead><tr><th>N°</th><th>Plan</th><th>Famille</th><th class="num">Minutage</th>
+    <thead><tr><th>N°</th><th>Face</th><th>Plan</th><th>Famille</th><th class="num">Minutage</th>
       <th>Icônes</th><th>Pouvoir</th><th>État</th></tr></thead>
     <tbody>${cat.map((p) => `<tr class="${p.modifie ? 'ligne-retouchee' : ''}">
       <td class="num">${p.num}</td>
+      <td>${p.face ? (p.face === 'R' ? 'recto' : 'verso') : '—'}</td>
       <td>${FORMATS[p.format].label}${p.titre ? ` <span class="aide">${p.titre}</span>` : ''}</td>
       <td>${p.famille}</td>
       <td class="num">${tc(p.tc)}</td>
@@ -1096,155 +1426,425 @@ function tableauPlans(cat) {
 }
 
 function tableauPaires() {
+  const cartes = surLeModifie(buildCartesDoubles);
   return `<table class="tbl tbl-materiel">
-    <thead><tr><th>Carte</th><th>Gros Plan</th><th>Plan Moyen</th><th>État</th></tr></thead>
-    <tbody>${buildCartesDoubles().map((c, i) => `<tr class="${c.appariementModifie ? 'ligne-retouchee' : ''}">
+    <thead><tr><th>Carte</th><th>Gros Plan</th><th>Plan Moyen</th><th>Boîte</th><th>Appariement</th></tr></thead>
+    <tbody>${cartes.map((c, i) => `<tr class="${c.appariementModifie ? 'ligne-retouchee' : ''}">
       <td class="num">${i + 1}</td><td class="num">${c.gpNum}</td><td class="num">${c.pmNum}</td>
+      <td>${estDesactivee(c.id) ? 'écartée' : 'activée'}</td>
       <td>${c.appariementModifie ? `réapparié (imprimé : GP ${c.gpImprime} | PM ${c.pmImprime})` : 'imprimé'}</td>
     </tr>`).join('')}</tbody>
   </table>`;
 }
 
-// --- Les branchements ------------------------------------------------------
+// --- Les statistiques -------------------------------------------------------
+// On compte le matériel tel qu'il partira en partie : les cartes activées,
+// leurs plans, face par face. Les deux jeux sont mis côte à côte, pour lire
+// d'un coup d'œil ce que les retouches ont déplacé.
 
-function brancherMateriel() {
-  const rafraichir = () => vueMateriel();
-  // Le panneau seul, quand la galerie n'a pas bougé : l'édition reste sous le
-  // curseur et la liste des cartes ne clignote pas.
-  const rafraichirEditeur = () => {
-    const e = app.querySelector('#editeur');
-    if (!e) return rafraichir();
-    e.innerHTML = panneauEditeur();
-    brancherEditeur();
-    brancherApercu(e);
-    // La vignette correspondante suit l'état « retouchée ».
-    majVignette();
+function plansDuPaquet() {
+  const { doubles, larges, departs } = construirePaquet(store.cfg);
+  const out = [];
+  for (const c of doubles) for (const f of FACES) {
+    const m = moitiesDe(c, f.id);
+    out.push(m.GP, m.PM);
+  }
+  for (const c of larges) out.push(plHalf(c));
+  const vus = new Set();
+  for (const d of departs) for (const f of d.faces) {
+    if (vus.has(f.num)) continue;
+    vus.add(f.num); out.push(plHalf({ ...f, depart: true }));
+  }
+  return out;
+}
+
+function statsJeu(modifie) {
+  const etait = store.cfg.materielActif;
+  appliquerMateriel(modifie ? store.cfg.materiel : null, store.cfg.cartesDesactivees);
+  try {
+    const plans = plansDuPaquet();
+    const s = {
+      plans: plans.length,
+      cadrages: { PL: 0, PM: 0, GP: 0 },
+      elements: Object.fromEntries(ELEMENT_IDS.map((e) => [e, 0])),
+      morts: 0, sansIcone: 0, sansPouvoir: 0,
+      pouvoirs: Object.fromEntries(KINDS.filter(([k]) => k).map(([k]) => [k, 0])),
+      tcMin: 99, tcMax: 0, tcSomme: 0,
+      tranches: Object.fromEntries([0, 10, 20, 30, 40, 50, 60, 70, 80, 90].map((t) => [t, 0])),
+    };
+    for (const h of plans) {
+      s.cadrages[h.format]++;
+      for (const e of h.el) if (s.elements[e] !== undefined) s.elements[e]++;
+      if (h.mort) s.morts++;
+      if (!h.el.length) s.sansIcone++;
+      if (h.obj) s.pouvoirs[h.obj.kind]++; else s.sansPouvoir++;
+      s.tcMin = Math.min(s.tcMin, h.tc); s.tcMax = Math.max(s.tcMax, h.tc);
+      s.tcSomme += h.tc;
+      s.tranches[Math.min(90, Math.floor(h.tc / 10) * 10)]++;
+    }
+    s.tcMoyen = plans.length ? s.tcSomme / plans.length : 0;
+    const { doubles, larges, departs } = construirePaquet(store.cfg);
+    const vus = new Set(); departs.forEach((d) => d.faces.forEach((f) => vus.add(f.num)));
+    s.cartes = doubles.length + larges.length + vus.size;
+    s.doubles = doubles.length; s.larges = larges.length; s.departs = vus.size;
+    return s;
+  } finally {
+    store.cfg.materielActif = etait;
+    appliquerJeuActif();
+  }
+}
+
+function vueStats() {
+  const imp = statsJeu(false);
+  const mod = statsJeu(true);
+  const actif = store.cfg.materielActif;
+  const off = store.cfg.cartesDesactivees.length;
+
+  const ligne = (l, a, b, icone) => {
+    const diff = b - a;
+    return `<tr class="${diff ? 'ligne-retouchee' : ''}">
+      <td>${icone || ''}${l}</td>
+      <td class="num ${actif === 'IMPRIME' ? 'col-actif' : ''}">${typeof a === 'number' && !Number.isInteger(a) ? a.toFixed(1) : a}</td>
+      <td class="num ${actif === 'MODIFIE' ? 'col-actif' : ''}">${typeof b === 'number' && !Number.isInteger(b) ? b.toFixed(1) : b}</td>
+      <td class="num ecart">${diff ? (diff > 0 ? `+${Number.isInteger(diff) ? diff : diff.toFixed(1)}` : (Number.isInteger(diff) ? diff : diff.toFixed(1))) : '—'}</td>
+    </tr>`;
   };
 
-  app.querySelectorAll('[data-f]').forEach((b) => b.addEventListener('click', () => {
-    materielFiltre = b.dataset.f;
-    if (materielFiltre !== 'TABLE') materielSel = { famille: materielFiltre, rang: 0 };
-    rafraichir();
+  const tableau = (titre, lignes) => `<h3>${titre}</h3>
+    <table class="tbl tbl-stats">
+      <thead><tr><th></th><th class="num">Imprimé</th><th class="num">Modifié</th><th class="num">Écart</th></tr></thead>
+      <tbody>${lignes}</tbody>
+    </table>`;
+
+  return `<p class="aide" style="margin-top:14px">Le matériel tel qu’il part en partie : les
+  ${imp.cartes} cartes activées et leurs ${imp.plans} plans, recto et verso comptés séparément.
+  ${off ? `<b>${off} carte${off > 1 ? 's' : ''}</b> ${off > 1 ? 'sont écartées' : 'est écartée'} de la boîte.` : ''}
+  La colonne surlignée est le jeu qui se lance.</p>
+
+  ${tableau('La boîte', [
+    ligne('Cartes Plan Moyen / Gros Plan', imp.doubles, mod.doubles),
+    ligne('Cartes Plan Large', imp.larges, mod.larges),
+    ligne('Faces de Plan de départ', imp.departs, mod.departs),
+    ligne('Plans au total (faces comprises)', imp.plans, mod.plans),
+  ].join(''))}
+
+  ${tableau('Les cadrages', ['PL', 'PM', 'GP'].map((f) =>
+    ligne(FORMATS[f].label, imp.cadrages[f], mod.cadrages[f], cadrageIcon(f))).join(''))}
+
+  ${tableau('Les icônes', [
+    ...ELEMENT_IDS.map((e) => ligne(ELEMENTS[e].label, imp.elements[e], mod.elements[e], elIcon(e, 20))),
+    ligne('Plans de mort', imp.morts, mod.morts, elIcon('MORT', 20)),
+    ligne('Plans sans aucune icône', imp.sansIcone, mod.sansIcone),
+  ].join(''))}
+
+  ${tableau('Les pouvoirs', [
+    ...KINDS.filter(([k]) => k).map(([k, l]) => ligne(l.replace('…', ''), imp.pouvoirs[k], mod.pouvoirs[k])),
+    ligne('Plans sans pouvoir', imp.sansPouvoir, mod.sansPouvoir),
+  ].join(''))}
+
+  ${tableau('Les minutages', [
+    ligne('Le plus court', imp.tcMin, mod.tcMin),
+    ligne('Le plus long', imp.tcMax, mod.tcMax),
+    ligne('Moyenne', imp.tcMoyen, mod.tcMoyen),
+    ...Object.keys(imp.tranches).map((t) =>
+      ligne(`de ${String(t).padStart(2, '0')}:00 à ${String(+t + 9).padStart(2, '0')}:00`, imp.tranches[t], mod.tranches[t])),
+  ].join(''))}`;
+}
+
+// --- Les branchements -------------------------------------------------------
+
+function brancherMateriel() {
+  const refaire = () => vueMateriel();
+  const refaireEditeur = () => {
+    const e = app.querySelector('#editeur');
+    if (!e) return refaire();
+    e.innerHTML = panneauEditeur();
+    brancherEditeur(refaireEditeur);
+    brancherApercu(e);
+    majTuiles();
+  };
+
+  app.querySelectorAll('[data-vue]').forEach((b) => b.addEventListener('click', () => {
+    mat.vue = b.dataset.vue; mat.ancre = null; refaire();
   }));
 
-  app.querySelectorAll('[data-carte-rang]').forEach((el) => el.addEventListener('click', () => {
-    materielSel = { famille: materielFiltre, rang: +el.dataset.carteRang };
-    app.querySelectorAll('[data-carte-rang]').forEach((v) => v.classList.remove('sel'));
-    el.classList.add('sel');
-    rafraichirEditeur();
+  app.querySelectorAll('[data-jeu]').forEach((b) => b.addEventListener('click', () => {
+    store.cfg.materielActif = b.dataset.jeu; sauverCfg(); refaire();
   }));
+
+  app.querySelectorAll('[data-filtre]').forEach((el) => el.addEventListener('change', () => {
+    if (el.dataset.filtre === 'tri') mat.tri = el.value;
+    else mat.filtres[el.dataset.filtre] = el.value;
+    refaire();
+  }));
+
+  const raz = app.querySelector('#filtres-raz');
+  if (raz) raz.addEventListener('click', () => {
+    mat.filtres = { icone: '', pouvoir: '', tcMin: '', tcMax: '', etat: '', actif: '', famille: '' };
+    mat.tri = 'num'; refaire();
+  });
+
+  const tuiles = trier(tuilesDe(mat.vue).filter(passeFiltres));
+  app.querySelectorAll('[data-tuile]').forEach((el) => el.addEventListener('click', (ev) => {
+    const rang = +el.dataset.rang;
+    if (ev.shiftKey && mat.ancre !== null) {
+      const [a, b] = [Math.min(mat.ancre, rang), Math.max(mat.ancre, rang)];
+      for (let i = a; i <= b; i++) ajouterTuile(tuiles[i]);
+    } else {
+      basculerTuile(tuiles[rang]);
+      mat.ancre = rang;
+    }
+    refaire();
+  }));
+
+  const tout = app.querySelector('#sel-tout');
+  if (tout) tout.addEventListener('click', () => { tuiles.forEach(ajouterTuile); refaire(); });
+  const rien = app.querySelector('#sel-rien');
+  if (rien) rien.addEventListener('click', () => {
+    mat.plans.clear(); mat.cartes.clear(); mat.ancre = null; oublierObjLot(); refaire();
+  });
 
   const ex = app.querySelector('#mat-export');
   if (ex) ex.addEventListener('click', exporterMateriel);
 
-  const rz = app.querySelector('#mat-reset');
-  if (rz) rz.addEventListener('click', () => {
-    if (!confirm('Effacer toutes les retouches et revenir au matériel imprimé ?')) return;
-    store.cfg.materiel = { plans: {}, paires: {} };
-    sauverCfg(); rafraichir();
-  });
-
-  brancherEditeur(rafraichirEditeur);
+  brancherEditeur(refaireEditeur);
 }
 
-/** Redessine la vignette de la carte éditée, sans toucher au reste. */
-function majVignette() {
-  if (!materielSel || materielFiltre === 'TABLE') return;
-  const el = app.querySelector(`[data-carte-rang="${materielSel.rang}"]`);
-  if (!el) return;
-  const { famille, rang, carte } = selectionne(materielSel.famille, materielSel.rang);
-  const v = vignetteMateriel(famille, carte, rang);
-  el.innerHTML = v.html;
-  el.classList.toggle('retouchee', v.marque);
-  brancherApercu(el);
+function ajouterTuile(t) {
+  if (!t) return;
+  oublierObjLot();
+  plansTuile(t).forEach((h) => mat.plans.add(h.cle));
+  if (t.genre === 'CARTE') mat.cartes.add(t.id);
 }
 
-function brancherEditeur(apres) {
-  const refaire = apres || (() => {
-    const e = app.querySelector('#editeur');
-    if (!e) return vueMateriel();
-    e.innerHTML = panneauEditeur();
-    brancherEditeur(); brancherApercu(e); majVignette();
+function basculerTuile(t) {
+  if (!t) return;
+  oublierObjLot();
+  const cles = plansTuile(t).map((h) => h.cle);
+  const dedans = cles.every((c) => mat.plans.has(c));
+  if (dedans) {
+    cles.forEach((c) => mat.plans.delete(c));
+    if (t.genre === 'CARTE') mat.cartes.delete(t.id);
+  } else {
+    cles.forEach((c) => mat.plans.add(c));
+    if (t.genre === 'CARTE') mat.cartes.add(t.id);
+  }
+}
+
+/** Redessine les vignettes sélectionnées, sans refaire toute la galerie. */
+function majTuiles() {
+  const tuiles = trier(tuilesDe(mat.vue).filter(passeFiltres));
+  app.querySelectorAll('[data-tuile]').forEach((el) => {
+    const t = tuiles[+el.dataset.rang];
+    if (!t) return;
+    el.innerHTML = htmlTuile(t);
+    el.classList.toggle('hors-boite', t.genre === 'CARTE' && estDesactivee(t.id));
+    brancherApercu(el);
   });
+}
+
+function brancherEditeur(refaire) {
+  const plans = plansSelectionnes();
+  const lot = plans.length > 1;
+
+  app.querySelectorAll('[data-boite]').forEach((el) => el.addEventListener('click', () => {
+    activerCartes([...mat.cartes], el.dataset.boite === '1');
+    refaire();
+  }));
 
   app.querySelectorAll('[data-champ-tc]').forEach((el) => el.addEventListener('change', () => {
-    const num = el.dataset.champTc;
-    const v = Math.max(0, Math.min(99, parseInt(el.value, 10) || 0));
-    const imprime = catalogue().find((p) => String(p.num) === String(num));
-    retoucher(num, 'tc', imprime && imprime.imprime.tc === v ? undefined : v);
-    refaire();
+    appliquerTc([el.dataset.champTc], el.value); sauverCfg(); refaire();
   }));
 
   app.querySelectorAll('[data-plan-icone]').forEach((el) => el.addEventListener('click', () => {
-    const num = el.dataset.planIcone;
-    const e = el.dataset.icone;
-    const cat = catalogue().find((p) => String(p.num) === String(num));
-    const actuels = cat ? cat.el.slice() : [];
-    const i = actuels.indexOf(e);
-    if (i >= 0) actuels.splice(i, 1); else actuels.push(e);
-    const imprime = cat ? cat.imprime.el : [];
-    const identique = actuels.length === imprime.length && actuels.every((x, k) => x === imprime[k]);
-    retoucher(num, 'el', identique ? undefined : actuels);
-    refaire();
+    const cle = el.dataset.planIcone;
+    const p = surLeModifie(() => planDeCle(cle));
+    const cour = p ? p.el.slice() : [];
+    const i = cour.indexOf(el.dataset.icone);
+    if (i >= 0) cour.splice(i, 1); else cour.push(el.dataset.icone);
+    poserIcones([cle], cour); sauverCfg(); refaire();
   }));
 
   app.querySelectorAll('[data-plan-mort]').forEach((el) => el.addEventListener('click', () => {
-    const num = el.dataset.planMort;
-    const cat = catalogue().find((p) => String(p.num) === String(num));
-    const v = !(cat && cat.mort);
-    retoucher(num, 'mort', cat && cat.imprime.mort === v ? undefined : v);
-    refaire();
-  }));
-
-  app.querySelectorAll('[data-champ-obj]').forEach((el) => el.addEventListener('change', () => {
-    majObjectif(el.dataset.champObj, el.dataset.part, el.value);
-    refaire();
+    const cle = el.dataset.planMort;
+    const p = surLeModifie(() => planDeCle(cle));
+    poserMort([cle], !(p && p.mort)); sauverCfg(); refaire();
   }));
 
   app.querySelectorAll('[data-plan-reset]').forEach((el) => el.addEventListener('click', () => {
-    delete store.cfg.materiel.plans[el.dataset.planReset];
-    sauverCfg(); refaire();
+    delete store.cfg.materiel.plans[el.dataset.planReset]; sauverCfg(); refaire();
+  }));
+
+  // Le pouvoir : en solo il s'applique au fil des changements, en lot il
+  // attend son bouton.
+  app.querySelectorAll('[data-champ-obj]').forEach((el) => el.addEventListener('change', () => {
+    if (el.dataset.champObj === 'lot') {
+      objLot = majObjBrouillon(objLotCourant(plans), el.dataset.part);
+      objLotTouche = true;
+      return refaire();
+    }
+    majObjectif([el.dataset.champObj], el.dataset.part, el.value); sauverCfg(); refaire();
   }));
 
   app.querySelectorAll('[data-paire]').forEach((el) => el.addEventListener('change', () => {
     const rang = el.dataset.paire;
-    const c = buildCartesDoubles()[+rang];
+    const c = surLeModifie(buildCartesDoubles)[+rang];
     const pm = el.dataset.part === 'pm' ? +el.value : c.pmNum;
     const gp = el.dataset.part === 'gp' ? +el.value : c.gpNum;
     if (pm === c.pmImprime && gp === c.gpImprime) delete store.cfg.materiel.paires[rang];
     else store.cfg.materiel.paires[rang] = [pm, gp];
-    sauverCfg(); refaire();
+    sauverCfg(); vueMateriel();
   }));
 
   app.querySelectorAll('[data-paire-reset]').forEach((el) => el.addEventListener('click', () => {
-    delete store.cfg.materiel.paires[el.dataset.paireReset];
+    delete store.cfg.materiel.paires[el.dataset.paireReset]; sauverCfg(); vueMateriel();
+  }));
+
+  if (!lot) return;
+  brancherLot(plans, refaire);
+}
+
+// --- Le lot -----------------------------------------------------------------
+// Le pouvoir d'un lot se compose à part : on le construit dans le formulaire,
+// il ne part sur les plans qu'au clic sur Appliquer. Tant qu'on n'y a pas
+// touché, le formulaire montre le pouvoir commun à la sélection.
+
+let objLot = null;
+let objLotTouche = false;
+
+function objLotCourant(plans) {
+  if (objLotTouche) return objLot;
+  const v = JSON.stringify(plans[0].obj || null);
+  return plans.every((p) => JSON.stringify(p.obj || null) === v) ? plans[0].obj : null;
+}
+
+function oublierObjLot() { objLot = null; objLotTouche = false; }
+
+function majObjBrouillon(courant, part) {
+  const lire = (p) => app.querySelector(`[data-champ-obj="lot"][data-part="${p}"]`);
+  const val = (p) => { const e = lire(p); return e ? e.value : null; };
+  if (part === 'kind') return construireObj(val('kind'), courant);
+  if (!courant) return courant;
+  const o = JSON.parse(JSON.stringify(courant));
+  if (part === 'n') o.n = borne(val('n'));
+  else if (part === 'format') o.format = val('format');
+  else if (part === 'el') o.el = val('el');
+  else if (part === 'el0') o.els = [val('el0'), o.els[1]];
+  else if (part === 'el1') o.els = [o.els[0], val('el1')];
+  return o;
+}
+
+function brancherLot(plans, refaire) {
+  const cles = plans.map((p) => p.cle);
+
+  app.querySelectorAll('[data-lot-icone]').forEach((el) => el.addEventListener('click', () => {
+    el.classList.toggle('on'); // le lot ne s'applique qu'au bouton
+  }));
+  const bMort = app.querySelector('[data-lot-mort]');
+  if (bMort) bMort.addEventListener('click', () => bMort.classList.toggle('on'));
+
+  const cochees = () => [...app.querySelectorAll('[data-lot-icone].on')].map((e) => e.dataset.icone);
+
+  app.querySelectorAll('[data-lot]').forEach((el) => el.addEventListener('click', () => {
+    const quoi = el.dataset.lot;
+    if (quoi === 'tc') appliquerTc(cles, app.querySelector('#lot-tc').value);
+    else if (quoi === 'el-remplace') poserIcones(cles, cochees());
+    else if (quoi === 'el-ajout' || quoi === 'el-retire') {
+      const ic = cochees();
+      for (const p of plans) {
+        const set = new Set(p.el);
+        for (const e of ic) { if (quoi === 'el-ajout') set.add(e); else set.delete(e); }
+        poserIcones([p.cle], ELEMENT_IDS.filter((e) => set.has(e)));
+      }
+    } else if (quoi === 'mort') poserMort(cles, true);
+    else if (quoi === 'mort-non') poserMort(cles, false);
+    else if (quoi === 'obj') poserObj(cles, objLotCourant(plans));
     sauverCfg(); refaire();
+  }));
+
+  const rz = app.querySelector('[data-lot-reset]');
+  if (rz) rz.addEventListener('click', () => {
+    for (const c of cles) delete store.cfg.materiel.plans[c];
+    sauverCfg(); refaire();
+  });
+
+  app.querySelectorAll('[data-oter]').forEach((el) => el.addEventListener('click', () => {
+    mat.plans.delete(el.dataset.oter);
+    oublierObjLot();
+    vueMateriel();
   }));
 }
 
-/** Recompose le bandeau à partir de la pièce que l'on vient de changer. */
-function majObjectif(num, part, valeur) {
-  const cat = catalogue().find((p) => String(p.num) === String(num));
-  const actuel = cat ? cat.obj : null;
-  const imprime = cat ? cat.imprime.obj : null;
+// --- Écrire une valeur sur un ou plusieurs plans ----------------------------
+// Une valeur identique à l'imprimé n'est pas une retouche : on l'efface de la
+// couche, pour que le compteur de retouches dise la vérité.
 
-  if (part === 'kind') {
-    if (!valeur) return retoucher(num, 'obj', imprime === null ? undefined : null);
-    const n = actuel ? actuel.n : 1;
-    const el0 = actuel && actuel.el ? actuel.el : (actuel && actuel.els ? actuel.els[0] : ELEMENT_IDS[0]);
-    const neuf = {
-      FORMAT:  () => OBJ.format(n, actuel && actuel.format ? actuel.format : 'PM'),
-      ELEMENT: () => OBJ.element(n, el0),
-      ABSENT:  () => OBJ.absent(n, el0),
-      PAIRE:   () => OBJ.paire(n, el0, actuel && actuel.els ? actuel.els[1] : el0),
-      MORT:    () => OBJ.mort(n),
-      NEANT:   () => OBJ.neant(n),
-      RACCORD: () => OBJ.raccord(n),
-      PLAN:    () => OBJ.plan(n),
-    }[valeur]();
-    return retoucher(num, 'obj', memeObjectif(neuf, imprime) ? undefined : neuf);
-  }
+const borne = (v) => Math.max(0, Math.min(99, parseInt(v, 10) || 0));
 
+function appliquerTc(cles, valeur) {
+  if (valeur === '' || valeur === null) return;
+  const v = borne(valeur);
+  surLeModifie(() => {
+    for (const c of cles) {
+      const p = planDeCle(c);
+      retoucher(c, 'tc', p && p.imprime.tc === v ? undefined : v);
+    }
+  });
+}
+
+function poserIcones(cles, liste) {
+  const ordre = ELEMENT_IDS.filter((e) => liste.includes(e));
+  surLeModifie(() => {
+    for (const c of cles) {
+      const p = planDeCle(c);
+      const imp = p ? p.imprime.el : [];
+      const pareil = ordre.length === imp.length && ordre.every((x, k) => x === imp[k]);
+      retoucher(c, 'el', pareil ? undefined : ordre.slice());
+    }
+  });
+}
+
+function poserMort(cles, v) {
+  surLeModifie(() => {
+    for (const c of cles) {
+      const p = planDeCle(c);
+      retoucher(c, 'mort', p && p.imprime.mort === v ? undefined : v);
+    }
+  });
+}
+
+function poserObj(cles, obj) {
+  surLeModifie(() => {
+    for (const c of cles) {
+      const p = planDeCle(c);
+      retoucher(c, 'obj', memeObjectif(obj, p ? p.imprime.obj : null) ? undefined : (obj ? JSON.parse(JSON.stringify(obj)) : null));
+    }
+  });
+}
+
+function construireObj(kind, actuel) {
+  if (!kind) return null;
+  const n = actuel ? actuel.n : 1;
+  const e0 = actuel && actuel.el ? actuel.el : (actuel && actuel.els ? actuel.els[0] : ELEMENT_IDS[0]);
+  return {
+    FORMAT:  () => OBJ.format(n, actuel && actuel.format ? actuel.format : 'PM'),
+    ELEMENT: () => OBJ.element(n, e0),
+    ABSENT:  () => OBJ.absent(n, e0),
+    PAIRE:   () => OBJ.paire(n, e0, actuel && actuel.els ? actuel.els[1] : e0),
+    MORT:    () => OBJ.mort(n),
+    NEANT:   () => OBJ.neant(n),
+    RACCORD: () => OBJ.raccord(n),
+    PLAN:    () => OBJ.plan(n),
+  }[kind]();
+}
+
+/** Recompose le bandeau d'un plan à partir de la pièce que l'on vient de changer. */
+function majObjectif(cles, part, valeur) {
+  const cle = cles[0];
+  const p = surLeModifie(() => planDeCle(cle));
+  const actuel = p ? p.obj : null;
+
+  if (part === 'kind') return poserObj(cles, construireObj(valeur, actuel));
   if (!actuel) return;
   const o = JSON.parse(JSON.stringify(actuel));
   if (part === 'n') o.n = Math.max(0, Math.min(20, parseInt(valeur, 10) || 0));
@@ -1252,7 +1852,7 @@ function majObjectif(num, part, valeur) {
   else if (part === 'el') o.el = valeur;
   else if (part === 'el0') o.els = [valeur, o.els[1]];
   else if (part === 'el1') o.els = [o.els[0], valeur];
-  retoucher(num, 'obj', memeObjectif(o, imprime) ? undefined : o);
+  poserObj(cles, o);
 }
 
 function memeObjectif(a, b) {
@@ -1265,8 +1865,9 @@ function memeObjectif(a, b) {
 // le fichier. C'est le seul chemin qui marche partout sans dépendance.
 
 function exporterMateriel() {
-  const cat = catalogue();
+  const cat = surLeModifie(catalogue);
   const n = nbRetouches();
+  const off = store.cfg.cartesDesactivees.length;
   const d = new Date();
   const quand = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 
@@ -1279,7 +1880,8 @@ function exporterMateriel() {
   feuille.innerHTML = `
     <header class="imp-tete">
       <h1>EDIT — état du matériel</h1>
-      <p>${cat.length} plans · 50 cartes Plan Moyen / Gros Plan · ${n ? `${n} retouche${n > 1 ? 's' : ''}` : 'aucune retouche'}
+      <p>${cat.length} plans · 50 cartes Plan Moyen / Gros Plan · jeu lancé : <b>${store.cfg.materielActif === 'MODIFIE' ? 'Modifié' : 'Imprimé'}</b>
+      · ${n ? `${n} retouche${n > 1 ? 's' : ''}` : 'aucune retouche'}${off ? ` · ${off} carte${off > 1 ? 's' : ''} écartée${off > 1 ? 's' : ''}` : ''}
       · règles v${REGLES_VERSION} · application v${VERSION} · ${quand}</p>
     </header>
     <h2>Les plans</h2>

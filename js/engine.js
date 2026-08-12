@@ -5,9 +5,9 @@
 // carte, puis le MONTAGE, où chacune la pose dans son banc.
 
 import {
-  buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX,
-} from './data.js?v=1.12';
-import { compter, bancVide } from './scoring.js?v=1.12';
+  buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
+} from './data.js?v=1.13';
+import { compter, bancVide } from './scoring.js?v=1.13';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -48,6 +48,8 @@ export function construirePaquet(cfg) {
   const base = buildCartesDoubles();
   for (let k = 0; k < cfg.exemplairesDouble; k++) {
     for (const c of base) {
+      // Les cartes désactivées dans l'éditeur ne sont pas dans la boîte.
+      if (!c.actif) continue;
       const fam1 = SCENE_BY_IDX[c.pmScene]?.famille;
       const fam2 = SCENE_BY_IDX[c.gpScene]?.famille;
       if (cfg.filtreFamilles && (cfg.filtreFamilles[fam1] === false || cfg.filtreFamilles[fam2] === false)) continue;
@@ -58,6 +60,7 @@ export function construirePaquet(cfg) {
   const larges = [];
   for (let k = 0; k < cfg.exemplairesPL; k++) {
     for (const c of buildPlansLarges()) {
+      if (!c.actif) continue;
       if (cfg.retirerBrouillons && c.brouillon) continue;
       larges.push({ ...c, id: k ? `${c.id}#${k + 1}` : c.id });
     }
@@ -75,8 +78,8 @@ export function plansVisibles(carte) {
   return [m.GP, m.PM];
 }
 
-function planPose(carte, format, role) {
-  const plan = carte.type === 'DOUBLE' ? moitiesDe(carte)[format] : plHalf(carte);
+function planPose(carte, format, role, face) {
+  const plan = carte.type === 'DOUBLE' ? moitiesDe(carte, face)[format] : plHalf(carte);
   const copie = { ...plan, el: plan.el.slice(), carteId: carte.id };
   // La moitié Générique à double lecture est une Ouverture à gauche, des
   // Crédits à droite.
@@ -282,7 +285,9 @@ export function coupsPossibles(state, p) {
 
 /** Applique un coup sur un banc. Renvoie le banc modifié (muté). */
 export function appliquer(banc, coup, cfg) {
-  const plan = planPose(coup.carte, coup.format, coup.role);
+  // Le recto et le verso d'une carte ne portent pas le même minutage : la face
+  // jouée se déduit du bout où la moitié visible se retrouve.
+  const plan = planPose(coup.carte, coup.format, coup.role, faceJouee(coup.format, coup.cote, cfg));
   switch (coup.action) {
     case 'NOUVELLE_SEQUENCE':
       banc.sequences.splice(coup.pos, 0, [plan]);

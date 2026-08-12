@@ -1,8 +1,22 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.12';
-export const BUILD_DATE = '2026-08-12 14:30';
+export const VERSION = '1.13';
+export const BUILD_DATE = '2026-08-12 17:20';
 
 export const CHANGELOG = [
+  {
+    v: '1.13',
+    date: '12/08/2026',
+    items: [
+      "Le recto et le verso d’une carte sont deux plans distincts : « 201R » et « 201V » se règlent séparément, minutage compris. La face jouée se déduit du bout où la moitié visible se retrouve — un Gros Plan accroché à gauche est au recto, à droite au verso ; réglable dans Variables.",
+      "Deux jeux de matériel coexistent en permanence, l’Imprimé et le Modifié : un sélecteur dit lequel part en partie, et le rappel s’affiche sur l’accueil comme sur la table de jeu. Le bouton qui effaçait tout a disparu — plus rien n’est détruit.",
+      "Chaque carte s’active ou s’écarte de la boîte : seules les cartes activées partent dans le paquet, dans l’un comme dans l’autre jeu.",
+      "Sélection multiple : clic pour ajouter ou retirer, maj+clic pour une plage. Un minutage, des icônes ou un pouvoir s’appliquent alors d’un coup à toute la sélection.",
+      "Trois vues par cadrage — les cartes Plan Moyen / Gros Plan, les Gros Plans seuls, les Plans Moyens seuls — en plus des Plans Larges et des Plans de départ.",
+      "Tri par numéro, par minutage ou par famille, et filtres pour n’afficher que les plans portant une icône, un type de pouvoir, une plage de minutage, une famille, ou seulement ce qui a été retouché.",
+      "Nouvel onglet « Statistiques » : la boîte, les cadrages, les icônes, les pouvoirs et les minutages comptés sur le matériel tel qu’il part en partie, l’Imprimé et le Modifié côte à côte avec leur écart.",
+      "Dans l’éditeur, toute valeur qui s’écarte de l’imprimé affiche la valeur imprimée à côté d’elle.",
+    ],
+  },
   {
     v: '1.12',
     date: '12/08/2026',

@@ -204,9 +204,223 @@ export function buildCartesDoubles() {
       pmNum, gpNum,
       pmImprime: pmImp, gpImprime: gpImp,
       appariementModifie: pmNum !== pmImp || gpNum !== gpImp,
+      actif: carteActive(`D${String(i + 1).padStart(2, '0')}`),
       ...(extra || {}),
     };
   });
+}
+
+export function buildPlansLarges() {
+  return PLANS_LARGES.map((p) => ({ id: `L${p.num}`, type: 'PL', actif: carteActive(`L${p.num}`), ...p }));
+}
+
+export function buildDeparts() {
+  // Deux exemplaires de chaque version, soit les 8 cartes de la boîte.
+  const out = [];
+  DEPARTS.forEach((d) => {
+    const faces = d.faces.filter((f) => carteActive(`S${d.type}f${f.num}`));
+    if (!faces.length) return;
+    for (let k = 0; k < 4; k++) {
+      out.push({ id: `S${d.type}${k + 1}`, type: 'DEPART', version: d.type, faces });
+    }
+  });
+  return out;
+}
+
+// --- Matériel ajustable ----------------------------------------------------
+// Rien de ce qui est imprimé sur une carte n'est figé : le minutage, les
+// pastilles et le bandeau d'objectif de chaque plan sont des données que
+// l'application contrôle, et que l'éditeur de l'écran Matériel remplace plan
+// par plan.
+//
+// Deux jeux de matériel coexistent en permanence — l'IMPRIMÉ, intouchable, et
+// le MODIFIÉ, qui porte les retouches. `appliquerMateriel` reçoit le second
+// quand c'est lui qu'on joue, et rien quand on joue l'imprimé : les retouches
+// ne sont donc jamais perdues, seulement mises de côté.
+//
+//   plans[clé]  = { tc, el, obj, mort }  — chaque champ absent = valeur imprimée
+//   paires[i]   = [pmNum, gpNum]         — l'appariement de la i-ème carte
+//   desactives  = [id de carte, …]       — les cartes écartées du paquet
+//
+// La clé d'un plan est son numéro, suivi de sa face pour les moitiés d'une
+// carte Plan Moyen / Gros Plan : « 201R » et « 201V » sont deux plans
+// distincts, réglables séparément, car le recto et le verso d'une carte ne
+// portent pas le même minutage. Les Plans Larges et les Plans de départ ont un
+// vrai dos, donc une seule face : leur clé est leur seul numéro.
+//
+// Numéros : 101-114 les Plans Larges, 115-118 les Plans de départ, 201-230 et
+// 290-292 les Plans Moyens, 301-330 et 390-392 les Gros Plans.
+
+export const FACES = [
+  { id: 'R', label: 'Recto', court: 'R' },
+  { id: 'V', label: 'Verso', court: 'V' },
+];
+
+/** La clé d'un plan : son numéro, plus sa face quand elle en a une. */
+export function cleplan(num, face) {
+  return face ? `${num}${face}` : String(num);
+}
+
+export const SURCHARGES = { plans: {}, paires: {}, desactives: new Set() };
+
+/**
+ * Remplace la couche de surcharge. `table` nul = on joue le matériel imprimé.
+ * Les cartes écartées, elles, valent dans les deux jeux : c'est la composition
+ * de la boîte, pas une retouche de carte.
+ */
+export function appliquerMateriel(table, desactives) {
+  for (const k of Object.keys(SURCHARGES.plans)) delete SURCHARGES.plans[k];
+  for (const k of Object.keys(SURCHARGES.paires)) delete SURCHARGES.paires[k];
+  Object.assign(SURCHARGES.plans, (table && table.plans) || {});
+  Object.assign(SURCHARGES.paires, (table && table.paires) || {});
+  SURCHARGES.desactives = new Set(desactives || []);
+}
+
+const sur = (cle) => SURCHARGES.plans[cle] || null;
+
+export function tcDe(cle, defaut) {
+  const s = sur(cle);
+  return !s || s.tc === undefined || s.tc === null || s.tc === '' ? defaut : Number(s.tc);
+}
+
+export function elDe(cle, defaut) {
+  const s = sur(cle);
+  return (s && Array.isArray(s.el) ? s.el : defaut || []).slice();
+}
+
+export function objDe(cle, defaut) {
+  const s = sur(cle);
+  if (!s || s.obj === undefined) return defaut || null;
+  return s.obj ? { ...s.obj } : null;
+}
+
+export function mortDe(cle, defaut) {
+  const s = sur(cle);
+  return !s || s.mort === undefined ? !!defaut : !!s.mort;
+}
+
+/** L'appariement d'une carte double : imprimé, ou celui qu'on lui a donné. */
+export function paireDe(i, defaut) {
+  const p = SURCHARGES.paires[i];
+  return Array.isArray(p) && p.length === 2 ? p : defaut;
+}
+
+/** Un plan a-t-il été retouché ? */
+export function planModifie(cle) {
+  const s = sur(cle);
+  return !!s && Object.keys(s).length > 0;
+}
+
+export function carteActive(id) {
+  return !SURCHARGES.desactives.has(id);
+}
+
+// --- Accès aux moitiés -----------------------------------------------------
+
+/**
+ * Une moitié posée : cadrage, minutage, éléments, objectif.
+ * `face` distingue le recto du verso — deux plans différents pour le même
+ * numéro de scène.
+ */
+export function halfInfo(sceneIdx, format, opts = {}) {
+  const s = SCENE_BY_IDX[sceneIdx];
+  if (!s) return null;
+  const side = format === 'GP' ? s.gp : s.pm;
+  const num = format === 'GP' ? s.gpNum : s.pmNum;
+  const face = opts.face || 'R';
+  const cle = cleplan(num, face);
+  return {
+    scene: s.idx,
+    format,
+    face,
+    cle,
+    transition: s.transition || null,
+    dual: !!opts.dual,
+    titre: s.titre || null,
+    famille: s.famille,
+    tc: tcDe(cle, s.tc),
+    el: elDe(cle, side.el),
+    obj: objDe(cle, side.obj),
+    mort: mortDe(cle, s.mort),
+    num,
+    image: `assets/${format === 'GP' ? 'gp' : 'pm'}/${num}.webp`,
+  };
+}
+
+/**
+ * Les deux moitiés d'une carte double, sur une face donnée. Au recto le Gros
+ * Plan est à gauche et le Plan Moyen à droite ; au verso, l'inverse.
+ */
+export function moitiesDe(carte, face = 'R') {
+  return {
+    GP: halfInfo(carte.gpScene, 'GP', { dual: !!carte.dualGP, face }),
+    PM: halfInfo(carte.pmScene, 'PM', { dual: !!carte.dualPM, face }),
+  };
+}
+
+/** Un Plan Large se comporte comme un plan unique pleine largeur. */
+export function plHalf(carte) {
+  const cle = cleplan(carte.num, null);
+  return {
+    scene: null,
+    format: 'PL',
+    face: null,
+    cle,
+    transition: null,
+    dual: false,
+    titre: null,
+    famille: 'PLAN LARGE',
+    tc: tcDe(cle, carte.tc),
+    el: elDe(cle, carte.el),
+    obj: objDe(cle, carte.obj),
+    mort: mortDe(cle, false),
+    num: carte.num,
+    depart: !!carte.depart,
+    image: `assets/pl/${carte.num}.webp`,
+  };
+}
+
+// --- Catalogue des plans ---------------------------------------------------
+// La liste complète de ce qui est éditable. Une moitié de carte double y
+// figure deux fois, une par face.
+
+export function catalogue() {
+  const out = [];
+  const pousse = (num, face, defauts, format, famille, extra = {}) => {
+    const cle = cleplan(num, face);
+    out.push({
+      cle, num, face, format, famille,
+      quoi: `${FORMATS[format].label} ${num}${face ? ` — ${face === 'R' ? 'recto' : 'verso'}` : ''}`,
+      tc: tcDe(cle, defauts.tc), el: elDe(cle, defauts.el), obj: objDe(cle, defauts.obj),
+      mort: mortDe(cle, defauts.mort), modifie: planModifie(cle),
+      imprime: { tc: defauts.tc, el: (defauts.el || []).slice(), obj: defauts.obj || null, mort: !!defauts.mort },
+      image: `assets/${format === 'PL' ? 'pl' : format === 'GP' ? 'gp' : 'pm'}/${num}.webp`,
+      ...extra,
+    });
+  };
+
+  for (const s of SCENES) {
+    for (const f of FACES) {
+      pousse(s.pmNum, f.id, { tc: s.tc, el: s.pm.el, obj: s.pm.obj, mort: s.mort },
+        'PM', s.famille, { scene: s.idx, titre: s.titre || null });
+      pousse(s.gpNum, f.id, { tc: s.tc, el: s.gp.el, obj: s.gp.obj, mort: s.mort },
+        'GP', s.famille, { scene: s.idx, titre: s.titre || null });
+    }
+  }
+  for (const p of PLANS_LARGES) {
+    pousse(p.num, null, { tc: p.tc, el: p.el, obj: p.obj, mort: false },
+      'PL', 'PLAN LARGE', { brouillon: !!p.brouillon });
+  }
+  for (const d of DEPARTS) {
+    d.faces.forEach((f, k) => pousse(f.num, null, { tc: f.tc, el: f.el, obj: f.obj, mort: false },
+      'PL', 'DÉPART', { version: d.type, faceDepart: k + 1 }));
+  }
+  return out;
+}
+
+/** Le plan d'une clé donnée, tel qu'il est actuellement. */
+export function planDeCle(cle) {
+  return catalogue().find((p) => p.cle === cle) || null;
 }
 
 /** Les moitiés disponibles pour un appariement, par cadrage. */
@@ -219,162 +433,15 @@ export function moitiesDisponibles(format) {
   }));
 }
 
-export function buildPlansLarges() {
-  return PLANS_LARGES.map((p) => ({ id: `L${p.num}`, type: 'PL', ...p }));
-}
-
-export function buildDeparts() {
-  // Deux exemplaires de chaque version, soit les 8 cartes de la boîte.
-  const out = [];
-  DEPARTS.forEach((d) => {
-    for (let k = 0; k < 4; k++) {
-      out.push({ id: `S${d.type}${k + 1}`, type: 'DEPART', version: d.type, faces: d.faces });
-    }
-  });
-  return out;
-}
-
-// --- Matériel ajustable ----------------------------------------------------
-// Rien de ce qui est imprimé sur une carte n'est figé : le minutage, les
-// pastilles et le bandeau d'objectif de chaque plan sont des données que
-// l'application contrôle, et que l'éditeur de l'écran Matériel remplace plan
-// par plan. Le tableau ci-dessous est la couche de surcharge :
-//
-//   plans[num] = { tc, el, obj, mort }   — chaque champ absent = valeur imprimée
-//   paires[i]  = [pmNum, gpNum]          — l'appariement de la i-ème carte
-//
-// Les numéros de plan sont uniques tous cadrages confondus, ce qui donne une
-// clé naturelle : 101-114 les Plans Larges, 115-118 les Plans de départ,
-// 201-230 et 290-292 les Plans Moyens, 301-330 et 390-392 les Gros Plans.
-
-export const SURCHARGES = { plans: {}, paires: {} };
-
-/** Remplace la couche de surcharge (au chargement et à chaque réglage). */
-export function appliquerMateriel(table) {
-  for (const k of Object.keys(SURCHARGES.plans)) delete SURCHARGES.plans[k];
-  for (const k of Object.keys(SURCHARGES.paires)) delete SURCHARGES.paires[k];
-  Object.assign(SURCHARGES.plans, (table && table.plans) || {});
-  Object.assign(SURCHARGES.paires, (table && table.paires) || {});
-}
-
-const sur = (num) => SURCHARGES.plans[num] || null;
-
-export function tcDe(num, defaut) {
-  const s = sur(num);
-  return !s || s.tc === undefined || s.tc === null || s.tc === '' ? defaut : Number(s.tc);
-}
-
-export function elDe(num, defaut) {
-  const s = sur(num);
-  return (s && Array.isArray(s.el) ? s.el : defaut || []).slice();
-}
-
-export function objDe(num, defaut) {
-  const s = sur(num);
-  if (!s || s.obj === undefined) return defaut || null;
-  return s.obj ? { ...s.obj } : null;
-}
-
-export function mortDe(num, defaut) {
-  const s = sur(num);
-  return !s || s.mort === undefined ? !!defaut : !!s.mort;
-}
-
-/** L'appariement d'une carte double : imprimé, ou celui qu'on lui a donné. */
-export function paireDe(i, defaut) {
-  const p = SURCHARGES.paires[i];
-  return Array.isArray(p) && p.length === 2 ? p : defaut;
-}
-
-/** Un plan a-t-il été retouché ? */
-export function planModifie(num) {
-  const s = sur(num);
-  return !!s && Object.keys(s).length > 0;
-}
-
-// --- Accès aux moitiés -----------------------------------------------------
-
-/** Une moitié posée : cadrage, minutage, éléments, objectif. */
-export function halfInfo(sceneIdx, format, opts = {}) {
-  const s = SCENE_BY_IDX[sceneIdx];
-  if (!s) return null;
-  const side = format === 'GP' ? s.gp : s.pm;
-  const num = format === 'GP' ? s.gpNum : s.pmNum;
-  return {
-    scene: s.idx,
-    format,
-    transition: s.transition || null,
-    dual: !!opts.dual,
-    titre: s.titre || null,
-    famille: s.famille,
-    tc: tcDe(num, s.tc),
-    el: elDe(num, side.el),
-    obj: objDe(num, side.obj),
-    mort: mortDe(num, s.mort),
-    num,
-    image: `assets/${format === 'GP' ? 'gp' : 'pm'}/${num}.webp`,
-  };
-}
-
-/** Les deux moitiés d'une carte double, indexées par cadrage. */
-export function moitiesDe(carte) {
-  return {
-    GP: halfInfo(carte.gpScene, 'GP', { dual: !!carte.dualGP }),
-    PM: halfInfo(carte.pmScene, 'PM', { dual: !!carte.dualPM }),
-  };
-}
-
-/** Un Plan Large se comporte comme un plan unique pleine largeur. */
-export function plHalf(carte) {
-  return {
-    scene: null,
-    format: 'PL',
-    transition: null,
-    dual: false,
-    titre: null,
-    famille: 'PLAN LARGE',
-    tc: tcDe(carte.num, carte.tc),
-    el: elDe(carte.num, carte.el),
-    obj: objDe(carte.num, carte.obj),
-    mort: mortDe(carte.num, false),
-    num: carte.num,
-    depart: !!carte.depart,
-    image: `assets/pl/${carte.num}.webp`,
-  };
-}
-
-// --- Catalogue des plans ---------------------------------------------------
-// La liste complète de ce qui est éditable, dans l'ordre où on le lit sur la
-// table. Sert d'index à l'éditeur comme à l'export.
-
-export function catalogue() {
-  const out = [];
-  const pousse = (num, defauts, quoi, format, famille, extra = {}) => out.push({
-    num, quoi, format, famille,
-    tc: tcDe(num, defauts.tc), el: elDe(num, defauts.el), obj: objDe(num, defauts.obj),
-    mort: mortDe(num, defauts.mort), modifie: planModifie(num),
-    imprime: { tc: defauts.tc, el: (defauts.el || []).slice(), obj: defauts.obj || null, mort: !!defauts.mort },
-    ...extra,
-  });
-
-  for (const s of SCENES) {
-    pousse(s.pmNum, { tc: s.tc, el: s.pm.el, obj: s.pm.obj, mort: s.mort },
-      `Plan Moyen ${s.pmNum}`, 'PM', s.famille, { scene: s.idx, titre: s.titre || null });
-    pousse(s.gpNum, { tc: s.tc, el: s.gp.el, obj: s.gp.obj, mort: s.mort },
-      `Gros Plan ${s.gpNum}`, 'GP', s.famille, { scene: s.idx, titre: s.titre || null });
-  }
-  for (const p of PLANS_LARGES) {
-    pousse(p.num, { tc: p.tc, el: p.el, obj: p.obj, mort: false },
-      `Plan Large ${p.num}`, 'PL', 'PLAN LARGE', { brouillon: !!p.brouillon });
-  }
-  for (const d of DEPARTS) {
-    d.faces.forEach((f, k) => pousse(f.num, { tc: f.tc, el: f.el, obj: f.obj, mort: false },
-      `Plan de départ ${f.num}`, 'PL', 'DÉPART', { version: d.type, face: k + 1 }));
-  }
-  return out;
-}
-
-/** Les plans indexés par numéro — pour les listes déroulantes de l'éditeur. */
-export function planParNum() {
-  return Object.fromEntries(catalogue().map((p) => [p.num, p]));
+/**
+ * La face jouée d'une carte double se déduit de la pose : la moitié laissée
+ * visible se retrouve au bout libre de la carte. Un Gros Plan accroché à
+ * gauche d'une séquence est donc à gauche de sa carte — c'est le recto ; à
+ * droite, c'est le verso. Réglable dans Variables : sans cette lecture, une
+ * carte est toujours jouée sur son recto.
+ */
+export function faceJouee(format, cote, cfg) {
+  if (!cfg || cfg.faceSelonPose === false) return 'R';
+  if (cote !== 'gauche' && cote !== 'droite') return 'R';
+  return (format === 'GP') === (cote === 'gauche') ? 'R' : 'V';
 }

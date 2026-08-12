@@ -13,13 +13,23 @@
 // Les versions précédentes du texte restent lisibles dans l'onglet
 // « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.12';
-import { elIcon } from './icons.js?v=1.12';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.13';
+import { elIcon } from './icons.js?v=1.13';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.13.3',
+    date: '12/08/2026',
+    origine: 'Précision demandée par l’auteur',
+    corps: (c) => corps_0_13_3(c),
+    items: [
+      'Le recto et le verso d’une carte Plan Moyen / Gros Plan ne portent pas les mêmes plans : le Gros Plan du recto et celui du verso sont deux plans distincts, avec leur propre minutage.',
+      'La face jouée se déduit de la pose : la moitié laissée visible se retrouve au bout libre de la carte.',
+    ],
+  },
   {
     v: '0.13.2',
     date: '12/08/2026',
@@ -176,6 +186,22 @@ function corps_0_13_2(c) {
     `<li>${maj('0.13.2', `Chaque joueuse reçoit les <b>deux</b> cartes Plan de départ — version A et
     version B, soit <b>quatre faces</b> au choix. Aucun tirage : la boîte contient quatre exemplaires
     de chaque version, un par joueuse. Elle en pose une face dans son banc et défausse le reste.`)}</li>`);
+}
+
+// --- v0.13.3 ---------------------------------------------------------------
+// Le recto et le verso d'une carte double sont deux plans différents.
+
+function corps_0_13_3(c) {
+  return corps_0_13_2(c).replace(
+    '<h3>Phase A — Le Dérushage</h3>',
+    `${majBloc('0.13.3', `<b>Le recto et le verso.</b> Une carte Plan Moyen / Gros Plan ne porte pas
+    les mêmes plans sur ses deux faces : le Gros Plan du recto et celui du verso sont deux plans
+    distincts, chacun avec son minutage — on les note « 301R » et « 301V ». ${c.faceSelonPose === false
+      ? 'Ici, une carte est toujours jouée sur son recto (réglable dans <b>Variables</b>).'
+      : `La face jouée se déduit de la pose : la moitié laissée visible se retrouve au bout libre de
+      la carte, donc un Gros Plan accroché à gauche d'une séquence est celui du recto, et à droite
+      celui du verso. Réglable dans <b>Variables</b> ⚙.`}`)}
+    <h3>Phase A — Le Dérushage</h3>`);
 }
 
 const portee = (c) => (c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence');

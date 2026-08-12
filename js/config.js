@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.12';
+import { ELEMENT_IDS } from './data.js?v=1.13';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -59,11 +59,21 @@ export const DEFAULTS = {
   poidsElements: Object.fromEntries(ELEMENT_IDS.map((e) => [e, 1])),
 
   // --- Matériel ------------------------------------------------------------
-  // Retouches apportées aux cartes depuis l'éditeur de l'écran Matériel :
-  // `plans` surcharge le minutage, les pastilles et le bandeau d'un plan,
-  // indexé par numéro ; `paires` refait l'appariement Plan Moyen / Gros Plan
-  // d'une carte, indexé par son rang. Vide = le matériel imprimé.
+  // Deux jeux de matériel coexistent en permanence : l'IMPRIMÉ, intouchable,
+  // et le MODIFIÉ, qui porte les retouches de l'éditeur. `materielActif` dit
+  // lequel se joue — passer de l'un à l'autre ne détruit rien.
+  materielActif: 'IMPRIME',   // 'IMPRIME' | 'MODIFIE'
+  // `plans` surcharge le minutage, les icônes et le bandeau d'un plan, indexé
+  // par sa clé (numéro + face : « 201R », « 201V », « 101 ») ; `paires` refait
+  // l'appariement Plan Moyen / Gros Plan d'une carte, indexé par son rang.
   materiel: { plans: {}, paires: {} },
+  // Les cartes écartées de la boîte, par identifiant. Vaut pour les deux jeux :
+  // c'est la composition du paquet, pas une retouche de carte.
+  cartesDesactivees: [],
+  // Le recto et le verso d'une carte double ne portent pas le même minutage.
+  // La face jouée se déduit du bout où la moitié visible se retrouve ; sans
+  // cette lecture, une carte est toujours jouée sur son recto.
+  faceSelonPose: true,
 
   // --- Affichage -----------------------------------------------------------
   illustrations: true,    // les visuels imprimés sur les cartes
@@ -118,6 +128,8 @@ export const SCHEMA = [
     { k: 'plContigu', l: 'Deux Plans Larges peuvent se toucher', t: 'bool' },
     { k: 'raccordConnecte', l: 'Une Carte Raccord soude deux séquences', t: 'bool' },
     { k: 'generiqueBloque', l: 'Le Générique ferme le montage', t: 'bool' },
+    { k: 'faceSelonPose', l: 'La face jouée suit le sens de pose', t: 'bool',
+      aide: 'sinon une carte est toujours jouée sur son recto' },
   ] },
   { groupe: 'Décompte', champs: [
     { k: 'porteeParDefaut', l: 'Portée des bandeaux', t: 'choix', options: [

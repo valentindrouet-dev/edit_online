@@ -112,7 +112,29 @@ informations de jeu.
 ## L'éditeur de matériel
 
 Rien de ce qui est imprimé sur une carte n'est figé. L'écran **Matériel** est aussi l'éditeur : la
-galerie reste à gauche, la carte en cours d'édition dans une colonne à droite. Pour chaque plan :
+galerie reste à gauche, la carte ou le lot en cours d'édition dans une colonne à droite.
+
+### Deux jeux, en permanence
+
+L'**Imprimé** — les cartes des PDF, intouchables — et le **Modifié**, qui porte les retouches.
+Un sélecteur en tête d'écran dit lequel part en partie, et le rappel s'affiche sur l'accueil comme
+dans le bandeau de la table de jeu. Basculer de l'un à l'autre ne détruit rien : il n'y a pas de
+remise à zéro globale. La galerie, elle, montre et règle toujours le Modifié ; chaque valeur qui
+s'en écarte affiche la valeur imprimée à côté d'elle. Une partie en cours garde le jeu avec lequel
+elle a été lancée.
+
+### Recto et verso
+
+Le recto et le verso d'une carte Plan Moyen / Gros Plan ne portent pas les mêmes plans : « 201R » et
+« 201V » sont deux plans distincts, avec leur propre minutage, leurs propres icônes et leur propre
+pouvoir. La **face jouée se déduit de la pose** — la moitié laissée visible se retrouve au bout libre
+de la carte, donc un Gros Plan accroché à gauche d'une séquence est celui du recto et à droite celui
+du verso (`faceSelonPose`, réglable dans Variables).
+
+Le matériel extrait des PDF ne donne qu'un minutage par numéro : le recto et le verso **partent donc
+tous deux de cette valeur**, et c'est l'éditeur qui reçoit les vraies valeurs de verso.
+
+### Ce qui se règle, plan par plan
 
 - son **minutage** — une donnée, plus une image ; il ne conditionne aucun placement et n'entre en jeu
   que dans les objectifs qui rapportent selon le minutage (**Variables › Chronologie**) ;
@@ -121,28 +143,54 @@ galerie reste à gauche, la carte en cours d'édition dans une colonne à droite
   compte » est un cadrage, une icône, un couple d'icônes voisines, une mort, un plan sans
   personnage, une Carte Raccord du montage, une carte de la séquence, ou l'absence d'une icône.
 
-Une carte Plan Moyen / Gros Plan s'édite **recto et verso ensemble** : les deux faces sont affichées
-et les deux moitiés se règlent côte à côte. Son **appariement** est réglable lui aussi — la
-répartition imprimée est conservée tant qu'on n'y touche pas.
+Une carte double s'édite avec **ses deux faces affichées** et ses quatre plans côte à côte. Son
+**appariement** est réglable — la répartition imprimée est conservée tant qu'on n'y touche pas.
+
+### La boîte, les vues, la sélection
+
+Chaque carte s'**active ou s'écarte de la boîte** : seules les cartes activées partent dans le
+paquet, dans l'un comme dans l'autre jeu.
+
+Cinq vues de galerie : les cartes Plan Moyen / Gros Plan, les **Gros Plans seuls**, les **Plans
+Moyens seuls** (recto et verso y figurent séparément, moitiés orphelines comprises), les Plans
+Larges et les Plans de départ. Plus **Tableau complet** et **Statistiques**.
+
+La **sélection est multiple** : clic pour ajouter ou retirer, maj+clic pour une plage, plus « tout
+sélectionner ». Un minutage, des icônes (ajouter, retirer ou remplacer) ou un pouvoir s'appliquent
+alors d'un coup à toute la sélection — chaque réglage attend son bouton **Appliquer**.
+
+**Tri** par numéro, minutage ou famille. **Filtres** par icône, type de pouvoir, plage de minutage,
+famille, état (à l'imprimé / retouché) et composition de la boîte.
+
+### Statistiques
+
+L'onglet **Statistiques** compte le matériel tel qu'il part en partie — cartes activées, plans
+faces comprises — et met l'**Imprimé et le Modifié côte à côte avec leur écart** : la boîte, les
+cadrages, les icônes, les types de pouvoir, et les minutages (le plus court, le plus long, la
+moyenne, la distribution par tranche de dix). La colonne surlignée est le jeu qui se lance.
+
+### Persistance et export
 
 Les retouches vivent dans `cfg.materiel` :
 
 ```
-plans[num] = { tc, el, obj, mort }   chaque champ absent = la valeur imprimée
-paires[i]  = [pmNum, gpNum]          l'appariement de la i-ème carte
+plans[clé]  = { tc, el, obj, mort }   chaque champ absent = la valeur imprimée
+paires[i]   = [pmNum, gpNum]          l'appariement de la i-ème carte
 ```
 
-Les numéros de plan sont uniques tous cadrages confondus, ce qui donne une clé naturelle : 101-114
-les Plans Larges, 115-118 les Plans de départ, 201-230 et 290-292 les Plans Moyens, 301-330 et
-390-392 les Gros Plans. Comme tout vit dans `cfg`, les retouches sont enregistrées, elles voyagent
-avec l'export JSON des Variables, et le jeu s'y conforme partout — table de jeu, décompte,
-Laboratoire. Un bouton ramène une carte, ou tout le matériel, à l'imprimé ; le retour aux valeurs
-par défaut des **Variables**, lui, ne touche pas au matériel.
+La clé d'un plan est son numéro suivi de sa face pour les moitiés d'une carte double — « 201R »,
+« 201V » — et son seul numéro pour un Plan Large ou un Plan de départ, qui ont un vrai dos. Numéros :
+101-114 les Plans Larges, 115-118 les Plans de départ, 201-230 et 290-292 les Plans Moyens, 301-330
+et 390-392 les Gros Plans. Les cartes écartées vivent à part dans `cfg.cartesDesactivees` : c'est la
+composition de la boîte, pas une retouche de carte.
 
-L'onglet **Tableau complet** donne l'état courant des 84 plans et des 50 cartes, et **Exporter le
-tableau en PDF** en produit la version imprimable : la page bascule sur une feuille dédiée et ouvre
-la boîte d'impression du navigateur, où « Enregistrer au format PDF » écrit le fichier. Pas de
-bibliothèque tierce — c'est le seul chemin qui marche partout sans dépendance.
+Comme tout vit dans `cfg`, les retouches sont enregistrées, elles voyagent avec l'export JSON des
+Variables, et le jeu s'y conforme partout — table de jeu, décompte, Laboratoire. Le retour aux
+valeurs par défaut des **Variables** ne touche pas au matériel.
+
+**Exporter le tableau en PDF** bascule la page sur une feuille imprimable et ouvre la boîte
+d'impression du navigateur, où « Enregistrer au format PDF » écrit le fichier. Pas de bibliothèque
+tierce — c'est le seul chemin qui marche partout sans dépendance.
 
 ## La table de jeu
 
