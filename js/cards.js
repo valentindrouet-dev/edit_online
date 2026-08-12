@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel } from './data.js?v=2.0';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.0';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel } from './data.js?v=1.10';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.10';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -78,7 +78,7 @@ export function renderPlan(h, opts = {}) {
     <div class="illus" style="${fond}">
       <div class="tcode ${h.tc === 0 || h.transition ? 'bleu' : ''}">${tc(h.tc)}</div>
     </div>
-    <div class="pastilles">${h.el.map((e) => elIcon(e)).join('')}</div>
+    <div class="pastilles" style="--n:${Math.max(1, h.el.length)}">${h.el.map((e) => elIcon(e)).join('')}</div>
     ${bandeau(h.obj)}
     <div class="libelle" style="--c:${F.color}">${label}</div>
   </div>`;
@@ -90,9 +90,13 @@ export function renderCarte(carte, verso, opts = {}) {
     ? (verso ? [moitiesDe(carte).PM, moitiesDe(carte).GP] : [moitiesDe(carte).GP, moitiesDe(carte).PM])
     : [plHalf(carte)];
   const cls = ['carte', opts.selected ? 'sel' : '', opts.small ? 'small' : '', opts.tiny ? 'tiny' : '',
-    opts.clickable ? 'clickable' : ''].join(' ');
+    opts.clickable ? 'clickable' : '', opts.moitiesChoisissables ? 'choix-moitie' : ''].join(' ');
   return `<div class="${cls}" data-carte="${carte.id}" data-verso="${verso ? 1 : 0}">
-    ${plans.map((h) => renderPlan(h, opts)).join('')}
+    ${plans.map((h) => renderPlan(h, {
+      ...opts,
+      // Au montage, la carte reste entière : c'est la moitié que l'on désigne.
+      selected: opts.formatChoisi ? opts.formatChoisi === h.format : opts.selected,
+    })).join('')}
   </div>`;
 }
 
@@ -101,6 +105,15 @@ export function renderCarte(carte, verso, opts = {}) {
  * vrai dos : les cartes Plan Moyen / Gros Plan étant recto-verso, leur pioche
  * montre toujours sa face du dessus.
  */
+/** Enveloppe une carte d'un effet de pile : des cartes décalées dessous. */
+export function enPile(html, reste) {
+  const epaisseur = Math.min(3, Math.max(1, Math.ceil(reste / 12)));
+  return `<div class="pile" data-epaisseur="${epaisseur}">
+    ${Array.from({ length: epaisseur }, (_, i) => `<span class="pile-couche" style="--i:${i + 1}"></span>`).join('')}
+    ${html}
+  </div>`;
+}
+
 export function renderDos(libelle, reste, opts = {}) {
   const cls = ['carte', 'dos', opts.small ? 'small' : '', opts.clickable ? 'clickable' : ''].join(' ');
   return `<div class="${cls}">

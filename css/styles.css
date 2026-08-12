@@ -194,6 +194,14 @@ button { font-family: inherit; }
 .carte.clickable:hover { transform: translateY(-4px); box-shadow: var(--ombre-forte); }
 .carte.sel { outline: 3px solid var(--orange); outline-offset: 2px; }
 
+/* Au montage, on désigne la moitié à laisser visible sur la carte entière. */
+.carte.choix-moitie .moitie { cursor: pointer; transition: .14s; }
+.carte.choix-moitie .moitie:hover { filter: brightness(1.08); }
+.carte.choix-moitie .moitie.choisi { outline: 3px solid var(--orange); outline-offset: -3px; }
+.carte.choix-moitie .moitie:not(.choisi) { opacity: .62; }
+.zone-montage { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.zone-montage .aide { text-align: center; max-width: 520px; }
+
 .moitie {
   position: relative; border-radius: 6px; overflow: hidden;
   display: flex; flex-direction: column; min-width: 0;
@@ -236,7 +244,13 @@ body.sans-illus .illus { background-image: none !important; }
 /* Pastilles : taille libre par défaut, ajustée à la bande dans les cartes. */
 .pastille { display: block; width: 1.5em; height: 1.5em; object-fit: contain; flex: 0 0 auto; }
 .pastille-num { display: block; width: 1.45em; height: 1.45em; flex: 0 0 auto; }
-.pastilles .pastille { height: 100%; width: auto; }
+/* Les pastilles se partagent la largeur disponible : au-delà de deux ou trois,
+   elles rétrécissent au lieu de déborder — décisif sur un Gros Plan. */
+.pastilles .pastille {
+  height: 100%; width: auto; flex: 0 1 auto; min-width: 0;
+  max-width: calc((100% - (var(--n, 1) - 1) * .1em) / var(--n, 1));
+  object-fit: contain;
+}
 .bandeau .pastille, .bandeau .pastille-num { height: 82%; width: auto; }
 
 .moitie.f-PM .bandeau, .moitie.f-PL .bandeau { background: var(--fmt-pm); }
@@ -302,12 +316,19 @@ body.sans-illus .illus { background-image: none !important; }
 @media (max-width: 1000px) { .table-jeu { grid-template-columns: 1fr; } }
 
 /* Les groupes de dérushage se rangent côte à côte tant que la place le permet. */
-/* Pioches en tête, puis les chutiers. On laisse revenir à la ligne plutôt que
-   de défiler : les six cartes doivent rester visibles d'un coup d'œil. */
-.derushage-groupes { display: flex; flex-wrap: wrap; gap: 16px 30px; align-items: flex-start; }
-.derushage-groupe { flex: 0 0 auto; min-width: 0; }
-.derushage-groupe h3 { margin: 0 0 10px; font-size: .95rem; white-space: nowrap; }
-.derushage-cartes { display: flex; flex-wrap: nowrap; gap: 12px; align-items: flex-start; }
+/* Une ligne par famille : sa pioche d'abord, puis son chutier. */
+.derushage-lignes { display: flex; flex-direction: column; gap: 18px; }
+.derushage-ligne h3 { margin: 0 0 10px; font-size: .95rem; }
+.derushage-cartes { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-start; }
+
+/* La pioche se distingue par une pile de cartes décalées sous la première. */
+.pile { position: relative; margin-right: 12px; }
+.pile-couche {
+  position: absolute; inset: 0; border-radius: 9px; background: #d9d2e8;
+  border: 1px solid #bcb2d2; z-index: 0;
+  transform: translate(calc(var(--i) * 5px), calc(var(--i) * 5px));
+}
+.pile > *:not(.pile-couche) { position: relative; z-index: 1; }
 
 /* La colonne d'infos reste compacte pour ne pas repousser les bancs. */
 .colonne-info .journal { max-height: 170px; }

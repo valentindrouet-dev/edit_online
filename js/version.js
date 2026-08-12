@@ -1,16 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.0';
-export const BUILD_DATE = '2026-08-11 21:40';
+export const VERSION = '1.10';
+export const BUILD_DATE = '2026-08-11 22:30';
 
 export const CHANGELOG = [
   {
-    v: '2.0',
+    v: '1.10',
     date: '11/08/2026',
     items: [
       "La table de jeu est allégée : plus de journal, plus de titre de phase ni de consigne au-dessus des cartes — le bandeau du haut suffit à dire où l’on en est.",
-      "Les deux pioches passent à gauche des chutiers, au même format de carte. Celle des Plans Larges reste face cachée — ces cartes ont un vrai dos ; celle des Plans Moyens / Gros Plans montre sa face du dessus, ces cartes étant recto-verso.",
+      "Le dérushage se lit en deux lignes : la pioche des Plans Larges puis son chutier, la pioche des Plans Moyens / Gros Plans puis le sien. Chaque pioche est dessinée en pile de cartes décalées.",
+      "La pioche des Plans Larges reste face cachée — ces cartes ont un vrai dos ; celle des Plans Moyens / Gros Plans montre sa face du dessus, ces cartes étant recto-verso.",
       "Les bancs de montage remontent sous la zone de pioche, dans la colonne de gauche ; les informations restent groupées à droite.",
-      "Les cartes sont plus grandes et la part réservée à l’information passe de 31 à 40 % de leur hauteur : pastilles, bandeaux et minutage gagnent nettement en lisibilité.",
+      "Au montage, la carte Plan Moyen / Gros Plan est présentée entière : on clique la moitié que l’on veut laisser visible, puis l’emplacement dans son banc.",
+      "Les cartes sont plus grandes et la part réservée à l’information passe de 31 à 40 % de leur hauteur ; les pastilles se resserrent quand elles sont nombreuses, pour ne jamais déborder — y compris sur un Gros Plan.",
       "Le survol d’une carte ouvre un aperçu : minutage en grand, chaque pastille nommée, et le bandeau d’objectif avec ce qu’il rapporte.",
       "Les illustrations s’affichent ou se masquent en cours de partie, d’un bouton dans le bandeau de tour.",
     ],

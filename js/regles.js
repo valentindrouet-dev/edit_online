@@ -13,8 +13,8 @@
 // Les versions précédentes du texte restent lisibles dans l'onglet
 // « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=2.0';
-import { elIcon } from './icons.js?v=2.0';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.10';
+import { elIcon } from './icons.js?v=1.10';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement

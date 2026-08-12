@@ -11,7 +11,7 @@ dossier (`python3 -m http.server`).
 | Écran | Rôle |
 |---|---|
 | **Accueil** | Table de 1 à 4 joueuses, humaines ou IA, options de partie, réglages rapides |
-| **Partie** | Bancs de montage, phases de dérushage et de montage, journal, score détaillé |
+| **Partie** | Zone de pioche, bancs de montage, recensement des icônes et score détaillé |
 | **Matériel** | Les 50 cartes PM / GP recto et verso, les 14 Plans Larges, les Plans de départ, le tableau des 33 scènes |
 | **Règles** | Les règles telles qu'implémentées, avec les points restés ouverts |
 | **Variables** | Toutes les variables de déroulé et de décompte, export/import JSON |
@@ -118,17 +118,26 @@ que dans les objectifs qui rapportent selon le minutage (**Variables › Chronol
 
 ## La table de jeu
 
-Colonne de gauche : la zone de pioche — les deux pioches à gauche des deux chutiers, toutes au même
-format de carte —, puis les bancs de montage. Colonne de droite : joueuses, score, recensement des
-icônes et bandeaux du banc.
+Colonne de gauche : la zone de pioche, puis les bancs de montage. Colonne de droite : joueuses,
+score, recensement des icônes et bandeaux du banc.
+
+La zone de pioche se lit en **deux lignes**, une par famille de cartes : la pioche des Plans Larges
+suivie de son chutier, puis la pioche des Plans Moyens / Gros Plans suivie du sien. Chaque pioche
+est dessinée en pile de cartes décalées, pour qu'on la distingue au premier coup d'œil d'une carte
+posée sur la table.
 
 La pioche des **Plans Larges** est face cachée : ces cartes ont un vrai dos. Celle des **Plans
 Moyens / Gros Plans** montre sa face du dessus — ces cartes étant recto-verso, une pioche ne peut
 pas les cacher. L'IA en tient compte : elle évalue cette carte comme une carte connue.
 
+Au montage, une carte Plan Moyen / Gros Plan est présentée **entière**, gauche et droite soudées
+comme sur la table : on clique la moitié que l'on veut laisser visible, puis l'emplacement dans son
+banc.
+
 Sur une carte, le survol ouvre un aperçu : minutage en grand, chaque pastille nommée, et le bandeau
-d'objectif avec ce qu'il rapporte. Les illustrations se masquent en cours de partie depuis le
-bandeau de tour.
+d'objectif avec ce qu'il rapporte. Les pastilles se resserrent quand elles sont nombreuses, pour ne
+jamais déborder du cadre de la carte — y compris sur un Gros Plan, qui n'occupe qu'une demi-largeur.
+Les illustrations se masquent en cours de partie depuis le bandeau de tour.
 
 ## Le modèle de jeu
 

@@ -2,22 +2,22 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.0';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.10';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, appliquerMinutages,
-} from './data.js?v=2.0';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=2.0';
-import { elIcon } from './icons.js?v=2.0';
-import { renderCarte, renderPlan, renderDos, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=2.0';
+} from './data.js?v=1.10';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.10';
+import { elIcon } from './icons.js?v=1.10';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.10';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=2.0';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.0';
-import { compter, SOURCES_LABEL } from './scoring.js?v=2.0';
-import { campagne } from './lab.js?v=2.0';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.0';
+} from './engine.js?v=1.10';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.10';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.10';
+import { campagne } from './lab.js?v=1.10';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.10';
 
 const app = document.getElementById('app');
 
@@ -414,35 +414,39 @@ function zoneDepart(st, p) {
 
 function zoneDerushage(st) {
   const options = optionsDerushage(st);
-  const groupe = (titre, contenu) => `
-    <div class="derushage-groupe">
-      <h3>${titre}</h3>
-      <div class="derushage-cartes">${contenu || '<div class="aide">Épuisé</div>'}</div>
-    </div>`;
-
   const carte = (o) => `<div data-derush="${enc(o)}">${renderCarte(o.carte, false, { small: true, clickable: true })}</div>`;
 
-  // Les deux pioches sont montrées, au même format que les cartes du chutier.
-  // Celle des Plans Larges reste aveugle — ces cartes ont un vrai dos ; celle
-  // des Plan Moyen / Gros Plan montre sa face du dessus, ces cartes étant
-  // recto-verso. La pioche des Plans Larges n'est cliquable que si les
-  // variables l'autorisent.
-  const sommetPMGP = options.find((o) => o.source === 'PIOCHE_PMGP');
+  // Une ligne par famille : sa pioche d'abord, puis son chutier.
+  const ligne = (titre, pioche, chutier) => `
+    <div class="derushage-ligne">
+      <h3>${titre}</h3>
+      <div class="derushage-cartes">
+        ${pioche}
+        ${chutier || '<div class="aide" style="align-self:center">Chutier épuisé</div>'}
+      </div>
+    </div>`;
+
+  // La pioche des Plans Larges reste face cachée : ces cartes ont un vrai dos.
   const sommetPL = options.find((o) => o.source === 'PIOCHE_PL');
   const dosPL = st.piochePL.length
-    ? (sommetPL
+    ? enPile(sommetPL
       ? `<div data-derush="${enc(sommetPL)}">${renderDos('Plans Larges', st.piochePL.length, { small: true, clickable: true })}</div>`
-      : `<div class="pioche-fermee" title="Cette pioche n’est pas accessible : on ne pioche que dans son chutier.">${renderDos('Plans Larges', st.piochePL.length, { small: true })}</div>`)
+      : `<div class="pioche-fermee" title="Cette pioche n’est pas accessible : on ne pioche que dans son chutier.">${renderDos('Plans Larges', st.piochePL.length, { small: true })}</div>`,
+      st.piochePL.length)
     : '';
-  const pioches = dosPL + (sommetPMGP ? carte(sommetPMGP) : '');
 
-  const chutierPL = options.filter((o) => o.source === 'CHUTIER_PL').map(carte).join('');
-  const chutierPM = options.filter((o) => o.source === 'CHUTIER_PMGP').map(carte).join('');
+  // Celle des Plans Moyens / Gros Plans montre sa face du dessus : ces cartes
+  // étant recto-verso, une pioche ne peut pas les cacher.
+  const sommetPMGP = options.find((o) => o.source === 'PIOCHE_PMGP');
+  const piochePMGP = sommetPMGP
+    ? enPile(carte(sommetPMGP), st.piochePMGP.length)
+    : (st.piochePMGP.length
+      ? enPile(`<div class="pioche-fermee">${renderCarte(st.piochePMGP[0], false, { small: true })}</div>`, st.piochePMGP.length)
+      : '');
 
-  return `<div class="derushage-groupes">
-    ${pioches ? groupe('Pioches', pioches) : ''}
-    ${groupe('Chutier Plans Larges', chutierPL)}
-    ${groupe('Chutier Plans Moyens / Gros Plans', chutierPM)}
+  return `<div class="derushage-lignes">
+    ${ligne('Plans Larges', dosPL, options.filter((o) => o.source === 'CHUTIER_PL').map(carte).join(''))}
+    ${ligne('Plans Moyens / Gros Plans', piochePMGP, options.filter((o) => o.source === 'CHUTIER_PMGP').map(carte).join(''))}
   </div>`;
 }
 
@@ -454,25 +458,31 @@ function zoneMontage(st, p) {
   const carte = st.mains[p][0];
   if (!carte) return '<div class="vide">Aucune carte dérushée.</div>';
 
-  const options = carte.type === 'DOUBLE'
-    ? [['GP', moitiesDe(carte).GP], ['PM', moitiesDe(carte).PM]]
-    : [['PL', plHalf(carte)]];
+  // Un Plan Large n'a pas de moitié à choisir.
+  if (carte.type !== 'DOUBLE') {
+    store.formatChoisi = 'PL';
+    return `<div class="zone-montage">
+      <div id="choix-carte">${renderCarte(carte, false, { small: true })}</div>
+      <p class="aide">Un Plan Large ouvre une nouvelle séquence, détachée du reste du montage.
+      Clique sur un emplacement de ton banc.</p>
+    </div>`;
+  }
 
-  if (!store.formatChoisi && options.length === 1) store.formatChoisi = options[0][0];
+  const m = moitiesDe(carte);
+  const choisi = store.formatChoisi === 'GP' || store.formatChoisi === 'PM' ? store.formatChoisi : null;
+  const dit = (f) => {
+    const plan = m[f];
+    return `${FORMATS[f].label} n°${plan.num}${plan.obj ? ` — ${objLabel(plan.obj)}` : ' — sans bandeau'}`;
+  };
 
-  return `<p class="aide" style="margin-bottom:14px">
-    ${carte.type === 'DOUBLE'
-      ? 'La carte se glisse sous les précédentes : un seul de ses deux plans restera visible. Choisis lequel, puis son emplacement dans ton banc.'
-      : 'Un Plan Large ouvre toujours une nouvelle séquence, détachée du reste du montage.'}
-  </p>
-  <div class="main-cartes">
-    ${options.map(([f, plan]) => `
-      <div class="item">
-        <div class="carte solo clickable ${store.formatChoisi === f ? "sel" : ""}" data-format="${f}">${renderPlan(plan)}</div>
-        <div class="lg">${FORMATS[f].label} n°${plan.num}${plan.obj ? ` · ${objLabel(plan.obj)}` : ' · sans bandeau'}</div>
-      </div>`).join('')}
-  </div>
-  ${store.formatChoisi ? '<p class="aide" style="text-align:center;margin-top:12px">Clique sur un emplacement de ton banc.</p>' : ''}`;
+  return `<div class="zone-montage">
+    <div id="choix-carte">${renderCarte(carte, false, { small: true, moitiesChoisissables: true, formatChoisi: choisi })}</div>
+    <p class="aide">
+      ${choisi
+        ? `Tu gardes le <b>${dit(choisi)}</b>. Clique maintenant sur un emplacement de ton banc.`
+        : 'La carte se glisse sous les précédentes : clique sur la moitié que tu veux laisser visible.'}
+    </p>
+  </div>`;
 }
 
 // --- Panneaux de score -----------------------------------------------------
@@ -536,8 +546,7 @@ function brancherPartie(st, humaine) {
     vuePartie();
   }));
 
-  app.querySelectorAll('[data-format]').forEach((el) => {
-    if (!el.classList.contains('carte')) return;
+  app.querySelectorAll('#choix-carte .moitie[data-format]').forEach((el) => {
     el.addEventListener('click', () => { store.formatChoisi = el.dataset.format; vuePartie(); });
   });
 
