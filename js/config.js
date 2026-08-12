@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.11';
+import { ELEMENT_IDS } from './data.js?v=1.12';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -58,10 +58,12 @@ export const DEFAULTS = {
   },
   poidsElements: Object.fromEntries(ELEMENT_IDS.map((e) => [e, 1])),
 
-  // --- Minutages -----------------------------------------------------------
-  // Surcharge du minutage d'un plan, indexée par numéro. Vide = les valeurs
-  // du matériel imprimé. Se règle dans Matériel › Minutages.
-  minutages: {},
+  // --- Matériel ------------------------------------------------------------
+  // Retouches apportées aux cartes depuis l'éditeur de l'écran Matériel :
+  // `plans` surcharge le minutage, les pastilles et le bandeau d'un plan,
+  // indexé par numéro ; `paires` refait l'appariement Plan Moyen / Gros Plan
+  // d'une carte, indexé par son rang. Vide = le matériel imprimé.
+  materiel: { plans: {}, paires: {} },
 
   // --- Affichage -----------------------------------------------------------
   illustrations: true,    // les visuels imprimés sur les cartes

@@ -2,22 +2,23 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.11';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.12';
 import {
-  ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, objLabel,
-  buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, appliquerMinutages,
-} from './data.js?v=1.11';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.11';
-import { elIcon } from './icons.js?v=1.11';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.11';
+  ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
+  buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo,
+  appliquerMateriel, catalogue, moitiesDisponibles,
+} from './data.js?v=1.12';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.12';
+import { elIcon } from './icons.js?v=1.12';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.12';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.11';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.11';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.11';
-import { campagne } from './lab.js?v=1.11';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.11';
+} from './engine.js?v=1.12';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.12';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.12';
+import { campagne } from './lab.js?v=1.12';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.12';
 
 const app = document.getElementById('app');
 
@@ -48,13 +49,27 @@ store.joueurs.forEach((j, i) => {
   if (!COULEURS_JOUEURS.includes(j.couleur)) j.couleur = COULEURS_JOUEURS[i % COULEURS_JOUEURS.length];
 });
 
-// Les minutages réglés dans Matériel surchargent ceux du matériel imprimé.
-if (!store.cfg.minutages) store.cfg.minutages = {};
-appliquerMinutages(store.cfg.minutages);
+// Les retouches faites dans l'éditeur de Matériel surchargent le matériel
+// imprimé, partout : galeries, table de jeu, décompte et Laboratoire.
+function normaliserMateriel() {
+  const m = store.cfg.materiel && typeof store.cfg.materiel === 'object' ? store.cfg.materiel : {};
+  if (!m.plans || typeof m.plans !== 'object') m.plans = {};
+  if (!m.paires || typeof m.paires !== 'object') m.paires = {};
+  // Les réglages d'avant l'éditeur ne portaient que sur le minutage.
+  if (store.cfg.minutages && typeof store.cfg.minutages === 'object') {
+    for (const [num, tc] of Object.entries(store.cfg.minutages)) {
+      if (tc !== undefined && tc !== null && tc !== '') m.plans[num] = { ...(m.plans[num] || {}), tc: Number(tc) };
+    }
+    delete store.cfg.minutages;
+  }
+  store.cfg.materiel = m;
+}
+normaliserMateriel();
+appliquerMateriel(store.cfg.materiel);
 
 function sauverCfg() {
   LS.set('cfg', store.cfg);
-  appliquerMinutages(store.cfg.minutages);
+  appliquerMateriel(store.cfg.materiel);
 }
 function sauverJoueurs() { LS.set('joueurs', store.joueurs); }
 
@@ -800,114 +815,484 @@ function vueFin() {
 // MATÉRIEL
 // ===========================================================================
 
+// ---------------------------------------------------------------------------
+// L'écran Matériel est aussi l'éditeur du matériel : rien de ce qui est
+// imprimé sur une carte n'est figé. On garde en permanence la galerie sous les
+// yeux à gauche, la carte en cours d'édition à droite. Les retouches vivent
+// dans cfg.materiel, donc elles sont enregistrées et le jeu s'y conforme
+// aussitôt — table de jeu, décompte et Laboratoire compris.
+
 let materielFiltre = 'DOUBLE';
+let materielSel = null;    // { famille: 'DOUBLE'|'PL'|'DEPART', rang } — carte éditée
+
+// Ce que compte un pouvoir. Les libellés se lisent à la suite du « n × » du
+// bandeau : « 2 × par plan du cadrage — Plan Large ».
+const KINDS = [
+  ['',        'aucun pouvoir'],
+  ['FORMAT',  'par plan du cadrage…'],
+  ['ELEMENT', 'par plan portant l’icône…'],
+  ['PAIRE',   'par couple d’icônes voisines…'],
+  ['MORT',    'par plan de mort'],
+  ['NEANT',   'par plan sans personnage'],
+  ['RACCORD', 'par Carte Raccord du montage'],
+  ['PLAN',    'par carte de sa séquence'],
+  ['ABSENT',  'si l’icône est absente du montage…'],
+];
+
+// --- La couche de retouches ------------------------------------------------
+
+function retoucher(num, champ, valeur) {
+  const plans = store.cfg.materiel.plans;
+  const p = plans[num] || (plans[num] = {});
+  if (valeur === undefined) delete p[champ]; else p[champ] = valeur;
+  if (!Object.keys(p).length) delete plans[num];
+  sauverCfg();
+}
+
+function retoucheDe(num) {
+  return store.cfg.materiel.plans[num] || null;
+}
+
+function nbRetouches() {
+  return Object.keys(store.cfg.materiel.plans).length + Object.keys(store.cfg.materiel.paires).length;
+}
+
+// --- Les cartes, dans l'ordre des galeries ---------------------------------
+
+function cartesDe(famille) {
+  if (famille === 'PL') return buildPlansLarges();
+  if (famille === 'DEPART') {
+    return DEPARTS.flatMap((d, di) => d.faces.map((f, k) => ({
+      type: 'DEPART_FACE', version: d.type, face: k + 1, di, k, plan: { ...f, depart: true },
+    })));
+  }
+  return buildCartesDoubles();
+}
+
+/** Les plans qu'une carte donne à éditer — un pour un Plan Large, deux sinon. */
+function plansEditables(famille, carte) {
+  if (famille === 'DOUBLE') {
+    const m = moitiesDe(carte);
+    return [m.GP, m.PM];
+  }
+  if (famille === 'DEPART') return [plHalf(carte.plan)];
+  return [plHalf(carte)];
+}
+
+function selectionne(famille, rang) {
+  const liste = cartesDe(famille);
+  return { famille, rang: Math.max(0, Math.min(rang, liste.length - 1)), carte: liste[rang] };
+}
+
+// --- La vue ----------------------------------------------------------------
 
 function vueMateriel() {
-  const doubles = buildCartesDoubles();
-  const larges = buildPlansLarges();
-
-  let contenu = '';
-  if (materielFiltre === 'DOUBLE' || materielFiltre === 'VERSO') {
-    const verso = materielFiltre === 'VERSO';
-    contenu = `<div class="galerie">${doubles.map((c, i) => `
-      <div class="item">${renderCarte(c, verso, { small: true })}
-        <div class="lg">Carte ${i + 1} · GP ${c.gpNum} | PM ${c.pmNum}${verso ? ' — verso' : ''}</div>
-      </div>`).join('')}</div>`;
-  } else if (materielFiltre === 'PL') {
-    contenu = `<div class="galerie">${larges.map((c) => `
-      <div class="item">${renderCarte(c, false, { small: true })}
-        <div class="lg">Plan Large ${c.num}${c.brouillon ? ' · à compléter' : ''}</div>
-      </div>`).join('')}</div>`;
-  } else if (materielFiltre === 'DEPART') {
-    contenu = `<div class="galerie">${DEPARTS.flatMap((d) => d.faces.map((f, k) => `
-      <div class="item">
-        <div class="carte solo">${renderPlan(plHalf({ ...f, depart: true }))}</div>
-        <div class="lg">Version ${d.type} — face ${k + 1}</div>
-      </div>`)).join('')}</div>
-      <p class="aide" style="margin-top:14px">8 cartes dans la boîte, en 2 versions recto-verso.
-      L’appariement des faces est une hypothèse tirée de l’ordre du PDF.</p>`;
-  } else if (materielFiltre === 'TIMING') {
-    contenu = vueMinutages();
-  } else {
-    contenu = `<table class="tbl">
-      <tr><th>#</th><th>Famille</th><th class="num">Minutage</th><th>PM n°</th><th>Éléments du Plan Moyen</th><th>GP n°</th><th>Éléments du Gros Plan</th><th>Bandeau du Gros Plan</th></tr>
-      ${SCENES.map((s) => `<tr>
-        <td>${s.idx}</td><td>${s.famille}</td><td class="num">${tc(s.tc)}</td>
-        <td>${s.pmNum}</td><td>${s.pm.el.map((e) => elIcon(e, 20)).join('') || '—'}</td>
-        <td>${s.gpNum}</td><td>${s.gp.el.map((e) => elIcon(e, 20)).join('') || '—'}</td>
-        <td>${objHTML(s.gp.obj)}</td></tr>`).join('')}
-    </table>`;
-  }
+  const galerie = materielFiltre === 'TABLE' ? tableauMateriel() : galerieMateriel();
+  const n = nbRetouches();
 
   html(`${topbar('#/materiel')}
   <div class="wrap large">
-    <div class="panneau">
-      <h2>Matériel</h2>
-      <p class="aide">50 cartes Plan Moyen / Gros Plan — au recto le Gros Plan à gauche et le Plan Moyen à
-      droite, au verso l’inverse, avec les mêmes deux moitiés. 14 Plans Larges, 8 Plans de départ en
-      2 versions. Les visuels sont extraits des PDF d’impression ; la case <b>Illustrations</b> de
-      l’accueil les remplace au besoin par la lecture nue — minutage, pastilles et bandeau seuls.</p>
-      <div class="filtre-barre" style="margin-top:16px">
-        ${[['DOUBLE', 'PM / GP — recto'], ['VERSO', 'PM / GP — verso'], ['PL', 'Plans Larges'],
-           ['DEPART', 'Plans de départ'], ['TABLE', 'Tableau des scènes'], ['TIMING', 'Minutages']]
-          .map(([k, l]) => `<button class="pill" data-f="${k}" style="${materielFiltre === k ? 'background:var(--violet);color:#fff;border-color:var(--violet)' : ''}">${l}</button>`).join('')}
+    <div class="materiel-2col">
+      <div class="panneau">
+        <h2>Matériel</h2>
+        <div class="barre-outils" style="margin:12px 0 4px">
+          <span class="info">${n ? `${n} retouche${n > 1 ? 's' : ''}` : 'Matériel imprimé, aucune retouche'}</span>
+          <button class="pill" id="mat-export">⭳ Exporter le tableau en PDF</button>
+          <button class="pill" id="mat-reset" ${n ? '' : 'disabled'}>↺ Tout revenir à l’imprimé</button>
+        </div>
+        <div class="filtre-barre" style="margin-top:10px">
+          ${[['DOUBLE', 'Plans Moyens / Gros Plans'], ['PL', 'Plans Larges'],
+             ['DEPART', 'Plans de départ'], ['TABLE', 'Tableau complet']]
+            .map(([k, l]) => `<button class="pill ${materielFiltre === k ? 'on' : ''}" data-f="${k}">${l}</button>`).join('')}
+        </div>
+        ${galerie}
       </div>
-      ${contenu}
+      <div class="panneau editeur" id="editeur">${panneauEditeur()}</div>
     </div>
   </div>
   ${pied()}`);
 
   brancherApercu();
-  app.querySelectorAll('[data-f]').forEach((b) => b.addEventListener('click', () => {
-    materielFiltre = b.dataset.f; vueMateriel();
-  }));
-  app.querySelectorAll('[data-minutage]').forEach((el) => el.addEventListener('change', () => {
-    const num = el.dataset.minutage;
-    const v = el.value.trim();
-    if (v === '' || Number(v) === Number(el.dataset.defaut)) delete store.cfg.minutages[num];
-    else store.cfg.minutages[num] = Math.max(0, Math.min(99, parseInt(v, 10) || 0));
-    sauverCfg(); vueMateriel();
-  }));
-  const rz = app.querySelector('#minutages-reset');
-  if (rz) rz.addEventListener('click', () => { store.cfg.minutages = {}; sauverCfg(); vueMateriel(); });
+  brancherMateriel();
 }
 
-/**
- * Les minutages, réglables plan par plan. Ils ne conditionnent aucune pose :
- * ils ne servent qu'aux objectifs qui rapportent selon le minutage, et se
- * règlent ici pour en mesurer l'effet.
- */
-function vueMinutages() {
-  const lignes = [];
-  for (const s of SCENES) {
-    lignes.push({ num: s.pmNum, defaut: s.tc, quoi: `Plan Moyen ${s.pmNum}`, famille: s.famille });
-    lignes.push({ num: s.gpNum, defaut: s.tc, quoi: `Gros Plan ${s.gpNum}`, famille: s.famille });
-  }
-  for (const p of PLANS_LARGES) lignes.push({ num: p.num, defaut: p.tc, quoi: `Plan Large ${p.num}`, famille: 'PLAN LARGE' });
-  for (const d of DEPARTS) for (const f of d.faces) {
-    lignes.push({ num: f.num, defaut: f.tc, quoi: `Plan de départ ${f.num}`, famille: 'DÉPART' });
-  }
-  const modifies = Object.keys(store.cfg.minutages || {}).length;
+/** Une carte de la galerie : son visuel, son libellé et son état. */
+function vignetteMateriel(famille, carte, i) {
+  const marque = plansEditables(famille, carte).some((h) => retoucheDe(h.num))
+    || (famille === 'DOUBLE' && carte.appariementModifie);
+  const visuel = famille === 'DEPART'
+    ? `<div class="carte solo small">${renderPlan(plHalf(carte.plan))}</div>`
+    : renderCarte(carte, false, { small: true });
+  const libelle = famille === 'DOUBLE' ? `Carte ${i + 1} · GP ${carte.gpNum} | PM ${carte.pmNum}`
+    : famille === 'DEPART' ? `Version ${carte.version} — face ${carte.face}`
+    : `Plan Large ${carte.num}${carte.brouillon ? ' · à compléter' : ''}`;
+  return { marque, html: `${visuel}<div class="lg">${libelle}${marque ? ' · retouchée' : ''}</div>` };
+}
 
-  return `<p class="aide">Le minutage n'est plus une image imprimée : c'est une valeur que
-  l'application contrôle. Elle ne conditionne aucun placement — elle n'entre en jeu que dans les
-  objectifs qui rapportent selon le minutage, réglables dans <b>Variables › Chronologie</b>.</p>
-  <div class="barre-outils" style="margin:14px 0">
-    <span class="info">${modifies} minutage${modifies > 1 ? 's' : ''} modifié${modifies > 1 ? 's' : ''}</span>
-    <button class="pill" id="minutages-reset" ${modifies ? '' : 'disabled'}>↺ Revenir au matériel imprimé</button>
-  </div>
-  <div class="grille-minutages">
-    ${lignes.map((l) => {
-      const val = store.cfg.minutages?.[l.num];
-      const actuel = val === undefined ? l.defaut : val;
-      return `<label class="minutage ${val === undefined ? '' : 'modifie'}">
-        <span class="q">${l.quoi}</span>
-        <input type="number" min="0" max="99" value="${actuel}"
-          data-minutage="${l.num}" data-defaut="${l.defaut}">
-        <span class="tc-apercu">${tc(actuel)}</span>
-      </label>`;
-    }).join('')}
+function galerieMateriel() {
+  const f = materielFiltre;
+  const sel = materielSel && materielSel.famille === f ? materielSel.rang : -1;
+
+  return `<p class="aide" style="margin-top:14px">Clique une carte pour l’éditer — son minutage, ses
+  icônes et son pouvoir. Les deux faces d’une carte Plan Moyen / Gros Plan s’éditent ensemble.</p>
+  <div class="galerie">${cartesDe(f).map((c, i) => {
+    const v = vignetteMateriel(f, c, i);
+    return `<div class="item vignette ${i === sel ? 'sel' : ''} ${v.marque ? 'retouchee' : ''}"
+      data-carte-rang="${i}">${v.html}</div>`;
+  }).join('')}</div>`;
+}
+
+// --- Le panneau d'édition --------------------------------------------------
+
+function panneauEditeur() {
+  if (!materielSel) {
+    return `<h2>Éditeur</h2>
+      <p class="aide">Choisis une carte dans la galerie pour régler son <b>minutage</b>, ses
+      <b>icônes</b> et son <b>pouvoir</b>. Tout ce qui est réglé ici est enregistré et la partie se
+      joue aussitôt avec les cartes retouchées.</p>`;
+  }
+  const { famille, rang, carte } = selectionne(materielSel.famille, materielSel.rang);
+  const plans = plansEditables(famille, carte);
+
+  // Une carte double se lit des deux côtés : on montre le recto et le verso.
+  let apercu;
+  if (famille === 'DOUBLE') {
+    apercu = `<div class="editeur-faces">
+      <div><div class="f-lg">Recto</div>${renderCarte(carte, false, { small: true })}</div>
+      <div><div class="f-lg">Verso</div>${renderCarte(carte, true, { small: true })}</div>
+    </div>`;
+  } else if (famille === 'DEPART') {
+    apercu = `<div class="editeur-faces"><div><div class="f-lg">Face ${carte.face}</div>
+      <div class="carte solo small">${renderPlan(plHalf(carte.plan))}</div></div></div>`;
+  } else {
+    apercu = `<div class="editeur-faces"><div>${renderCarte(carte, false, { small: true })}</div></div>`;
+  }
+
+  const titre = famille === 'DOUBLE' ? `Carte ${rang + 1}`
+    : famille === 'DEPART' ? `Plan de départ ${carte.version}${carte.face}`
+    : `Plan Large ${carte.num}`;
+
+  return `<h2>${titre}</h2>
+    ${apercu}
+    ${plans.map((h) => blocPlan(h)).join('')}
+    ${famille === 'DOUBLE' ? appariement(carte) : ''}`;
+}
+
+/** Le formulaire d'un plan : minutage, icônes, pouvoir. */
+function blocPlan(h) {
+  const r = retoucheDe(h.num);
+  const nom = h.format === 'PL' ? `Plan ${h.num}` : `${FORMATS[h.format].label} n°${h.num}`;
+
+  return `<div class="bloc-plan ${r ? 'retouche' : ''}" data-plan="${h.num}">
+    <div class="bp-tete">
+      <b>${nom}</b>
+      <button class="pill mini" data-plan-reset="${h.num}" ${r ? '' : 'disabled'}>↺ imprimé</button>
+    </div>
+
+    <label class="champ-ligne">
+      <span>Minutage</span>
+      <input type="number" min="0" max="99" step="1" value="${h.tc}" data-champ-tc="${h.num}">
+      <span class="tc-apercu">${tc(h.tc)}</span>
+    </label>
+
+    <div class="champ-bloc">
+      <span class="ch-lg">Icônes</span>
+      <div class="choix-icones">
+        ${ELEMENT_IDS.map((e) => `<button class="ic ${h.el.includes(e) ? 'on' : ''}"
+          data-icone="${e}" data-plan-icone="${h.num}" title="${ELEMENTS[e].label}">
+          ${elIcon(e, 26)}</button>`).join('')}
+        <button class="ic sep ${h.mort ? 'on' : ''}" data-plan-mort="${h.num}" title="Plan de mort">
+          ${elIcon('MORT', 26)}</button>
+      </div>
+    </div>
+
+    ${blocPouvoir(h)}
   </div>`;
+}
+
+/** X points × <ce qu'on compte>. */
+function blocPouvoir(h) {
+  const o = h.obj;
+  const kind = o ? o.kind : '';
+  const opt = (v, l, on) => `<option value="${v}" ${on ? 'selected' : ''}>${l}</option>`;
+  const elOpts = (choisi) => ELEMENT_IDS.map((e) => opt(e, ELEMENTS[e].label, choisi === e)).join('');
+
+  let complement = '';
+  if (kind === 'FORMAT') {
+    complement = `<select data-champ-obj="${h.num}" data-part="format">
+      ${['PL', 'PM', 'GP'].map((f) => opt(f, FORMATS[f].label, o.format === f)).join('')}</select>`;
+  } else if (kind === 'ELEMENT' || kind === 'ABSENT') {
+    complement = `<select data-champ-obj="${h.num}" data-part="el">${elOpts(o.el)}</select>`;
+  } else if (kind === 'PAIRE') {
+    complement = `<select data-champ-obj="${h.num}" data-part="el0">${elOpts(o.els[0])}</select>
+      <span class="plus">+</span>
+      <select data-champ-obj="${h.num}" data-part="el1">${elOpts(o.els[1])}</select>`;
+  }
+
+  return `<div class="champ-bloc">
+    <span class="ch-lg">Pouvoir</span>
+    <div class="editeur-obj">
+      <input type="number" class="pts" min="0" max="20" value="${o ? o.n : 1}"
+        data-champ-obj="${h.num}" data-part="n" ${o ? '' : 'disabled'}>
+      <span class="x">${kind === 'ABSENT' ? 'si' : '×'}</span>
+      <select data-champ-obj="${h.num}" data-part="kind">
+        ${KINDS.map(([k, l]) => opt(k, l, kind === k)).join('')}
+      </select>
+      ${complement}
+    </div>
+    <div class="apercu-obj">${o ? `${objHTML(o, 26)}<span class="lit">${objLabel(o)}</span>` : '<span class="aide">Bandeau vide</span>'}</div>
+  </div>`;
+}
+
+/** L'appariement des deux moitiés d'une carte double. */
+function appariement(carte) {
+  const liste = (format, choisi) => moitiesDisponibles(format).map((m) => `
+    <option value="${m.num}" ${m.num === choisi ? 'selected' : ''}>
+      ${m.num} — ${m.titre || m.famille.toLowerCase()}
+    </option>`).join('');
+
+  return `<div class="bloc-plan appariement ${carte.appariementModifie ? 'retouche' : ''}">
+    <div class="bp-tete">
+      <b>Appariement des moitiés</b>
+      <button class="pill mini" data-paire-reset="${carte.rang}" ${carte.appariementModifie ? '' : 'disabled'}>↺ imprimé</button>
+    </div>
+    <label class="champ-ligne"><span>Gros Plan</span>
+      <select data-paire="${carte.rang}" data-part="gp">${liste('GP', carte.gpNum)}</select></label>
+    <label class="champ-ligne"><span>Plan Moyen</span>
+      <select data-paire="${carte.rang}" data-part="pm">${liste('PM', carte.pmNum)}</select></label>
+    <p class="aide">La répartition imprimée est conservée tant qu’on n’y touche pas. La changer ici
+    ne modifie que cette carte.</p>
+  </div>`;
+}
+
+// --- Le tableau complet ----------------------------------------------------
+
+function tableauMateriel() {
+  const cat = catalogue();
+  return `<p class="aide" style="margin-top:14px">L’état courant de tout le matériel, retouches
+  comprises. Le bouton <b>Exporter le tableau en PDF</b> en donne la version imprimable.</p>
+  <div class="tbl-defile">${tableauPlans(cat)}</div>
+  <h3 style="margin-top:22px">Les 50 cartes Plan Moyen / Gros Plan</h3>
+  <div class="tbl-defile">${tableauPaires()}</div>`;
+}
+
+// L'en-tête est dans un <thead> : c'est la seule façon qu'il se répète en
+// haut de chaque page à l'impression.
+
+function tableauPlans(cat) {
+  return `<table class="tbl tbl-materiel">
+    <thead><tr><th>N°</th><th>Plan</th><th>Famille</th><th class="num">Minutage</th>
+      <th>Icônes</th><th>Pouvoir</th><th>État</th></tr></thead>
+    <tbody>${cat.map((p) => `<tr class="${p.modifie ? 'ligne-retouchee' : ''}">
+      <td class="num">${p.num}</td>
+      <td>${FORMATS[p.format].label}${p.titre ? ` <span class="aide">${p.titre}</span>` : ''}</td>
+      <td>${p.famille}</td>
+      <td class="num">${tc(p.tc)}</td>
+      <td>${p.el.map((e) => elIcon(e, 20)).join('') || '—'}${p.mort ? elIcon('MORT', 20) : ''}</td>
+      <td>${p.obj ? `${objHTML(p.obj, 20)} <span class="aide">${objLabel(p.obj)}</span>` : '—'}</td>
+      <td>${p.modifie ? 'retouché' : 'imprimé'}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function tableauPaires() {
+  return `<table class="tbl tbl-materiel">
+    <thead><tr><th>Carte</th><th>Gros Plan</th><th>Plan Moyen</th><th>État</th></tr></thead>
+    <tbody>${buildCartesDoubles().map((c, i) => `<tr class="${c.appariementModifie ? 'ligne-retouchee' : ''}">
+      <td class="num">${i + 1}</td><td class="num">${c.gpNum}</td><td class="num">${c.pmNum}</td>
+      <td>${c.appariementModifie ? `réapparié (imprimé : GP ${c.gpImprime} | PM ${c.pmImprime})` : 'imprimé'}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// --- Les branchements ------------------------------------------------------
+
+function brancherMateriel() {
+  const rafraichir = () => vueMateriel();
+  // Le panneau seul, quand la galerie n'a pas bougé : l'édition reste sous le
+  // curseur et la liste des cartes ne clignote pas.
+  const rafraichirEditeur = () => {
+    const e = app.querySelector('#editeur');
+    if (!e) return rafraichir();
+    e.innerHTML = panneauEditeur();
+    brancherEditeur();
+    brancherApercu(e);
+    // La vignette correspondante suit l'état « retouchée ».
+    majVignette();
+  };
+
+  app.querySelectorAll('[data-f]').forEach((b) => b.addEventListener('click', () => {
+    materielFiltre = b.dataset.f;
+    if (materielFiltre !== 'TABLE') materielSel = { famille: materielFiltre, rang: 0 };
+    rafraichir();
+  }));
+
+  app.querySelectorAll('[data-carte-rang]').forEach((el) => el.addEventListener('click', () => {
+    materielSel = { famille: materielFiltre, rang: +el.dataset.carteRang };
+    app.querySelectorAll('[data-carte-rang]').forEach((v) => v.classList.remove('sel'));
+    el.classList.add('sel');
+    rafraichirEditeur();
+  }));
+
+  const ex = app.querySelector('#mat-export');
+  if (ex) ex.addEventListener('click', exporterMateriel);
+
+  const rz = app.querySelector('#mat-reset');
+  if (rz) rz.addEventListener('click', () => {
+    if (!confirm('Effacer toutes les retouches et revenir au matériel imprimé ?')) return;
+    store.cfg.materiel = { plans: {}, paires: {} };
+    sauverCfg(); rafraichir();
+  });
+
+  brancherEditeur(rafraichirEditeur);
+}
+
+/** Redessine la vignette de la carte éditée, sans toucher au reste. */
+function majVignette() {
+  if (!materielSel || materielFiltre === 'TABLE') return;
+  const el = app.querySelector(`[data-carte-rang="${materielSel.rang}"]`);
+  if (!el) return;
+  const { famille, rang, carte } = selectionne(materielSel.famille, materielSel.rang);
+  const v = vignetteMateriel(famille, carte, rang);
+  el.innerHTML = v.html;
+  el.classList.toggle('retouchee', v.marque);
+  brancherApercu(el);
+}
+
+function brancherEditeur(apres) {
+  const refaire = apres || (() => {
+    const e = app.querySelector('#editeur');
+    if (!e) return vueMateriel();
+    e.innerHTML = panneauEditeur();
+    brancherEditeur(); brancherApercu(e); majVignette();
+  });
+
+  app.querySelectorAll('[data-champ-tc]').forEach((el) => el.addEventListener('change', () => {
+    const num = el.dataset.champTc;
+    const v = Math.max(0, Math.min(99, parseInt(el.value, 10) || 0));
+    const imprime = catalogue().find((p) => String(p.num) === String(num));
+    retoucher(num, 'tc', imprime && imprime.imprime.tc === v ? undefined : v);
+    refaire();
+  }));
+
+  app.querySelectorAll('[data-plan-icone]').forEach((el) => el.addEventListener('click', () => {
+    const num = el.dataset.planIcone;
+    const e = el.dataset.icone;
+    const cat = catalogue().find((p) => String(p.num) === String(num));
+    const actuels = cat ? cat.el.slice() : [];
+    const i = actuels.indexOf(e);
+    if (i >= 0) actuels.splice(i, 1); else actuels.push(e);
+    const imprime = cat ? cat.imprime.el : [];
+    const identique = actuels.length === imprime.length && actuels.every((x, k) => x === imprime[k]);
+    retoucher(num, 'el', identique ? undefined : actuels);
+    refaire();
+  }));
+
+  app.querySelectorAll('[data-plan-mort]').forEach((el) => el.addEventListener('click', () => {
+    const num = el.dataset.planMort;
+    const cat = catalogue().find((p) => String(p.num) === String(num));
+    const v = !(cat && cat.mort);
+    retoucher(num, 'mort', cat && cat.imprime.mort === v ? undefined : v);
+    refaire();
+  }));
+
+  app.querySelectorAll('[data-champ-obj]').forEach((el) => el.addEventListener('change', () => {
+    majObjectif(el.dataset.champObj, el.dataset.part, el.value);
+    refaire();
+  }));
+
+  app.querySelectorAll('[data-plan-reset]').forEach((el) => el.addEventListener('click', () => {
+    delete store.cfg.materiel.plans[el.dataset.planReset];
+    sauverCfg(); refaire();
+  }));
+
+  app.querySelectorAll('[data-paire]').forEach((el) => el.addEventListener('change', () => {
+    const rang = el.dataset.paire;
+    const c = buildCartesDoubles()[+rang];
+    const pm = el.dataset.part === 'pm' ? +el.value : c.pmNum;
+    const gp = el.dataset.part === 'gp' ? +el.value : c.gpNum;
+    if (pm === c.pmImprime && gp === c.gpImprime) delete store.cfg.materiel.paires[rang];
+    else store.cfg.materiel.paires[rang] = [pm, gp];
+    sauverCfg(); refaire();
+  }));
+
+  app.querySelectorAll('[data-paire-reset]').forEach((el) => el.addEventListener('click', () => {
+    delete store.cfg.materiel.paires[el.dataset.paireReset];
+    sauverCfg(); refaire();
+  }));
+}
+
+/** Recompose le bandeau à partir de la pièce que l'on vient de changer. */
+function majObjectif(num, part, valeur) {
+  const cat = catalogue().find((p) => String(p.num) === String(num));
+  const actuel = cat ? cat.obj : null;
+  const imprime = cat ? cat.imprime.obj : null;
+
+  if (part === 'kind') {
+    if (!valeur) return retoucher(num, 'obj', imprime === null ? undefined : null);
+    const n = actuel ? actuel.n : 1;
+    const el0 = actuel && actuel.el ? actuel.el : (actuel && actuel.els ? actuel.els[0] : ELEMENT_IDS[0]);
+    const neuf = {
+      FORMAT:  () => OBJ.format(n, actuel && actuel.format ? actuel.format : 'PM'),
+      ELEMENT: () => OBJ.element(n, el0),
+      ABSENT:  () => OBJ.absent(n, el0),
+      PAIRE:   () => OBJ.paire(n, el0, actuel && actuel.els ? actuel.els[1] : el0),
+      MORT:    () => OBJ.mort(n),
+      NEANT:   () => OBJ.neant(n),
+      RACCORD: () => OBJ.raccord(n),
+      PLAN:    () => OBJ.plan(n),
+    }[valeur]();
+    return retoucher(num, 'obj', memeObjectif(neuf, imprime) ? undefined : neuf);
+  }
+
+  if (!actuel) return;
+  const o = JSON.parse(JSON.stringify(actuel));
+  if (part === 'n') o.n = Math.max(0, Math.min(20, parseInt(valeur, 10) || 0));
+  else if (part === 'format') o.format = valeur;
+  else if (part === 'el') o.el = valeur;
+  else if (part === 'el0') o.els = [valeur, o.els[1]];
+  else if (part === 'el1') o.els = [o.els[0], valeur];
+  retoucher(num, 'obj', memeObjectif(o, imprime) ? undefined : o);
+}
+
+function memeObjectif(a, b) {
+  return JSON.stringify(a || null) === JSON.stringify(b || null);
+}
+
+// --- L'export ---------------------------------------------------------------
+// Pas de bibliothèque tierce : on prépare une feuille imprimable et on ouvre
+// la boîte d'impression du navigateur, où « Enregistrer au format PDF » donne
+// le fichier. C'est le seul chemin qui marche partout sans dépendance.
+
+function exporterMateriel() {
+  const cat = catalogue();
+  const n = nbRetouches();
+  const d = new Date();
+  const quand = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+
+  let feuille = document.getElementById('impression');
+  if (!feuille) {
+    feuille = document.createElement('div');
+    feuille.id = 'impression';
+    document.body.appendChild(feuille);
+  }
+  feuille.innerHTML = `
+    <header class="imp-tete">
+      <h1>EDIT — état du matériel</h1>
+      <p>${cat.length} plans · 50 cartes Plan Moyen / Gros Plan · ${n ? `${n} retouche${n > 1 ? 's' : ''}` : 'aucune retouche'}
+      · règles v${REGLES_VERSION} · application v${VERSION} · ${quand}</p>
+    </header>
+    <h2>Les plans</h2>
+    ${tableauPlans(cat)}
+    <h2>Les 50 cartes Plan Moyen / Gros Plan</h2>
+    ${tableauPaires()}`;
+
+  document.body.classList.add('impression');
+  const fin = () => { document.body.classList.remove('impression'); window.removeEventListener('afterprint', fin); };
+  window.addEventListener('afterprint', fin);
+  window.print();
+  // Certains navigateurs n'émettent pas afterprint : filet de sécurité.
+  setTimeout(fin, 1500);
 }
 
 // ===========================================================================
@@ -1029,7 +1414,14 @@ function vueVariables() {
   app.querySelectorAll('[data-fam]').forEach((el) => el.addEventListener('change', () => {
     store.cfg.filtreFamilles[el.dataset.fam] = el.checked; sauverCfg(); vueVariables();
   }));
-  app.querySelector('#reset').addEventListener('click', () => { store.cfg = cloneConfig(DEFAULTS); sauverCfg(); vueVariables(); });
+  app.querySelector('#reset').addEventListener('click', () => {
+    // Les retouches de cartes survivent : elles ne sont pas des variables de
+    // partie, et elles ont leur propre bouton dans Matériel.
+    const materiel = store.cfg.materiel;
+    store.cfg = cloneConfig(DEFAULTS);
+    store.cfg.materiel = materiel;
+    sauverCfg(); vueVariables();
+  });
   app.querySelector('#export').addEventListener('click', () => {
     const blob = new Blob([JSON.stringify(store.cfg, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -1041,8 +1433,16 @@ function vueVariables() {
     inp.onchange = () => {
       const f = inp.files[0]; if (!f) return;
       f.text().then((t) => {
-        try { store.cfg = Object.assign(cloneConfig(DEFAULTS), JSON.parse(t)); sauverCfg(); vueVariables(); }
-        catch { alert('Fichier illisible.'); }
+        try {
+          const lu = JSON.parse(t);
+          const materiel = store.cfg.materiel;
+          store.cfg = Object.assign(cloneConfig(DEFAULTS), lu);
+          // Un fichier antérieur à l'éditeur ne porte pas de matériel : on
+          // garde alors les retouches en place plutôt que de les effacer.
+          if (!lu.materiel) store.cfg.materiel = materiel;
+          normaliserMateriel();
+          sauverCfg(); vueVariables();
+        } catch { alert('Fichier illisible.'); }
       });
     };
     inp.click();

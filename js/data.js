@@ -191,13 +191,31 @@ const PAIRES = [
 ];
 
 export function buildCartesDoubles() {
-  return PAIRES.map(([pmNum, gpNum, extra], i) => ({
-    id: `D${String(i + 1).padStart(2, '0')}`,
-    type: 'DOUBLE',
-    pmScene: pmIndex[pmNum],
-    gpScene: gpIndex[gpNum],
-    pmNum, gpNum,
-    ...(extra || {}),
+  return PAIRES.map(([pmImp, gpImp, extra], i) => {
+    // L'appariement des deux moitiés est lui aussi réglable : c'est la seule
+    // façon de changer la répartition des Plans Moyens et des Gros Plans.
+    const [pmNum, gpNum] = paireDe(i, [pmImp, gpImp]);
+    return {
+      id: `D${String(i + 1).padStart(2, '0')}`,
+      type: 'DOUBLE',
+      rang: i,
+      pmScene: pmIndex[pmNum],
+      gpScene: gpIndex[gpNum],
+      pmNum, gpNum,
+      pmImprime: pmImp, gpImprime: gpImp,
+      appariementModifie: pmNum !== pmImp || gpNum !== gpImp,
+      ...(extra || {}),
+    };
+  });
+}
+
+/** Les moitiés disponibles pour un appariement, par cadrage. */
+export function moitiesDisponibles(format) {
+  return SCENES.map((s) => ({
+    num: format === 'GP' ? s.gpNum : s.pmNum,
+    scene: s.idx,
+    famille: s.famille,
+    titre: s.titre || null,
   }));
 }
 
@@ -216,23 +234,62 @@ export function buildDeparts() {
   return out;
 }
 
-// --- Minutages ajustables --------------------------------------------------
-// Le minutage n'est plus une image imprimée mais une donnée que l'application
-// contrôle : il s'affiche en police d'afficheur, et se règle plan par plan
-// depuis l'écran Matériel pour mesurer son effet sur l'équilibrage.
-// La surcharge est indexée par numéro de plan, tous formats confondus.
+// --- Matériel ajustable ----------------------------------------------------
+// Rien de ce qui est imprimé sur une carte n'est figé : le minutage, les
+// pastilles et le bandeau d'objectif de chaque plan sont des données que
+// l'application contrôle, et que l'éditeur de l'écran Matériel remplace plan
+// par plan. Le tableau ci-dessous est la couche de surcharge :
+//
+//   plans[num] = { tc, el, obj, mort }   — chaque champ absent = valeur imprimée
+//   paires[i]  = [pmNum, gpNum]          — l'appariement de la i-ème carte
+//
+// Les numéros de plan sont uniques tous cadrages confondus, ce qui donne une
+// clé naturelle : 101-114 les Plans Larges, 115-118 les Plans de départ,
+// 201-230 et 290-292 les Plans Moyens, 301-330 et 390-392 les Gros Plans.
 
-export const MINUTAGES = {};
+export const SURCHARGES = { plans: {}, paires: {} };
 
-export function tcDe(num, defaut) {
-  const v = MINUTAGES[num];
-  return v === undefined || v === null || v === '' ? defaut : Number(v);
+/** Remplace la couche de surcharge (au chargement et à chaque réglage). */
+export function appliquerMateriel(table) {
+  for (const k of Object.keys(SURCHARGES.plans)) delete SURCHARGES.plans[k];
+  for (const k of Object.keys(SURCHARGES.paires)) delete SURCHARGES.paires[k];
+  Object.assign(SURCHARGES.plans, (table && table.plans) || {});
+  Object.assign(SURCHARGES.paires, (table && table.paires) || {});
 }
 
-/** Remplace la table de surcharge (appelée au chargement et à chaque réglage). */
-export function appliquerMinutages(table) {
-  for (const k of Object.keys(MINUTAGES)) delete MINUTAGES[k];
-  Object.assign(MINUTAGES, table || {});
+const sur = (num) => SURCHARGES.plans[num] || null;
+
+export function tcDe(num, defaut) {
+  const s = sur(num);
+  return !s || s.tc === undefined || s.tc === null || s.tc === '' ? defaut : Number(s.tc);
+}
+
+export function elDe(num, defaut) {
+  const s = sur(num);
+  return (s && Array.isArray(s.el) ? s.el : defaut || []).slice();
+}
+
+export function objDe(num, defaut) {
+  const s = sur(num);
+  if (!s || s.obj === undefined) return defaut || null;
+  return s.obj ? { ...s.obj } : null;
+}
+
+export function mortDe(num, defaut) {
+  const s = sur(num);
+  return !s || s.mort === undefined ? !!defaut : !!s.mort;
+}
+
+/** L'appariement d'une carte double : imprimé, ou celui qu'on lui a donné. */
+export function paireDe(i, defaut) {
+  const p = SURCHARGES.paires[i];
+  return Array.isArray(p) && p.length === 2 ? p : defaut;
+}
+
+/** Un plan a-t-il été retouché ? */
+export function planModifie(num) {
+  const s = sur(num);
+  return !!s && Object.keys(s).length > 0;
 }
 
 // --- Accès aux moitiés -----------------------------------------------------
@@ -242,6 +299,7 @@ export function halfInfo(sceneIdx, format, opts = {}) {
   const s = SCENE_BY_IDX[sceneIdx];
   if (!s) return null;
   const side = format === 'GP' ? s.gp : s.pm;
+  const num = format === 'GP' ? s.gpNum : s.pmNum;
   return {
     scene: s.idx,
     format,
@@ -249,12 +307,12 @@ export function halfInfo(sceneIdx, format, opts = {}) {
     dual: !!opts.dual,
     titre: s.titre || null,
     famille: s.famille,
-    tc: tcDe(format === 'GP' ? s.gpNum : s.pmNum, s.tc),
-    el: side.el.slice(),
-    obj: side.obj || null,
-    mort: !!s.mort,
-    num: format === 'GP' ? s.gpNum : s.pmNum,
-    image: `assets/${format === 'GP' ? 'gp' : 'pm'}/${format === 'GP' ? s.gpNum : s.pmNum}.webp`,
+    tc: tcDe(num, s.tc),
+    el: elDe(num, side.el),
+    obj: objDe(num, side.obj),
+    mort: mortDe(num, s.mort),
+    num,
+    image: `assets/${format === 'GP' ? 'gp' : 'pm'}/${num}.webp`,
   };
 }
 
@@ -276,11 +334,47 @@ export function plHalf(carte) {
     titre: null,
     famille: 'PLAN LARGE',
     tc: tcDe(carte.num, carte.tc),
-    el: carte.el.slice(),
-    obj: carte.obj || null,
-    mort: false,
+    el: elDe(carte.num, carte.el),
+    obj: objDe(carte.num, carte.obj),
+    mort: mortDe(carte.num, false),
     num: carte.num,
     depart: !!carte.depart,
     image: `assets/pl/${carte.num}.webp`,
   };
+}
+
+// --- Catalogue des plans ---------------------------------------------------
+// La liste complète de ce qui est éditable, dans l'ordre où on le lit sur la
+// table. Sert d'index à l'éditeur comme à l'export.
+
+export function catalogue() {
+  const out = [];
+  const pousse = (num, defauts, quoi, format, famille, extra = {}) => out.push({
+    num, quoi, format, famille,
+    tc: tcDe(num, defauts.tc), el: elDe(num, defauts.el), obj: objDe(num, defauts.obj),
+    mort: mortDe(num, defauts.mort), modifie: planModifie(num),
+    imprime: { tc: defauts.tc, el: (defauts.el || []).slice(), obj: defauts.obj || null, mort: !!defauts.mort },
+    ...extra,
+  });
+
+  for (const s of SCENES) {
+    pousse(s.pmNum, { tc: s.tc, el: s.pm.el, obj: s.pm.obj, mort: s.mort },
+      `Plan Moyen ${s.pmNum}`, 'PM', s.famille, { scene: s.idx, titre: s.titre || null });
+    pousse(s.gpNum, { tc: s.tc, el: s.gp.el, obj: s.gp.obj, mort: s.mort },
+      `Gros Plan ${s.gpNum}`, 'GP', s.famille, { scene: s.idx, titre: s.titre || null });
+  }
+  for (const p of PLANS_LARGES) {
+    pousse(p.num, { tc: p.tc, el: p.el, obj: p.obj, mort: false },
+      `Plan Large ${p.num}`, 'PL', 'PLAN LARGE', { brouillon: !!p.brouillon });
+  }
+  for (const d of DEPARTS) {
+    d.faces.forEach((f, k) => pousse(f.num, { tc: f.tc, el: f.el, obj: f.obj, mort: false },
+      `Plan de départ ${f.num}`, 'PL', 'DÉPART', { version: d.type, face: k + 1 }));
+  }
+  return out;
+}
+
+/** Les plans indexés par numéro — pour les listes déroulantes de l'éditeur. */
+export function planParNum() {
+  return Object.fromEntries(catalogue().map((p) => [p.num, p]));
 }

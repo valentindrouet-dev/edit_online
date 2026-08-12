@@ -1,8 +1,21 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.11';
-export const BUILD_DATE = '2026-08-12 09:40';
+export const VERSION = '1.12';
+export const BUILD_DATE = '2026-08-12 14:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.12',
+    date: '12/08/2026',
+    items: [
+      "L’écran Matériel devient un éditeur : chaque carte se règle à la main — son minutage, ses icônes et son pouvoir. La galerie reste sous les yeux à gauche, la carte éditée dans une colonne à droite.",
+      "Le pouvoir s’écrit comme sur la carte : X points × ce que l’on compte — un cadrage, une icône, un couple d’icônes voisines, une mort, un plan sans personnage, une Carte Raccord, une carte de la séquence, ou l’absence d’une icône du montage.",
+      "Les cartes Plan Moyen / Gros Plan s’éditent recto et verso ensemble : les deux faces sont affichées, et les deux moitiés se règlent côte à côte.",
+      "L’appariement des moitiés est réglable carte par carte : la répartition imprimée est conservée tant qu’on n’y touche pas.",
+      "Toutes les retouches sont enregistrées et le jeu s’y conforme aussitôt — table de jeu, décompte, Laboratoire et export des variables compris. Un bouton ramène une carte, ou tout le matériel, à l’imprimé.",
+      "Nouvel onglet « Tableau complet » : l’état courant des 84 plans et des 50 cartes, avec un bouton d’export en PDF.",
+      "Le réglage des minutages rejoint l’éditeur ; les valeurs déjà réglées sont reprises telles quelles.",
+    ],
+  },
   {
     v: '1.11',
     date: '12/08/2026',

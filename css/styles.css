@@ -615,3 +615,110 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .ap-vide { font-size: .82rem; color: var(--gris); margin-top: 8px; }
 
 .pill.mini { padding: 5px 12px; font-size: .82rem; }
+
+/* --- Éditeur de matériel --------------------------------------------------- */
+/* La galerie reste sous les yeux à gauche, la carte en cours d'édition tient
+   dans une colonne collante à droite. */
+
+.materiel-2col { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 18px; align-items: start; }
+.materiel-2col > .panneau { margin: 0; }
+.editeur { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; }
+
+.filtre-barre .pill.on { background: var(--violet); color: #fff; border-color: var(--violet); }
+
+.galerie .vignette { cursor: pointer; border-radius: 12px; padding: 8px; transition: .12s; }
+.galerie .vignette:hover { background: var(--violet-pale); }
+.galerie .vignette.sel { background: var(--violet-pale); box-shadow: inset 0 0 0 2px var(--violet); }
+.galerie .vignette.retouchee .lg { color: var(--violet); font-weight: 700; }
+
+.editeur-faces { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.editeur-faces .f-lg { font-size: .72rem; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--gris); margin-bottom: 5px; }
+
+.bloc-plan {
+  border: 1px solid var(--gris-clair); border-radius: 12px;
+  padding: 12px 14px; margin-top: 14px; background: #fff;
+}
+.bloc-plan.retouche { border-color: var(--violet-clair); background: #faf7ff; }
+.bp-tete { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.bp-tete b { font-size: .92rem; }
+
+.champ-ligne { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+.champ-ligne > span:first-child { flex: 0 0 90px; font-size: .86rem; color: var(--encre-doux); }
+.champ-ligne input[type=number] { width: 68px; padding: 6px 8px; border-radius: 8px;
+  border: 1px solid var(--gris-clair); font-size: .9rem; color: var(--encre); }
+.champ-ligne select { flex: 1 1 auto; min-width: 0; padding: 6px 8px; border-radius: 8px;
+  border: 1px solid var(--gris-clair); font-size: .86rem; color: var(--encre); background: #fff; }
+
+.champ-bloc { margin: 12px 0 4px; }
+.ch-lg { display: block; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--gris); margin-bottom: 7px; }
+
+.choix-icones { display: flex; flex-wrap: wrap; gap: 6px; }
+.choix-icones .ic {
+  border: 1px solid var(--gris-clair); background: #fff; border-radius: 10px;
+  padding: 5px; cursor: pointer; line-height: 0; opacity: .38; transition: .12s;
+}
+.choix-icones .ic:hover { opacity: .72; border-color: var(--violet-clair); }
+.choix-icones .ic.on { opacity: 1; border-color: var(--violet); background: var(--violet-pale); }
+.choix-icones .ic.sep { margin-left: 10px; }
+
+.editeur-obj { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.editeur-obj .pts { width: 58px; padding: 6px 8px; border-radius: 8px;
+  border: 1px solid var(--gris-clair); font-size: .9rem; font-weight: 700; color: var(--encre); }
+.editeur-obj .x { font-weight: 700; color: var(--gris); }
+.editeur-obj .plus { font-weight: 700; color: var(--gris); }
+.editeur-obj select { flex: 1 1 130px; min-width: 0; padding: 6px 8px; border-radius: 8px;
+  border: 1px solid var(--gris-clair); font-size: .84rem; color: var(--encre); background: #fff; }
+.apercu-obj { display: flex; align-items: center; gap: 10px; margin-top: 10px; min-height: 30px; }
+.apercu-obj .lit { font-size: .82rem; font-weight: 600; color: var(--encre); }
+.apercu-obj .obj-html .pastille, .apercu-obj .obj-html .pastille-num { width: 26px; height: 26px; }
+
+/* Dans un tableau les pastilles se lisent en ligne, pas empilées. */
+.tbl-materiel td .pastille,
+.tbl-materiel td .pastille-num { display: inline-block; vertical-align: middle; margin-right: 2px; }
+.tbl-materiel td .obj-html { display: inline-flex; align-items: center; gap: 3px; }
+.tbl-materiel td { white-space: nowrap; }
+.tbl-materiel td .aide { white-space: normal; }
+.tbl-defile { overflow-x: auto; }
+.tbl-materiel .ligne-retouchee { background: #faf7ff; }
+.tbl-materiel .ligne-retouchee td:last-child { color: var(--violet); font-weight: 700; }
+
+@media (max-width: 1180px) {
+  .materiel-2col { grid-template-columns: minmax(0, 1fr); }
+  .editeur { position: static; max-height: none; }
+}
+
+/* --- Feuille imprimable (export PDF) --------------------------------------- */
+/* Aucune bibliothèque : on bascule la page en mode impression et le navigateur
+   propose « Enregistrer au format PDF ». */
+
+#impression { display: none; }
+#impression .imp-tete { margin-bottom: 18px; }
+#impression .imp-tete h1 { font-size: 20pt; letter-spacing: .1em; margin: 0 0 6px; }
+#impression .imp-tete p { font-size: 9pt; color: #555; margin: 0; }
+#impression h2 { font-size: 13pt; margin: 18px 0 8px; page-break-after: avoid; }
+
+@media print {
+  @page { size: A4 landscape; margin: 12mm; }
+  html, body { background: #fff !important; }
+  body.impression #app, body.impression .topbar, body.impression #apercu-carte { display: none !important; }
+  body.impression #impression { display: block; }
+  #impression .tbl thead { display: table-header-group; }
+  #impression .tbl thead th { background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #impression .tbl { width: 100%; border-collapse: collapse; font-size: 8pt; }
+  #impression .tbl th, #impression .tbl td {
+    border: 1px solid #bbb; padding: 3px 5px; text-align: left; vertical-align: middle;
+  }
+  #impression .tbl th { background: #eee; font-size: 7.5pt; text-transform: uppercase; letter-spacing: .06em; }
+  #impression .tbl tr { page-break-inside: avoid; }
+  #impression .tbl td { line-height: 1.15; }
+  #impression .pastille, #impression .pastille-num {
+    display: inline-block; vertical-align: middle; width: 13px; height: 13px; margin-right: 1px;
+  }
+  #impression .obj-html { display: inline-flex; align-items: center; gap: 2px; }
+  #impression .paire, #impression .barre { display: inline-flex; align-items: center; gap: 1px; }
+  #impression .ligne-retouchee { background: #f0eaff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #impression .aide { color: #666; font-size: 7pt; }
+  #impression .tag { font-size: 7pt; padding: 1px 4px; }
+}

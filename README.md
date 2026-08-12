@@ -12,7 +12,7 @@ dossier (`python3 -m http.server`).
 |---|---|
 | **Accueil** | Table de 1 à 4 joueuses, humaines ou IA, options de partie, réglages rapides |
 | **Partie** | Zone de pioche, bancs de montage, recensement des icônes et score détaillé |
-| **Matériel** | Les 50 cartes PM / GP recto et verso, les 14 Plans Larges, les Plans de départ, le tableau des 33 scènes |
+| **Matériel** | Galerie et **éditeur** de toutes les cartes — minutage, icônes, pouvoir, appariement — plus le tableau complet et son export PDF |
 | **Règles** | Les règles telles qu'implémentées, avec les points restés ouverts |
 | **Variables** | Toutes les variables de déroulé et de décompte, export/import JSON |
 | **Laboratoire** | Campagnes de simulation et statistiques d'équilibrage |
@@ -109,12 +109,40 @@ Le nom du fichier est la seule convention à respecter — remplacer `assets/gp/
 mettre la carte à jour. La case **Illustrations** de l'accueil masque les images sans toucher aux
 informations de jeu.
 
-## Les minutages
+## L'éditeur de matériel
 
-Le minutage n'est plus une image : c'est une donnée que l'application contrôle, affichée en police
-d'afficheur. Il se règle plan par plan dans **Matériel › Minutages** — la surcharge vit dans
-`cfg.minutages`, indexée par numéro de plan. Il ne conditionne aucun placement ; il n'entre en jeu
-que dans les objectifs qui rapportent selon le minutage (**Variables › Chronologie**).
+Rien de ce qui est imprimé sur une carte n'est figé. L'écran **Matériel** est aussi l'éditeur : la
+galerie reste à gauche, la carte en cours d'édition dans une colonne à droite. Pour chaque plan :
+
+- son **minutage** — une donnée, plus une image ; il ne conditionne aucun placement et n'entre en jeu
+  que dans les objectifs qui rapportent selon le minutage (**Variables › Chronologie**) ;
+- ses **icônes** — les six éléments, plus le marqueur de plan de mort ;
+- son **pouvoir**, écrit comme sur la carte : `X points × ce que l'on compte`, où « ce que l'on
+  compte » est un cadrage, une icône, un couple d'icônes voisines, une mort, un plan sans
+  personnage, une Carte Raccord du montage, une carte de la séquence, ou l'absence d'une icône.
+
+Une carte Plan Moyen / Gros Plan s'édite **recto et verso ensemble** : les deux faces sont affichées
+et les deux moitiés se règlent côte à côte. Son **appariement** est réglable lui aussi — la
+répartition imprimée est conservée tant qu'on n'y touche pas.
+
+Les retouches vivent dans `cfg.materiel` :
+
+```
+plans[num] = { tc, el, obj, mort }   chaque champ absent = la valeur imprimée
+paires[i]  = [pmNum, gpNum]          l'appariement de la i-ème carte
+```
+
+Les numéros de plan sont uniques tous cadrages confondus, ce qui donne une clé naturelle : 101-114
+les Plans Larges, 115-118 les Plans de départ, 201-230 et 290-292 les Plans Moyens, 301-330 et
+390-392 les Gros Plans. Comme tout vit dans `cfg`, les retouches sont enregistrées, elles voyagent
+avec l'export JSON des Variables, et le jeu s'y conforme partout — table de jeu, décompte,
+Laboratoire. Un bouton ramène une carte, ou tout le matériel, à l'imprimé ; le retour aux valeurs
+par défaut des **Variables**, lui, ne touche pas au matériel.
+
+L'onglet **Tableau complet** donne l'état courant des 84 plans et des 50 cartes, et **Exporter le
+tableau en PDF** en produit la version imprimable : la page bascule sur une feuille dédiée et ouvre
+la boîte d'impression du navigateur, où « Enregistrer au format PDF » écrit le fichier. Pas de
+bibliothèque tierce — c'est le seul chemin qui marche partout sans dépendance.
 
 ## La table de jeu
 
