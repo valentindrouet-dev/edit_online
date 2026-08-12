@@ -2,22 +2,22 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.10';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.11';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, appliquerMinutages,
-} from './data.js?v=1.10';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.10';
-import { elIcon } from './icons.js?v=1.10';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.10';
+} from './data.js?v=1.11';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.11';
+import { elIcon } from './icons.js?v=1.11';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.11';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.10';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.10';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.10';
-import { campagne } from './lab.js?v=1.10';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.10';
+} from './engine.js?v=1.11';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.11';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.11';
+import { campagne } from './lab.js?v=1.11';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.11';
 
 const app = document.getElementById('app');
 
@@ -90,10 +90,13 @@ function topbar(actif) {
 
 const pied = () => `<div class="pied">Version ${VERSION} — compilée le ${BUILD_DATE}</div>`;
 
-function html(s) {
+function html(s, garderDefilement = false) {
   if (apercuEl) apercuEl.classList.remove('visible');
   document.body.classList.toggle('sans-illus', !store.cfg.illustrations);
+  const y = window.scrollY;
   app.innerHTML = s;
+  // Repeindre la table ne doit pas ramener la page en haut.
+  if (garderDefilement && y) window.scrollTo({ top: y, behavior: 'instant' });
   app.querySelectorAll('[data-go]').forEach((el) => {
     el.addEventListener('click', () => { location.hash = el.dataset.go; });
   });
@@ -157,7 +160,6 @@ function vueAccueil() {
             ['tours', 'Plans à poser', 1, 30],
             ['chutierPMGP', 'Chutier PM / GP', 0, 8],
             ['chutierPL', 'Chutier Plans Larges', 0, 8],
-            ['departProposes', 'Plans de départ proposés', 1, 4],
           ].map(([k, l, min, max]) => `
             <div class="champ"><label>${l}</label>
               <input type="number" data-cfg="${k}" value="${store.cfg[k]}" min="${min}" max="${max}"></div>`).join('')}
@@ -283,6 +285,12 @@ const PHASES = {
 function vuePartie() {
   const st = store.partie;
   if (!st) { location.hash = '#/'; return; }
+
+  // On ne s'arrête jamais sur le tour d'une IA : ses coups sont résolus d'un
+  // bloc avant le rendu, pour rendre la main sans temps mort.
+  if (!st.finie && aUneHumaine(st) && !estHumaine(st)) {
+    if (resoudreIA(st)) return terminer();
+  }
   if (st.finie) return vueFin();
 
   const p = st.courant;
@@ -290,9 +298,10 @@ function vuePartie() {
   const humaine = j.type === 'HUMAIN';
   const sc = scores(st);
 
+  // La zone garde toujours la même forme, quel que soit celui qui joue : seuls
+  // les clics sont réservés à la joueuse humaine.
   let zone;
-  if (!humaine) zone = '<div class="vide">L’IA joue…</div>';
-  else if (st.phase === 'DEPART') zone = zoneDepart(st, p);
+  if (st.phase === 'DEPART') zone = zoneDepart(st, p);
   else if (st.phase === 'DERUSHAGE') zone = zoneDerushage(st);
   else zone = zoneMontage(st, p);
 
@@ -301,7 +310,7 @@ function vuePartie() {
     <div class="bandeau-tour">
       <span>Tour <b>${Math.min(st.tour, st.cfg.tours)} / ${st.cfg.tours}</b></span><span>·</span>
       <span><b>${PHASES[st.phase]}</b></span><span>·</span>
-      <span style="color:${encreDe(j.couleur)}"><b>${j.nom}</b>${humaine ? '' : ' réfléchit…'}</span>
+      <span style="color:${encreDe(j.couleur)}"><b>${j.nom}</b></span>
       <button class="pill mini" id="bascule-illus" title="Afficher ou masquer les illustrations">
         ${store.cfg.illustrations ? 'Images visibles' : 'Images masquées'}
       </button>
@@ -309,7 +318,7 @@ function vuePartie() {
 
     <div class="table-jeu">
       <div class="zone-gauche">
-        <div class="panneau">${zone}</div>
+        <div class="panneau zone-phase">${zone}</div>
         ${st.joueurs.map((jj, i) => bancBloc(st, i, `Banc de ${jj.nom}`, i === p && humaine && st.phase === 'MONTAGE')).join('')}
       </div>
 
@@ -339,10 +348,12 @@ function vuePartie() {
       </div>
     </div>
   </div>
-  ${pied()}`);
+  ${pied()}`, true);
 
   brancherPartie(st, humaine);
-  if (!humaine) setTimeout(() => jouerIA(), Math.max(80, st.cfg.vitesseIA || 400));
+  // Seule une table entièrement tenue par des IA se joue pas à pas : sans
+  // spectateur humain à qui rendre la main, il faut bien pouvoir la regarder.
+  if (!humaine) setTimeout(() => { if (coupIA(st)) terminer(); else vuePartie(); }, Math.max(60, st.cfg.vitesseIA || 300));
 }
 
 // --- Le banc ---------------------------------------------------------------
@@ -382,6 +393,45 @@ function bancBloc(st, i, titre, interactif) {
     <h2>${titre}</h2>
     <div class="banc" data-banc="${i}"><div class="banc-piste">${morceaux.join('')}</div></div>
   </div>`;
+}
+
+/**
+ * Choisir la moitié à laisser visible ne touche pas à la partie : on repeint
+ * la carte et le banc concernés plutôt que toute la table, pour que rien ne
+ * clignote entre le clic sur la moitié et le clic sur l'emplacement.
+ */
+function choisirMoitie(st, format) {
+  store.formatChoisi = store.formatChoisi === format ? null : format;
+
+  const zone = app.querySelector('#choix-carte');
+  if (!zone) return vuePartie();
+  zone.querySelectorAll('.moitie[data-format]').forEach((el) => {
+    el.classList.toggle('choisi', el.dataset.format === store.formatChoisi);
+  });
+
+  const aide = app.querySelector('#aide-montage');
+  if (aide) aide.innerHTML = aideMontage(st, store.formatChoisi);
+
+  const piste = app.querySelector(`.banc[data-banc="${st.courant}"] .banc-piste`);
+  if (piste) {
+    const bloc = document.createElement('div');
+    bloc.innerHTML = bancBloc(st, st.courant, '', true);
+    piste.innerHTML = bloc.querySelector('.banc-piste').innerHTML;
+    brancherFentes(st, piste);
+    brancherApercu(piste);
+  }
+}
+
+/** (Re)branche les emplacements de pose du banc courant. */
+function brancherFentes(st, racine = app) {
+  racine.querySelectorAll('[data-coup]').forEach((el) => el.addEventListener('click', () => {
+    const partiel = JSON.parse(decodeURIComponent(el.dataset.coup));
+    const carte = st.mains[st.courant][0];
+    store.undo = JSON.stringify(st);
+    poser(st, st.courant, { ...partiel, carte });
+    store.formatChoisi = null;
+    apresCoup(st, avancer(st));
+  }));
 }
 
 function sansCarte(c) {
@@ -454,34 +504,36 @@ const enc = (o) => encodeURIComponent(JSON.stringify({ source: o.source, index: 
 
 // --- Phase B ---------------------------------------------------------------
 
+/** Le texte sous la carte en cours de pose, seul élément qui suit le choix. */
+function aideMontage(st, choisi) {
+  const carte = st.mains[st.courant][0];
+  if (!carte) return '';
+  if (carte.type !== 'DOUBLE') {
+    return 'Un Plan Large ouvre une nouvelle séquence, détachée du reste du montage. Clique sur un emplacement de ton banc.';
+  }
+  if (!choisi) return 'La carte se glisse sous les précédentes : clique sur la moitié que tu veux laisser visible.';
+  const plan = moitiesDe(carte)[choisi];
+  const quoi = `${FORMATS[choisi].label} n°${plan.num}${plan.obj ? ` — ${objLabel(plan.obj)}` : ' — sans bandeau'}`;
+  return `Tu gardes le <b>${quoi}</b>. Clique maintenant sur un emplacement de ton banc.`;
+}
+
 function zoneMontage(st, p) {
   const carte = st.mains[p][0];
-  if (!carte) return '<div class="vide">Aucune carte dérushée.</div>';
+  if (!carte) return '<div class="zone-montage"><p class="aide">Aucune carte dérushée.</p></div>';
 
   // Un Plan Large n'a pas de moitié à choisir.
   if (carte.type !== 'DOUBLE') {
     store.formatChoisi = 'PL';
     return `<div class="zone-montage">
-      <div id="choix-carte">${renderCarte(carte, false, { small: true })}</div>
-      <p class="aide">Un Plan Large ouvre une nouvelle séquence, détachée du reste du montage.
-      Clique sur un emplacement de ton banc.</p>
+      <div id="choix-carte">${renderCarte(carte, false, {})}</div>
+      <p class="aide" id="aide-montage">${aideMontage(st, 'PL')}</p>
     </div>`;
   }
 
-  const m = moitiesDe(carte);
   const choisi = store.formatChoisi === 'GP' || store.formatChoisi === 'PM' ? store.formatChoisi : null;
-  const dit = (f) => {
-    const plan = m[f];
-    return `${FORMATS[f].label} n°${plan.num}${plan.obj ? ` — ${objLabel(plan.obj)}` : ' — sans bandeau'}`;
-  };
-
   return `<div class="zone-montage">
-    <div id="choix-carte">${renderCarte(carte, false, { small: true, moitiesChoisissables: true, formatChoisi: choisi })}</div>
-    <p class="aide">
-      ${choisi
-        ? `Tu gardes le <b>${dit(choisi)}</b>. Clique maintenant sur un emplacement de ton banc.`
-        : 'La carte se glisse sous les précédentes : clique sur la moitié que tu veux laisser visible.'}
-    </p>
+    <div id="choix-carte">${renderCarte(carte, false, { moitiesChoisissables: true, formatChoisi: choisi })}</div>
+    <p class="aide" id="aide-montage">${aideMontage(st, choisi)}</p>
   </div>`;
 }
 
@@ -530,35 +582,31 @@ function blocRecensement(s) {
 function brancherPartie(st, humaine) {
   const q = (s) => app.querySelector(s);
 
-  app.querySelectorAll('[data-depart]').forEach((el) => el.addEventListener('click', () => {
-    store.undo = JSON.stringify(st);
-    poserDepart(st, st.courant, choixDepart(st, st.courant)[+el.dataset.depart]);
-    if (avancer(st)) return terminer();
-    vuePartie();
-  }));
+  // La zone garde la même forme pendant les tours d'IA : les clics, eux, sont
+  // réservés à la joueuse humaine.
+  if (humaine) {
+    app.querySelectorAll('[data-depart]').forEach((el) => el.addEventListener('click', () => {
+      store.undo = JSON.stringify(st);
+      poserDepart(st, st.courant, choixDepart(st, st.courant)[+el.dataset.depart]);
+      apresCoup(st, avancer(st));
+    }));
 
-  app.querySelectorAll('[data-derush]').forEach((el) => el.addEventListener('click', () => {
-    const choix = JSON.parse(decodeURIComponent(el.dataset.derush));
-    store.undo = JSON.stringify(st);
-    derusher(st, st.courant, choix);
-    store.formatChoisi = null;
-    if (avancer(st)) return terminer();
-    vuePartie();
-  }));
+    app.querySelectorAll('[data-derush]').forEach((el) => el.addEventListener('click', () => {
+      const choix = JSON.parse(decodeURIComponent(el.dataset.derush));
+      store.undo = JSON.stringify(st);
+      derusher(st, st.courant, choix);
+      store.formatChoisi = null;
+      apresCoup(st, avancer(st));
+    }));
 
-  app.querySelectorAll('#choix-carte .moitie[data-format]').forEach((el) => {
-    el.addEventListener('click', () => { store.formatChoisi = el.dataset.format; vuePartie(); });
-  });
+    // Le choix de la moitié ne touche pas à la partie : on repeint la seule
+    // carte concernée plutôt que toute la table.
+    app.querySelectorAll('#choix-carte .moitie[data-format]').forEach((el) => {
+      el.addEventListener('click', () => choisirMoitie(st, el.dataset.format));
+    });
 
-  app.querySelectorAll('[data-coup]').forEach((el) => el.addEventListener('click', () => {
-    const partiel = JSON.parse(decodeURIComponent(el.dataset.coup));
-    const carte = st.mains[st.courant][0];
-    store.undo = JSON.stringify(st);
-    poser(st, st.courant, { ...partiel, carte });
-    store.formatChoisi = null;
-    if (avancer(st)) return terminer();
-    vuePartie();
-  }));
+    brancherFentes(st);
+  }
 
   const bi = q('#bascule-illus');
   if (bi) bi.addEventListener('click', () => {
@@ -575,7 +623,12 @@ function brancherPartie(st, humaine) {
   });
 
   document.onkeydown = humaine ? (e) => {
-    if (e.key === 'Escape') { store.formatChoisi = null; vuePartie(); }
+    // Échap annule le choix de la moitié — sauf sur un Plan Large, qui n'en a
+    // pas et perdrait alors ses emplacements de pose.
+    const carte = st.mains[st.courant] && st.mains[st.courant][0];
+    if (e.key === 'Escape' && store.formatChoisi && carte && carte.type === 'DOUBLE') {
+      choisirMoitie(st, store.formatChoisi);
+    }
   } : null;
 }
 
@@ -625,8 +678,8 @@ function placerApercu(e) {
   b.style.top = `${y}px`;
 }
 
-function brancherApercu() {
-  app.querySelectorAll('[data-apercu]').forEach((el) => {
+function brancherApercu(racine = app) {
+  racine.querySelectorAll('[data-apercu]').forEach((el) => {
     el.addEventListener('mouseenter', (e) => {
       const b = boiteApercu();
       b.innerHTML = contenuApercu(JSON.parse(decodeURIComponent(el.dataset.apercu)));
@@ -638,11 +691,26 @@ function brancherApercu() {
   });
 }
 
-function jouerIA() {
-  const st = store.partie;
-  if (!st || st.finie) return;
+// ---------------------------------------------------------------------------
+// Les tours d'IA
+// ---------------------------------------------------------------------------
+// Une IA ne se regarde pas réfléchir : dès qu'une humaine est à la table, tous
+// les coups des IA en attente sont joués d'un bloc, sans attente ni rendu
+// intermédiaire. Entre deux clics, il ne se passe donc rien d'autre qu'un seul
+// rendu — la table ne clignote plus.
+
+function estHumaine(st) {
+  return st.joueurs[st.courant].type === 'HUMAIN';
+}
+
+function aUneHumaine(st) {
+  return st.joueurs.some((j) => j.type === 'HUMAIN');
+}
+
+/** Joue le coup de l'IA courante. Renvoie true si la partie s'achève. */
+function coupIA(st) {
+  if (!st || st.finie || estHumaine(st)) return false;
   const p = st.courant;
-  if (st.joueurs[p].type === 'HUMAIN') return;
 
   if (st.phase === 'DEPART') {
     const d = choisirDepart(st, p); if (d) poserDepart(st, p, d);
@@ -653,7 +721,21 @@ function jouerIA() {
     if (coups.length) poser(st, p, choisirCoup(st, p) || coups[0]);
     else st.mains[p] = [];
   }
-  if (avancer(st)) return terminer();
+  return avancer(st);
+}
+
+/** Enchaîne tous les coups d'IA en attente. Renvoie true si la partie s'achève. */
+function resoudreIA(st) {
+  let garde = 0;
+  while (!st.finie && !estHumaine(st) && garde++ < 400) {
+    if (coupIA(st)) return true;
+  }
+  return st.finie;
+}
+
+/** Suite d'un coup humain : les IA enchaînent, puis un unique rendu. */
+function apresCoup(st, fini) {
+  if (fini || resoudreIA(st)) return terminer();
   vuePartie();
 }
 

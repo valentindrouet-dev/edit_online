@@ -132,7 +132,18 @@ pas les cacher. L'IA en tient compte : elle évalue cette carte comme une carte 
 
 Au montage, une carte Plan Moyen / Gros Plan est présentée **entière**, gauche et droite soudées
 comme sur la table : on clique la moitié que l'on veut laisser visible, puis l'emplacement dans son
-banc.
+banc. La moitié écartée n'est pas éteinte — la carte reste entièrement lisible, un cadre orange
+marque simplement le côté retenu.
+
+La zone de jeu garde la même hauteur d'une phase à l'autre et reste affichée pendant les tours
+d'IA : rien n'apparaît ni ne disparaît sous le curseur entre deux clics. Choisir une moitié ne
+repeint que la carte, sa consigne et les emplacements du banc.
+
+Les **IA jouent d'un bloc** : dès qu'une joueuse humaine est à la table, tous les coups d'IA en
+attente sont résolus sans temporisation ni rendu intermédiaire, et la main revient directement. Sur
+la table la plus lourde — quatre joueuses dont trois Stratèges — un clic rend la main en moins de
+150 ms. Une table tenue à 100 % par des IA reste, elle, jouée pas à pas : sans spectateur humain à
+qui rendre la main, il faut bien pouvoir la regarder (`cfg.vitesseIA`).
 
 Sur une carte, le survol ouvre un aperçu : minutage en grand, chaque pastille nommée, et le bandeau
 d'objectif avec ce qu'il rapporte. Les pastilles se resserrent quand elles sont nombreuses, pour ne
@@ -152,8 +163,12 @@ Un banc de montage est une suite de **séquences**, chaque séquence une suite d
 - Un **Générique** se pose en tête (Ouverture) ou en fin (Crédits) de montage et bloque ce bord.
   La moitié à double lecture peut être jouée dans l'un ou l'autre rôle.
 
-Le tour se joue en deux phases : **Dérushage** (chacune pioche une carte dans un chutier ou sur une
-pioche), puis **Montage** (chacune la pose). La partie s'arrête au 10e plan posé.
+La partie s'ouvre sans aucun tirage : chaque joueuse a devant elle les **deux** cartes Plan de départ
+— version A et version B — donc ses **quatre faces** au choix. La boîte en contient quatre
+exemplaires de chaque version, un par joueuse.
+
+Le tour se joue ensuite en deux phases : **Dérushage** (chacune pioche une carte dans un chutier ou
+sur une pioche), puis **Montage** (chacune la pose). La partie s'arrête au 10e plan posé.
 
 ## Ce qui reste ouvert dans les règles
 
@@ -169,7 +184,8 @@ Chacun de ces points est une variable réglable dans l'écran **Variables** :
 - **Le rôle du minutage** : affiché, mais il ne rapporte rien tant que le bonus de chronologie
   (variante hors règles) est à zéro.
 - **L'appariement recto-verso des Plans de départ** : les 4 faces du PDF sont groupées deux à deux
-  dans l'ordre du fichier.
+  dans l'ordre du fichier — quelles faces sont au dos l'une de l'autre reste à confirmer. Les quatre
+  étant de toute façon proposées, cela ne change rien au choix, seulement au matériel imprimé.
 - Les Plans Larges **101** et **102** n'ont ni pastilles ni bandeau dans le PDF source. Ils restent
   dans le paquet pour respecter le compte de 14, et sont signalés « à compléter ».
 

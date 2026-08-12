@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.10';
-export const BUILD_DATE = '2026-08-11 22:30';
+export const VERSION = '1.11';
+export const BUILD_DATE = '2026-08-12 09:40';
 
 export const CHANGELOG = [
+  {
+    v: '1.11',
+    date: '12/08/2026',
+    items: [
+      "Les Plans de départ ne se tirent plus : chaque joueuse a toujours les deux cartes, version A et version B, donc ses quatre faces au choix. La boîte en contient quatre exemplaires de chaque, un par joueuse — il n’y avait aucune raison d’y mettre du hasard.",
+      "Les IA jouent d’un bloc : leurs coups sont résolus sans attente ni rendu intermédiaire, et la main revient directement à la joueuse humaine. Plus de temporisation ni de « l’IA joue… » entre deux clics.",
+      "La zone de jeu garde la même forme d’un tour à l’autre : elle ne se vide plus pendant les tours d’IA et sa hauteur ne varie plus d’une phase à l’autre. Rien n’apparaît ni ne disparaît sous le curseur.",
+      "Choisir la moitié d’une carte ne repeint plus toute la table : seuls la carte, sa consigne et les emplacements du banc sont rafraîchis, et la page ne remonte plus en haut.",
+      "La moitié non retenue n’est plus grisée : la carte reste entièrement lisible, un liseré orange marque simplement le côté choisi.",
+    ],
+  },
   {
     v: '1.10',
     date: '11/08/2026',

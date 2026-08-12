@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.10';
+import { ELEMENT_IDS } from './data.js?v=1.11';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -13,7 +13,8 @@ export const DEFAULTS = {
   chutierPMGP: 0,            // taille du Chutier Plans Moyens / Gros Plans
   piocheDirectePL: false,    // piocher au sommet de la pioche Plans Larges
   piocheDirectePMGP: true,   // piocher au sommet de la pioche PM / GP
-  departProposes: 2,         // cartes Plan de départ distribuées, une seule est gardée
+  // Les Plans de départ ne se tirent pas : chaque joueuse a toujours les deux
+  // versions A et B devant elle, donc les quatre faces au choix.
   premierJoueurAleatoire: true,
 
   // --- Pose ----------------------------------------------------------------
@@ -105,7 +106,6 @@ export const SCHEMA = [
     { k: 'chutierPMGP', l: 'Chutier Plans Moyens / Gros Plans', t: 'int', min: 0, max: 8, aide: '0 = autant que de joueuses' },
     { k: 'piocheDirectePMGP', l: 'Pioche PM / GP accessible au sommet', t: 'bool' },
     { k: 'piocheDirectePL', l: 'Pioche Plans Larges accessible au sommet', t: 'bool' },
-    { k: 'departProposes', l: 'Plans de départ proposés', t: 'int', min: 1, max: 4 },
     { k: 'premierJoueurAleatoire', l: 'Première joueuse tirée au sort', t: 'bool' },
   ] },
   { groupe: 'Pose', champs: [

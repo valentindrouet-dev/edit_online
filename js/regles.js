@@ -13,13 +13,22 @@
 // Les versions précédentes du texte restent lisibles dans l'onglet
 // « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.10';
-import { elIcon } from './icons.js?v=1.10';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.11';
+import { elIcon } from './icons.js?v=1.11';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.13.2',
+    date: '12/08/2026',
+    origine: 'Précision demandée par l’auteur',
+    corps: (c) => corps_0_13_2(c),
+    items: [
+      'Les Plans de départ ne se tirent pas : chaque joueuse reçoit les deux versions A et B, soit quatre faces au choix. La boîte contient quatre exemplaires de chaque version, un par joueuse.',
+    ],
+  },
   {
     v: '0.13.1',
     date: '11/08/2026',
@@ -88,7 +97,7 @@ function corps_0_13(c) {
 
   <h3>Mise en place</h3>
   <ul>
-    <li>Chaque joueuse reçoit ${c.departProposes} cartes Plan de départ, en pose une dans son banc et défausse l’autre.</li>
+    <li>Chaque joueuse reçoit 2 cartes Plan de départ, en pose une dans son banc et défausse l’autre.</li>
     <li>Les Plans Larges forment une pioche et un <b>chutier</b> de ${c.chutierPL || 'autant de cartes que de joueuses'}.</li>
     <li>Les Plans Moyens / Gros Plans forment une pioche et un chutier de ${c.chutierPMGP || 'autant de cartes que de joueuses'}.</li>
     <li>La dernière joueuse à avoir vu un bon film commence — ici, tirage au sort.</li>
@@ -156,6 +165,17 @@ function corps_0_13_1(c) {
     respecter l'ordre chronologique du film. En revanche, certaines cartes font gagner des points
     en fonction du minutage des plans du montage.`)}
     <h3>Les Raccords</h3>`);
+}
+
+// --- v0.13.2 ---------------------------------------------------------------
+// Précise la mise en place : les Plans de départ ne se tirent pas.
+
+function corps_0_13_2(c) {
+  return corps_0_13_1(c).replace(
+    '<li>Chaque joueuse reçoit 2 cartes Plan de départ, en pose une dans son banc et défausse l’autre.</li>',
+    `<li>${maj('0.13.2', `Chaque joueuse reçoit les <b>deux</b> cartes Plan de départ — version A et
+    version B, soit <b>quatre faces</b> au choix. Aucun tirage : la boîte contient quatre exemplaires
+    de chaque version, un par joueuse. Elle en pose une face dans son banc et défausse le reste.`)}</li>`);
 }
 
 const portee = (c) => (c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence');

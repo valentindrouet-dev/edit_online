@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX,
-} from './data.js?v=1.10';
-import { compter, bancVide } from './scoring.js?v=1.10';
+} from './data.js?v=1.11';
+import { compter, bancVide } from './scoring.js?v=1.11';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -120,11 +120,15 @@ export function creerPartie(joueurs, cfg, graine) {
   if (cfg.premierJoueurAleatoire) state.courant = Math.floor(rand() * n);
   state.premier = state.courant;
 
-  // Chaque joueuse reçoit ses Plans de départ et en choisira un.
-  const pileDeparts = melanger(departs, rand);
+  // Les Plans de départ ne se tirent pas : la boîte contient quatre
+  // exemplaires de la version A et quatre de la version B, donc chaque joueuse
+  // reçoit une carte de chaque — ses quatre faces sont toujours au choix.
+  const versions = [...new Set(departs.map((d) => d.version))];
   joueurs.forEach((_, i) => {
-    for (let k = 0; k < cfg.departProposes && pileDeparts.length; k++) {
-      state.departsProposes[i].push(pileDeparts.shift());
+    for (const v of versions) {
+      const exemplaires = departs.filter((d) => d.version === v);
+      const carte = exemplaires[i] || exemplaires[0];
+      if (carte) state.departsProposes[i].push(carte);
     }
   });
 
