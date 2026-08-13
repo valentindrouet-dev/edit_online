@@ -142,13 +142,21 @@ tous deux de cette valeur**, et c'est l'éditeur qui reçoit les vraies valeurs 
   signale, et le tableau rappelle le numéro imprimé à côté du nouveau ;
 - son **minutage** — une donnée, plus une image ; il ne conditionne aucun placement et n'entre en jeu
   que dans les objectifs qui rapportent selon le minutage (**Variables › Chronologie**) ;
-- ses **icônes** — les six éléments, plus le marqueur de plan de mort ;
+- ses **icônes** — les six éléments, plus le marqueur de plan de mort. Une même icône peut être
+  portée **plusieurs fois** : un clic sur la pastille en ajoute une, un clic droit en retire une, et
+  le compte s'affiche en badge. Chaque icône compte pour elle-même au décompte
+  (`elementParIcone: false` revient à compter les plans porteurs) ;
 - son **pouvoir**, écrit comme sur la carte : `X points × ce que l'on compte`, où « ce que l'on
   compte » est un cadrage, une icône, un couple d'icônes voisines, une mort, un plan sans
   personnage, une Carte Raccord du montage, une carte de la séquence, un plan du montage **avant
-  ou après un seuil de minutage**, l'absence d'une icône, ou le fait que **le montage se lise dans
+  ou après un seuil de minutage**, un plan placé **avant ou après la carte porteuse** et portant une
+  icône ou un cadrage donné, l'absence d'une icône, ou le fait que **le montage se lise dans
   l'ordre** — chaque minutage supérieur ou égal à celui de son voisin de gauche, les plans à 00:00
   restant neutres (`chronoIgnoreZero`).
+
+  Le **couple d'icônes** n'est pas une adjacence : il apparie les icônes réunies dans sa portée.
+  Quatre icônes font deux couples, cinq en font deux aussi ; un couple de deux icônes différentes
+  en demande une de chaque.
 
 Une carte double s'édite avec **ses deux faces affichées** et ses quatre plans côte à côte. Son
 **appariement** est réglable — la répartition imprimée est conservée tant qu'on n'y touche pas.
@@ -184,7 +192,9 @@ que revenir à l'imprimé.
 ### Statistiques
 
 L'onglet **Statistiques** compte le matériel tel qu'il part en partie — cartes activées, plans
-faces comprises — et met l'**Imprimé et le Modifié côte à côte avec leur écart** : la boîte, les
+faces comprises — et met l'**Imprimé et le Modifié côte à côte avec leur écart**. Il se filtre par
+cadrage, par icône et par type de pouvoir ; un bandeau rappelle alors combien de plans les filtres
+retiennent. Ce qu'il compte : la boîte, les
 cadrages, les icônes, les types de pouvoir, et les minutages (le plus court, le plus long, la
 moyenne, la distribution par tranche de dix). La colonne surlignée est le jeu qui se lance.
 
@@ -215,6 +225,11 @@ tierce — c'est le seul chemin qui marche partout sans dépendance.
 
 Colonne de gauche : la zone de pioche, puis les bancs de montage. Colonne de droite : joueuses,
 score, recensement des icônes et bandeaux du banc.
+
+Les colonnes de lecture suivent la joueuse dont c'est le tour, mais **s'épinglent** sur une autre
+d'un clic sur sa case — et y restent jusqu'à ce qu'on en désigne une autre, ou qu'on revienne à
+celle dont c'est le tour. Le survol d'une carte posée dit en plus ce qu'**elle seule** rapporte
+dans ce montage.
 
 La zone de pioche se lit en **deux lignes**, une par famille de cartes : la pioche des Plans Larges
 suivie de son chutier, puis la pioche des Plans Moyens / Gros Plans suivie du sien. Chaque pioche

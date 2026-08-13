@@ -2,23 +2,23 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.17';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.18';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
-} from './data.js?v=1.17';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.17';
-import { elIcon } from './icons.js?v=1.17';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.17';
+} from './data.js?v=1.18';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.18';
+import { elIcon } from './icons.js?v=1.18';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.18';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.17';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.17';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.17';
-import { campagne } from './lab.js?v=1.17';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.17';
+} from './engine.js?v=1.18';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.18';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.18';
+import { campagne } from './lab.js?v=1.18';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.18';
 
 const app = document.getElementById('app');
 
@@ -40,6 +40,7 @@ const store = {
   labo: null,
   laboEnCours: false,
   formatChoisi: null,   // 'GP' | 'PM' | 'PL' pendant la phase de montage
+  joueurVu: null,       // le banc dont on lit les colonnes ; null = celui qui joue
   undo: null,
 };
 
@@ -346,6 +347,7 @@ function lancerPartie() {
   appliquerJeuActif();
   store.formatChoisi = null;
   store.undo = null;
+  store.joueurVu = null;
   location.hash = '#/partie';
 }
 
@@ -354,6 +356,24 @@ const PHASES = {
   DERUSHAGE: 'Phase A — Dérushage',
   MONTAGE: 'Phase B — Montage',
 };
+
+/**
+ * Les colonnes de lecture d'un banc. On peut les braquer sur une autre
+ * joueuse : le choix tient jusqu'à ce qu'on en désigne une autre, ou qu'on
+ * revienne à celle dont c'est le tour.
+ */
+function colonnesJoueur(st, sc, vu) {
+  const nom = st.joueurs[vu].nom;
+  const suit = store.joueurVu === null;
+  return `
+    <div class="panneau">
+      <h2>Score de ${nom}${suit ? '' : ' <span class="epingle">épinglé</span>'}</h2>
+      ${suit ? '' : '<button class="pill mini" id="suivre-tour">↩ suivre la joueuse en cours</button>'}
+      ${tableauScore(sc[vu])}
+    </div>
+    <div class="panneau"><h2>Icônes du banc de ${nom}</h2>${blocRecensement(sc[vu])}</div>
+    <div class="panneau"><h2>Bandeaux du banc de ${nom}</h2>${listeObjectifs(sc[vu])}</div>`;
+}
 
 function vuePartie() {
   const st = store.partie;
@@ -371,6 +391,8 @@ function vuePartie() {
   const j = st.joueurs[p];
   const humaine = j.type === 'HUMAIN';
   const sc = scores(st);
+  // Le banc lu dans les colonnes : celui qui joue, ou celui qu'on a épinglé.
+  const vu = store.joueurVu !== null && st.joueurs[store.joueurVu] ? store.joueurVu : p;
 
   // La zone garde toujours la même forme, quel que soit celui qui joue : seuls
   // les clics sont réservés à la joueuse humaine.
@@ -401,7 +423,8 @@ function vuePartie() {
 
       <div class="colonne-info">
         ${st.joueurs.map((jj, i) => `
-          <div class="mini-joueur ${i === p ? 'actif' : ''}">
+          <div class="mini-joueur ${i === p ? 'actif' : ''} ${i === vu ? 'vu' : ''}" data-joueur="${i}"
+            title="Lire les colonnes de ${jj.nom}">
             <div class="entete">
               <span class="point-couleur" style="background:${jj.couleur}"></span>
               <span>${jj.nom}</span>
@@ -414,9 +437,7 @@ function vuePartie() {
             ${i === p ? '<span class="badge-tour">À elle de jouer</span>' : ''}
           </div>`).join('')}
 
-        <div class="panneau"><h2>Score de ${j.nom}</h2>${tableauScore(sc[p])}</div>
-        <div class="panneau"><h2>Icônes du banc</h2>${blocRecensement(sc[p])}</div>
-        <div class="panneau"><h2>Bandeaux du banc</h2>${listeObjectifs(sc[p])}</div>
+        <div id="colonnes-joueur">${colonnesJoueur(st, sc, vu)}</div>
 
         <div class="barre-outils">
           <button class="pill" id="undo" ${store.undo ? '' : 'disabled'}>↩ Annuler</button>
@@ -437,6 +458,8 @@ function vuePartie() {
 
 function bancBloc(st, i, titre, interactif) {
   const banc = st.bancs[i];
+  // Ce que chaque carte rapporte ici et maintenant, pour l'aperçu au survol.
+  const points = new Map(compter(banc, st.cfg).lignes.map((l) => [l.plan, l.pts]));
   const coups = interactif && store.formatChoisi
     ? coupsPossibles(st, i).filter((c) => c.format === store.formatChoisi)
     : [];
@@ -458,7 +481,7 @@ function bancBloc(st, i, titre, interactif) {
       || (c.action === 'GENERIQUE' && c.role === 'OUVERTURE' && si === 0))));
     morceaux.push(`<div class="sequence">`);
     morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche')));
-    seq.forEach((plan) => morceaux.push(renderPlan(plan)));
+    seq.forEach((plan) => morceaux.push(renderPlan(plan, { points: plan.obj ? (points.get(plan) || 0) : 0 })));
     morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'droite')));
     morceaux.push('</div>');
   });
@@ -685,6 +708,28 @@ function brancherPartie(st, humaine) {
     brancherFentes(st);
   }
 
+  // Épingler un banc ne touche pas à la partie : on repeint la seule colonne.
+  const majColonnes = () => {
+    const c = q('#colonnes-joueur');
+    if (!c) return vuePartie();
+    const sc = scores(st);
+    const vu = store.joueurVu !== null && st.joueurs[store.joueurVu] ? store.joueurVu : st.courant;
+    c.innerHTML = colonnesJoueur(st, sc, vu);
+    app.querySelectorAll('[data-joueur]').forEach((el) => {
+      el.classList.toggle('vu', +el.dataset.joueur === vu);
+    });
+    const b = q('#suivre-tour');
+    if (b) b.addEventListener('click', () => { store.joueurVu = null; majColonnes(); });
+    brancherApercu(c);
+  };
+  app.querySelectorAll('[data-joueur]').forEach((el) => el.addEventListener('click', () => {
+    const i = +el.dataset.joueur;
+    store.joueurVu = i === st.courant && store.joueurVu === null ? null : i;
+    majColonnes();
+  }));
+  const bSuivre = q('#suivre-tour');
+  if (bSuivre) bSuivre.addEventListener('click', () => { store.joueurVu = null; majColonnes(); });
+
   const bi = q('#bascule-illus');
   if (bi) bi.addEventListener('click', () => {
     store.cfg.illustrations = !store.cfg.illustrations;
@@ -740,7 +785,10 @@ function contenuApercu(d) {
     ${d.obj ? `<div class="ap-obj">
       <div class="ap-obj-visuel">${objHTML(d.obj, 44)}</div>
       <div class="ap-obj-texte">${objLabel(d.obj)}</div>
-    </div>` : '<div class="ap-vide">Aucun bandeau</div>'}`;
+    </div>` : '<div class="ap-vide">Aucun bandeau</div>'}
+    ${d.points === null || d.points === undefined ? '' : `<div class="ap-points">
+      Cette carte rapporte <b>${d.points}</b> point${Math.abs(d.points) > 1 ? 's' : ''} dans ce montage
+    </div>`}`;
 }
 
 function placerApercu(e) {
@@ -889,6 +937,7 @@ const mat = {
   vue: 'CARTES',        // CARTES | GP | PM | PL | DEPART | TABLE | STATS
   tri: 'num',
   filtres: { face: '', icone: '', pouvoir: '', tcMin: '', tcMax: '', etat: '', actif: '', famille: '' },
+  statsFiltres: { format: '', icone: '', pouvoir: '' },
   plans: new Set(),     // clés des plans sélectionnés — survit au changement de vue
   cartes: new Set(),    // identifiants des cartes sélectionnées
   ancre: null,          // dernier clic, pour la sélection au shift
@@ -915,6 +964,7 @@ const KINDS = [
   ['RACCORD', 'par Carte Raccord du montage'],
   ['PLAN',    'par carte de sa séquence'],
   ['MINUTAGE', 'par plan du montage avant / après…'],
+  ['POSITION', 'par plan avant / après cette carte…'],
   ['ABSENT',  'si l’icône est absente du montage…'],
   ['CHRONO',  'si le montage se lit dans l’ordre'],
 ];
@@ -1391,26 +1441,43 @@ function objCommunDe(plans) {
 }
 
 /**
- * Les pastilles d'un plan ou d'une sélection. « on » = tous les plans la
- * portent, « partiel » = certains seulement.
+ * Les pastilles d'un plan ou d'une sélection. Une carte peut porter deux fois
+ * la même icône — deux armes, deux voitures : le bouton compte, il ne coche
+ * pas. Clic pour en ajouter une, clic droit pour en retirer une. « partiel »
+ * marque une icône que la sélection ne porte pas en même nombre partout.
  */
+export const MAX_ICONES = 6;
+
+function comptesIcones(plans, e) {
+  return plans.map((p) => p.el.filter((x) => x === e).length);
+}
+
 function choixIcones(plans, attrIcone, attrMort) {
-  const etat = (test) => {
-    const n = plans.filter(test).length;
-    return n === 0 ? '' : n === plans.length ? 'on' : 'partiel';
+  const pastille = (e) => {
+    const n = comptesIcones(plans, e);
+    const tous = n.every((x) => x === n[0]);
+    const cls = n[0] === 0 && tous ? '' : tous ? 'on' : 'partiel';
+    const compte = tous ? n[0] : Math.min(...n);
+    const titre = tous
+      ? `${ELEMENTS[e].label}${n[0] > 1 ? ` × ${n[0]}` : ''} — clic pour en ajouter une, clic droit pour en retirer une`
+      : `${ELEMENTS[e].label} — la sélection n’en porte pas le même nombre partout`;
+    return `<button class="ic ${cls}" data-icone="${e}" ${attrIcone} title="${titre}">
+      ${elIcon(e, 26)}${compte > 1 || (!tous && compte >= 1) ? `<span class="compte">${compte}${tous ? '' : '+'}</span>` : ''}
+    </button>`;
   };
-  const titre = (l, e) => (e === 'partiel' ? `${l} — sur une partie de la sélection seulement` : l);
+  const nMort = plans.filter((p) => p.mort).length;
+  const clsMort = nMort === 0 ? '' : nMort === plans.length ? 'on' : 'partiel';
   return `<div class="choix-icones">
-    ${ELEMENT_IDS.map((e) => {
-      const s = etat((p) => p.el.includes(e));
-      return `<button class="ic ${s}" data-icone="${e}" ${attrIcone}
-        title="${titre(ELEMENTS[e].label, s)}">${elIcon(e, 26)}</button>`;
-    }).join('')}
-    ${(() => {
-      const s = etat((p) => p.mort);
-      return `<button class="ic sep ${s}" ${attrMort} title="${titre('Plan de mort', s)}">${elIcon('MORT', 26)}</button>`;
-    })()}
+    ${ELEMENT_IDS.map(pastille).join('')}
+    <button class="ic sep ${clsMort}" ${attrMort} title="Plan de mort">${elIcon('MORT', 26)}</button>
   </div>`;
+}
+
+/** Ajoute ou retire une icône, en gardant l'ordre canonique des éléments. */
+function ajusterIcones(liste, e, delta) {
+  const compte = Object.fromEntries(ELEMENT_IDS.map((x) => [x, liste.filter((y) => y === x).length]));
+  compte[e] = Math.max(0, Math.min(MAX_ICONES, compte[e] + delta));
+  return ELEMENT_IDS.flatMap((x) => Array.from({ length: compte[x] }, () => x));
 }
 
 /** X points × <ce qu'on compte>. `ou` vaut la clé du plan, ou « lot ». */
@@ -1429,6 +1496,18 @@ function blocPouvoir(o, ou) {
     complement = `<select data-champ-obj="${ou}" data-part="el0">${elOpts(o.els[0])}</select>
       <span class="plus">+</span>
       <select data-champ-obj="${ou}" data-part="el1">${elOpts(o.els[1])}</select>`;
+  } else if (kind === 'POSITION') {
+    const cible = o.quoi === 'FORMAT'
+      ? `<select data-champ-obj="${ou}" data-part="cible">
+          ${['PL', 'PM', 'GP'].map((f) => opt(f, FORMATS[f].label, o.format === f)).join('')}</select>`
+      : `<select data-champ-obj="${ou}" data-part="cible">${elOpts(o.el)}</select>`;
+    complement = `<select data-champ-obj="${ou}" data-part="quoi">
+        ${opt('ELEMENT', 'les plans portant', o.quoi !== 'FORMAT')}${opt('FORMAT', 'les plans du cadrage', o.quoi === 'FORMAT')}
+      </select>
+      ${cible}
+      <select data-champ-obj="${ou}" data-part="sens">
+        ${opt('AVANT', 'avant cette carte', o.sens !== 'APRES')}${opt('APRES', 'après cette carte', o.sens === 'APRES')}
+      </select>`;
   } else if (kind === 'MINUTAGE') {
     complement = `<select data-champ-obj="${ou}" data-part="sens">
         ${opt('AVANT', 'avant', o.sens !== 'APRES')}${opt('APRES', 'après', o.sens === 'APRES')}
@@ -1535,11 +1614,29 @@ function plansDuPaquet() {
   return out;
 }
 
+/** Les filtres de l'onglet Statistiques : on ne compte que ce qui passe. */
+function passeStats(h) {
+  const f = mat.statsFiltres;
+  if (f.format && h.format !== f.format) return false;
+  if (f.icone) {
+    if (f.icone === 'AUCUNE') { if (h.el.length) return false; }
+    else if (f.icone === 'MORT') { if (!h.mort) return false; }
+    else if (!h.el.includes(f.icone)) return false;
+  }
+  if (f.pouvoir) {
+    if (f.pouvoir === 'AVEC') { if (!h.obj) return false; }
+    else if (f.pouvoir === 'SANS') { if (h.obj) return false; }
+    else if (!h.obj || h.obj.kind !== f.pouvoir) return false;
+  }
+  return true;
+}
+
 function statsJeu(modifie) {
   const etait = store.cfg.materielActif;
   appliquerMateriel(modifie ? store.cfg.materiel : null, store.cfg.cartesDesactivees);
   try {
-    const plans = plansDuPaquet();
+    const tous = plansDuPaquet();
+    const plans = tous.filter(passeStats);
     const s = {
       plans: plans.length,
       cadrages: { PL: 0, PM: 0, GP: 0 },
@@ -1551,6 +1648,7 @@ function statsJeu(modifie) {
     };
     for (const h of plans) {
       s.cadrages[h.format]++;
+      // Une carte peut porter deux fois la même icône : chacune compte.
       for (const e of h.el) if (s.elements[e] !== undefined) s.elements[e]++;
       if (h.mort) s.morts++;
       if (!h.el.length) s.sansIcone++;
@@ -1560,6 +1658,7 @@ function statsJeu(modifie) {
       s.tranches[Math.min(90, Math.floor(h.tc / 10) * 10)]++;
     }
     s.tcMoyen = plans.length ? s.tcSomme / plans.length : 0;
+    s.tous = tous.length;
     const { doubles, larges, departs } = construirePaquet(store.cfg);
     const vus = new Set(); departs.forEach((d) => d.faces.forEach((f) => vus.add(f.num)));
     s.cartes = doubles.length + larges.length + vus.size;
@@ -1571,11 +1670,31 @@ function statsJeu(modifie) {
   }
 }
 
+function barreStats() {
+  const f = mat.statsFiltres;
+  const opt = (v, l, on) => `<option value="${v}" ${on ? 'selected' : ''}>${l}</option>`;
+  return `<div class="barre-filtres">
+    <label>Cadrage
+      <select data-stat="format">${opt('', 'tous', !f.format)}
+        ${['PL', 'PM', 'GP'].map((k) => opt(k, FORMATS[k].label, f.format === k)).join('')}</select></label>
+    <label>Icône
+      <select data-stat="icone">${opt('', 'toutes', !f.icone)}
+        ${ELEMENT_IDS.map((e) => opt(e, ELEMENTS[e].label, f.icone === e)).join('')}
+        ${opt('MORT', 'Mort', f.icone === 'MORT')}${opt('AUCUNE', 'aucune icône', f.icone === 'AUCUNE')}</select></label>
+    <label>Pouvoir
+      <select data-stat="pouvoir">${opt('', 'tous', !f.pouvoir)}
+        ${opt('AVEC', 'avec pouvoir', f.pouvoir === 'AVEC')}${opt('SANS', 'sans pouvoir', f.pouvoir === 'SANS')}
+        ${KINDS.filter(([k]) => k).map(([k, l]) => opt(k, l, f.pouvoir === k)).join('')}</select></label>
+    <button class="pill mini" id="stats-raz">↺ filtres</button>
+  </div>`;
+}
+
 function vueStats() {
   const imp = statsJeu(false);
   const mod = statsJeu(true);
   const actif = store.cfg.materielActif;
   const off = store.cfg.cartesDesactivees.length;
+  const filtre = Object.values(mat.statsFiltres).some(Boolean);
 
   const ligne = (l, a, b, icone) => {
     const diff = b - a;
@@ -1594,15 +1713,18 @@ function vueStats() {
     </table>`;
 
   return `<p class="aide" style="margin-top:14px">Le matériel tel qu’il part en partie : les
-  ${imp.cartes} cartes activées et leurs ${imp.plans} plans, recto et verso comptés séparément.
+  ${imp.cartes} cartes activées et leurs ${imp.tous} plans, recto et verso comptés séparément.
   ${off ? `<b>${off} carte${off > 1 ? 's' : ''}</b> ${off > 1 ? 'sont écartées' : 'est écartée'} de la boîte.` : ''}
   La colonne surlignée est le jeu qui se lance.</p>
+  ${barreStats()}
+  ${filtre ? `<p class="aide filtre-actif"><b>${imp.plans} plan${imp.plans > 1 ? 's' : ''} retenu${imp.plans > 1 ? 's' : ''}</b>
+    sur ${imp.tous} par les filtres — tout ce qui suit ne compte qu’eux, sauf la composition de la boîte.</p>` : ''}
 
   ${tableau('La boîte', [
     ligne('Cartes Plan Moyen / Gros Plan', imp.doubles, mod.doubles),
     ligne('Cartes Plan Large', imp.larges, mod.larges),
     ligne('Faces de Plan de départ', imp.departs, mod.departs),
-    ligne('Plans au total (faces comprises)', imp.plans, mod.plans),
+    ligne(filtre ? 'Plans retenus par les filtres' : 'Plans au total (faces comprises)', imp.plans, mod.plans),
   ].join(''))}
 
   ${tableau('Les cadrages', ['PL', 'PM', 'GP'].map((f) =>
@@ -1692,6 +1814,14 @@ function brancherMateriel() {
     mat.plans.clear(); mat.cartes.clear(); mat.ancre = null; refaire();
   });
 
+  app.querySelectorAll('[data-stat]').forEach((el) => el.addEventListener('change', () => {
+    mat.statsFiltres[el.dataset.stat] = el.value; refaire();
+  }));
+  const sraz = app.querySelector('#stats-raz');
+  if (sraz) sraz.addEventListener('click', () => {
+    mat.statsFiltres = { format: '', icone: '', pouvoir: '' }; refaire();
+  });
+
   const ex = app.querySelector('#mat-export');
   if (ex) ex.addEventListener('click', exporterMateriel);
 
@@ -1756,14 +1886,17 @@ function brancherEditeur(refaire) {
     vueMateriel();
   }));
 
-  app.querySelectorAll('[data-plan-icone]').forEach((el) => el.addEventListener('click', () => {
-    const cle = el.dataset.planIcone;
+  const bougerIcone = (cle, e, delta) => {
     const p = surLeModifie(() => planDeCle(cle));
-    const cour = p ? p.el.slice() : [];
-    const i = cour.indexOf(el.dataset.icone);
-    if (i >= 0) cour.splice(i, 1); else cour.push(el.dataset.icone);
-    poserIcones([cle], cour); sauverCfg(); refaire();
-  }));
+    poserIcones([cle], ajusterIcones(p ? p.el : [], e, delta));
+    sauverCfg(); refaire();
+  };
+  app.querySelectorAll('[data-plan-icone]').forEach((el) => {
+    el.addEventListener('click', () => bougerIcone(el.dataset.planIcone, el.dataset.icone, +1));
+    el.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault(); bougerIcone(el.dataset.planIcone, el.dataset.icone, -1);
+    });
+  });
 
   app.querySelectorAll('[data-plan-mort]').forEach((el) => el.addEventListener('click', () => {
     const cle = el.dataset.planMort;
@@ -1820,18 +1953,15 @@ function brancherLot(plans, refaire) {
   const bTc = app.querySelector('[data-lot-tc]');
   if (bTc) bTc.addEventListener('change', () => { appliquerTc(cles, bTc.value); sauverCfg(); refaire(); });
 
-  // Une icône que tous portent se retire de tous ; sinon elle est donnée à
-  // tous — c'est ce que le clic sur une pastille partielle veut dire.
-  app.querySelectorAll('[data-lot-icone]').forEach((el) => el.addEventListener('click', () => {
-    const e = el.dataset.icone;
-    const tous = plans.every((p) => p.el.includes(e));
-    for (const p of plans) {
-      const set = new Set(p.el);
-      if (tous) set.delete(e); else set.add(e);
-      poserIcones([p.cle], ELEMENT_IDS.filter((x) => set.has(x)));
-    }
+  // En lot, chaque plan gagne — ou perd — une icône du type cliqué.
+  const bougerLot = (e, delta) => {
+    for (const p of plans) poserIcones([p.cle], ajusterIcones(p.el, e, delta));
     sauverCfg(); refaire();
-  }));
+  };
+  app.querySelectorAll('[data-lot-icone]').forEach((el) => {
+    el.addEventListener('click', () => bougerLot(el.dataset.icone, +1));
+    el.addEventListener('contextmenu', (ev) => { ev.preventDefault(); bougerLot(el.dataset.icone, -1); });
+  });
 
   const bMort = app.querySelector('[data-lot-mort]');
   if (bMort) bMort.addEventListener('click', () => {
@@ -1869,7 +1999,8 @@ function appliquerTc(cles, valeur) {
 }
 
 function poserIcones(cles, liste) {
-  const ordre = ELEMENT_IDS.filter((e) => liste.includes(e));
+  // Les doublons comptent : on trie sans dédoublonner.
+  const ordre = ELEMENT_IDS.flatMap((e) => liste.filter((x) => x === e));
   surLeModifie(() => {
     for (const c of cles) {
       const p = planDeCle(c);
@@ -1914,6 +2045,7 @@ function construireObj(kind, actuel) {
     MINUTAGE: () => OBJ.minutage(n, actuel && actuel.sens ? actuel.sens : 'AVANT',
       actuel && actuel.seuil !== undefined ? actuel.seuil : 25),
     CHRONO:  () => OBJ.chrono(n),
+    POSITION: () => OBJ.position(n, actuel && actuel.sens ? actuel.sens : 'AVANT', 'ELEMENT', e0),
   }[kind]();
 }
 
@@ -1937,6 +2069,13 @@ function majObjectif(cles, part, valeur) {
   else if (part === 'el1') o.els = [o.els[0], valeur];
   else if (part === 'sens') o.sens = valeur;
   else if (part === 'seuil') o.seuil = Math.max(0, Math.min(99, parseInt(valeur, 10) || 0));
+  else if (part === 'quoi') {
+    o.quoi = valeur;
+    if (valeur === 'FORMAT') { o.format = o.format || 'GP'; delete o.el; }
+    else { o.el = o.el || ELEMENT_IDS[0]; delete o.format; }
+  } else if (part === 'cible') {
+    if (o.quoi === 'FORMAT') o.format = valeur; else o.el = valeur;
+  }
   poserObj(cles, o);
 }
 

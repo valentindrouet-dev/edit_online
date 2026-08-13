@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, objPortee } from './data.js?v=1.17';
+import { PERSONNAGES, ELEMENT_IDS, objPortee } from './data.js?v=1.18';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -31,18 +31,24 @@ export function raccordeParElement(a, b, cfg) {
   return n >= (cfg.raccordMin || 1);
 }
 
-function pairesAdjacentes(plans, els) {
+/**
+ * Le nombre d'icônes d'un type dans une liste de plans. Une carte peut porter
+ * deux fois la même — deux armes, deux voitures : chacune compte.
+ */
+export function compteIcone(plans, e) {
+  return plans.reduce((s, p) => s + p.el.filter((x) => x === e).length, 0);
+}
+
+/**
+ * Les couples d'icônes réunis dans une portée. Quatre icônes font deux
+ * couples, cinq en font deux aussi : c'est un appariement, pas une adjacence.
+ * Un couple de deux icônes différentes en demande une de chaque.
+ */
+function couples(plans, els) {
   const [x, y] = els;
-  let n = 0;
-  for (let i = 0; i < plans.length - 1; i++) {
-    const a = plans[i], b = plans[i + 1];
-    if (x === y) {
-      if (a.el.includes(x) && b.el.includes(y)) n++;
-    } else if ((a.el.includes(x) && b.el.includes(y)) || (a.el.includes(y) && b.el.includes(x))) {
-      n++;
-    }
-  }
-  return n;
+  const nx = compteIcone(plans, x);
+  if (x === y) return Math.floor(nx / 2);
+  return Math.min(nx, compteIcone(plans, y));
 }
 
 /**
@@ -50,7 +56,7 @@ function pairesAdjacentes(plans, els) {
  * La portée est la séquence porteuse, sauf pour le Générique — ou si les
  * variables imposent la portée « montage entier ».
  */
-export function valeurObjectif(obj, sequence, banc, cfg) {
+export function valeurObjectif(obj, sequence, banc, cfg, porteur) {
   if (!obj) return 0;
   if (cfg.objectifsActifs && cfg.objectifsActifs[obj.kind] === false) return 0;
 
@@ -70,10 +76,13 @@ export function valeurObjectif(obj, sequence, banc, cfg) {
     case 'FORMAT':
       return n * portee.filter((p) => p.format === obj.format).length;
     case 'ELEMENT':
-      return n * portee.filter((p) => p.el.includes(obj.el)).length;
+      // Une carte peut porter deux fois la même icône. Par défaut chacune
+      // rapporte ; `elementParIcone: false` revient à compter les plans.
+      return n * (cfg.elementParIcone === false
+        ? portee.filter((p) => p.el.includes(obj.el)).length
+        : compteIcone(portee, obj.el));
     case 'PAIRE':
-      // Une paire ne se lit qu'entre deux plans voisins d'une même séquence.
-      return n * groupes.reduce((s, g) => s + pairesAdjacentes(g, obj.els), 0);
+      return n * couples(portee, obj.els);
     case 'MORT':
       return n * portee.filter((p) => p.mort).length;
     case 'NEANT':
@@ -85,6 +94,17 @@ export function valeurObjectif(obj, sequence, banc, cfg) {
       return n * montage.filter((p) => (obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
     case 'CHRONO':
       return chronologique(banc, cfg) ? n : 0;
+    case 'POSITION': {
+      // On compte les plans placés strictement avant — ou après — la carte
+      // porteuse, dans le montage lu de gauche à droite.
+      const i = porteur ? montage.indexOf(porteur) : -1;
+      if (i < 0) return 0;
+      const cote = obj.sens === 'APRES' ? montage.slice(i + 1) : montage.slice(0, i);
+      const vise = obj.quoi === 'FORMAT'
+        ? (p) => p.format === obj.format
+        : (p) => p.el.includes(obj.el);
+      return n * cote.filter(vise).length;
+    }
     default:
       return 0;
   }
@@ -136,7 +156,7 @@ export function compter(banc, cfg) {
 
   const detail = {
     RACCORD: 0, PLAN: 0, FORMAT: 0, ELEMENT: 0, PAIRE: 0,
-    MORT: 0, NEANT: 0, ABSENT: 0, MINUTAGE: 0, CHRONO: 0,
+    MORT: 0, NEANT: 0, ABSENT: 0, MINUTAGE: 0, CHRONO: 0, POSITION: 0,
     CHRONOLOGIE: 0, POSE: 0, JONCTION: 0,
   };
   const lignes = [];
@@ -145,7 +165,7 @@ export function compter(banc, cfg) {
     seq.forEach((p) => {
       if (!p.obj) return;
       if (p.depart && !cfg.scorerDepart) return;
-      const pts = Math.round(valeurObjectif(p.obj, seq, banc, cfg) * mult);
+      const pts = Math.round(valeurObjectif(p.obj, seq, banc, cfg, p) * mult);
       detail[p.obj.kind] += pts;
       lignes.push({ sequence: si, obj: p.obj, pts, plan: p });
     });
@@ -211,11 +231,12 @@ export const SOURCES_LABEL = {
   PLAN: 'Raccords (par carte de la séquence)',
   FORMAT: 'Objectifs de cadrage',
   ELEMENT: 'Objectifs d’élément',
-  PAIRE: 'Objectifs de paire',
+  PAIRE: 'Objectifs de couple d’icônes',
   MORT: 'Objectifs Mort',
   NEANT: 'Objectifs Plan sans personnage',
   ABSENT: 'Objectifs d’absence',
   MINUTAGE: 'Objectifs de minutage',
+  POSITION: 'Objectifs de position dans le montage',
   CHRONO: 'Objectifs de montage dans l’ordre',
   CHRONOLOGIE: 'Variante — chronologie',
   POSE: 'Points de pose',

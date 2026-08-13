@@ -13,13 +13,24 @@
 // Les versions précédentes du texte restent lisibles dans l'onglet
 // « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.17';
-import { elIcon } from './icons.js?v=1.17';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.18';
+import { elIcon } from './icons.js?v=1.18';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.13.5',
+    date: '12/08/2026',
+    origine: 'Précisions et nouveau pouvoir demandés par l’auteur',
+    corps: (c) => corps_0_13_5(c),
+    items: [
+      'Un plan peut porter plusieurs fois la même icône — deux armes, deux véhicules. Chaque icône compte pour elle-même.',
+      'Le bandeau de couple ne se lit plus entre deux plans voisins : il apparie les icônes réunies dans sa portée. Quatre icônes font deux couples, cinq en font deux aussi ; un couple de deux icônes différentes en demande une de chaque.',
+      'Nouveau bandeau « n × <icône ou cadrage> avant / après cette carte » : n points par plan du montage placé strictement avant — ou après — la carte porteuse et portant l’icône, ou du cadrage, visé.',
+    ],
+  },
   {
     v: '0.13.4',
     date: '12/08/2026',
@@ -228,6 +239,30 @@ function corps_0_13_4(c) {
       <td>n points si, lu de gauche à droite, chaque minutage est supérieur ou égal à celui de son
       voisin de gauche${c.chronoIgnoreZero ? ' — les plans à 00:00 sont neutres' : ''}</td>
       <td>Le montage</td></tr>`)}`);
+}
+
+// --- v0.13.5 ---------------------------------------------------------------
+// Icônes en plusieurs exemplaires, couples appariés, pouvoir de position.
+
+function corps_0_13_5(c) {
+  return corps_0_13_4(c)
+    .replace(
+      '<tr><td><b>n × deux éléments liés</b></td><td>n points par paire de plans voisins</td><td>Séquence</td></tr>',
+      `<tr><td><b>n × couple d’icônes</b></td>
+        <td>${maj('0.13.5', `n points par <b>couple</b> d’icônes réunies dans la portée — quatre icônes
+        font deux couples, cinq en font deux aussi ; un couple de deux icônes différentes en demande
+        une de chaque`)}</td><td>${portee(c)} ⚙</td></tr>
+      ${maj('0.13.5', `<tr><td><b>n × icône ou cadrage avant / après cette carte</b></td>
+        <td>n points par plan placé <b>strictement</b> avant — ou après — la carte porteuse et
+        portant l’icône, ou du cadrage, visé</td><td>Le montage</td></tr>`)}`)
+    .replace(
+      '<h3>Les Raccords</h3>',
+      `${majBloc('0.13.5', `<b>Les icônes en plusieurs exemplaires.</b> Un plan peut porter plusieurs
+      fois la même icône — deux armes, deux véhicules. Chacune compte pour elle-même :
+      ${c.elementParIcone === false
+        ? 'ici pourtant, un bandeau d’élément compte les <i>plans</i> porteurs (réglable dans <b>Variables</b> ⚙).'
+        : 'un bandeau d’élément rapporte donc deux fois sur une carte à deux armes (réglable dans <b>Variables</b> ⚙).'}`)}
+      <h3>Les Raccords</h3>`);
 }
 
 const portee = (c) => (c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence');

@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.17';
+import { ELEMENT_IDS } from './data.js?v=1.18';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -28,8 +28,11 @@ export const DEFAULTS = {
   objectifsActifs: {
     RACCORD: true, PLAN: true, FORMAT: true, ELEMENT: true,
     PAIRE: true, MORT: true, NEANT: true, ABSENT: true,
-    MINUTAGE: true, CHRONO: true,
+    MINUTAGE: true, CHRONO: true, POSITION: true,
   },
+  // Une carte peut porter deux fois la même icône. Par défaut chacune rapporte
+  // ses points ; à false, un objectif d'élément compte les plans porteurs.
+  elementParIcone: true,
   // Les règles ne précisent la portée que pour le Raccord (« dans sa
   // séquence ») et le Générique (« dans le montage »). Les autres bandeaux
   // sont lus par défaut sur le montage entier — basculer sur SEQUENCE pour
@@ -138,6 +141,8 @@ export const SCHEMA = [
     ], aide: 'le Générique compte toujours sur le montage entier' },
     { k: 'multiplicateurObjectif', l: 'Multiplicateur des bandeaux', t: 'float', min: 0, max: 5, pas: 0.25 },
     { k: 'scorerDepart', l: 'Le Plan de départ rapporte', t: 'bool' },
+    { k: 'elementParIcone', l: 'Compter chaque icône, pas chaque plan', t: 'bool',
+      aide: 'une carte à deux armes rapporte deux fois' },
     { k: 'pointsParPlan', l: 'Points fixes par plan visible', t: 'int', min: 0, max: 5 },
   ] },
   { groupe: 'Variante — raccord par élément', champs: [

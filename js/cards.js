@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte } from './data.js?v=1.17';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.17';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte } from './data.js?v=1.18';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.18';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -31,6 +31,9 @@ export function objContenu(obj, taille, compact) {
     case 'FORMAT':  return `<span class="tag tag-fmt" style="--c:${FORMATS[obj.format].color}">${FORMATS[obj.format].label}</span>`;
     case 'ELEMENT': return elIcon(obj.el, taille);
     case 'PAIRE':   return `<span class="paire">${elIcon(obj.els[0], taille)}<i></i>${elIcon(obj.els[1], taille)}</span>`;
+    case 'POSITION': return `${obj.quoi === 'FORMAT'
+      ? `<span class="tag tag-fmt" style="--c:${FORMATS[obj.format].color}">${compact ? FORMATS[obj.format].short : FORMATS[obj.format].label}</span>`
+      : elIcon(obj.el, taille)}<span class="fleche-pos">${obj.sens === 'APRES' ? '▶' : '◀'}</span>`;
     case 'MORT':    return elIcon('MORT', taille);
     case 'NEANT':   return elIcon('NEANT', taille);
     case 'ABSENT':  return `<span class="barre">${elIcon(obj.el, taille)}<b>✕</b></span>`;
@@ -60,11 +63,16 @@ function bandeau(obj, format) {
   return `<div class="bandeau">${contenu}</div>`;
 }
 
-/** Les données que le pop-up de survol affiche en grand. */
-function donneesApercu(h, label) {
+/**
+ * Les données que le pop-up de survol affiche en grand. `points` n'est fourni
+ * que sur un banc de montage : c'est ce que cette carte-là rapporte, ici et
+ * maintenant.
+ */
+function donneesApercu(h, label, points) {
   return encodeURIComponent(JSON.stringify({
     tc: h.tc, el: h.el, obj: h.obj || null, format: h.format,
     num: h.num, label, transition: h.transition || null,
+    points: points === undefined ? null : points,
   }));
 }
 
@@ -80,7 +88,7 @@ export function renderPlan(h, opts = {}) {
   // résoudrait contre la feuille de style et non contre le document.
   const fond = h.image ? `background-image:url('${h.image}');` : '';
   return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"
-      data-apercu="${donneesApercu(h, label)}">
+      data-apercu="${donneesApercu(h, label, opts.points)}">
     <div class="illus" style="${fond}">
       <div class="tcode ${h.tc === 0 || h.transition ? 'bleu' : ''}">${tc(h.tc)}</div>
     </div>

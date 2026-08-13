@@ -35,7 +35,8 @@ export const FORMATS = {
 //   PLAN      n points par carte de la séquence porteuse   ( ◀ PLAN ▶ )
 //   FORMAT    n points par plan du cadrage visé
 //   ELEMENT   n points par plan portant cet élément
-//   PAIRE     n points par couple d'éléments sur deux plans voisins
+//   PAIRE     n points par couple d'icônes réunies dans la portée : quatre
+//             icônes font deux couples, cinq en font deux aussi
 //   MORT      n points par plan de mort
 //   NEANT     n points par plan sans aucun personnage
 //   ABSENT    n points si l'élément visé n'apparaît nulle part
@@ -43,6 +44,8 @@ export const FORMATS = {
 //             avant (ou après) le seuil visé
 //   CHRONO    n points si le montage se lit dans l'ordre : chaque minutage
 //             est supérieur ou égal à celui de son voisin de gauche
+//   POSITION  n points par plan du montage placé strictement avant (ou après)
+//             la carte porteuse et portant l'icône — ou le cadrage — visé
 
 export const OBJ = {
   raccord: (n) => ({ kind: 'RACCORD', n }),
@@ -55,6 +58,7 @@ export const OBJ = {
   absent:  (n, e) => ({ kind: 'ABSENT', n, el: e }),
   minutage: (n, sens, seuil) => ({ kind: 'MINUTAGE', n, sens, seuil }),
   chrono:  (n) => ({ kind: 'CHRONO', n }),
+  position: (n, sens, quoi, cible) => ({ kind: 'POSITION', n, sens, quoi, ...(quoi === 'FORMAT' ? { format: cible } : { el: cible }) }),
 };
 
 /** « 25:00 », en toutes lettres d'afficheur. */
@@ -69,19 +73,22 @@ export function objLabel(o) {
     case 'PLAN':    return `${o.n} × ◀ Plan ▶`;
     case 'FORMAT':  return `${o.n} × ${FORMATS[o.format].label}`;
     case 'ELEMENT': return `${o.n} × ${ELEMENTS[o.el].label}`;
-    case 'PAIRE':   return `${o.n} × ${ELEMENTS[o.els[0]].label} + ${ELEMENTS[o.els[1]].label} côte à côte`;
+    case 'PAIRE':   return o.els[0] === o.els[1]
+      ? `${o.n} × couple de ${ELEMENTS[o.els[0]].label}`
+      : `${o.n} × couple ${ELEMENTS[o.els[0]].label} + ${ELEMENTS[o.els[1]].label}`;
     case 'MORT':    return `${o.n} × Mort`;
     case 'NEANT':   return `${o.n} × Plan sans personnage`;
     case 'ABSENT':  return `${o.n} si ${ELEMENTS[o.el].label} est absent`;
     case 'MINUTAGE': return `${o.n} × ◀ Plan ▶ ${o.sens === 'APRES' ? 'après' : 'avant'} ${tcTexte(o.seuil)}`;
     case 'CHRONO':  return `${o.n} si le montage est dans l’ordre`;
+    case 'POSITION': return `${o.n} × ${o.quoi === 'FORMAT' ? FORMATS[o.format].label : ELEMENTS[o.el].label} ${o.sens === 'APRES' ? 'après' : 'avant'} cette carte`;
     default: return '';
   }
 }
 
 // Ces bandeaux se lisent toujours sur le montage entier : le Générique compte
 // ses Cartes Raccord, et les deux bandeaux de minutage jugent le film complet.
-const PORTEE_MONTAGE = ['RACCORD', 'MINUTAGE', 'CHRONO'];
+const PORTEE_MONTAGE = ['RACCORD', 'MINUTAGE', 'CHRONO', 'POSITION'];
 
 export function objPortee(o) {
   return o && PORTEE_MONTAGE.includes(o.kind) ? 'MONTAGE' : 'SEQUENCE';

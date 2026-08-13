@@ -1,8 +1,21 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.17';
-export const BUILD_DATE = '2026-08-12 23:15';
+export const VERSION = '1.18';
+export const BUILD_DATE = '2026-08-13 01:40';
 
 export const CHANGELOG = [
+  {
+    v: '1.18',
+    date: '13/08/2026',
+    items: [
+      "Une icône peut être portée plusieurs fois par un même plan — deux armes, deux véhicules. Dans l’éditeur, un clic sur une pastille en ajoute une, un clic droit en retire une, et le compte s’affiche en badge. Un bandeau d’élément rapporte donc deux fois sur une carte à deux armes ; « Compter chaque icône, pas chaque plan » dans Variables ramène à l’ancienne lecture.",
+      "Le bandeau de couple ne se lit plus entre deux plans voisins : il apparie les icônes réunies dans sa portée. Quatre icônes font deux couples, cinq en font deux aussi ; un couple de deux icônes différentes en demande une de chaque.",
+      "Nouveau pouvoir « n × <icône ou cadrage> avant / après cette carte » : n points par plan du montage placé strictement avant — ou après — la carte porteuse et portant l’icône, ou du cadrage, visé.",
+      "Les statistiques se filtrent par cadrage, par icône et par type de pouvoir ; un bandeau rappelle combien de plans les filtres retiennent.",
+      "En partie, les colonnes de lecture s’épinglent sur une autre joueuse d’un clic sur sa case, et y restent — jusqu’à ce qu’on en désigne une autre ou qu’on revienne à celle dont c’est le tour.",
+      "Le survol d’une carte posée dit ce qu’elle rapporte, à elle seule, dans ce montage.",
+      "Règles v0.13.5.",
+    ],
+  },
   {
     v: '1.17',
     date: '12/08/2026',
