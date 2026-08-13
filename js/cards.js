@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte } from './data.js?v=1.18';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.18';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte } from './data.js?v=1.19';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.19';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -72,6 +72,7 @@ function donneesApercu(h, label, points) {
   return encodeURIComponent(JSON.stringify({
     tc: h.tc, el: h.el, obj: h.obj || null, format: h.format,
     num: h.num, label, transition: h.transition || null,
+    mort: !!h.mort,
     points: points === undefined ? null : points,
   }));
 }
@@ -79,7 +80,8 @@ function donneesApercu(h, label, points) {
 /** Un plan : moitié de carte, ou Plan Large pleine largeur. */
 export function renderPlan(h, opts = {}) {
   const F = FORMATS[h.transition ? 'TR' : h.format] || FORMATS.PM;
-  const large = h.format === 'PL';
+  // Un Plan Large et un Plan de départ occupent toute la carte.
+  const large = h.format === 'PL' || h.format === 'DEP';
   const cls = ['moitie', `f-${h.format}`, h.transition ? 'transition' : '', h.depart ? 'depart' : '',
     opts.clickable ? 'choisissable' : '', opts.selected ? 'choisi' : ''].join(' ');
   const flex = large ? '1 1 100%' : (h.format === 'GP' ? '0 0 33.6%' : '1 1 66.4%');
@@ -87,12 +89,14 @@ export function renderPlan(h, opts = {}) {
   // L'image est posée en style inline : dans une variable CSS, url() se
   // résoudrait contre la feuille de style et non contre le document.
   const fond = h.image ? `background-image:url('${h.image}');` : '';
+  // Le crâne se lit avec les autres : c'est une icône de la carte, pas un état.
+  const icones = h.mort ? [...h.el, 'MORT'] : h.el;
   return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"
       data-apercu="${donneesApercu(h, label, opts.points)}">
     <div class="illus" style="${fond}">
       <div class="tcode ${h.tc === 0 || h.transition ? 'bleu' : ''}">${tc(h.tc)}</div>
     </div>
-    <div class="pastilles" style="--n:${Math.max(1, h.el.length)}">${h.el.map((e) => elIcon(e)).join('')}</div>
+    <div class="pastilles" style="--n:${Math.max(1, icones.length)}">${icones.map((e) => elIcon(e)).join('')}</div>
     ${bandeau(h.obj, h.format)}
     <div class="libelle" style="--c:${F.color}">${label}</div>
   </div>`;

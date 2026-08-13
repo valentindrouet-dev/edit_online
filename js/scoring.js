@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, objPortee } from './data.js?v=1.18';
+import { PERSONNAGES, ELEMENT_IDS, objPortee } from './data.js?v=1.19';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -201,7 +201,7 @@ export function compter(banc, cfg) {
 export function recenser(banc) {
   const plans = tousLesPlans(banc);
   const elements = Object.fromEntries(ELEMENT_IDS.map((e) => [e, 0]));
-  const cadrages = { PL: 0, PM: 0, GP: 0 };
+  const cadrages = { PL: 0, PM: 0, GP: 0, DEP: 0 };
   let morts = 0, sansPersonnage = 0, raccords = 0;
 
   for (const p of plans) {

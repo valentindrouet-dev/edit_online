@@ -4,11 +4,11 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.18';
+import { ELEMENT_IDS } from './data.js?v=1.19';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
-  tours: 10,                 // la partie s'arrête au 10e plan posé
+  tours: 10,                 // plans dans le banc, Plan de départ compris
   chutierPL: 0,              // taille du Chutier Plans Larges — 0 = nb de joueuses
   chutierPMGP: 0,            // taille du Chutier Plans Moyens / Gros Plans
   piocheDirectePL: false,    // piocher au sommet de la pioche Plans Larges
@@ -117,7 +117,7 @@ export function cloneConfig(src = DEFAULTS) {
 
 export const SCHEMA = [
   { groupe: 'Déroulé', champs: [
-    { k: 'tours', l: 'Nombre de plans posés', t: 'int', min: 1, max: 30, aide: 'la partie s’arrête à la fin de ce tour' },
+    { k: 'tours', l: 'Plans dans le banc', t: 'int', min: 2, max: 30, aide: 'Plan de départ compris' },
     { k: 'chutierPL', l: 'Chutier Plans Larges', t: 'int', min: 0, max: 8, aide: '0 = autant que de joueuses' },
     { k: 'chutierPMGP', l: 'Chutier Plans Moyens / Gros Plans', t: 'int', min: 0, max: 8, aide: '0 = autant que de joueuses' },
     { k: 'piocheDirectePMGP', l: 'Pioche PM / GP accessible au sommet', t: 'bool' },

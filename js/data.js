@@ -23,11 +23,17 @@ export const PERSONNAGES = ELEMENT_IDS.filter((e) => ELEMENTS[e].famille === 'PE
 // --- Cadrages --------------------------------------------------------------
 
 export const FORMATS = {
-  PL: { id: 'PL', label: 'Plan Large', short: 'PL', color: '#5aa32b', tint: '#dff0c8' },
-  PM: { id: 'PM', label: 'Plan Moyen', short: 'PM', color: '#e0a11b', tint: '#fdeec4' },
-  GP: { id: 'GP', label: 'Gros Plan',  short: 'GP', color: '#e8632a', tint: '#fbdac9' },
-  TR: { id: 'TR', label: 'Raccord',    short: 'TR', color: '#7b7f86', tint: '#e4e6e9' },
+  PL: { id: 'PL', label: 'Plan Large',     short: 'PL',  color: '#5aa32b', tint: '#dff0c8' },
+  PM: { id: 'PM', label: 'Plan Moyen',     short: 'PM',  color: '#e0a11b', tint: '#fdeec4' },
+  GP: { id: 'GP', label: 'Gros Plan',      short: 'GP',  color: '#e8632a', tint: '#fbdac9' },
+  DEP: { id: 'DEP', label: 'Plan de départ', short: 'DÉP', color: '#3f8fbf', tint: '#d8ecf7' },
+  TR: { id: 'TR', label: 'Raccord',        short: 'TR',  color: '#7b7f86', tint: '#e4e6e9' },
 };
+
+// Un Plan de départ est un plan comme un autre pour tout ce qui compte des
+// cartes — mais ce n'est pas un Plan Large : aucun objectif de cadrage ne le
+// vise, et aucun ne le désigne. Les cadrages qu'un bandeau peut viser :
+export const CADRAGES_VISABLES = ['PL', 'PM', 'GP'];
 
 // --- Objectifs (bandeaux) --------------------------------------------------
 // kind :
@@ -399,13 +405,13 @@ export function plHalf(carte) {
   const cle = cleplan(carte.num, null);
   return {
     scene: null,
-    format: 'PL',
+    format: carte.depart ? 'DEP' : 'PL',
     face: null,
     cle,
     transition: null,
     dual: false,
     titre: null,
-    famille: 'PLAN LARGE',
+    famille: carte.depart ? 'DÉPART' : 'PLAN LARGE',
     tc: tcDe(cle, carte.tc),
     el: elDe(cle, carte.el),
     obj: objDe(cle, carte.obj),
@@ -435,7 +441,7 @@ export function catalogue() {
         tc: defauts.tc, el: (defauts.el || []).slice(), obj: defauts.obj || null,
         mort: !!defauts.mort, num: origine,
       },
-      image: `assets/${format === 'PL' ? 'pl' : format === 'GP' ? 'gp' : 'pm'}/${origine}.webp`,
+      image: `assets/${format === 'PL' || format === 'DEP' ? 'pl' : format === 'GP' ? 'gp' : 'pm'}/${origine}.webp`,
       ...extra,
     });
   };
@@ -454,7 +460,7 @@ export function catalogue() {
   }
   for (const d of DEPARTS) {
     d.faces.forEach((f, k) => pousse(f.num, null, { tc: f.tc, el: f.el, obj: f.obj, mort: false },
-      'PL', 'DÉPART', { version: d.type, faceDepart: k + 1 }));
+      'DEP', 'DÉPART', { version: d.type, faceDepart: k + 1 }));
   }
   return out;
 }

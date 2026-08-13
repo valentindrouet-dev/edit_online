@@ -6,7 +6,7 @@
 // L'application affiche donc exactement les icônes imprimées, partout — sur
 // les cartes comme dans les colonnes de score.
 
-import { ELEMENTS } from './data.js?v=1.18';
+import { ELEMENTS } from './data.js?v=1.19';
 
 const SPECIAUX = {
   MORT:  { label: 'Mort' },
@@ -42,5 +42,5 @@ export function numIcon(n, size) {
 
 /** Vignette d'un cadrage, pour les colonnes de score. */
 export function cadrageIcon(f) {
-  return `<span class="jeton-cadrage j-${f}">${f}</span>`;
+  return `<span class="jeton-cadrage j-${f}">${f === 'DEP' ? 'DÉP' : f}</span>`;
 }

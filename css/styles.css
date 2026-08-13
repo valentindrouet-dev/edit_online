@@ -223,6 +223,7 @@ button { font-family: inherit; }
 .moitie.f-PM { background-color: #fdf0d3; }
 .moitie.f-GP { background-color: #fbdfd2; }
 .moitie.f-PL { background-color: #e7f2d8; }
+.moitie.f-DEP { background-color: #d8ecf7; }
 .moitie.transition { background-color: #1a1a1e; }
 .moitie.depart { background-color: #d8ecf7; }
 
@@ -238,7 +239,36 @@ button { font-family: inherit; }
              gap: .24em; overflow: hidden; background: var(--fmt-gp); }
 .libelle   { flex: 0 0 8%;    display: flex; align-items: center; justify-content: center; }
 
-body.sans-illus .illus { background-image: none !important; }
+/* --- Lecture nue, sans illustration ---------------------------------------
+   Sans image, la carte se réorganise : les icônes prennent toute la place du
+   visuel sur le fond du cadrage, la languette blanche disparaît, le minutage
+   double et le bandeau du pouvoir s'étale. Tout reste en em, donc l'échelle
+   suit la taille de la carte. */
+
+body.sans-illus .illus {
+  background-image: none !important;
+  flex: 0 0 36%; background-color: transparent;
+}
+body.sans-illus .pastilles {
+  flex: 1 1 auto; background: transparent; padding: 0 .3em .25em; gap: .18em;
+  justify-content: center; align-items: flex-start;
+}
+body.sans-illus .pastilles .pastille { height: auto; width: auto; max-height: 100%;
+  max-width: calc((100% - (var(--n, 1) - 1) * .18em) / var(--n, 1)); }
+body.sans-illus .bandeau { flex: 0 0 30%; gap: .3em; }
+body.sans-illus .bandeau .pastille, body.sans-illus .bandeau .pastille-num { height: 68%; }
+body.sans-illus .bandeau .x, body.sans-illus .bandeau .si { font-size: 1em; }
+body.sans-illus .bandeau .tag { font-size: .82em; padding: .28em .5em; }
+body.sans-illus .bandeau .tc-seuil { font-size: .84em; }
+body.sans-illus .bandeau .tag.tag-chrono { font-size: .74em; }
+body.sans-illus .bandeau .fleche-pos { font-size: 1.1em; }
+/* Le minutage double : sa boîte est en em de sa propre police, elle suit. */
+body.sans-illus .moitie .tcode { font-size: 1.84em; top: .16em; left: .15em; }
+/* Un Gros Plan n'a qu'un tiers de largeur : il garde des icônes un peu plus
+   sages, sinon deux suffisent à saturer la bande. */
+body.sans-illus .moitie.f-GP .pastilles { gap: .12em; }
+/* et son minutage doublé déborderait : il se cale sur la largeur disponible. */
+body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
 .moitie.transition .pastilles { background: rgba(255,255,255,.14); }
 
 /* Le minutage, calé sur la boîte imprimée qu'il remplace. */
@@ -267,6 +297,7 @@ body.sans-illus .illus { background-image: none !important; }
 
 .moitie.f-PM .bandeau, .moitie.f-PL .bandeau { background: var(--fmt-pm); }
 .moitie.f-PL .bandeau { background: var(--fmt-pl); }
+.moitie.f-DEP .bandeau { background: #3f8fbf; }
 .moitie.depart .bandeau { background: #7fc4e8; }
 .moitie.transition .bandeau { background: #3c3c44; }
 .bandeau .x, .bandeau .si { color: #fff; font-weight: 800; font-size: .72em; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
@@ -306,6 +337,7 @@ body.sans-illus .illus { background-image: none !important; }
 .j-PM { background: var(--fmt-pm); }
 .j-GP { background: var(--fmt-gp); }
 .j-TR { background: var(--fmt-tr); }
+.j-DEP { background: #3f8fbf; font-size: .52rem; }
 
 /* Tableau de recensement : une icône, un compte. */
 .recensement { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -364,7 +396,7 @@ body.sans-illus .illus { background-image: none !important; }
 .banc .moitie { height: 182px; border-radius: 5px; flex: 0 0 auto; font-size: 12.7px; }
 .banc .moitie.f-GP { width: 85px; }
 .banc .moitie.f-PM { width: 169px; }
-.banc .moitie.f-PL { width: 254px; }
+.banc .moitie.f-PL, .banc .moitie.f-DEP { width: 254px; }
 
 .banc .ecart { flex: 0 0 auto; width: 18px; }
 .banc .ecart.actif {
@@ -386,7 +418,7 @@ body.sans-illus .illus { background-image: none !important; }
 .carte.solo .moitie { flex: 0 0 auto; height: 14.33em; }
 .carte.solo .moitie.f-GP { width: 6.72em; }
 .carte.solo .moitie.f-PM { width: 13.28em; }
-.carte.solo .moitie.f-PL { width: 20em; }
+.carte.solo .moitie.f-PL, .carte.solo .moitie.f-DEP { width: 20em; }
 
 .carte.dos { background: #12101a; }
 .pioche-fermee { position: relative; }

@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.18';
-import { compter, bancVide } from './scoring.js?v=1.18';
+} from './data.js?v=1.19';
+import { compter, bancVide } from './scoring.js?v=1.19';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -346,7 +346,9 @@ export function avancer(state) {
     else {
       state.tour++;
       state.phase = 'DERUSHAGE';
-      if (state.tour > state.cfg.tours) {
+      // `tours` est le nombre de plans du banc, Plan de départ compris : il ne
+      // reste donc que tours - 1 tours de montage à jouer.
+      if (state.tour > state.cfg.tours - 1) {
         state.finie = true;
         state.duree = Date.now() - state.debut;
         journal(state, 'Fin du montage — décompte');

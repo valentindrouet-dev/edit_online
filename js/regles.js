@@ -13,13 +13,23 @@
 // Les versions précédentes du texte restent lisibles dans l'onglet
 // « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.18';
-import { elIcon } from './icons.js?v=1.18';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.19';
+import { elIcon } from './icons.js?v=1.19';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.13.6',
+    date: '13/08/2026',
+    origine: 'Précision demandée par l’auteur',
+    corps: (c) => corps_0_13_6(c),
+    items: [
+      'Un Plan de départ n’est pas un Plan Large. C’est un plan comme un autre pour tout ce qui compte des cartes du montage, mais aucun bandeau de cadrage ne le vise, et aucun ne le désigne.',
+      'La partie s’arrête quand chaque banc compte dix plans, Plan de départ compris — il reste donc neuf plans à monter.',
+    ],
+  },
   {
     v: '0.13.5',
     date: '12/08/2026',
@@ -263,6 +273,26 @@ function corps_0_13_5(c) {
         ? 'ici pourtant, un bandeau d’élément compte les <i>plans</i> porteurs (réglable dans <b>Variables</b> ⚙).'
         : 'un bandeau d’élément rapporte donc deux fois sur une carte à deux armes (réglable dans <b>Variables</b> ⚙).'}`)}
       <h3>Les Raccords</h3>`);
+}
+
+// --- v0.13.6 ---------------------------------------------------------------
+// Le Plan de départ n'est pas un Plan Large, et il compte dans les dix.
+
+function corps_0_13_6(c) {
+  return corps_0_13_5(c)
+    .replace(
+      `<p>La partie s’arrête quand toutes les joueuses ont posé leur ${c.tours}e plan. On inscrit alors les
+  points rapportés par chaque <b>plan visible</b> ; le plus haut total l’emporte.</p>`,
+      `<p>${maj('0.13.6', `La partie s’arrête quand chaque banc compte <b>${c.tours} plans</b>, Plan de
+      départ compris — il reste donc ${c.tours - 1} plans à monter.`)} On inscrit alors les points
+      rapportés par chaque <b>plan visible</b> ; le plus haut total l’emporte.</p>`)
+    .replace(
+      '<h3>Phase A — Le Dérushage</h3>',
+      `${majBloc('0.13.6', `<b>Le Plan de départ n’est pas un Plan Large.</b> C’est un plan comme un
+      autre pour tout ce qui compte des cartes du montage — les couples d’icônes, les minutages, les
+      positions, les points par carte de séquence. Mais aucun bandeau de <b>cadrage</b> ne le vise :
+      « n × Plan Large » ne le compte pas, et aucun bandeau ne désigne les Plans de départ.`)}
+      <h3>Phase A — Le Dérushage</h3>`);
 }
 
 const portee = (c) => (c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence');

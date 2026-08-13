@@ -1,8 +1,21 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.18';
-export const BUILD_DATE = '2026-08-13 01:40';
+export const VERSION = '1.19';
+export const BUILD_DATE = '2026-08-13 04:20';
 
 export const CHANGELOG = [
+  {
+    v: '1.19',
+    date: '13/08/2026',
+    items: [
+      "Un Plan de départ n’est plus un Plan Large : il a son propre cadrage. C’est un plan comme un autre pour tout ce qui compte des cartes du montage, mais « n × Plan Large » ne le compte plus, et aucun bandeau ne le désigne. Les colonnes d’icônes et les statistiques le comptent à part.",
+      "La partie s’arrête quand chaque banc compte dix plans, <b>Plan de départ compris</b> — il reste donc neuf plans à monter. Le bandeau de tour affiche le rang du plan plutôt que celui du tour.",
+      "Règles v0.13.6.",
+      "Nouvelle sauvegarde : le jeu modifié s’exporte et se réimporte en CSV. Le fichier contient tout le matériel, une ligne par plan et une par carte, se corrige dans un tableur, et l’aller-retour ne crée aucune retouche fantôme — seule la différence avec l’imprimé est retenue.",
+      "Sans illustration, la carte se réorganise : les icônes prennent toute la place du visuel sur le fond du cadrage, la languette blanche disparaît, le minutage double et le bandeau du pouvoir s’étale.",
+      "Le crâne des plans de mort se lit avec les autres icônes, sur la carte comme dans l’aperçu au survol.",
+      "Raccourcis de sélection : ⌘ (ou Ctrl) + clic ajoute ou retire une carte isolée, maj + clic prend toute la série depuis la dernière cliquée.",
+    ],
+  },
   {
     v: '1.18',
     date: '13/08/2026',

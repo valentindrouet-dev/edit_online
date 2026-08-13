@@ -2,23 +2,24 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.18';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.19';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
-} from './data.js?v=1.18';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.18';
-import { elIcon } from './icons.js?v=1.18';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.18';
+  CADRAGES_VISABLES,
+} from './data.js?v=1.19';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.19';
+import { elIcon } from './icons.js?v=1.19';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.19';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.18';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.18';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.18';
-import { campagne } from './lab.js?v=1.18';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.18';
+} from './engine.js?v=1.19';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.19';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.19';
+import { campagne } from './lab.js?v=1.19';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.19';
 
 const app = document.getElementById('app');
 
@@ -209,7 +210,7 @@ function vueAccueil() {
         <div class="panneau">
           <h2>Réglages rapides</h2>
           ${[
-            ['tours', 'Plans à poser', 1, 30],
+            ['tours', 'Plans dans le banc', 2, 30],
             ['chutierPMGP', 'Chutier PM / GP', 0, 8],
             ['chutierPL', 'Chutier Plans Larges', 0, 8],
           ].map(([k, l, min, max]) => `
@@ -404,7 +405,8 @@ function vuePartie() {
   html(`${topbar('#/partie')}
   <div class="wrap large">
     <div class="bandeau-tour">
-      <span>Tour <b>${Math.min(st.tour, st.cfg.tours)} / ${st.cfg.tours}</b></span><span>·</span>
+      <span>${st.phase === 'DEPART' ? 'Plan de départ'
+        : `Plan <b>${Math.min(st.tour + 1, st.cfg.tours)} / ${st.cfg.tours}</b>`}</span><span>·</span>
       <span><b>${PHASES[st.phase]}</b></span><span>·</span>
       <span style="color:${encreDe(j.couleur)}"><b>${j.nom}</b></span>
       <span class="jeton-materiel ${st.cfg.materielActif === 'MODIFIE' ? 'modifie' : ''}"
@@ -668,7 +670,7 @@ function blocRecensement(s) {
     ${ELEMENT_IDS.map((e) => compte(elIcon(e, 22), r.elements[e], ELEMENTS[e].label)).join('')}
   </div>
   <div class="recensement" style="margin-top:8px">
-    ${['PL', 'PM', 'GP'].map((f) => compte(cadrageIcon(f), r.cadrages[f], FORMATS[f].label)).join('')}
+    ${['PL', 'PM', 'GP', 'DEP'].map((f) => compte(cadrageIcon(f), r.cadrages[f], FORMATS[f].label)).join('')}
     ${compte(cadrageIcon('TR'), r.raccords, 'Cartes Raccord')}
   </div>
   <div class="recensement" style="margin-top:8px">
@@ -779,9 +781,12 @@ function contenuApercu(d) {
       <span class="ap-tc ${d.tc === 0 || d.transition ? 'bleu' : ''}">${tc(d.tc)}</span>
       <span class="ap-cadrage">${cadrage} <b>n°${d.num}</b></span>
     </div>
-    ${d.el.length ? `<div class="ap-icones">
-      ${d.el.map((e) => `<span class="ap-icone">${elIcon(e, 54)}<span>${ELEMENTS[e]?.label || e}</span></span>`).join('')}
-    </div>` : '<div class="ap-vide">Aucun élément</div>'}
+    ${(() => {
+      const ic = d.mort ? [...d.el, 'MORT'] : d.el;
+      return ic.length ? `<div class="ap-icones">
+        ${ic.map((e) => `<span class="ap-icone">${elIcon(e, 54)}<span>${e === 'MORT' ? 'Mort' : (ELEMENTS[e]?.label || e)}</span></span>`).join('')}
+      </div>` : '<div class="ap-vide">Aucune icône</div>';
+    })()}
     ${d.obj ? `<div class="ap-obj">
       <div class="ap-obj-visuel">${objHTML(d.obj, 44)}</div>
       <div class="ap-obj-texte">${objLabel(d.obj)}</div>
@@ -1173,7 +1178,9 @@ function barreJeu() {
       ${off ? ` · <b>${off} carte${off > 1 ? 's' : ''} écartée${off > 1 ? 's' : ''}</b> de la boîte, dans les deux jeux` : ''}
       · la galerie ci-dessous montre et règle toujours le jeu <b>Modifié</b>
     </span>
-    <button class="pill" id="mat-export">⭳ Exporter le tableau en PDF</button>
+    <button class="pill" id="mat-export">⭳ Tableau en PDF</button>
+    <button class="pill" id="csv-export">⭳ Cartes en CSV</button>
+    <button class="pill" id="csv-import">⭱ Importer un CSV</button>
   </div>`;
 }
 
@@ -1230,7 +1237,7 @@ function galerieMateriel() {
         horsVue ? ` <span class="aide">dont ${horsVue} hors de cette vue</span>` : ''}</span>
     <button class="pill mini" id="sel-tout">Tout sélectionner</button>
     <button class="pill mini" id="sel-rien" ${mat.plans.size ? '' : 'disabled'}>Ne rien sélectionner</button>
-    <span class="aide">clic pour choisir · maj+clic pour ajouter ou étendre la sélection</span>
+    <span class="aide">clic pour choisir · ⌘/Ctrl+clic pour en ajouter une · maj+clic pour toute une série</span>
   </div>
 
   ${vues.length ? `<div class="galerie">${vues.map((t, i) => {
@@ -1676,7 +1683,7 @@ function barreStats() {
   return `<div class="barre-filtres">
     <label>Cadrage
       <select data-stat="format">${opt('', 'tous', !f.format)}
-        ${['PL', 'PM', 'GP'].map((k) => opt(k, FORMATS[k].label, f.format === k)).join('')}</select></label>
+        ${['PL', 'PM', 'GP', 'DEP'].map((k) => opt(k, FORMATS[k].label, f.format === k)).join('')}</select></label>
     <label>Icône
       <select data-stat="icone">${opt('', 'toutes', !f.icone)}
         ${ELEMENT_IDS.map((e) => opt(e, ELEMENTS[e].label, f.icone === e)).join('')}
@@ -1727,7 +1734,7 @@ function vueStats() {
     ligne(filtre ? 'Plans retenus par les filtres' : 'Plans au total (faces comprises)', imp.plans, mod.plans),
   ].join(''))}
 
-  ${tableau('Les cadrages', ['PL', 'PM', 'GP'].map((f) =>
+  ${tableau('Les cadrages', ['PL', 'PM', 'GP', 'DEP'].map((f) =>
     ligne(FORMATS[f].label, imp.cadrages[f], mod.cadrages[f], cadrageIcon(f))).join(''))}
 
   ${tableau('Les icônes', [
@@ -1785,19 +1792,17 @@ function brancherMateriel() {
     mat.tri = 'num'; refaire();
   });
 
-  // Un clic simple remplace la sélection ; maj+clic l'étend, du dernier plan
-  // cliqué jusqu'à celui-ci, sans rien perdre de ce qui était déjà pris —
-  // même choisi dans une autre vue.
+  // Un clic simple remplace la sélection ; ⌘ (ou Ctrl) + clic ajoute ou retire
+  // une carte isolée ; maj + clic prend toute la série depuis la dernière
+  // cliquée. Rien n'est perdu de ce qui était pris dans une autre vue.
   const tuiles = trier(tuilesDe(mat.vue).filter(passeFiltres));
   app.querySelectorAll('[data-tuile]').forEach((el) => el.addEventListener('click', (ev) => {
     const rang = +el.dataset.rang;
-    if (ev.shiftKey) {
-      if (mat.ancre !== null && mat.ancreVue === mat.vue) {
-        const [a, b] = [Math.min(mat.ancre, rang), Math.max(mat.ancre, rang)];
-        for (let i = a; i <= b; i++) ajouterTuile(tuiles[i]);
-      } else {
-        basculerTuile(tuiles[rang]);
-      }
+    if (ev.shiftKey && mat.ancre !== null && mat.ancreVue === mat.vue) {
+      const [a, b] = [Math.min(mat.ancre, rang), Math.max(mat.ancre, rang)];
+      for (let i = a; i <= b; i++) ajouterTuile(tuiles[i]);
+    } else if (ev.metaKey || ev.ctrlKey || ev.shiftKey) {
+      basculerTuile(tuiles[rang]);
     } else {
       mat.plans.clear(); mat.cartes.clear();
       ajouterTuile(tuiles[rang]);
@@ -1824,6 +1829,10 @@ function brancherMateriel() {
 
   const ex = app.querySelector('#mat-export');
   if (ex) ex.addEventListener('click', exporterMateriel);
+  const cx = app.querySelector('#csv-export');
+  if (cx) cx.addEventListener('click', exporterCSV);
+  const ci = app.querySelector('#csv-import');
+  if (ci) ci.addEventListener('click', () => importerCSV(refaire));
 
   brancherEditeur(refaireEditeur);
 }
@@ -2081,6 +2090,190 @@ function majObjectif(cles, part, valeur) {
 
 function memeObjectif(a, b) {
   return JSON.stringify(a || null) === JSON.stringify(b || null);
+}
+
+// --- Sauvegarde CSV ---------------------------------------------------------
+// Le jeu modifié tient dans un tableau à plat, une ligne par plan et une par
+// carte. On exporte tout — pas seulement les retouches — pour que le fichier
+// se lise et se corrige dans un tableur ; à la relecture, seule la différence
+// avec l'imprimé est retenue, si bien qu'un aller-retour ne crée aucune
+// retouche fantôme.
+
+const CSV_COLS = ['objet', 'cle', 'numero', 'minutage', 'icones', 'mort',
+  'pouvoir', 'points', 'cible', 'sens', 'seuil', 'gros_plan', 'plan_moyen', 'boite'];
+
+function csvEchappe(v) {
+  const t = v === undefined || v === null ? '' : String(v);
+  return /[;"\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+}
+
+/** La cible d'un pouvoir, en un mot : un cadrage, une icône, ou un couple. */
+function cibleObj(o) {
+  if (!o) return '';
+  if (o.kind === 'PAIRE') return o.els.join('+');
+  if (o.format) return o.format;
+  return o.el || '';
+}
+
+function exporterCSV() {
+  const lignes = [CSV_COLS.join(';')];
+  surLeModifie(() => {
+    for (const p of catalogue()) {
+      const o = p.obj;
+      lignes.push([
+        'plan', p.cle, p.num, p.tc, p.el.join('|'), p.mort ? 'oui' : 'non',
+        o ? o.kind : '', o ? o.n : '', cibleObj(o), o && o.sens ? o.sens : '',
+        o && o.seuil !== undefined ? o.seuil : '', '', '', '',
+      ].map(csvEchappe).join(';'));
+    }
+    for (const c of buildCartesDoubles()) {
+      lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '',
+        c.gpNum, c.pmNum, estDesactivee(c.id) ? 'non' : 'oui'].map(csvEchappe).join(';'));
+    }
+    for (const f of ['PL', 'DEPART']) {
+      for (const c of cartesDe(f)) {
+        lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '',
+          '', '', estDesactivee(c.id) ? 'non' : 'oui'].map(csvEchappe).join(';'));
+      }
+    }
+  });
+
+  const d = new Date();
+  const jour = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  // Le BOM fait ouvrir le fichier en UTF-8 par les tableurs.
+  const blob = new Blob([`\uFEFF${lignes.join('\r\n')}\r\n`], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `edit-materiel-${jour}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/** Découpe une ligne CSV en tenant compte des guillemets. */
+function csvLigne(t) {
+  const out = []; let cur = ''; let dans = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (dans) {
+      if (c === '"' && t[i + 1] === '"') { cur += '"'; i++; }
+      else if (c === '"') dans = false;
+      else cur += c;
+    } else if (c === '"') dans = true;
+    else if (c === ';') { out.push(cur); cur = ''; }
+    else cur += c;
+  }
+  out.push(cur);
+  return out;
+}
+
+/** Reconstruit un pouvoir depuis sa ligne de tableau. */
+function objDepuisCSV(r) {
+  const kind = (r.pouvoir || '').trim().toUpperCase();
+  if (!kind) return null;
+  const n = Math.max(0, Math.min(20, parseInt(r.points, 10) || 0));
+  const cible = (r.cible || '').trim().toUpperCase();
+  const sens = (r.sens || '').trim().toUpperCase() === 'APRES' ? 'APRES' : 'AVANT';
+  const seuil = Math.max(0, Math.min(99, parseInt(r.seuil, 10) || 0));
+  switch (kind) {
+    case 'RACCORD': return OBJ.raccord(n);
+    case 'PLAN':    return OBJ.plan(n);
+    case 'MORT':    return OBJ.mort(n);
+    case 'NEANT':   return OBJ.neant(n);
+    case 'CHRONO':  return OBJ.chrono(n);
+    case 'FORMAT':  return CADRAGES_VISABLES.includes(cible) ? OBJ.format(n, cible) : null;
+    case 'ELEMENT': return ELEMENT_IDS.includes(cible) ? OBJ.element(n, cible) : null;
+    case 'ABSENT':  return ELEMENT_IDS.includes(cible) ? OBJ.absent(n, cible) : null;
+    case 'MINUTAGE': return OBJ.minutage(n, sens, seuil);
+    case 'PAIRE': {
+      const [a, b] = cible.split('+');
+      return ELEMENT_IDS.includes(a) && ELEMENT_IDS.includes(b) ? OBJ.paire(n, a, b) : null;
+    }
+    case 'POSITION': {
+      const fmt = CADRAGES_VISABLES.includes(cible);
+      if (!fmt && !ELEMENT_IDS.includes(cible)) return null;
+      return OBJ.position(n, sens, fmt ? 'FORMAT' : 'ELEMENT', cible);
+    }
+    default: return null;
+  }
+}
+
+function importerCSV(apres) {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.csv,text/csv';
+  inp.onchange = () => {
+    const f = inp.files[0];
+    if (!f) return;
+    f.text().then((t) => {
+      try { appliquerCSV(t); apres(); }
+      catch (e) { alert(`Fichier illisible : ${e.message}`); }
+    });
+  };
+  inp.click();
+}
+
+function appliquerCSV(texte) {
+  const lignes = texte.replace(/^\uFEFF/, '').split(/\r?\n/).filter((l) => l.trim());
+  if (!lignes.length) throw new Error('fichier vide');
+  const entete = csvLigne(lignes[0]).map((x) => x.trim().toLowerCase());
+  if (!entete.includes('objet') || !entete.includes('cle')) {
+    throw new Error('en-tête attendu : objet;cle;numero;minutage;…');
+  }
+
+  const plans = {}; const paires = {}; const hors = [];
+  let lus = 0; let ignores = 0;
+
+  surLeModifie(() => {
+    const parCle = Object.fromEntries(catalogue().map((p) => [p.cle, p]));
+    const rangs = Object.fromEntries(buildCartesDoubles().map((c, i) => [c.id, { i, c }]));
+
+    for (const l of lignes.slice(1)) {
+      const cells = csvLigne(l);
+      const r = Object.fromEntries(entete.map((k, i) => [k, cells[i] === undefined ? '' : cells[i].trim()]));
+      const objet = (r.objet || '').toLowerCase();
+
+      if (objet === 'plan') {
+        const p = parCle[r.cle];
+        if (!p) { ignores++; continue; }
+        lus++;
+        const mis = {};
+        const num = parseInt(r.numero, 10);
+        if (Number.isFinite(num) && num !== p.imprime.num) mis.num = num;
+        const tc = parseInt(r.minutage, 10);
+        if (Number.isFinite(tc) && tc !== p.imprime.tc) mis.tc = Math.max(0, Math.min(99, tc));
+        // On garde l'ordre du fichier : celui de l'imprimé n'est pas toujours
+        // l'ordre canonique, et le re-trier inventerait des retouches.
+        const el = (r.icones || '').split('|').map((x) => x.trim().toUpperCase()).filter((x) => ELEMENT_IDS.includes(x));
+        const imp = p.imprime.el;
+        if (!(el.length === imp.length && el.every((x, k) => x === imp[k]))) mis.el = el;
+        const mort = /^(oui|1|true|vrai|x)$/i.test(r.mort || '');
+        if (mort !== !!p.imprime.mort) mis.mort = mort;
+        const o = objDepuisCSV(r);
+        if (JSON.stringify(o || null) !== JSON.stringify(p.imprime.obj || null)) mis.obj = o;
+        if (Object.keys(mis).length) plans[p.cle] = mis;
+
+      } else if (objet === 'carte') {
+        const e = rangs[r.cle];
+        lus++;
+        if (e) {
+          const gp = parseInt(r.gros_plan, 10);
+          const pm = parseInt(r.plan_moyen, 10);
+          if (Number.isFinite(gp) && Number.isFinite(pm)
+            && (gp !== e.c.gpImprime || pm !== e.c.pmImprime)) paires[e.i] = [pm, gp];
+        } else if (!/^(D\d\d)$/.test(r.cle) && !r.cle) { ignores++; continue; }
+        if (/^(non|0|false|faux)$/i.test(r.boite || '')) hors.push(r.cle);
+      } else ignores++;
+    }
+  });
+
+  if (!lus) throw new Error('aucune ligne reconnue');
+  store.cfg.materiel = { plans, paires };
+  store.cfg.cartesDesactivees = hors;
+  sauverCfg();
+  const n = Object.keys(plans).length + Object.keys(paires).length;
+  alert(`${lus} ligne${lus > 1 ? 's' : ''} relue${lus > 1 ? 's' : ''} · ${n} retouche${n > 1 ? 's' : ''}`
+    + `${hors.length ? ` · ${hors.length} carte${hors.length > 1 ? 's' : ''} écartée${hors.length > 1 ? 's' : ''}` : ''}`
+    + `${ignores ? ` · ${ignores} ligne${ignores > 1 ? 's' : ''} ignorée${ignores > 1 ? 's' : ''}` : ''}`);
 }
 
 // --- L'export ---------------------------------------------------------------

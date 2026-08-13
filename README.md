@@ -107,7 +107,9 @@ que les proportions tiennent à toutes les échelles.
 
 Le nom du fichier est la seule convention à respecter — remplacer `assets/gp/317.webp` suffit à
 mettre la carte à jour. La case **Illustrations** de l'accueil masque les images sans toucher aux
-informations de jeu.
+informations de jeu. Sans image, la carte se réorganise pour la lecture nue : les icônes prennent
+toute la place du visuel sur le fond du cadrage, la languette blanche disparaît, le minutage double
+et le bandeau du pouvoir s'étale.
 
 ## L'éditeur de matériel
 
@@ -217,9 +219,24 @@ Comme tout vit dans `cfg`, les retouches sont enregistrées, elles voyagent avec
 Variables, et le jeu s'y conforme partout — table de jeu, décompte, Laboratoire. Le retour aux
 valeurs par défaut des **Variables** ne touche pas au matériel.
 
-**Exporter le tableau en PDF** bascule la page sur une feuille imprimable et ouvre la boîte
-d'impression du navigateur, où « Enregistrer au format PDF » écrit le fichier. Pas de bibliothèque
-tierce — c'est le seul chemin qui marche partout sans dépendance.
+**Tableau en PDF** bascule la page sur une feuille imprimable et ouvre la boîte d'impression du
+navigateur, où « Enregistrer au format PDF » écrit le fichier. Pas de bibliothèque tierce — c'est le
+seul chemin qui marche partout sans dépendance.
+
+**Cartes en CSV** sauvegarde le jeu modifié, et **Importer un CSV** le relit. Le fichier contient
+tout le matériel — une ligne par plan, une par carte —, pas seulement les retouches, si bien qu'il
+se lit et se corrige dans un tableur :
+
+```
+objet;cle;numero;minutage;icones;mort;pouvoir;points;cible;sens;seuil;gros_plan;plan_moyen;boite
+plan;201R;201;42;HEROINE|ARME|ARME;oui;PAIRE;3;ARME+ARME;;;;;
+carte;D01;;;;;;;;;;317;201;oui
+```
+
+À la relecture, seule la **différence avec l'imprimé** est retenue : un aller-retour ne crée donc
+aucune retouche fantôme, y compris sur les plans dont l'ordre imprimé des icônes n'est pas l'ordre
+canonique. Le fichier est en UTF-8 avec BOM et séparé par des points-virgules, pour s'ouvrir
+directement dans un tableur français.
 
 ## La table de jeu
 
@@ -278,7 +295,12 @@ La partie s'ouvre sans aucun tirage : chaque joueuse a devant elle les **deux** 
 exemplaires de chaque version, un par joueuse.
 
 Le tour se joue ensuite en deux phases : **Dérushage** (chacune pioche une carte dans un chutier ou
-sur une pioche), puis **Montage** (chacune la pose). La partie s'arrête au 10e plan posé.
+sur une pioche), puis **Montage** (chacune la pose). La partie s'arrête quand chaque banc compte
+**dix plans, Plan de départ compris** — il reste donc neuf plans à monter (`cfg.tours`).
+
+Un **Plan de départ n'est pas un Plan Large** : il a son propre cadrage, `DEP`. C'est un plan comme
+un autre pour tout ce qui compte des cartes du montage — couples d'icônes, minutages, positions,
+points par carte de séquence — mais aucun bandeau de cadrage ne le vise, et aucun ne le désigne.
 
 ## Ce qui reste ouvert dans les règles
 
