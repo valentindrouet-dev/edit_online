@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, objPortee } from './data.js?v=1.16';
+import { PERSONNAGES, ELEMENT_IDS, objPortee } from './data.js?v=1.17';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -80,9 +80,30 @@ export function valeurObjectif(obj, sequence, banc, cfg) {
       return n * portee.filter((p) => !p.el.some((e) => PERSONNAGES.includes(e))).length;
     case 'ABSENT':
       return montage.some((p) => p.el.includes(obj.el)) ? 0 : n;
+    case 'MINUTAGE':
+      // Le seuil est strict : « avant 25:00 » ne compte pas un plan à 25:00.
+      return n * montage.filter((p) => (obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
+    case 'CHRONO':
+      return chronologique(banc, cfg) ? n : 0;
     default:
       return 0;
   }
+}
+
+/**
+ * Le montage se lit-il dans l'ordre ? On le parcourt de gauche à droite,
+ * séquences comprises : chaque minutage doit être supérieur ou égal à celui
+ * de son voisin de gauche. Les plans à 00:00 — Raccords et Génériques — sont
+ * neutres tant que `chronoIgnoreZero` le dit.
+ */
+export function chronologique(banc, cfg) {
+  const plans = tousLesPlans(banc);
+  for (let i = 0; i < plans.length - 1; i++) {
+    const a = plans[i], b = plans[i + 1];
+    if (cfg.chronoIgnoreZero && (a.tc === 0 || b.tc === 0)) continue;
+    if (b.tc < a.tc) return false;
+  }
+  return true;
 }
 
 function chrono(banc, cfg) {
@@ -115,7 +136,8 @@ export function compter(banc, cfg) {
 
   const detail = {
     RACCORD: 0, PLAN: 0, FORMAT: 0, ELEMENT: 0, PAIRE: 0,
-    MORT: 0, NEANT: 0, ABSENT: 0, CHRONO: 0, POSE: 0, JONCTION: 0,
+    MORT: 0, NEANT: 0, ABSENT: 0, MINUTAGE: 0, CHRONO: 0,
+    CHRONOLOGIE: 0, POSE: 0, JONCTION: 0,
   };
   const lignes = [];
 
@@ -133,7 +155,7 @@ export function compter(banc, cfg) {
   const jr = jonctionsRaccordees(banc, cfg);
   detail.JONCTION = jr * (cfg.raccordElementPoints || 0);
   const ch = chrono(banc, cfg);
-  detail.CHRONO = ch.pts;
+  detail.CHRONOLOGIE = ch.pts;
 
   const total = Object.values(detail).reduce((a, b) => a + b, 0);
 
@@ -193,7 +215,9 @@ export const SOURCES_LABEL = {
   MORT: 'Objectifs Mort',
   NEANT: 'Objectifs Plan sans personnage',
   ABSENT: 'Objectifs d’absence',
-  CHRONO: 'Chronologie',
+  MINUTAGE: 'Objectifs de minutage',
+  CHRONO: 'Objectifs de montage dans l’ordre',
+  CHRONOLOGIE: 'Variante — chronologie',
   POSE: 'Points de pose',
   JONCTION: 'Jonctions raccordées',
 };

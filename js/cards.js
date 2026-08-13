@@ -11,15 +11,19 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel } from './data.js?v=1.16';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.16';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte } from './data.js?v=1.17';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.17';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
 }
 
-/** Le contenu d'un bandeau d'objectif, en icônes. */
-export function objContenu(obj, taille) {
+/**
+ * Le contenu d'un bandeau d'objectif, en icônes. `compact` sert au Gros Plan,
+ * dont le bandeau ne fait qu'un tiers de carte : on y renonce à l'étiquette
+ * « ◀ Plan ▶ », que l'aperçu au survol donne de toute façon en toutes lettres.
+ */
+export function objContenu(obj, taille, compact) {
   if (!obj) return '';
   switch (obj.kind) {
     case 'RACCORD': return `<span class="tag tag-gris">Raccord</span>`;
@@ -30,6 +34,11 @@ export function objContenu(obj, taille) {
     case 'MORT':    return elIcon('MORT', taille);
     case 'NEANT':   return elIcon('NEANT', taille);
     case 'ABSENT':  return `<span class="barre">${elIcon(obj.el, taille)}<b>✕</b></span>`;
+    // Sur un bandeau, la place manque : « avant / après » se lit « < » et « > ».
+    // Le libellé en toutes lettres reste dans l'aperçu au survol.
+    case 'MINUTAGE': return `${compact ? '' : '<span class="tag tag-blanc">◀ Plan ▶</span>'}
+      <span class="tc-seuil">${obj.sens === 'APRES' ? '&gt;' : '&lt;'}&nbsp;${tcTexte(obj.seuil)}</span>`;
+    case 'CHRONO':  return `<span class="tag tag-chrono">↗ ordre</span>`;
     default: return '';
   }
 }
@@ -38,19 +47,16 @@ export function objContenu(obj, taille) {
 export function objHTML(obj, taille) {
   if (!obj) return '';
   const n = numIcon(obj.n, taille);
-  if (obj.kind === 'ABSENT') {
-    return `<span class="obj-html">${n}<span class="si">si</span>${objContenu(obj, taille)}</span>`;
-  }
-  return `<span class="obj-html">${n}<span class="x">×</span>${objContenu(obj, taille)}</span>`;
+  const si = obj.kind === 'ABSENT' || obj.kind === 'CHRONO';
+  return `<span class="obj-html">${n}<span class="${si ? 'si' : 'x'}">${si ? 'si' : '×'}</span>${objContenu(obj, taille)}</span>`;
 }
 
-function bandeau(obj) {
+function bandeau(obj, format) {
   // Même sans objectif le bandeau reste : c'est lui qui aligne le bas des
   // deux moitiés d'une carte.
   if (!obj) return '<div class="bandeau sans-objectif"></div>';
-  const contenu = obj.kind === 'ABSENT'
-    ? `${numIcon(obj.n)}<span class="si">si</span>${objContenu(obj)}`
-    : `${numIcon(obj.n)}<span class="x">×</span>${objContenu(obj)}`;
+  const si = obj.kind === 'ABSENT' || obj.kind === 'CHRONO';
+  const contenu = `${numIcon(obj.n)}<span class="${si ? 'si' : 'x'}">${si ? 'si' : '×'}</span>${objContenu(obj, undefined, format === 'GP')}`;
   return `<div class="bandeau">${contenu}</div>`;
 }
 
@@ -79,7 +85,7 @@ export function renderPlan(h, opts = {}) {
       <div class="tcode ${h.tc === 0 || h.transition ? 'bleu' : ''}">${tc(h.tc)}</div>
     </div>
     <div class="pastilles" style="--n:${Math.max(1, h.el.length)}">${h.el.map((e) => elIcon(e)).join('')}</div>
-    ${bandeau(h.obj)}
+    ${bandeau(h.obj, h.format)}
     <div class="libelle" style="--c:${F.color}">${label}</div>
   </div>`;
 }

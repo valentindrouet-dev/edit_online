@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.16';
-export const BUILD_DATE = '2026-08-12 21:30';
+export const VERSION = '1.17';
+export const BUILD_DATE = '2026-08-12 23:15';
 
 export const CHANGELOG = [
+  {
+    v: '1.17',
+    date: '12/08/2026',
+    items: [
+      "Deux nouveaux pouvoirs. « n × ◀ Plan ▶ avant / après XX:00 » rapporte n points par plan du montage dont le minutage est strictement antérieur — ou postérieur — au seuil indiqué. « n si le montage est dans l’ordre » rapporte n points si, lu de gauche à droite, chaque minutage est supérieur ou égal à celui de son voisin de gauche.",
+      "Sur un Gros Plan, dont le bandeau ne fait qu’un tiers de carte, le seuil se lit « < 25:00 » ; l’aperçu au survol donne toujours la formule en toutes lettres.",
+      "Règles v0.13.4 : les deux bandeaux rejoignent le tableau de décompte.",
+      "La galerie du matériel tient quatre cartes de front dès 1500 px de fenêtre, cinq à partir de 1750, six au-delà — l’écran Matériel prend toute la largeur disponible et les cartes sont un peu resserrées.",
+      "Correction : une carte qui ne porte qu’un plan suit de nouveau sa taille de police, tout étant exprimé en em ; son fond noir ne dépassait plus à droite d’un Gros Plan mais était revenu avec le resserrement de la galerie.",
+    ],
+  },
   {
     v: '1.16',
     date: '12/08/2026',

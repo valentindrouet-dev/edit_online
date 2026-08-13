@@ -145,7 +145,10 @@ tous deux de cette valeur**, et c'est l'éditeur qui reçoit les vraies valeurs 
 - ses **icônes** — les six éléments, plus le marqueur de plan de mort ;
 - son **pouvoir**, écrit comme sur la carte : `X points × ce que l'on compte`, où « ce que l'on
   compte » est un cadrage, une icône, un couple d'icônes voisines, une mort, un plan sans
-  personnage, une Carte Raccord du montage, une carte de la séquence, ou l'absence d'une icône.
+  personnage, une Carte Raccord du montage, une carte de la séquence, un plan du montage **avant
+  ou après un seuil de minutage**, l'absence d'une icône, ou le fait que **le montage se lise dans
+  l'ordre** — chaque minutage supérieur ou égal à celui de son voisin de gauche, les plans à 00:00
+  restant neutres (`chronoIgnoreZero`).
 
 Une carte double s'édite avec **ses deux faces affichées** et ses quatre plans côte à côte. Son
 **appariement** est réglable — la répartition imprimée est conservée tant qu'on n'y touche pas.

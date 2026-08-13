@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.16';
+import { ELEMENT_IDS } from './data.js?v=1.17';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -28,6 +28,7 @@ export const DEFAULTS = {
   objectifsActifs: {
     RACCORD: true, PLAN: true, FORMAT: true, ELEMENT: true,
     PAIRE: true, MORT: true, NEANT: true, ABSENT: true,
+    MINUTAGE: true, CHRONO: true,
   },
   // Les règles ne précisent la portée que pour le Raccord (« dans sa
   // séquence ») et le Générique (« dans le montage »). Les autres bandeaux

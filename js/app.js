@@ -2,23 +2,23 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.16';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.17';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
-} from './data.js?v=1.16';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.16';
-import { elIcon } from './icons.js?v=1.16';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.16';
+} from './data.js?v=1.17';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.17';
+import { elIcon } from './icons.js?v=1.17';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.17';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.16';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.16';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.16';
-import { campagne } from './lab.js?v=1.16';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.16';
+} from './engine.js?v=1.17';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.17';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.17';
+import { campagne } from './lab.js?v=1.17';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.17';
 
 const app = document.getElementById('app');
 
@@ -914,7 +914,9 @@ const KINDS = [
   ['NEANT',   'par plan sans personnage'],
   ['RACCORD', 'par Carte Raccord du montage'],
   ['PLAN',    'par carte de sa séquence'],
+  ['MINUTAGE', 'par plan du montage avant / après…'],
   ['ABSENT',  'si l’icône est absente du montage…'],
+  ['CHRONO',  'si le montage se lit dans l’ordre'],
 ];
 
 const KIND_LABEL = Object.fromEntries(KINDS.map(([k, l]) => [k, l]));
@@ -1427,6 +1429,12 @@ function blocPouvoir(o, ou) {
     complement = `<select data-champ-obj="${ou}" data-part="el0">${elOpts(o.els[0])}</select>
       <span class="plus">+</span>
       <select data-champ-obj="${ou}" data-part="el1">${elOpts(o.els[1])}</select>`;
+  } else if (kind === 'MINUTAGE') {
+    complement = `<select data-champ-obj="${ou}" data-part="sens">
+        ${opt('AVANT', 'avant', o.sens !== 'APRES')}${opt('APRES', 'après', o.sens === 'APRES')}
+      </select>
+      <input type="number" class="pts" min="0" max="99" value="${o.seuil}" data-champ-obj="${ou}" data-part="seuil">
+      <span class="tc-apercu">${tc(o.seuil)}</span>`;
   }
 
   return `<div class="champ-bloc">
@@ -1434,7 +1442,7 @@ function blocPouvoir(o, ou) {
     <div class="editeur-obj">
       <input type="number" class="pts" min="0" max="20" value="${o ? o.n : 1}"
         data-champ-obj="${ou}" data-part="n" ${o ? '' : 'disabled'}>
-      <span class="x">${kind === 'ABSENT' ? 'si' : '×'}</span>
+      <span class="x">${kind === 'ABSENT' || kind === 'CHRONO' ? 'si' : '×'}</span>
       <select data-champ-obj="${ou}" data-part="kind">${KINDS.map(([k, l]) => opt(k, l, kind === k)).join('')}</select>
       ${complement}
     </div>
@@ -1903,6 +1911,9 @@ function construireObj(kind, actuel) {
     NEANT:   () => OBJ.neant(n),
     RACCORD: () => OBJ.raccord(n),
     PLAN:    () => OBJ.plan(n),
+    MINUTAGE: () => OBJ.minutage(n, actuel && actuel.sens ? actuel.sens : 'AVANT',
+      actuel && actuel.seuil !== undefined ? actuel.seuil : 25),
+    CHRONO:  () => OBJ.chrono(n),
   }[kind]();
 }
 
@@ -1924,6 +1935,8 @@ function majObjectif(cles, part, valeur) {
   else if (part === 'el') o.el = valeur;
   else if (part === 'el0') o.els = [valeur, o.els[1]];
   else if (part === 'el1') o.els = [o.els[0], valeur];
+  else if (part === 'sens') o.sens = valeur;
+  else if (part === 'seuil') o.seuil = Math.max(0, Math.min(99, parseInt(valeur, 10) || 0));
   poserObj(cles, o);
 }
 

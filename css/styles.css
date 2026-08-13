@@ -382,10 +382,11 @@ body.sans-illus .illus { background-image: none !important; }
    s'étirer à la largeur disponible et laisserait le fond noir de la carte
    dépasser à droite d'un Gros Plan. */
 .carte.solo { width: fit-content; aspect-ratio: auto; font-size: 12.7px; }
-.carte.solo .moitie { flex: 0 0 auto; height: 182px; }
-.carte.solo .moitie.f-GP { width: 85px; }
-.carte.solo .moitie.f-PM { width: 169px; }
-.carte.solo .moitie.f-PL { width: 254px; }
+/* Tout est en em : la carte suit sa taille de police, comme une carte entière. */
+.carte.solo .moitie { flex: 0 0 auto; height: 14.33em; }
+.carte.solo .moitie.f-GP { width: 6.72em; }
+.carte.solo .moitie.f-PM { width: 13.28em; }
+.carte.solo .moitie.f-PL { width: 20em; }
 
 .carte.dos { background: #12101a; }
 .pioche-fermee { position: relative; }
@@ -623,7 +624,12 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 /* La galerie reste sous les yeux à gauche, la carte en cours d'édition tient
    dans une colonne collante à droite. */
 
-.materiel-2col { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 18px; align-items: start; }
+/* L'écran Matériel prend toute la largeur qu'on lui donne : c'est une galerie,
+   elle doit tenir au moins quatre cartes de front. */
+.wrap.large.materiel-2col {
+  display: grid; grid-template-columns: minmax(0, 1fr) 370px; gap: 18px; align-items: start;
+  max-width: 2000px;
+}
 .materiel-2col > .panneau { margin: 0; }
 .editeur { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; }
 
@@ -694,6 +700,15 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
   .materiel-2col { grid-template-columns: minmax(0, 1fr); }
   .editeur { position: static; max-height: none; }
 }
+
+/* Dans la galerie du matériel, les cartes sont un peu resserrées : quatre de
+   front tiennent alors dès 1540 px de fenêtre. */
+/* Quatre cartes de front tiennent alors dès 1500 px de fenêtre, cinq à partir
+   de 1750 px. La carte reste entièrement pilotée par sa taille de police :
+   largeur = 20 em, hauteur = 14,33 em. */
+.materiel-2col .galerie .carte.small:not(.solo) { width: 226px; font-size: 11.3px; }
+.materiel-2col .galerie .carte.solo { font-size: 11.3px; }
+.materiel-2col .galerie { gap: 14px; }
 
 /* --- Feuille imprimable (export PDF) --------------------------------------- */
 /* Aucune bibliothèque : on bascule la page en mode impression et le navigateur
@@ -827,3 +842,20 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .alerte-doublons .aide { display: block; color: #9a5b50; font-size: .8rem; }
 .champ-ligne input.en-double { border-color: #d8604e; background: #fff3f1; color: #8f3226; }
 .alerte-mini { font-size: .74rem; font-weight: 700; color: #b4453a; white-space: nowrap; }
+
+/* --- Bandeaux de minutage -------------------------------------------------- */
+
+.tc-seuil {
+  background: #0d0d10; color: #ff3b30; font-weight: 700; font-size: .55em;
+  padding: .14em .3em; border-radius: .22em; letter-spacing: .03em; border: 1px solid #3a3b44;
+  font-family: "SFMono-Regular", "Consolas", "Menlo", monospace; white-space: nowrap;
+}
+.tag.tag-chrono {
+  background: #1d3a2a; color: #7ee2a8; border: 1px solid #2f6b4a;
+  font-size: .52em; font-weight: 800; padding: .2em .42em; border-radius: .22em;
+  letter-spacing: .04em; white-space: nowrap;
+}
+.apercu-obj .tc-seuil, .tbl-materiel .tc-seuil,
+.ap-obj-visuel .tc-seuil { font-size: .74rem; }
+.apercu-obj .tag.tag-chrono, .tbl-materiel .tag.tag-chrono,
+.ap-obj-visuel .tag.tag-chrono { font-size: .7rem; }

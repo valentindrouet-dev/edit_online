@@ -13,13 +13,23 @@
 // Les versions précédentes du texte restent lisibles dans l'onglet
 // « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.16';
-import { elIcon } from './icons.js?v=1.16';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.17';
+import { elIcon } from './icons.js?v=1.17';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.13.4',
+    date: '12/08/2026',
+    origine: 'Nouveaux pouvoirs demandés par l’auteur',
+    corps: (c) => corps_0_13_4(c),
+    items: [
+      'Nouveau bandeau « n × ◀ Plan ▶ avant / après XX:00 » : n points par plan du montage dont le minutage est strictement antérieur (ou postérieur) au seuil indiqué.',
+      'Nouveau bandeau « n si le montage est dans l’ordre » : n points si, lu de gauche à droite, chaque minutage du montage est supérieur ou égal à celui de son voisin de gauche.',
+    ],
+  },
   {
     v: '0.13.3',
     date: '12/08/2026',
@@ -202,6 +212,22 @@ function corps_0_13_3(c) {
       la carte, donc un Gros Plan accroché à gauche d'une séquence est celui du recto, et à droite
       celui du verso. Réglable dans <b>Variables</b> ⚙.`}`)}
     <h3>Phase A — Le Dérushage</h3>`);
+}
+
+// --- v0.13.4 ---------------------------------------------------------------
+// Deux bandeaux qui lisent le minutage du montage.
+
+function corps_0_13_4(c) {
+  return corps_0_13_3(c).replace(
+    '<tr><td><b>n si élément barré</b></td><td>n points si l’élément est absent</td><td>Le montage</td></tr>',
+    `<tr><td><b>n si élément barré</b></td><td>n points si l’élément est absent</td><td>Le montage</td></tr>
+    ${maj('0.13.4', `<tr><td><b>n × ◀ Plan ▶ avant / après XX:00</b></td>
+      <td>n points par plan dont le minutage est <b>strictement</b> antérieur (ou postérieur) au seuil</td>
+      <td>Le montage</td></tr>
+    <tr><td><b>n si montage dans l’ordre</b></td>
+      <td>n points si, lu de gauche à droite, chaque minutage est supérieur ou égal à celui de son
+      voisin de gauche${c.chronoIgnoreZero ? ' — les plans à 00:00 sont neutres' : ''}</td>
+      <td>Le montage</td></tr>`)}`);
 }
 
 const portee = (c) => (c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence');

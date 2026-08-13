@@ -39,6 +39,10 @@ export const FORMATS = {
 //   MORT      n points par plan de mort
 //   NEANT     n points par plan sans aucun personnage
 //   ABSENT    n points si l'élément visé n'apparaît nulle part
+//   MINUTAGE  n points par plan du montage dont le minutage est strictement
+//             avant (ou après) le seuil visé
+//   CHRONO    n points si le montage se lit dans l'ordre : chaque minutage
+//             est supérieur ou égal à celui de son voisin de gauche
 
 export const OBJ = {
   raccord: (n) => ({ kind: 'RACCORD', n }),
@@ -49,7 +53,14 @@ export const OBJ = {
   mort:    (n) => ({ kind: 'MORT', n }),
   neant:   (n) => ({ kind: 'NEANT', n }),
   absent:  (n, e) => ({ kind: 'ABSENT', n, el: e }),
+  minutage: (n, sens, seuil) => ({ kind: 'MINUTAGE', n, sens, seuil }),
+  chrono:  (n) => ({ kind: 'CHRONO', n }),
 };
+
+/** « 25:00 », en toutes lettres d'afficheur. */
+export function tcTexte(min) {
+  return `${String(Math.floor(min)).padStart(2, '0')}:00`;
+}
 
 export function objLabel(o) {
   if (!o) return '';
@@ -62,14 +73,18 @@ export function objLabel(o) {
     case 'MORT':    return `${o.n} × Mort`;
     case 'NEANT':   return `${o.n} × Plan sans personnage`;
     case 'ABSENT':  return `${o.n} si ${ELEMENTS[o.el].label} est absent`;
+    case 'MINUTAGE': return `${o.n} × ◀ Plan ▶ ${o.sens === 'APRES' ? 'après' : 'avant'} ${tcTexte(o.seuil)}`;
+    case 'CHRONO':  return `${o.n} si le montage est dans l’ordre`;
     default: return '';
   }
 }
 
+// Ces bandeaux se lisent toujours sur le montage entier : le Générique compte
+// ses Cartes Raccord, et les deux bandeaux de minutage jugent le film complet.
+const PORTEE_MONTAGE = ['RACCORD', 'MINUTAGE', 'CHRONO'];
+
 export function objPortee(o) {
-  // Le Générique compte les Cartes Raccord du montage entier ; tous les autres
-  // bandeaux se lisent dans leur propre séquence.
-  return o && o.kind === 'RACCORD' ? 'MONTAGE' : 'SEQUENCE';
+  return o && PORTEE_MONTAGE.includes(o.kind) ? 'MONTAGE' : 'SEQUENCE';
 }
 
 // --- Les 33 scènes ---------------------------------------------------------
