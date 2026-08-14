@@ -13,13 +13,34 @@
 // Les versions précédentes du texte restent lisibles dans l'onglet
 // « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.19';
-import { elIcon } from './icons.js?v=1.19';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.20';
+import { elIcon } from './icons.js?v=1.20';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.13.8',
+    date: '13/08/2026',
+    origine: 'Refonte demandée par l’auteur',
+    corps: (c) => corps_0_13_8(c),
+    items: [
+      'Chaque bandeau porte sa propre portée : il compte parmi les cartes placées avant lui, après lui, dans sa séquence, ou dans le montage entier.',
+      'Les flèches du bandeau la disent : « ◀ Héroïne » avant, « Héroïne ▶ » après, « ◀ Héroïne ▶ » dans la séquence, « Héroïne » tout court dans le montage.',
+      'Le bandeau « avant / après cette carte » n’est plus un type à part : c’est la portée d’un bandeau ordinaire.',
+    ],
+  },
+  {
+    v: '0.13.7',
+    date: '13/08/2026',
+    origine: 'Nouveaux pouvoirs demandés par l’auteur',
+    corps: (c) => corps_0_13_7(c),
+    items: [
+      'Nouveau bandeau « n si aucun plan à XX:00 dans le montage » : n points si aucun plan du montage ne porte ce minutage. À 00:00, il vise les Raccords et les Génériques.',
+      'Le même bandeau se règle aussi en « aucun plan avant XX:00 » et « aucun plan après XX:00 ».',
+    ],
+  },
   {
     v: '0.13.6',
     date: '13/08/2026',
@@ -293,6 +314,42 @@ function corps_0_13_6(c) {
       positions, les points par carte de séquence. Mais aucun bandeau de <b>cadrage</b> ne le vise :
       « n × Plan Large » ne le compte pas, et aucun bandeau ne désigne les Plans de départ.`)}
       <h3>Phase A — Le Dérushage</h3>`);
+}
+
+// --- v0.13.7 ---------------------------------------------------------------
+// Le minutage absent du montage.
+
+function corps_0_13_7(c) {
+  return corps_0_13_6(c).replace(
+    '<tr><td><b>n si montage dans l’ordre</b></td>',
+    `${maj('0.13.7', `<tr><td><b>n si aucun plan à / avant / après XX:00</b></td>
+      <td>n points si <b>aucun</b> plan du montage n’a ce minutage — à 00:00, cela vise les
+      Raccords et les Génériques</td><td>Le montage</td></tr>`)}
+    <tr><td><b>n si montage dans l’ordre</b></td>`);
+}
+
+// --- v0.13.8 ---------------------------------------------------------------
+// La portée devient une propriété de chaque bandeau.
+
+function corps_0_13_8(c) {
+  return corps_0_13_7(c)
+    .replace('<h3>Décompte des bandeaux</h3>',
+      `${majBloc('0.13.8', `<b>La portée d’un bandeau.</b> Chaque bandeau dit lui-même où il compte,
+      et ses flèches le donnent à lire :
+      <ul>
+        <li><b>◀ Héroïne</b> — parmi les cartes placées <b>avant</b> celle-ci dans le montage ;</li>
+        <li><b>Héroïne ▶</b> — parmi celles placées <b>après</b> ;</li>
+        <li><b>◀ Héroïne ▶</b> — dans <b>sa séquence</b> ;</li>
+        <li><b>Héroïne</b> — dans le <b>montage entier</b>.</li>
+      </ul>
+      Un Raccord porte donc « ◀ Plan ▶ » : un point par carte de sa séquence. Un Générique porte
+      « Raccord » sans flèche : deux points par Carte Raccord du montage.`)}
+      <h3>Décompte des bandeaux</h3>`)
+    .replace('<tr><td><b>n × Raccord</b></td><td>n points par Carte Raccord</td><td>Le montage</td></tr>',
+      '<tr><td><b>n × Raccord</b></td><td>n points par Carte Raccord</td><td>Sa portée ◀ ▶</td></tr>')
+    .replace('<tr><td><b>n × ◀ Plan ▶</b></td><td>n points par carte</td><td>Sa séquence</td></tr>',
+      '<tr><td><b>n × Plan</b></td><td>n points par carte</td><td>Sa portée ◀ ▶</td></tr>')
+    .replace(new RegExp(`<td>${portee(c)} ⚙</td>`, 'g'), '<td>Sa portée ◀ ▶</td>');
 }
 
 const portee = (c) => (c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence');

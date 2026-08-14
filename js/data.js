@@ -50,21 +50,37 @@ export const CADRAGES_VISABLES = ['PL', 'PM', 'GP'];
 //             avant (ou après) le seuil visé
 //   CHRONO    n points si le montage se lit dans l'ordre : chaque minutage
 //             est supérieur ou égal à celui de son voisin de gauche
-//   POSITION  n points par plan du montage placé strictement avant (ou après)
-//             la carte porteuse et portant l'icône — ou le cadrage — visé
+//   SANS_TC   n points si aucun plan du montage n'a le minutage visé : égal au
+//             seuil (00:00 pour les Raccords et Génériques), ou strictement
+//             avant, ou strictement après
+
+// --- La portée d'un bandeau ------------------------------------------------
+// Tout bandeau dit où il compte : parmi les cartes placées avant lui, après
+// lui, dans sa séquence, ou dans le montage entier. Les flèches du bandeau le
+// disent d'un coup d'œil — « ◀ Héroïne » avant, « Héroïne ▶ » après,
+// « ◀ Héroïne ▶ » dans la séquence, « Héroïne » tout court dans le montage.
+
+export const PORTEES = [
+  { id: 'AVANT',    label: 'avant cette carte',  court: 'avant',   gauche: true,  droite: false },
+  { id: 'APRES',    label: 'après cette carte',  court: 'après',   gauche: false, droite: true },
+  { id: 'SEQUENCE', label: 'dans sa séquence',   court: 'séquence', gauche: true,  droite: true },
+  { id: 'MONTAGE',  label: 'dans le montage',    court: 'montage', gauche: false, droite: false },
+];
+
+export const PORTEE_IDS = PORTEES.map((p) => p.id);
 
 export const OBJ = {
-  raccord: (n) => ({ kind: 'RACCORD', n }),
-  plan:    (n) => ({ kind: 'PLAN', n }),
-  format:  (n, f) => ({ kind: 'FORMAT', n, format: f }),
-  element: (n, e) => ({ kind: 'ELEMENT', n, el: e }),
-  paire:   (n, a, b) => ({ kind: 'PAIRE', n, els: [a, b] }),
-  mort:    (n) => ({ kind: 'MORT', n }),
-  neant:   (n) => ({ kind: 'NEANT', n }),
-  absent:  (n, e) => ({ kind: 'ABSENT', n, el: e }),
-  minutage: (n, sens, seuil) => ({ kind: 'MINUTAGE', n, sens, seuil }),
-  chrono:  (n) => ({ kind: 'CHRONO', n }),
-  position: (n, sens, quoi, cible) => ({ kind: 'POSITION', n, sens, quoi, ...(quoi === 'FORMAT' ? { format: cible } : { el: cible }) }),
+  raccord: (n, portee) => ({ kind: 'RACCORD', n, portee: portee || 'MONTAGE' }),
+  plan:    (n, portee) => ({ kind: 'PLAN', n, portee: portee || 'SEQUENCE' }),
+  format:  (n, f, portee) => ({ kind: 'FORMAT', n, format: f, ...(portee ? { portee } : {}) }),
+  element: (n, e, portee) => ({ kind: 'ELEMENT', n, el: e, ...(portee ? { portee } : {}) }),
+  paire:   (n, a, b, portee) => ({ kind: 'PAIRE', n, els: [a, b], ...(portee ? { portee } : {}) }),
+  mort:    (n, portee) => ({ kind: 'MORT', n, ...(portee ? { portee } : {}) }),
+  neant:   (n, portee) => ({ kind: 'NEANT', n, ...(portee ? { portee } : {}) }),
+  absent:  (n, e, portee) => ({ kind: 'ABSENT', n, el: e, portee: portee || 'MONTAGE' }),
+  minutage: (n, sens, seuil, portee) => ({ kind: 'MINUTAGE', n, sens, seuil, portee: portee || 'MONTAGE' }),
+  chrono:  (n, portee) => ({ kind: 'CHRONO', n, portee: portee || 'MONTAGE' }),
+  sansTc: (n, sens, seuil, portee) => ({ kind: 'SANS_TC', n, sens, seuil, portee: portee || 'MONTAGE' }),
 };
 
 /** « 25:00 », en toutes lettres d'afficheur. */
@@ -72,32 +88,47 @@ export function tcTexte(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
 }
 
-export function objLabel(o) {
-  if (!o) return '';
+/** Ce que le bandeau compte, sans sa portée. */
+function objQuoi(o) {
   switch (o.kind) {
-    case 'RACCORD': return `${o.n} × Raccord`;
-    case 'PLAN':    return `${o.n} × ◀ Plan ▶`;
-    case 'FORMAT':  return `${o.n} × ${FORMATS[o.format].label}`;
-    case 'ELEMENT': return `${o.n} × ${ELEMENTS[o.el].label}`;
+    case 'RACCORD': return 'Raccord';
+    case 'PLAN':    return 'Plan';
+    case 'FORMAT':  return FORMATS[o.format].label;
+    case 'ELEMENT': return ELEMENTS[o.el].label;
     case 'PAIRE':   return o.els[0] === o.els[1]
-      ? `${o.n} × couple de ${ELEMENTS[o.els[0]].label}`
-      : `${o.n} × couple ${ELEMENTS[o.els[0]].label} + ${ELEMENTS[o.els[1]].label}`;
-    case 'MORT':    return `${o.n} × Mort`;
-    case 'NEANT':   return `${o.n} × Plan sans personnage`;
-    case 'ABSENT':  return `${o.n} si ${ELEMENTS[o.el].label} est absent`;
-    case 'MINUTAGE': return `${o.n} × ◀ Plan ▶ ${o.sens === 'APRES' ? 'après' : 'avant'} ${tcTexte(o.seuil)}`;
-    case 'CHRONO':  return `${o.n} si le montage est dans l’ordre`;
-    case 'POSITION': return `${o.n} × ${o.quoi === 'FORMAT' ? FORMATS[o.format].label : ELEMENTS[o.el].label} ${o.sens === 'APRES' ? 'après' : 'avant'} cette carte`;
+      ? `couple de ${ELEMENTS[o.els[0]].label}`
+      : `couple ${ELEMENTS[o.els[0]].label} + ${ELEMENTS[o.els[1]].label}`;
+    case 'MORT':    return 'Mort';
+    case 'NEANT':   return 'Plan sans personnage';
+    case 'MINUTAGE': return `Plan ${o.sens === 'APRES' ? 'après' : 'avant'} ${tcTexte(o.seuil)}`;
     default: return '';
   }
 }
 
-// Ces bandeaux se lisent toujours sur le montage entier : le Générique compte
-// ses Cartes Raccord, et les deux bandeaux de minutage jugent le film complet.
-const PORTEE_MONTAGE = ['RACCORD', 'MINUTAGE', 'CHRONO', 'POSITION'];
+export function objLabel(o, cfg) {
+  if (!o) return '';
+  const p = PORTEES.find((x) => x.id === objPortee(o, cfg)) || PORTEES[3];
+  const ou = p.id === 'MONTAGE' ? '' : ` ${p.label}`;
+  switch (o.kind) {
+    case 'ABSENT':  return `${o.n} si ${ELEMENTS[o.el].label} est absent${ou}`;
+    case 'CHRONO':  return `${o.n} si tout est dans l’ordre${ou || ' dans le montage'}`;
+    case 'SANS_TC': return `${o.n} si aucun plan ${
+      o.sens === 'AVANT' ? `avant ${tcTexte(o.seuil)}`
+        : o.sens === 'APRES' ? `après ${tcTexte(o.seuil)}`
+          : `à ${tcTexte(o.seuil)}`}${ou || ' dans le montage'}`;
+    default: return `${o.n} × ${objQuoi(o)}${ou}`;
+  }
+}
 
-export function objPortee(o) {
-  return o && PORTEE_MONTAGE.includes(o.kind) ? 'MONTAGE' : 'SEQUENCE';
+/**
+ * Où un bandeau compte. Il le porte lui-même ; les cartes imprimées qui ne le
+ * précisent pas suivent la variable de partie — c'est le point resté ouvert
+ * dans les règles.
+ */
+export function objPortee(o, cfg) {
+  if (!o) return 'MONTAGE';
+  if (PORTEE_IDS.includes(o.portee)) return o.portee;
+  return cfg && cfg.porteeParDefaut === 'SEQUENCE' ? 'SEQUENCE' : 'MONTAGE';
 }
 
 // --- Les 33 scènes ---------------------------------------------------------

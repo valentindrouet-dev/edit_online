@@ -2,24 +2,24 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.19';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.20';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
-  CADRAGES_VISABLES,
-} from './data.js?v=1.19';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.19';
-import { elIcon } from './icons.js?v=1.19';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon } from './cards.js?v=1.19';
+  CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee,
+} from './data.js?v=1.20';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.20';
+import { elIcon } from './icons.js?v=1.20';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.20';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.19';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.19';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.19';
-import { campagne } from './lab.js?v=1.19';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.19';
+} from './engine.js?v=1.20';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.20';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.20';
+import { campagne } from './lab.js?v=1.20';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.20';
 
 const app = document.getElementById('app');
 
@@ -64,6 +64,16 @@ function normaliserMateriel() {
     }
     delete store.cfg.minutages;
   }
+  // Le pouvoir « avant / après cette carte » était un type à part : c'est
+  // désormais la portée d'un pouvoir ordinaire.
+  for (const v of Object.values(m.plans)) {
+    if (v.obj && v.obj.kind === 'POSITION') {
+      const o = v.obj;
+      v.obj = o.quoi === 'FORMAT'
+        ? { kind: 'FORMAT', n: o.n, format: o.format, portee: o.sens === 'APRES' ? 'APRES' : 'AVANT' }
+        : { kind: 'ELEMENT', n: o.n, el: o.el, portee: o.sens === 'APRES' ? 'APRES' : 'AVANT' };
+    }
+  }
   // Avant les faces, une moitié de carte double n'avait qu'une clé : son
   // numéro. La retouche vaut désormais pour le recto et pour le verso.
   for (const [k, v] of Object.entries(m.plans)) {
@@ -74,7 +84,7 @@ function normaliserMateriel() {
   }
   store.cfg.materiel = m;
   if (!Array.isArray(store.cfg.cartesDesactivees)) store.cfg.cartesDesactivees = [];
-  if (store.cfg.materielActif !== 'MODIFIE') store.cfg.materielActif = 'IMPRIME';
+  if (store.cfg.materielActif !== 'IMPRIME') store.cfg.materielActif = 'MODIFIE';
 }
 
 /**
@@ -249,6 +259,7 @@ function vueAccueil() {
   }));
 
   brancherJoueurs();
+  brancherJeuAccueil(vueAccueil);
   brancherChips(vueAccueil);
   brancherChamps(vueAccueil);
   app.querySelector('#graine').addEventListener('change', (e) => { store.cfg.graine = e.target.value.trim(); sauverCfg(); });
@@ -267,6 +278,14 @@ function ligneJoueur(j, i) {
       ${Object.values(PROFILS_IA).map((p) => `<option value="${p.id}" ${j.type === p.id ? 'selected' : ''}>${p.label}</option>`).join('')}
     </select>
   </div>`;
+}
+
+function brancherJeuAccueil(apres) {
+  app.querySelectorAll('[data-jeu-accueil]').forEach((b) => b.addEventListener('click', () => {
+    store.cfg.materielActif = b.dataset.jeuAccueil;
+    sauverCfg();
+    if (apres) apres();
+  }));
 }
 
 function brancherJoueurs() {
@@ -321,19 +340,21 @@ function resumePaquet() {
 
 /**
  * Quel jeu de matériel part en partie. Il n'y a pas de retour en arrière
- * destructeur : l'imprimé et le modifié coexistent, ce bandeau dit lequel
- * se lance, et l'écran Matériel permet d'en changer.
+ * destructeur : les deux coexistent, ce sélecteur dit lequel se lance.
  */
 function bandeauMateriel() {
   const modifie = store.cfg.materielActif === 'MODIFIE';
   const n = Object.keys(store.cfg.materiel.plans).length + Object.keys(store.cfg.materiel.paires).length;
   const off = store.cfg.cartesDesactivees.length;
-  return `<div class="bandeau-materiel ${modifie ? 'modifie' : ''}" data-go="#/materiel">
-    <span class="bm-etat">${modifie ? 'Matériel modifié' : 'Matériel imprimé'}</span>
+  return `<div class="bandeau-materiel ${modifie ? 'modifie' : ''}">
+    <div class="segments large" id="seg-materiel">
+      <button class="${modifie ? '' : 'on'}" data-jeu-accueil="IMPRIME">Matériel d’origine</button>
+      <button class="${modifie ? 'on' : ''}" data-jeu-accueil="MODIFIE">Matériel modifié</button>
+    </div>
     <span class="aide">${modifie
-      ? `${n} retouche${n > 1 ? 's' : ''} en jeu`
+      ? (n ? `${n} retouche${n > 1 ? 's' : ''} en jeu` : 'aucune retouche pour l’instant')
       : 'les cartes des PDF, sans retouche'}${off ? ` · ${off} carte${off > 1 ? 's' : ''} écartée${off > 1 ? 's' : ''}` : ''}</span>
-    <span class="bm-lien">changer ›</span>
+    <span class="bm-lien" data-go="#/materiel">éditer ›</span>
   </div>`;
 }
 
@@ -788,8 +809,8 @@ function contenuApercu(d) {
       </div>` : '<div class="ap-vide">Aucune icône</div>';
     })()}
     ${d.obj ? `<div class="ap-obj">
-      <div class="ap-obj-visuel">${objHTML(d.obj, 44)}</div>
-      <div class="ap-obj-texte">${objLabel(d.obj)}</div>
+      <div class="ap-obj-visuel">${objHTML(d.obj, 44, store.cfg)}</div>
+      <div class="ap-obj-texte">${objLabel(d.obj, store.cfg)}</div>
     </div>` : '<div class="ap-vide">Aucun bandeau</div>'}
     ${d.points === null || d.points === undefined ? '' : `<div class="ap-points">
       Cette carte rapporte <b>${d.points}</b> point${Math.abs(d.points) > 1 ? 's' : ''} dans ce montage
@@ -963,15 +984,15 @@ const KINDS = [
   ['',        'aucun pouvoir'],
   ['FORMAT',  'par plan du cadrage…'],
   ['ELEMENT', 'par plan portant l’icône…'],
-  ['PAIRE',   'par couple d’icônes voisines…'],
+  ['PAIRE',   'par couple d’icônes réunies…'],
   ['MORT',    'par plan de mort'],
   ['NEANT',   'par plan sans personnage'],
-  ['RACCORD', 'par Carte Raccord du montage'],
-  ['PLAN',    'par carte de sa séquence'],
-  ['MINUTAGE', 'par plan du montage avant / après…'],
-  ['POSITION', 'par plan avant / après cette carte…'],
-  ['ABSENT',  'si l’icône est absente du montage…'],
-  ['CHRONO',  'si le montage se lit dans l’ordre'],
+  ['RACCORD', 'par Carte Raccord'],
+  ['PLAN',    'par carte'],
+  ['MINUTAGE', 'par plan avant / après un minutage…'],
+  ['ABSENT',  'si l’icône est absente…'],
+  ['CHRONO',  'si tout se lit dans l’ordre'],
+  ['SANS_TC', 'si aucun plan au minutage…'],
 ];
 
 const KIND_LABEL = Object.fromEntries(KINDS.map(([k, l]) => [k, l]));
@@ -1168,7 +1189,7 @@ function barreJeu() {
   return `<div class="barre-jeu">
     <span class="bj-lg">Jeu lancé en partie</span>
     <div class="segments large" id="seg-jeu">
-      <button class="${modifie ? '' : 'on'}" data-jeu="IMPRIME">Imprimé</button>
+      <button class="${modifie ? '' : 'on'}" data-jeu="IMPRIME">Origine</button>
       <button class="${modifie ? 'on' : ''}" data-jeu="MODIFIE">Modifié</button>
     </div>
     <span class="aide">
@@ -1390,7 +1411,7 @@ function blocPlan(h) {
       <button class="pill mini" data-vider="obj" data-cles="${h.cle}" ${h.obj ? '' : 'disabled'}>Enlever le pouvoir</button>
     </div>
     ${memeObjectif(h.obj, imp.obj) ? '' : `<div class="imp-rappel ligne">imprimé :
-      ${imp.obj ? `${objHTML(imp.obj, 20)} ${objLabel(imp.obj)}` : 'bandeau vide'}</div>`}
+      ${imp.obj ? `${objHTML(imp.obj, 20, store.cfg)} ${objLabel(imp.obj, store.cfg)}` : 'bandeau vide'}</div>`}
   </div>`;
 }
 
@@ -1503,18 +1524,13 @@ function blocPouvoir(o, ou) {
     complement = `<select data-champ-obj="${ou}" data-part="el0">${elOpts(o.els[0])}</select>
       <span class="plus">+</span>
       <select data-champ-obj="${ou}" data-part="el1">${elOpts(o.els[1])}</select>`;
-  } else if (kind === 'POSITION') {
-    const cible = o.quoi === 'FORMAT'
-      ? `<select data-champ-obj="${ou}" data-part="cible">
-          ${['PL', 'PM', 'GP'].map((f) => opt(f, FORMATS[f].label, o.format === f)).join('')}</select>`
-      : `<select data-champ-obj="${ou}" data-part="cible">${elOpts(o.el)}</select>`;
-    complement = `<select data-champ-obj="${ou}" data-part="quoi">
-        ${opt('ELEMENT', 'les plans portant', o.quoi !== 'FORMAT')}${opt('FORMAT', 'les plans du cadrage', o.quoi === 'FORMAT')}
+  } else if (kind === 'SANS_TC') {
+    complement = `<select data-champ-obj="${ou}" data-part="sens">
+        ${opt('EGAL', 'à', o.sens !== 'AVANT' && o.sens !== 'APRES')}
+        ${opt('AVANT', 'avant', o.sens === 'AVANT')}${opt('APRES', 'après', o.sens === 'APRES')}
       </select>
-      ${cible}
-      <select data-champ-obj="${ou}" data-part="sens">
-        ${opt('AVANT', 'avant cette carte', o.sens !== 'APRES')}${opt('APRES', 'après cette carte', o.sens === 'APRES')}
-      </select>`;
+      <input type="number" class="pts" min="0" max="99" value="${o.seuil}" data-champ-obj="${ou}" data-part="seuil">
+      <span class="tc-apercu">${tc(o.seuil)}</span>`;
   } else if (kind === 'MINUTAGE') {
     complement = `<select data-champ-obj="${ou}" data-part="sens">
         ${opt('AVANT', 'avant', o.sens !== 'APRES')}${opt('APRES', 'après', o.sens === 'APRES')}
@@ -1528,11 +1544,16 @@ function blocPouvoir(o, ou) {
     <div class="editeur-obj">
       <input type="number" class="pts" min="0" max="20" value="${o ? o.n : 1}"
         data-champ-obj="${ou}" data-part="n" ${o ? '' : 'disabled'}>
-      <span class="x">${kind === 'ABSENT' || kind === 'CHRONO' ? 'si' : '×'}</span>
+      <span class="x">${estSi(o) ? 'si' : '×'}</span>
       <select data-champ-obj="${ou}" data-part="kind">${KINDS.map(([k, l]) => opt(k, l, kind === k)).join('')}</select>
       ${complement}
     </div>
-    <div class="apercu-obj">${o ? `${objHTML(o, 26)}<span class="lit">${objLabel(o)}</span>`
+    ${o ? `<div class="portee-choix">
+      ${PORTEES.map((x) => `<button class="pp ${objPortee(o, store.cfg) === x.id ? 'on' : ''}"
+        data-champ-portee="${ou}" data-portee="${x.id}" title="${x.label}">
+        ${x.gauche ? '◀' : ''} ${x.court} ${x.droite ? '▶' : ''}</button>`).join('')}
+    </div>` : ''}
+    <div class="apercu-obj">${o ? `${objHTML(o, 26, store.cfg)}<span class="lit">${objLabel(o, store.cfg)}</span>`
       : '<span class="aide">Bandeau vide</span>'}</div>
   </div>`;
 }
@@ -1582,7 +1603,7 @@ function tableauPlans(cat) {
       <td>${p.famille}</td>
       <td class="num">${tc(p.tc)}</td>
       <td>${p.el.map((e) => elIcon(e, 20)).join('') || '—'}${p.mort ? elIcon('MORT', 20) : ''}</td>
-      <td>${p.obj ? `${objHTML(p.obj, 20)} <span class="aide">${objLabel(p.obj)}</span>` : '—'}</td>
+      <td>${p.obj ? `${objHTML(p.obj, 20, store.cfg)} <span class="aide">${objLabel(p.obj, store.cfg)}</span>` : '—'}</td>
       <td>${p.modifie ? 'retouché' : 'imprimé'}</td>
     </tr>`).join('')}</tbody>
   </table>`;
@@ -1715,7 +1736,7 @@ function vueStats() {
 
   const tableau = (titre, lignes) => `<h3>${titre}</h3>
     <table class="tbl tbl-stats">
-      <thead><tr><th></th><th class="num">Imprimé</th><th class="num">Modifié</th><th class="num">Écart</th></tr></thead>
+      <thead><tr><th></th><th class="num">Origine</th><th class="num">Modifié</th><th class="num">Écart</th></tr></thead>
       <tbody>${lignes}</tbody>
     </table>`;
 
@@ -1934,6 +1955,12 @@ function brancherEditeur(refaire) {
     sauverCfg(); refaire();
   }));
 
+  app.querySelectorAll('[data-champ-portee]').forEach((el) => el.addEventListener('click', () => {
+    const cibles = el.dataset.champPortee === 'lot' ? plans.map((p) => p.cle) : [el.dataset.champPortee];
+    majObjectif(cibles, 'portee', el.dataset.portee);
+    sauverCfg(); refaire();
+  }));
+
   app.querySelectorAll('[data-paire]').forEach((el) => el.addEventListener('change', () => {
     const rang = el.dataset.paire;
     const c = surLeModifie(buildCartesDoubles)[+rang];
@@ -2042,7 +2069,7 @@ function construireObj(kind, actuel) {
   if (!kind) return null;
   const n = actuel ? actuel.n : 1;
   const e0 = actuel && actuel.el ? actuel.el : (actuel && actuel.els ? actuel.els[0] : ELEMENT_IDS[0]);
-  return {
+  const neuf = {
     FORMAT:  () => OBJ.format(n, actuel && actuel.format ? actuel.format : 'PM'),
     ELEMENT: () => OBJ.element(n, e0),
     ABSENT:  () => OBJ.absent(n, e0),
@@ -2054,8 +2081,12 @@ function construireObj(kind, actuel) {
     MINUTAGE: () => OBJ.minutage(n, actuel && actuel.sens ? actuel.sens : 'AVANT',
       actuel && actuel.seuil !== undefined ? actuel.seuil : 25),
     CHRONO:  () => OBJ.chrono(n),
-    POSITION: () => OBJ.position(n, actuel && actuel.sens ? actuel.sens : 'AVANT', 'ELEMENT', e0),
+    SANS_TC: () => OBJ.sansTc(n, actuel && actuel.sens ? actuel.sens : 'EGAL',
+      actuel && actuel.seuil !== undefined ? actuel.seuil : 0),
   }[kind]();
+  // Changer de type ne déplace pas le bandeau : il garde sa portée.
+  if (actuel && PORTEE_IDS.includes(actuel.portee)) neuf.portee = actuel.portee;
+  return neuf;
 }
 
 /**
@@ -2078,13 +2109,7 @@ function majObjectif(cles, part, valeur) {
   else if (part === 'el1') o.els = [o.els[0], valeur];
   else if (part === 'sens') o.sens = valeur;
   else if (part === 'seuil') o.seuil = Math.max(0, Math.min(99, parseInt(valeur, 10) || 0));
-  else if (part === 'quoi') {
-    o.quoi = valeur;
-    if (valeur === 'FORMAT') { o.format = o.format || 'GP'; delete o.el; }
-    else { o.el = o.el || ELEMENT_IDS[0]; delete o.format; }
-  } else if (part === 'cible') {
-    if (o.quoi === 'FORMAT') o.format = valeur; else o.el = valeur;
-  }
+  else if (part === 'portee') o.portee = valeur;
   poserObj(cles, o);
 }
 
@@ -2100,7 +2125,7 @@ function memeObjectif(a, b) {
 // retouche fantôme.
 
 const CSV_COLS = ['objet', 'cle', 'numero', 'minutage', 'icones', 'mort',
-  'pouvoir', 'points', 'cible', 'sens', 'seuil', 'gros_plan', 'plan_moyen', 'boite'];
+  'pouvoir', 'points', 'cible', 'portee', 'sens', 'seuil', 'gros_plan', 'plan_moyen', 'boite'];
 
 function csvEchappe(v) {
   const t = v === undefined || v === null ? '' : String(v);
@@ -2122,17 +2147,17 @@ function exporterCSV() {
       const o = p.obj;
       lignes.push([
         'plan', p.cle, p.num, p.tc, p.el.join('|'), p.mort ? 'oui' : 'non',
-        o ? o.kind : '', o ? o.n : '', cibleObj(o), o && o.sens ? o.sens : '',
-        o && o.seuil !== undefined ? o.seuil : '', '', '', '',
+        o ? o.kind : '', o ? o.n : '', cibleObj(o), o ? objPortee(o, store.cfg) : '',
+        o && o.sens ? o.sens : '', o && o.seuil !== undefined ? o.seuil : '', '', '', '',
       ].map(csvEchappe).join(';'));
     }
     for (const c of buildCartesDoubles()) {
-      lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '',
+      lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '',
         c.gpNum, c.pmNum, estDesactivee(c.id) ? 'non' : 'oui'].map(csvEchappe).join(';'));
     }
     for (const f of ['PL', 'DEPART']) {
       for (const c of cartesDe(f)) {
-        lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '',
+        lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '',
           '', '', estDesactivee(c.id) ? 'non' : 'oui'].map(csvEchappe).join(';'));
       }
     }
@@ -2172,26 +2197,25 @@ function objDepuisCSV(r) {
   if (!kind) return null;
   const n = Math.max(0, Math.min(20, parseInt(r.points, 10) || 0));
   const cible = (r.cible || '').trim().toUpperCase();
-  const sens = (r.sens || '').trim().toUpperCase() === 'APRES' ? 'APRES' : 'AVANT';
+  const sens0 = (r.sens || '').trim().toUpperCase();
+  const sens = sens0 === 'APRES' ? 'APRES' : 'AVANT';
+  const pt = (r.portee || '').trim().toUpperCase();
+  const portee = PORTEE_IDS.includes(pt) ? pt : undefined;
   const seuil = Math.max(0, Math.min(99, parseInt(r.seuil, 10) || 0));
   switch (kind) {
-    case 'RACCORD': return OBJ.raccord(n);
-    case 'PLAN':    return OBJ.plan(n);
-    case 'MORT':    return OBJ.mort(n);
-    case 'NEANT':   return OBJ.neant(n);
-    case 'CHRONO':  return OBJ.chrono(n);
-    case 'FORMAT':  return CADRAGES_VISABLES.includes(cible) ? OBJ.format(n, cible) : null;
-    case 'ELEMENT': return ELEMENT_IDS.includes(cible) ? OBJ.element(n, cible) : null;
-    case 'ABSENT':  return ELEMENT_IDS.includes(cible) ? OBJ.absent(n, cible) : null;
-    case 'MINUTAGE': return OBJ.minutage(n, sens, seuil);
+    case 'RACCORD': return OBJ.raccord(n, portee);
+    case 'PLAN':    return OBJ.plan(n, portee);
+    case 'MORT':    return OBJ.mort(n, portee);
+    case 'NEANT':   return OBJ.neant(n, portee);
+    case 'CHRONO':  return OBJ.chrono(n, portee);
+    case 'SANS_TC': return OBJ.sansTc(n, ['AVANT', 'APRES'].includes(sens0) ? sens0 : 'EGAL', seuil, portee);
+    case 'FORMAT':  return CADRAGES_VISABLES.includes(cible) ? OBJ.format(n, cible, portee) : null;
+    case 'ELEMENT': return ELEMENT_IDS.includes(cible) ? OBJ.element(n, cible, portee) : null;
+    case 'ABSENT':  return ELEMENT_IDS.includes(cible) ? OBJ.absent(n, cible, portee) : null;
+    case 'MINUTAGE': return OBJ.minutage(n, sens, seuil, portee);
     case 'PAIRE': {
       const [a, b] = cible.split('+');
-      return ELEMENT_IDS.includes(a) && ELEMENT_IDS.includes(b) ? OBJ.paire(n, a, b) : null;
-    }
-    case 'POSITION': {
-      const fmt = CADRAGES_VISABLES.includes(cible);
-      if (!fmt && !ELEMENT_IDS.includes(cible)) return null;
-      return OBJ.position(n, sens, fmt ? 'FORMAT' : 'ELEMENT', cible);
+      return ELEMENT_IDS.includes(a) && ELEMENT_IDS.includes(b) ? OBJ.paire(n, a, b, portee) : null;
     }
     default: return null;
   }

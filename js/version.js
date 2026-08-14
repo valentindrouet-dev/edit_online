@@ -1,8 +1,23 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.19';
-export const BUILD_DATE = '2026-08-13 04:20';
+export const VERSION = '1.20';
+export const BUILD_DATE = '2026-08-13 05:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.20',
+    date: '13/08/2026',
+    items: [
+      "Sur l’accueil, le rappel du matériel devient un sélecteur : <b>Matériel d’origine</b> à gauche, <b>Matériel modifié</b> à droite, et l’on bascule sans quitter la page. Un lien mène à l’éditeur.",
+      "C’est désormais le <b>matériel modifié</b> qui part en partie par défaut. Un choix déjà enregistré n’est pas touché.",
+      "Les deux jeux se nomment pareil partout où on les désigne : « Origine » et « Modifié », dans le sélecteur de l’écran Matériel comme dans les colonnes des statistiques.",
+      "Nouveau pouvoir « n si aucun plan à / avant / après XX:00 » : n points si aucun plan du montage ne porte ce minutage. Réglé sur 00:00, il vise les Raccords et les Génériques — leur minutage bleu.",
+      "Règles v0.13.7.",
+      "<b>La portée devient une propriété de chaque pouvoir</b> : une ligne dans l’éditeur dit s’il compte parmi les cartes placées avant lui, après lui, dans sa séquence, ou dans le montage entier. Les flèches du bandeau la donnent à lire — « ◀ Héroïne » avant, « Héroïne ▶ » après, « ◀ Héroïne ▶ » dans la séquence, « Héroïne » tout court dans le montage.",
+      "Le pouvoir « avant / après cette carte » n’est plus un type à part : c’est la portée d’un pouvoir ordinaire. Les cartes déjà réglées ainsi sont converties.",
+      "Le réglage « Portée des bandeaux » des Variables ne vaut plus que pour les bandeaux imprimés qui ne précisent pas la leur.",
+      "Règles v0.13.8.",
+    ],
+  },
   {
     v: '1.19',
     date: '13/08/2026',

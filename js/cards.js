@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte } from './data.js?v=1.19';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.19';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.20';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.20';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -23,43 +23,52 @@ export function tc(min) {
  * dont le bandeau ne fait qu'un tiers de carte : on y renonce à l'étiquette
  * « ◀ Plan ▶ », que l'aperçu au survol donne de toute façon en toutes lettres.
  */
-export function objContenu(obj, taille, compact) {
+export function objContenu(obj, taille, compact, cfg) {
   if (!obj) return '';
+  const p = PORTEES.find((x) => x.id === objPortee(obj, cfg)) || PORTEES[3];
+  const fleche = (cote) => (p[cote] ? `<span class="fleche-pos">${cote === 'gauche' ? '◀' : '▶'}</span>` : '');
+  return `${fleche('gauche')}${objCoeur(obj, taille, compact)}${fleche('droite')}`;
+}
+
+/** Ce que le bandeau compte, sans les flèches de portée. */
+function objCoeur(obj, taille, compact) {
   switch (obj.kind) {
     case 'RACCORD': return `<span class="tag tag-gris">Raccord</span>`;
-    case 'PLAN':    return `<span class="tag tag-blanc">◀ Plan ▶</span>`;
-    case 'FORMAT':  return `<span class="tag tag-fmt" style="--c:${FORMATS[obj.format].color}">${FORMATS[obj.format].label}</span>`;
+    case 'PLAN':    return `<span class="tag tag-blanc">Plan</span>`;
+    case 'FORMAT':  return `<span class="tag tag-fmt" style="--c:${FORMATS[obj.format].color}">${compact ? FORMATS[obj.format].short : FORMATS[obj.format].label}</span>`;
     case 'ELEMENT': return elIcon(obj.el, taille);
     case 'PAIRE':   return `<span class="paire">${elIcon(obj.els[0], taille)}<i></i>${elIcon(obj.els[1], taille)}</span>`;
-    case 'POSITION': return `${obj.quoi === 'FORMAT'
-      ? `<span class="tag tag-fmt" style="--c:${FORMATS[obj.format].color}">${compact ? FORMATS[obj.format].short : FORMATS[obj.format].label}</span>`
-      : elIcon(obj.el, taille)}<span class="fleche-pos">${obj.sens === 'APRES' ? '▶' : '◀'}</span>`;
     case 'MORT':    return elIcon('MORT', taille);
     case 'NEANT':   return elIcon('NEANT', taille);
     case 'ABSENT':  return `<span class="barre">${elIcon(obj.el, taille)}<b>✕</b></span>`;
     // Sur un bandeau, la place manque : « avant / après » se lit « < » et « > ».
     // Le libellé en toutes lettres reste dans l'aperçu au survol.
-    case 'MINUTAGE': return `${compact ? '' : '<span class="tag tag-blanc">◀ Plan ▶</span>'}
+    case 'MINUTAGE': return `${compact ? '' : '<span class="tag tag-blanc">Plan</span>'}
       <span class="tc-seuil">${obj.sens === 'APRES' ? '&gt;' : '&lt;'}&nbsp;${tcTexte(obj.seuil)}</span>`;
     case 'CHRONO':  return `<span class="tag tag-chrono">↗ ordre</span>`;
+    case 'SANS_TC': return `<span class="barre"><span class="tc-seuil">${
+      obj.sens === 'AVANT' ? '&lt;' : obj.sens === 'APRES' ? '&gt;' : '='
+    }&nbsp;${tcTexte(obj.seuil)}</span><b>✕</b></span>`;
     default: return '';
   }
 }
 
 /** L'objectif en entier — « 2 × ⛨ » — pour les cartes et les tableaux. */
-export function objHTML(obj, taille) {
+export function objHTML(obj, taille, cfg) {
   if (!obj) return '';
   const n = numIcon(obj.n, taille);
-  const si = obj.kind === 'ABSENT' || obj.kind === 'CHRONO';
-  return `<span class="obj-html">${n}<span class="${si ? 'si' : 'x'}">${si ? 'si' : '×'}</span>${objContenu(obj, taille)}</span>`;
+  return `<span class="obj-html">${n}<span class="${estSi(obj) ? 'si' : 'x'}">${estSi(obj) ? 'si' : '×'}</span>${objContenu(obj, taille, false, cfg)}</span>`;
 }
+
+/** Les bandeaux qui se lisent « n si … » plutôt que « n × … ». */
+const OBJ_SI = ['ABSENT', 'CHRONO', 'SANS_TC'];
+export const estSi = (o) => !!o && OBJ_SI.includes(o.kind);
 
 function bandeau(obj, format) {
   // Même sans objectif le bandeau reste : c'est lui qui aligne le bas des
   // deux moitiés d'une carte.
   if (!obj) return '<div class="bandeau sans-objectif"></div>';
-  const si = obj.kind === 'ABSENT' || obj.kind === 'CHRONO';
-  const contenu = `${numIcon(obj.n)}<span class="${si ? 'si' : 'x'}">${si ? 'si' : '×'}</span>${objContenu(obj, undefined, format === 'GP')}`;
+  const contenu = `${numIcon(obj.n)}<span class="${estSi(obj) ? 'si' : 'x'}">${estSi(obj) ? 'si' : '×'}</span>${objContenu(obj, undefined, format === 'GP')}`;
   return `<div class="bandeau">${contenu}</div>`;
 }
 

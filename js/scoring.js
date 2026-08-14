@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, objPortee } from './data.js?v=1.19';
+import { PERSONNAGES, ELEMENT_IDS, objPortee } from './data.js?v=1.20';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -52,27 +52,35 @@ function couples(plans, els) {
 }
 
 /**
- * Valeur d'un bandeau porté par `sequence`, lu dans le banc `banc`.
- * La portée est la séquence porteuse, sauf pour le Générique — ou si les
- * variables imposent la portée « montage entier ».
+ * Les plans qu'un bandeau regarde. Sa portée le dit : les cartes placées avant
+ * lui dans le montage, celles placées après, celles de sa séquence, ou le
+ * montage entier — lu de gauche à droite, séquences comprises.
  */
+export function porteeDe(obj, sequence, banc, cfg, porteur) {
+  const montage = tousLesPlans(banc);
+  const p = objPortee(obj, cfg);
+  if (p === 'SEQUENCE') return sequence;
+  if (p === 'AVANT' || p === 'APRES') {
+    const i = porteur ? montage.indexOf(porteur) : -1;
+    if (i < 0) return [];
+    return p === 'AVANT' ? montage.slice(0, i) : montage.slice(i + 1);
+  }
+  return montage;
+}
+
+/** Valeur d'un bandeau porté par `porteur`, dans la portée qu'il déclare. */
 export function valeurObjectif(obj, sequence, banc, cfg, porteur) {
   if (!obj) return 0;
   if (cfg.objectifsActifs && cfg.objectifsActifs[obj.kind] === false) return 0;
 
-  const montage = tousLesPlans(banc);
-  const large = objPortee(obj) === 'MONTAGE' || cfg.porteeParDefaut === 'MONTAGE';
-  const portee = large ? montage : sequence;
-  const groupes = large ? banc.sequences : [sequence];
+  const portee = porteeDe(obj, sequence, banc, cfg, porteur);
   const n = obj.n;
 
   switch (obj.kind) {
     case 'RACCORD':
-      // Le Générique rapporte n points par Carte Raccord du montage.
-      return n * montage.filter(estRaccord).length;
+      return n * portee.filter(estRaccord).length;
     case 'PLAN':
-      // Le Raccord rapporte n points par carte de sa séquence.
-      return n * sequence.length;
+      return n * portee.length;
     case 'FORMAT':
       return n * portee.filter((p) => p.format === obj.format).length;
     case 'ELEMENT':
@@ -88,22 +96,19 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur) {
     case 'NEANT':
       return n * portee.filter((p) => !p.el.some((e) => PERSONNAGES.includes(e))).length;
     case 'ABSENT':
-      return montage.some((p) => p.el.includes(obj.el)) ? 0 : n;
+      return portee.some((p) => p.el.includes(obj.el)) ? 0 : n;
     case 'MINUTAGE':
       // Le seuil est strict : « avant 25:00 » ne compte pas un plan à 25:00.
-      return n * montage.filter((p) => (obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
+      return n * portee.filter((p) => (obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
     case 'CHRONO':
-      return chronologique(banc, cfg) ? n : 0;
-    case 'POSITION': {
-      // On compte les plans placés strictement avant — ou après — la carte
-      // porteuse, dans le montage lu de gauche à droite.
-      const i = porteur ? montage.indexOf(porteur) : -1;
-      if (i < 0) return 0;
-      const cote = obj.sens === 'APRES' ? montage.slice(i + 1) : montage.slice(0, i);
-      const vise = obj.quoi === 'FORMAT'
-        ? (p) => p.format === obj.format
-        : (p) => p.el.includes(obj.el);
-      return n * cote.filter(vise).length;
+      return chronologique(portee, cfg) ? n : 0;
+    case 'SANS_TC': {
+      // La portée doit être vierge du minutage visé — dont le 00:00 bleu des
+      // Raccords et Génériques.
+      const vise = obj.sens === 'AVANT' ? (p) => p.tc < obj.seuil
+        : obj.sens === 'APRES' ? (p) => p.tc > obj.seuil
+          : (p) => p.tc === obj.seuil;
+      return portee.some(vise) ? 0 : n;
     }
     default:
       return 0;
@@ -111,13 +116,11 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur) {
 }
 
 /**
- * Le montage se lit-il dans l'ordre ? On le parcourt de gauche à droite,
- * séquences comprises : chaque minutage doit être supérieur ou égal à celui
- * de son voisin de gauche. Les plans à 00:00 — Raccords et Génériques — sont
- * neutres tant que `chronoIgnoreZero` le dit.
+ * Une suite de plans se lit-elle dans l'ordre ? Chaque minutage doit être
+ * supérieur ou égal à celui de son voisin de gauche. Les plans à 00:00 —
+ * Raccords et Génériques — sont neutres tant que `chronoIgnoreZero` le dit.
  */
-export function chronologique(banc, cfg) {
-  const plans = tousLesPlans(banc);
+export function chronologique(plans, cfg) {
   for (let i = 0; i < plans.length - 1; i++) {
     const a = plans[i], b = plans[i + 1];
     if (cfg.chronoIgnoreZero && (a.tc === 0 || b.tc === 0)) continue;
@@ -156,7 +159,7 @@ export function compter(banc, cfg) {
 
   const detail = {
     RACCORD: 0, PLAN: 0, FORMAT: 0, ELEMENT: 0, PAIRE: 0,
-    MORT: 0, NEANT: 0, ABSENT: 0, MINUTAGE: 0, CHRONO: 0, POSITION: 0,
+    MORT: 0, NEANT: 0, ABSENT: 0, MINUTAGE: 0, CHRONO: 0, SANS_TC: 0,
     CHRONOLOGIE: 0, POSE: 0, JONCTION: 0,
   };
   const lignes = [];
@@ -236,7 +239,7 @@ export const SOURCES_LABEL = {
   NEANT: 'Objectifs Plan sans personnage',
   ABSENT: 'Objectifs d’absence',
   MINUTAGE: 'Objectifs de minutage',
-  POSITION: 'Objectifs de position dans le montage',
+  SANS_TC: 'Objectifs de minutage absent',
   CHRONO: 'Objectifs de montage dans l’ordre',
   CHRONOLOGIE: 'Variante — chronologie',
   POSE: 'Points de pose',

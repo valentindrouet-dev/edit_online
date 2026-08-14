@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.19';
+import { ELEMENT_IDS } from './data.js?v=1.20';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -28,15 +28,14 @@ export const DEFAULTS = {
   objectifsActifs: {
     RACCORD: true, PLAN: true, FORMAT: true, ELEMENT: true,
     PAIRE: true, MORT: true, NEANT: true, ABSENT: true,
-    MINUTAGE: true, CHRONO: true, POSITION: true,
+    MINUTAGE: true, CHRONO: true, SANS_TC: true,
   },
   // Une carte peut porter deux fois la même icône. Par défaut chacune rapporte
   // ses points ; à false, un objectif d'élément compte les plans porteurs.
   elementParIcone: true,
-  // Les règles ne précisent la portée que pour le Raccord (« dans sa
-  // séquence ») et le Générique (« dans le montage »). Les autres bandeaux
-  // sont lus par défaut sur le montage entier — basculer sur SEQUENCE pour
-  // tester l'autre lecture.
+  // Chaque bandeau porte désormais sa propre portée — avant, après, sa
+  // séquence, le montage. Celle-ci ne vaut plus que pour les cartes imprimées
+  // qui ne la précisent pas : c'est le point resté ouvert dans les règles.
   porteeParDefaut: 'MONTAGE',   // 'SEQUENCE' | 'MONTAGE'
   multiplicateurObjectif: 1,
   scorerDepart: true,           // le Plan de départ compte dans le décompte
@@ -66,7 +65,7 @@ export const DEFAULTS = {
   // Deux jeux de matériel coexistent en permanence : l'IMPRIMÉ, intouchable,
   // et le MODIFIÉ, qui porte les retouches de l'éditeur. `materielActif` dit
   // lequel se joue — passer de l'un à l'autre ne détruit rien.
-  materielActif: 'IMPRIME',   // 'IMPRIME' | 'MODIFIE'
+  materielActif: 'MODIFIE',   // 'IMPRIME' (le matériel d'origine) | 'MODIFIE'
   // `plans` surcharge le minutage, les icônes et le bandeau d'un plan, indexé
   // par sa clé (numéro + face : « 201R », « 201V », « 101 ») ; `paires` refait
   // l'appariement Plan Moyen / Gros Plan d'une carte, indexé par son rang.
@@ -138,7 +137,7 @@ export const SCHEMA = [
   { groupe: 'Décompte', champs: [
     { k: 'porteeParDefaut', l: 'Portée des bandeaux', t: 'choix', options: [
       ['SEQUENCE', 'La séquence porteuse'], ['MONTAGE', 'Le montage entier'],
-    ], aide: 'le Générique compte toujours sur le montage entier' },
+    ], aide: 'seulement pour les bandeaux imprimés qui ne la précisent pas' },
     { k: 'multiplicateurObjectif', l: 'Multiplicateur des bandeaux', t: 'float', min: 0, max: 5, pas: 0.25 },
     { k: 'scorerDepart', l: 'Le Plan de départ rapporte', t: 'bool' },
     { k: 'elementParIcone', l: 'Compter chaque icône, pas chaque plan', t: 'bool',

@@ -118,9 +118,10 @@ galerie reste à gauche, la carte ou le lot en cours d'édition dans une colonne
 
 ### Deux jeux, en permanence
 
-L'**Imprimé** — les cartes des PDF, intouchables — et le **Modifié**, qui porte les retouches.
-Un sélecteur en tête d'écran dit lequel part en partie, et le rappel s'affiche sur l'accueil comme
-dans le bandeau de la table de jeu. Basculer de l'un à l'autre ne détruit rien : il n'y a pas de
+L'**Origine** — les cartes des PDF, intouchables — et le **Modifié**, qui porte les retouches et qui
+part en partie par défaut. Deux sélecteurs disent lequel se lance : l'un en tête de l'écran Matériel,
+l'autre sur l'accueil juste au-dessus du bouton de départ. Le rappel s'affiche aussi dans le bandeau
+de la table de jeu. Basculer de l'un à l'autre ne détruit rien : il n'y a pas de
 remise à zéro globale. La galerie, elle, montre et règle toujours le Modifié ; chaque valeur qui
 s'en écarte affiche la valeur imprimée à côté d'elle. Une partie en cours garde le jeu avec lequel
 elle a été lancée.
@@ -149,16 +150,37 @@ tous deux de cette valeur**, et c'est l'éditeur qui reçoit les vraies valeurs 
   le compte s'affiche en badge. Chaque icône compte pour elle-même au décompte
   (`elementParIcone: false` revient à compter les plans porteurs) ;
 - son **pouvoir**, écrit comme sur la carte : `X points × ce que l'on compte`, où « ce que l'on
-  compte » est un cadrage, une icône, un couple d'icônes voisines, une mort, un plan sans
-  personnage, une Carte Raccord du montage, une carte de la séquence, un plan du montage **avant
-  ou après un seuil de minutage**, un plan placé **avant ou après la carte porteuse** et portant une
-  icône ou un cadrage donné, l'absence d'une icône, ou le fait que **le montage se lise dans
-  l'ordre** — chaque minutage supérieur ou égal à celui de son voisin de gauche, les plans à 00:00
-  restant neutres (`chronoIgnoreZero`).
+  compte » est un cadrage, une icône, un couple d'icônes, une mort, un plan sans personnage, une
+  Carte Raccord, une carte, un plan **avant ou après un seuil de minutage**, l'absence d'une icône,
+  ou le fait que **le montage se lise dans l'ordre** — chaque minutage supérieur ou égal à celui de
+  son voisin de gauche, les plans à 00:00 restant neutres (`chronoIgnoreZero`) —, ou encore
+  qu'**aucun plan n'ait un minutage donné**, égal au seuil, ou strictement avant, ou strictement
+  après : réglé sur 00:00, il vise les Raccords et les Génériques, dont le minutage s'affiche en
+  bleu ;
+- sa **portée** — voir ci-dessous : là où le pouvoir va compter.
 
   Le **couple d'icônes** n'est pas une adjacence : il apparie les icônes réunies dans sa portée.
   Quatre icônes font deux couples, cinq en font deux aussi ; un couple de deux icônes différentes
   en demande une de chaque.
+
+### La portée d'un pouvoir
+
+Chaque pouvoir dit **où il compte**. C'est une ligne de l'éditeur, sous le pouvoir lui-même, et
+quatre choix (`PORTEES` dans `js/data.js`, `porteeDe()` dans `js/scoring.js`) :
+
+| Portée | Ce qu'elle prend | Sur le bandeau |
+|---|---|---|
+| `AVANT` | les plans du montage placés strictement avant la carte porteuse | `2 × ◀ Héroïne` |
+| `APRES` | ceux placés strictement après | `2 × Héroïne ▶` |
+| `SEQUENCE` | la séquence de la carte porteuse | `2 × ◀ Héroïne ▶` |
+| `MONTAGE` | le montage entier | `2 × Héroïne` |
+
+Les flèches se lisent depuis la carte : elles montrent le côté d'où viennent les points. Un bandeau
+sans flèche compte partout. `AVANT` et `APRES` remplacent l'ancien pouvoir de position, qui était un
+type à part ; les cartes déjà réglées ainsi sont converties au chargement.
+
+Un bandeau imprimé qui ne précise pas sa portée retombe sur `porteeParDefaut` — le réglage de
+Variables, qui ne vaut plus que pour ceux-là.
 
 Une carte double s'édite avec **ses deux faces affichées** et ses quatre plans côte à côte. Son
 **appariement** est réglable — la répartition imprimée est conservée tant qu'on n'y touche pas.
@@ -306,11 +328,12 @@ points par carte de séquence — mais aucun bandeau de cadrage ne le vise, et a
 
 Chacun de ces points est une variable réglable dans l'écran **Variables** :
 
-- **La portée des bandeaux.** Les règles ne la fixent que pour le Raccord (« 1 point par carte dans
-  sa séquence ») et le Générique (« 2 points par Carte Raccord dans le montage »). Les autres
-  bandeaux — cadrage, élément, paire, mort — sont lus par défaut sur le **montage entier** ;
-  `porteeParDefaut: 'SEQUENCE'` bascule sur l'autre lecture. Les deux donnent des jeux très
-  différents (voir plus bas).
+- **La portée des bandeaux imprimés.** Les règles ne la fixent que pour le Raccord (« 1 point par
+  carte dans sa séquence ») et le Générique (« 2 points par Carte Raccord dans le montage »). Les
+  autres bandeaux imprimés — cadrage, élément, paire, mort — ne la disent pas, et retombent sur
+  `porteeParDefaut`, qui les lit sur le **montage entier** ; `'SEQUENCE'` bascule sur l'autre
+  lecture. Les deux donnent des jeux très différents (voir plus bas). Un pouvoir réglé dans
+  l'éditeur porte la sienne et ne dépend plus de ce réglage.
 - **Le sens de pose** : aux deux bouts d'une séquence, ou à droite seulement.
 - **Le symbole ✕ noir** des bandeaux de la famille Mort, interprété ici en « plan sans personnage ».
 - **Le rôle du minutage** : affiché, mais il ne rapporte rien tant que le bonus de chronologie

@@ -838,18 +838,15 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 /* --- Quel matériel part en partie ------------------------------------------ */
 
 .bandeau-materiel {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; cursor: pointer;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   border: 1px solid var(--gris-clair); background: #fff; border-radius: 12px;
-  padding: 10px 14px; margin-bottom: 12px; transition: .14s;
+  padding: 10px 14px; margin-bottom: 12px;
 }
-.bandeau-materiel:hover { border-color: var(--violet-clair); }
-.bandeau-materiel .bm-etat {
-  font-weight: 700; font-size: .84rem; color: var(--encre-doux);
-  background: var(--gris-clair); border-radius: 999px; padding: 4px 12px;
-}
-.bandeau-materiel.modifie .bm-etat { background: var(--violet); color: #fff; }
 .bandeau-materiel .aide { flex: 1 1 auto; font-size: .8rem; }
-.bandeau-materiel .bm-lien { font-size: .8rem; font-weight: 700; color: var(--violet); }
+.bandeau-materiel .bm-lien {
+  font-size: .8rem; font-weight: 700; color: var(--violet); cursor: pointer;
+}
+.bandeau-materiel .bm-lien:hover { text-decoration: underline; }
 
 .jeton-materiel {
   font-size: .74rem; font-weight: 700; padding: 3px 10px; border-radius: 999px;
@@ -924,3 +921,14 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
   font-size: .86rem; color: var(--encre-doux);
 }
 .ap-points b { font-size: 1.15rem; color: var(--orange); }
+
+/* --- La portée d'un pouvoir ------------------------------------------------ */
+
+.portee-choix { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.portee-choix .pp {
+  border: 1px solid var(--gris-clair); background: #fff; border-radius: 9px;
+  padding: 5px 9px; font-size: .76rem; font-weight: 700; color: var(--encre-doux);
+  cursor: pointer; transition: .12s; white-space: nowrap;
+}
+.portee-choix .pp:hover { border-color: var(--violet-clair); color: var(--violet); }
+.portee-choix .pp.on { background: var(--violet); border-color: var(--violet); color: #fff; }
