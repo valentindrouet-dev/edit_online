@@ -257,11 +257,13 @@ body.sans-illus .pastilles .pastille { height: auto; width: auto; max-height: 10
   max-width: calc((100% - (var(--n, 1) - 1) * .18em) / var(--n, 1)); }
 body.sans-illus .bandeau { flex: 0 0 30%; gap: .3em; }
 body.sans-illus .bandeau .pastille, body.sans-illus .bandeau .pastille-num { height: 68%; }
-body.sans-illus .bandeau .x, body.sans-illus .bandeau .si { font-size: 1em; }
+body.sans-illus .bandeau .x, body.sans-illus .bandeau .si { font-size: 2.1em; }
 body.sans-illus .bandeau .tag { font-size: .82em; padding: .28em .5em; }
 body.sans-illus .bandeau .tc-seuil { font-size: .84em; }
 body.sans-illus .bandeau .tag.tag-chrono { font-size: .74em; }
-body.sans-illus .bandeau .fleche-pos { font-size: 1.1em; }
+body.sans-illus .bandeau .fleche-pos { font-size: 1.9em; }
+body.sans-illus .moitie.f-GP .bandeau .x, body.sans-illus .moitie.f-GP .bandeau .si { font-size: 1.5em; }
+body.sans-illus .moitie.f-GP .bandeau .fleche-pos { font-size: 1.35em; }
 /* Le minutage double : sa boîte est en em de sa propre police, elle suit. */
 body.sans-illus .moitie .tcode { font-size: 1.84em; top: .16em; left: .15em; }
 /* Un Gros Plan n'a qu'un tiers de largeur : il garde des icônes un peu plus
@@ -283,6 +285,19 @@ body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
 .moitie .tcode { font-size: .92em; }
 .moitie .tcode.bleu { color: #38bdf8; }
 
+/* Ce que le plan rapporte, au coin opposé du minutage. Le jeton ne paraît
+   qu'au montage : ailleurs, une carte ne rapporte rien en particulier. */
+.moitie .jeton-pts {
+  position: absolute; top: .3em; right: .29em; z-index: 3;
+  min-width: 1.5em; height: 1.5em; padding: 0 .28em;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--violet); color: #fff; font-weight: 800; font-size: 1.05em;
+  border-radius: .42em; border: 1px solid rgba(255, 255, 255, .6);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+}
+.moitie .jeton-pts.nul { background: rgba(24, 22, 34, .5); border-color: rgba(255, 255, 255, .3); }
+body.sans-points .jeton-pts { display: none; }
+
 /* Pastilles : taille libre par défaut, ajustée à la bande dans les cartes. */
 .pastille { display: block; width: 1.5em; height: 1.5em; object-fit: contain; flex: 0 0 auto; }
 .pastille-num { display: block; width: 1.45em; height: 1.45em; flex: 0 0 auto; }
@@ -293,14 +308,26 @@ body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
   max-width: calc((100% - (var(--n, 1) - 1) * .1em) / var(--n, 1));
   object-fit: contain;
 }
-.bandeau .pastille, .bandeau .pastille-num { height: 82%; width: auto; }
+/* Les icônes du bandeau se laissent rétrécir plutôt que déborder : sur un Gros
+   Plan, un bandeau de couple demande trois pastilles dans un tiers de carte. */
+.bandeau .pastille, .bandeau .pastille-num {
+  height: 82%; width: auto; flex: 0 1 auto; min-width: 0; object-fit: contain;
+}
 
 .moitie.f-PM .bandeau, .moitie.f-PL .bandeau { background: var(--fmt-pm); }
 .moitie.f-PL .bandeau { background: var(--fmt-pl); }
 .moitie.f-DEP .bandeau { background: #3f8fbf; }
 .moitie.depart .bandeau { background: #7fc4e8; }
 .moitie.transition .bandeau { background: #3c3c44; }
-.bandeau .x, .bandeau .si { color: #fff; font-weight: 800; font-size: .72em; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+/* Le ×, le « si » et les flèches de portée se lisent à la taille des icônes :
+   ils font partie de la formule, pas de la ponctuation. Un Gros Plan n'a qu'un
+   tiers de carte, il les prend un cran plus bas. */
+.bandeau .x, .bandeau .si { color: #fff; font-weight: 800; font-size: 1.5em; line-height: 1;
+  text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.bandeau .fleche-pos { font-size: 1.35em; line-height: 1; }
+.moitie.f-GP .bandeau { gap: .12em; }
+.moitie.f-GP .bandeau .x, .moitie.f-GP .bandeau .si { font-size: 1.15em; }
+.moitie.f-GP .bandeau .fleche-pos { font-size: 1.05em; }
 .bandeau .tag {
   font-size: .52em; font-weight: 800; letter-spacing: .02em; padding: .25em .45em;
   border-radius: .3em; text-transform: uppercase; line-height: 1.08; text-align: center;
@@ -322,7 +349,8 @@ body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
 
 /* L'objectif hors carte : tableaux de score, règles, matériel. */
 .obj-html { display: inline-flex; align-items: center; gap: 5px; vertical-align: middle; }
-.obj-html .x, .obj-html .si { font-weight: 800; color: var(--encre-doux); font-size: .85em; }
+.obj-html .x, .obj-html .si { font-weight: 800; color: var(--encre-doux); font-size: 1.4em; line-height: 1; }
+.obj-html .fleche-pos { font-size: 1.25em; line-height: 1; }
 .obj-html .tag { font-size: .62rem; font-weight: 800; padding: 3px 6px; border-radius: 4px;
   text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; }
 .obj-html .pastille, .obj-html .pastille-num { width: 22px; height: 22px; }
@@ -467,6 +495,8 @@ body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
 .tableau-score td, .tableau-score th { padding: 6px 4px; text-align: left; border-bottom: 1px dashed var(--gris-clair); }
 .tableau-score td:last-child, .tableau-score th:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 .tableau-score tr.total td { border-top: 2px solid var(--encre); border-bottom: 0; font-weight: 800; font-size: 1rem; padding-top: 9px; }
+/* Les points qui ne viennent d'aucun bandeau : pose, jonctions, chronologie. */
+.tableau-score td.hors-bandeau { color: var(--encre-doux); font-style: italic; }
 
 .bandeau-tour {
   display: flex; align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap;
@@ -770,6 +800,11 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
     display: inline-block; vertical-align: middle; width: 13px; height: 13px; margin-right: 1px;
   }
   #impression .obj-html { display: inline-flex; align-items: center; gap: 2px; }
+  #impression .obj-noyau { gap: 1px; height: auto; }
+  /* Sur le papier la ligne est serrée : le × et les flèches restent au corps
+     du texte, sinon ils étirent chaque rangée du tableau. */
+  #impression .obj-html .x, #impression .obj-html .si,
+  #impression .fleche-pos { font-size: 9pt; line-height: 1; }
   #impression .paire, #impression .barre { display: inline-flex; align-items: center; gap: 1px; }
   #impression .ligne-retouchee { background: #f0eaff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   #impression .aide { color: #666; font-size: 7pt; }
@@ -889,10 +924,12 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .apercu-obj .tag.tag-chrono, .tbl-materiel .tag.tag-chrono,
 .ap-obj-visuel .tag.tag-chrono { font-size: .7rem; }
 
-/* Le sens d'un objectif de position : la flèche pointe le côté compté. */
-.fleche-pos { font-size: .72em; font-weight: 900; color: #f6f2ea; opacity: .9; }
+/* La portée d'un pouvoir : la flèche pointe le côté compté. Elle se serre
+   contre ce qu'elle porte — .obj-noyau — car elle en fait partie. */
+.obj-noyau { display: inline-flex; align-items: center; height: 100%; gap: .06em; }
+.fleche-pos { font-weight: 900; color: #f6f2ea; opacity: .95; }
 .apercu-obj .fleche-pos, .tbl-materiel .fleche-pos,
-.ap-obj-visuel .fleche-pos { color: var(--encre); font-size: .9rem; }
+.ap-obj-visuel .fleche-pos { color: var(--encre); }
 
 /* Une icône peut être portée plusieurs fois : le compte s'affiche en pastille. */
 .choix-icones .ic { position: relative; }

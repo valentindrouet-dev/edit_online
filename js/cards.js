@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.20';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.20';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.21';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.21';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -27,7 +27,9 @@ export function objContenu(obj, taille, compact, cfg) {
   if (!obj) return '';
   const p = PORTEES.find((x) => x.id === objPortee(obj, cfg)) || PORTEES[3];
   const fleche = (cote) => (p[cote] ? `<span class="fleche-pos">${cote === 'gauche' ? '◀' : '▶'}</span>` : '');
-  return `${fleche('gauche')}${objCoeur(obj, taille, compact)}${fleche('droite')}`;
+  // Les flèches se serrent contre ce qu'elles portent : elles en font partie,
+  // et sur un Gros Plan chaque dixième d'em compte.
+  return `<span class="obj-noyau">${fleche('gauche')}${objCoeur(obj, taille, compact)}${fleche('droite')}</span>`;
 }
 
 /** Ce que le bandeau compte, sans les flèches de portée. */
@@ -100,8 +102,13 @@ export function renderPlan(h, opts = {}) {
   const fond = h.image ? `background-image:url('${h.image}');` : '';
   // Le crâne se lit avec les autres : c'est une icône de la carte, pas un état.
   const icones = h.mort ? [...h.el, 'MORT'] : h.el;
+  // Ce que ce plan-là rapporte, ici et maintenant : un jeton au coin, en face
+  // du minutage. Il n'apparaît qu'au montage, où le calcul a un sens.
+  const jeton = opts.points === undefined ? ''
+    : `<div class="jeton-pts ${opts.points ? '' : 'nul'}" title="Ce que ce plan rapporte">${opts.points}</div>`;
   return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"
       data-apercu="${donneesApercu(h, label, opts.points)}">
+    ${jeton}
     <div class="illus" style="${fond}">
       <div class="tcode ${h.tc === 0 || h.transition ? 'bleu' : ''}">${tc(h.tc)}</div>
     </div>

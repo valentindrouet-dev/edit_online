@@ -175,8 +175,9 @@ quatre choix (`PORTEES` dans `js/data.js`, `porteeDe()` dans `js/scoring.js`) :
 | `SEQUENCE` | la séquence de la carte porteuse | `2 × ◀ Héroïne ▶` |
 | `MONTAGE` | le montage entier | `2 × Héroïne` |
 
-Les flèches se lisent depuis la carte : elles montrent le côté d'où viennent les points. Un bandeau
-sans flèche compte partout. `AVANT` et `APRES` remplacent l'ancien pouvoir de position, qui était un
+Les flèches se lisent depuis la carte : elles montrent le côté d'où viennent les points. Elles se
+serrent contre ce qu'elles portent, et se lisent — comme le `×` et le `si` — au corps des icônes du
+bandeau. Un bandeau sans flèche compte partout. `AVANT` et `APRES` remplacent l'ancien pouvoir de position, qui était un
 type à part ; les cartes déjà réglées ainsi sont converties au chargement.
 
 Un bandeau imprimé qui ne précise pas sa portée retombe sur `porteeParDefaut` — le réglage de
@@ -297,7 +298,15 @@ qui rendre la main, il faut bien pouvoir la regarder (`cfg.vitesseIA`).
 Sur une carte, le survol ouvre un aperçu : minutage en grand, chaque pastille nommée, et le bandeau
 d'objectif avec ce qu'il rapporte. Les pastilles se resserrent quand elles sont nombreuses, pour ne
 jamais déborder du cadre de la carte — y compris sur un Gros Plan, qui n'occupe qu'une demi-largeur.
-Les illustrations se masquent en cours de partie depuis le bandeau de tour.
+
+Chaque plan du banc porte au **coin haut droit ce qu'il rapporte**, en face de son minutage : la
+somme des jetons fait le score. Deux boutons du bandeau de tour commandent l'affichage —
+**Images visibles** et **Points visibles** (`cfg.illustrations`, `cfg.pointsSurCartes`) ; les deux
+options figurent aussi sur l'accueil.
+
+La colonne de droite lit le banc suivi : **Icônes du banc** — le recensement que l'on ferait à la
+main — puis **Score de la joueuse**, chaque bandeau posé avec ce qu'il rapporte, les points hors
+bandeau s'il y en a, et le total.
 
 ## Le modèle de jeu
 

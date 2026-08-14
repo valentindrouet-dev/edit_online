@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.20';
-export const BUILD_DATE = '2026-08-13 05:30';
+export const VERSION = '1.21';
+export const BUILD_DATE = '2026-08-14 13:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.21',
+    date: '14/08/2026',
+    items: [
+      "Les marques d’un pouvoir se lisent à la taille des icônes : le <b>×</b>, le <b>si</b> et les flèches de portée <b>◀ ▶</b> étaient de la taille d’une ponctuation, ils passent au corps des pastilles. Les flèches se serrent contre ce qu’elles portent.",
+      "Un bandeau ne déborde plus de sa carte : les icônes du bandeau se laissent rétrécir plutôt que déborder, et un Gros Plan — un tiers de carte — prend ses marques un cran plus bas. Un bandeau de couple y tenait mal.",
+      "En partie, chaque plan du banc porte au coin haut droit <b>ce qu’il rapporte</b>, en face de son minutage. La somme des jetons fait le score. Le bouton <b>Points visibles</b> du bandeau de tour les masque et les rappelle, comme <b>Images visibles</b> ; l’option est aussi sur l’accueil.",
+      "La colonne de droite perd sa table par source : <b>Icônes du banc</b> remonte en tête, et la liste des bandeaux devient <b>Score de la joueuse</b> — chaque bandeau avec ce qu’il rapporte, les points hors bandeau s’il y en a, et le total.",
+    ],
+  },
   {
     v: '1.20',
     date: '13/08/2026',

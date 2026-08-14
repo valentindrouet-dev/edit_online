@@ -2,24 +2,24 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.20';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.21';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee,
-} from './data.js?v=1.20';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.20';
-import { elIcon } from './icons.js?v=1.20';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.20';
+} from './data.js?v=1.21';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.21';
+import { elIcon } from './icons.js?v=1.21';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.21';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.20';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.20';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.20';
-import { campagne } from './lab.js?v=1.20';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.20';
+} from './engine.js?v=1.21';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.21';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.21';
+import { campagne } from './lab.js?v=1.21';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.21';
 
 const app = document.getElementById('app');
 
@@ -155,6 +155,7 @@ const pied = () => `<div class="pied">Version ${VERSION} — compilée le ${BUIL
 function html(s, garderDefilement = false) {
   if (apercuEl) apercuEl.classList.remove('visible');
   document.body.classList.toggle('sans-illus', !store.cfg.illustrations);
+  document.body.classList.toggle('sans-points', store.cfg.pointsSurCartes === false);
   const y = window.scrollY;
   app.innerHTML = s;
   // Repeindre la table ne doit pas ramener la page en haut.
@@ -203,6 +204,7 @@ function vueAccueil() {
           <h2>Options de partie</h2>
           <div class="chips">
             ${chip('illustrations', 'Illustrations sur les cartes')}
+            ${chip('pointsSurCartes', 'Points au coin des plans')}
             ${chip('premierJoueurAleatoire', '1re joueuse aléatoire')}
             ${chip('piocheDirectePMGP', 'Pioche PM / GP au sommet')}
             ${chip('piocheDirectePL', 'Pioche Plans Larges au sommet')}
@@ -389,12 +391,11 @@ function colonnesJoueur(st, sc, vu) {
   const suit = store.joueurVu === null;
   return `
     <div class="panneau">
-      <h2>Score de ${nom}${suit ? '' : ' <span class="epingle">épinglé</span>'}</h2>
+      <h2>Icônes du banc de ${nom}${suit ? '' : ' <span class="epingle">épinglé</span>'}</h2>
       ${suit ? '' : '<button class="pill mini" id="suivre-tour">↩ suivre la joueuse en cours</button>'}
-      ${tableauScore(sc[vu])}
+      ${blocRecensement(sc[vu])}
     </div>
-    <div class="panneau"><h2>Icônes du banc de ${nom}</h2>${blocRecensement(sc[vu])}</div>
-    <div class="panneau"><h2>Bandeaux du banc de ${nom}</h2>${listeObjectifs(sc[vu])}</div>`;
+    <div class="panneau"><h2>Score de ${nom}</h2>${listeObjectifs(sc[vu])}</div>`;
 }
 
 function vuePartie() {
@@ -435,6 +436,10 @@ function vuePartie() {
         ${st.cfg.materielActif === 'MODIFIE' ? 'Matériel modifié' : 'Matériel imprimé'}</span>
       <button class="pill mini" id="bascule-illus" title="Afficher ou masquer les illustrations">
         ${store.cfg.illustrations ? 'Images visibles' : 'Images masquées'}
+      </button>
+      <button class="pill mini" id="bascule-points"
+        title="Afficher ou masquer ce que chaque plan rapporte, au coin des cartes">
+        ${store.cfg.pointsSurCartes === false ? 'Points masqués' : 'Points visibles'}
       </button>
     </div>
 
@@ -671,14 +676,26 @@ function tableauScore(s) {
   </table>`;
 }
 
-/** Chaque bandeau posé, avec ses icônes et ce qu'il rapporte. */
+/**
+ * Le score du banc, bandeau par bandeau : chacun avec ses icônes et ce qu'il
+ * rapporte, puis les points qui ne viennent d'aucun bandeau — pose, jonctions,
+ * chronologie — et le total. La colonne dit d'où vient chaque point.
+ */
 function listeObjectifs(s) {
-  if (!s.lignes.length) return '<p class="aide">Aucun bandeau visible sur le banc.</p>';
+  const hors = ['POSE', 'JONCTION', 'CHRONOLOGIE'].filter((k) => s.detail[k]);
+  if (!s.lignes.length && !hors.length) {
+    return `<table class="tableau-score">
+      <tr><td class="aide">Aucun bandeau visible sur le banc</td><td>0</td></tr>
+      <tr class="total"><td>Total</td><td>${s.total}</td></tr>
+    </table>`;
+  }
   return `<table class="tableau-score">
     ${s.lignes.map((l) => `<tr>
       <td>${objHTML(l.obj)}</td>
       <td title="${objLabel(l.obj)}">${l.pts}</td>
     </tr>`).join('')}
+    ${hors.map((k) => `<tr><td class="hors-bandeau">${SOURCES_LABEL[k]}</td><td>${s.detail[k]}</td></tr>`).join('')}
+    <tr class="total"><td>Total</td><td>${s.total}</td></tr>
   </table>`;
 }
 
@@ -756,6 +773,11 @@ function brancherPartie(st, humaine) {
   const bi = q('#bascule-illus');
   if (bi) bi.addEventListener('click', () => {
     store.cfg.illustrations = !store.cfg.illustrations;
+    sauverCfg(); vuePartie();
+  });
+  const bp = q('#bascule-points');
+  if (bp) bp.addEventListener('click', () => {
+    store.cfg.pointsSurCartes = store.cfg.pointsSurCartes === false;
     sauverCfg(); vuePartie();
   });
   brancherApercu();

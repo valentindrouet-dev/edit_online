@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.20';
+import { ELEMENT_IDS } from './data.js?v=1.21';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -80,6 +80,7 @@ export const DEFAULTS = {
 
   // --- Affichage -----------------------------------------------------------
   illustrations: true,    // les visuels imprimés sur les cartes
+  pointsSurCartes: true,  // le jeton de points au coin des plans du montage
 
   // --- Divers --------------------------------------------------------------
   graine: '',
