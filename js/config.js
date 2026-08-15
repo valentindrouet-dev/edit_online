@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.21';
+import { ELEMENT_IDS } from './data.js?v=1.22';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -16,6 +16,7 @@ export const DEFAULTS = {
   // Les Plans de départ ne se tirent pas : chaque joueuse a toujours les deux
   // versions A et B devant elle, donc les quatre faces au choix.
   premierJoueurAleatoire: true,
+  premierJoueur: 0,          // qui commence quand le tirage au sort est écarté
 
   // --- Pose ----------------------------------------------------------------
   sensPose: 'bords',         // 'bords' (les deux bouts d'une séquence) | 'droite'
@@ -81,10 +82,14 @@ export const DEFAULTS = {
   // --- Affichage -----------------------------------------------------------
   illustrations: true,    // les visuels imprimés sur les cartes
   pointsSurCartes: true,  // le jeton de points au coin des plans du montage
+  // Les joueuses jouent l'une après l'autre et cela se voit : chaque coup est
+  // rendu, et la carte vole de sa pioche jusqu'au banc.
+  animerCoups: true,
+  dureeVol: 360,          // ms — le trajet d'une carte
 
   // --- Divers --------------------------------------------------------------
   graine: '',
-  vitesseIA: 500,
+  vitesseIA: 320,         // ms — la pause avant qu'une IA ne joue son coup
 };
 
 export const PROFILS_IA = {
@@ -123,6 +128,14 @@ export const SCHEMA = [
     { k: 'piocheDirectePMGP', l: 'Pioche PM / GP accessible au sommet', t: 'bool' },
     { k: 'piocheDirectePL', l: 'Pioche Plans Larges accessible au sommet', t: 'bool' },
     { k: 'premierJoueurAleatoire', l: 'Première joueuse tirée au sort', t: 'bool' },
+    { k: 'premierJoueur', l: 'Sinon, qui commence', t: 'int', min: 0, max: 3,
+      aide: 'le rang de la joueuse, 0 pour la première de la liste' },
+  ] },
+  { groupe: 'Rythme', champs: [
+    { k: 'animerCoups', l: 'Voir les cartes se déplacer', t: 'bool',
+      aide: 'la carte quitte sa pioche et vole jusqu’au banc' },
+    { k: 'vitesseIA', l: 'Pause avant le coup d’une IA', t: 'int', min: 0, max: 2000, aide: 'en millisecondes' },
+    { k: 'dureeVol', l: 'Durée du vol d’une carte', t: 'int', min: 0, max: 2000, aide: 'en millisecondes' },
   ] },
   { groupe: 'Pose', champs: [
     { k: 'sensPose', l: 'Sens de pose', t: 'choix', options: [

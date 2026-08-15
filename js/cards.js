@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.21';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.21';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.22';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.22';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -93,8 +93,10 @@ export function renderPlan(h, opts = {}) {
   const F = FORMATS[h.transition ? 'TR' : h.format] || FORMATS.PM;
   // Un Plan Large et un Plan de départ occupent toute la carte.
   const large = h.format === 'PL' || h.format === 'DEP';
+  // `neuf` marque le plan qui vient d'être posé : c'est là que la carte en vol
+  // doit atterrir.
   const cls = ['moitie', `f-${h.format}`, h.transition ? 'transition' : '', h.depart ? 'depart' : '',
-    opts.clickable ? 'choisissable' : '', opts.selected ? 'choisi' : ''].join(' ');
+    opts.clickable ? 'choisissable' : '', opts.selected ? 'choisi' : '', opts.neuf ? 'neuf' : ''].join(' ');
   const flex = large ? '1 1 100%' : (h.format === 'GP' ? '0 0 33.6%' : '1 1 66.4%');
   const label = h.depart ? 'Plan de départ' : (h.transition ? h.transition.toLowerCase() : F.label);
   // L'image est posée en style inline : dans une variable CSS, url() se

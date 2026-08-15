@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, objPortee } from './data.js?v=1.21';
+import { PERSONNAGES, ELEMENT_IDS, objPortee } from './data.js?v=1.22';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };

@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.21';
-import { compter, bancVide } from './scoring.js?v=1.21';
+} from './data.js?v=1.22';
+import { compter, bancVide } from './scoring.js?v=1.22';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -121,7 +121,10 @@ export function creerPartie(joueurs, cfg, graine) {
   for (let i = 0; i < tPL && state.piochePL.length; i++) state.chutierPL.push(state.piochePL.shift());
   for (let i = 0; i < tPM && state.piochePMGP.length; i++) state.chutierPMGP.push(state.piochePMGP.shift());
 
-  if (cfg.premierJoueurAleatoire) state.courant = Math.floor(rand() * n);
+  // La première joueuse : tirée au sort, ou désignée dans les options.
+  state.courant = cfg.premierJoueurAleatoire
+    ? Math.floor(rand() * n)
+    : Math.min(n - 1, Math.max(0, cfg.premierJoueur | 0));
   state.premier = state.courant;
 
   // Les Plans de départ ne se tirent pas : la boîte contient quatre
@@ -160,6 +163,7 @@ export function choixDepart(state, p) {
 export function poserDepart(state, p, choix) {
   const plan = { ...choix.plan, carteId: `${choix.carte.id}f${choix.face}`, depart: true };
   state.bancs[p] = { sequences: [[plan]], ouverture: false, fermeture: false };
+  state.dernierPose = { p, seq: 0, idx: 0 };
   state.departsProposes[p] = [];
   journal(state, `${state.joueurs[p].nom} ouvre son banc avec le Plan de départ ${plan.num}`, p);
 }
@@ -318,8 +322,33 @@ export function appliquer(banc, coup, cfg) {
   return banc;
 }
 
+/**
+ * Où la carte vient-elle d'atterrir, séquence et rang ? L'animation part de la
+ * pioche et doit savoir sur quel plan se poser. `avantSouder` est la longueur
+ * de la séquence de gauche avant la soudure, seul cas où la position ne se lit
+ * pas sur le banc d'après.
+ */
+function positionPosee(banc, coup, avantSouder) {
+  switch (coup.action) {
+    case 'NOUVELLE_SEQUENCE': return { seq: coup.pos, idx: 0 };
+    case 'ETENDRE': return {
+      seq: coup.seq,
+      idx: coup.cote === 'gauche' ? 0 : banc.sequences[coup.seq].length - 1,
+    };
+    case 'SOUDER': return { seq: coup.pos, idx: avantSouder };
+    case 'GENERIQUE': return coup.role === 'OUVERTURE'
+      ? { seq: 0, idx: 0 }
+      : { seq: banc.sequences.length - 1, idx: banc.sequences[banc.sequences.length - 1].length - 1 };
+    default: return { seq: 0, idx: 0 };
+  }
+}
+
 export function poser(state, p, coup) {
-  appliquer(state.bancs[p], coup, state.cfg);
+  const banc = state.bancs[p];
+  const avantSouder = coup.action === 'SOUDER' && banc.sequences[coup.pos]
+    ? banc.sequences[coup.pos].length : 0;
+  appliquer(banc, coup, state.cfg);
+  state.dernierPose = { p, ...positionPosee(banc, coup, avantSouder) };
   state.posees[p]++;
   state.mains[p] = [];
   const quoi = coup.format === 'PL' ? `Plan Large ${coup.carte.num}`

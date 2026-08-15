@@ -1,8 +1,21 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.21';
-export const BUILD_DATE = '2026-08-14 13:30';
+export const VERSION = '1.22';
+export const BUILD_DATE = '2026-08-15 14:10';
 
 export const CHANGELOG = [
+  {
+    v: '1.22',
+    date: '15/08/2026',
+    items: [
+      "<b>Les joueuses jouent l’une après l’autre, et cela se voit.</b> Chaque coup est rendu à son tour : on suit le tour de la première, puis de la suivante, au lieu de retrouver la table déjà jouée. Les IA ne bloquent rien — le clic de la joueuse humaine lui rend la main en moins de 150 ms, y compris sur une table de quatre avec trois Stratèges.",
+      "<b>Les cartes se déplacent à l’écran.</b> La carte dérushée quitte son chutier — ou sa pioche — et rejoint le banc de la joueuse ; la pioche renvoie aussitôt une carte à la place laissée vide ; au montage, la carte s’envole de la main jusqu’à son emplacement exact dans le banc.",
+      "Deux réglages dans <b>Variables › Rythme</b> : la pause avant le coup d’une IA et la durée du vol d’une carte. « Voir les cartes se déplacer » se décoche sur l’accueil pour revenir à un jeu instantané.",
+      "La <b>première joueuse</b> se tire au sort ou se désigne : quand le tirage est écarté, un menu dit qui commence.",
+      "Pendant le coup d’une IA ou le vol d’une carte, la table reste en place mais ne se laisse pas cliquer — un clic la repeindrait sous la carte en mouvement.",
+      "Correction : sur un Plan Large, cliquer la carte défaisait sa sélection et escamotait les emplacements de pose. Un Plan Large n’a pas de moitié à choisir, cliquer dessus ne fait plus rien.",
+      "Règles v0.13.9.",
+    ],
+  },
   {
     v: '1.21',
     date: '14/08/2026',

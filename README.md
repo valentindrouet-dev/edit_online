@@ -38,6 +38,7 @@ js/data.js       matériel : éléments, 33 scènes, 14 Plans Larges, 8 Plans de
 js/config.js     variables par défaut, profils d'IA, description des réglages
 js/icons.js      pastilles des personnages et éléments en SVG
 js/cards.js      rendu d'un plan et d'une carte
+js/anim.js       le vol d'une carte d'un endroit de la table à un autre
 js/scoring.js    séquences, portée des bandeaux, décompte
 js/engine.js     paquet, chutiers, phases, coups légaux, pose
 js/ai.js         Novice, Équilibré, Stratège
@@ -289,11 +290,40 @@ La zone de jeu garde la même hauteur d'une phase à l'autre et reste affichée 
 d'IA : rien n'apparaît ni ne disparaît sous le curseur entre deux clics. Choisir une moitié ne
 repeint que la carte, sa consigne et les emplacements du banc.
 
-Les **IA jouent d'un bloc** : dès qu'une joueuse humaine est à la table, tous les coups d'IA en
-attente sont résolus sans temporisation ni rendu intermédiaire, et la main revient directement. Sur
-la table la plus lourde — quatre joueuses dont trois Stratèges — un clic rend la main en moins de
-150 ms. Une table tenue à 100 % par des IA reste, elle, jouée pas à pas : sans spectateur humain à
-qui rendre la main, il faut bien pouvoir la regarder (`cfg.vitesseIA`).
+### Le fil de la partie
+
+Les joueuses jouent **l'une après l'autre, et cela se voit** : un coup, un rendu, la carte qui vole,
+une pause, la suivante (`derouler()` dans `js/app.js`). Le fil est un jeton — `store.filIA` est
+incrémenté à chaque nouveau départ, ce qui périme silencieusement le précédent : annuler, quitter ou
+relancer ne laisse jamais un coup en attente se jouer par surprise.
+
+Le coût est pour l'IA seule : sur la table la plus lourde — quatre joueuses dont trois Stratèges —
+**le clic de la joueuse humaine lui rend la main en 54 à 180 ms**, et le tour des trois IA se
+déroule ensuite à vue en trois secondes. Pendant ce tour, la table garde sa forme mais ne se laisse
+pas cliquer (`body.ia-joue`, `body.coup-en-vol`).
+
+Deux réglages dans **Variables › Rythme** : `vitesseIA` (la pause avant le coup d'une IA) et
+`dureeVol` (le trajet d'une carte). `animerCoups: false` rend le jeu instantané.
+
+### Les cartes en mouvement
+
+`js/anim.js` est un FLIP : on relève la boîte de départ **avant** que l'état ne change, celle
+d'arrivée **après** le rendu, et l'on interpole entre les deux un clone posé au-dessus de la page,
+l'élément d'arrivée restant invisible le temps du vol. Le clone quitte son parent — une moitié de
+carte y perdrait la hauteur et le corps que la carte lui donnait — donc on les lui rend
+explicitement.
+
+Trois vols, un par coup :
+
+| Coup | D'où | Vers |
+|---|---|---|
+| Plan de départ | la face choisie | le plan qui ouvre le banc |
+| Dérushage | la carte du chutier, ou la pioche | le banc de la joueuse, où elle s'efface (elle passe en main) |
+| — puis | la pioche | la place laissée vide dans le chutier |
+| Montage | la moitié retenue | l'emplacement exact dans le banc |
+
+L'emplacement d'arrivée est connu : `poser()` enregistre `state.dernierPose = { p, seq, idx }`, et le
+banc marque ce plan-là d'une classe `neuf`.
 
 Sur une carte, le survol ouvre un aperçu : minutage en grand, chaque pastille nommée, et le bandeau
 d'objectif avec ce qu'il rapporte. Les pastilles se resserrent quand elles sont nombreuses, pour ne
@@ -323,7 +353,9 @@ Un banc de montage est une suite de **séquences**, chaque séquence une suite d
 
 La partie s'ouvre sans aucun tirage : chaque joueuse a devant elle les **deux** cartes Plan de départ
 — version A et version B — donc ses **quatre faces** au choix. La boîte en contient quatre
-exemplaires de chaque version, un par joueuse.
+exemplaires de chaque version, un par joueuse. La **première joueuse** est tirée au sort
+(`premierJoueurAleatoire`) ou **désignée** avant la partie (`premierJoueur`, le rang dans la liste) ;
+c'est elle qui ouvre chaque phase et qui la referme.
 
 Le tour se joue ensuite en deux phases : **Dérushage** (chacune pioche une carte dans un chutier ou
 sur une pioche), puis **Montage** (chacune la pose). La partie s'arrête quand chaque banc compte

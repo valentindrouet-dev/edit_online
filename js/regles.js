@@ -13,13 +13,23 @@
 // Les versions précédentes du texte restent lisibles dans l'onglet
 // « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.21';
-import { elIcon } from './icons.js?v=1.21';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.22';
+import { elIcon } from './icons.js?v=1.22';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.13.9',
+    date: '15/08/2026',
+    origine: 'Précision demandée par l’auteur',
+    corps: (c) => corps_0_13_9(c),
+    items: [
+      'Les joueuses jouent l’une après l’autre, et chaque coup se voit : la carte quitte sa pioche, rejoint le banc, et la pioche recharge le chutier.',
+      'La première joueuse est tirée au sort, ou désignée avant la partie.',
+    ],
+  },
   {
     v: '0.13.8',
     date: '13/08/2026',
@@ -353,3 +363,19 @@ function corps_0_13_8(c) {
 }
 
 const portee = (c) => (c.porteeParDefaut === 'MONTAGE' ? 'Le montage' : 'Sa séquence');
+
+// --- v0.13.9 ---------------------------------------------------------------
+// L'ordre du tour, et qui commence.
+
+function corps_0_13_9(c) {
+  return corps_0_13_8(c)
+    .replace('<li>La dernière joueuse à avoir vu un bon film commence — ici, tirage au sort.</li>',
+      maj('0.13.9', `<li>La dernière joueuse à avoir vu un bon film commence. Ici, elle est
+      <b>tirée au sort</b>, ou <b>désignée</b> avant la partie — c'est une option de partie.</li>`))
+    .replace('<h3>Phase A — Le Dérushage</h3>',
+      `${majBloc('0.13.9', `<b>Chacune son tour, et cela se voit.</b> Les joueuses jouent l’une après
+      l’autre, dans l’ordre, à partir de la première. Chaque coup se joue à vue : la carte quitte le
+      chutier — ou la pioche — pour rejoindre le banc de la joueuse, et la pioche recharge aussitôt
+      la place laissée vide.`)}
+      <h3>Phase A — Le Dérushage</h3>`);
+}

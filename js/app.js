@@ -2,24 +2,25 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.21';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.22';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee,
-} from './data.js?v=1.21';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.21';
-import { elIcon } from './icons.js?v=1.21';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.21';
+} from './data.js?v=1.22';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.22';
+import { elIcon } from './icons.js?v=1.22';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.22';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.21';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.21';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.21';
-import { campagne } from './lab.js?v=1.21';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.21';
+} from './engine.js?v=1.22';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.22';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.22';
+import { releve, voler, stopperVols } from './anim.js?v=1.22';
+import { campagne } from './lab.js?v=1.22';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.22';
 
 const app = document.getElementById('app');
 
@@ -43,6 +44,8 @@ const store = {
   formatChoisi: null,   // 'GP' | 'PM' | 'PL' pendant la phase de montage
   joueurVu: null,       // le banc dont on lit les colonnes ; null = celui qui joue
   undo: null,
+  vols: [],             // les cartes à faire voler au prochain rendu
+  filIA: 0,             // jeton du fil des coups d'IA : incrémenté, il l'annule
 };
 
 // Les parties enregistrées avant la palette pastel gardaient d'anciennes
@@ -205,12 +208,21 @@ function vueAccueil() {
           <div class="chips">
             ${chip('illustrations', 'Illustrations sur les cartes')}
             ${chip('pointsSurCartes', 'Points au coin des plans')}
-            ${chip('premierJoueurAleatoire', '1re joueuse aléatoire')}
+            ${chip('premierJoueurAleatoire', '1re joueuse tirée au sort')}
+            ${chip('animerCoups', 'Voir les cartes se déplacer')}
             ${chip('piocheDirectePMGP', 'Pioche PM / GP au sommet')}
             ${chip('piocheDirectePL', 'Pioche Plans Larges au sommet')}
             ${chip('raccordConnecte', 'Les Raccords soudent les séquences')}
             ${chip('generiqueBloque', 'Le Générique ferme le montage')}
             ${chip('plContigu', 'Deux Plans Larges peuvent se toucher')}
+          </div>
+          <div class="champ" style="margin-top:14px" id="champ-premier"
+            ${store.cfg.premierJoueurAleatoire ? 'hidden' : ''}>
+            <label>Qui commence <small>le tirage au sort est écarté</small></label>
+            <select data-cfg="premierJoueur">
+              ${store.joueurs.map((j, i) => `<option value="${i}"
+                ${(store.cfg.premierJoueur | 0) === i ? 'selected' : ''}>${j.nom}</option>`).join('')}
+            </select>
           </div>
           <div class="champ" style="margin-top:14px">
             <label>Graine de partie <small>vide = tirage aléatoire</small></label>
@@ -366,6 +378,8 @@ function bandeauMateriel() {
 
 function lancerPartie() {
   appliquerJeuActif();
+  // Une partie précédente peut encore avoir un coup d'IA ou une carte en l'air.
+  store.filIA++; store.vols = []; stopperVols();
   store.partie = creerPartie(store.joueurs.map((j) => ({ ...j })), cloneConfig(store.cfg), store.cfg.graine || nouvelleGraine());
   // La partie fige son matériel : à partir d'ici c'est le sien qui vaut.
   appliquerJeuActif();
@@ -398,16 +412,15 @@ function colonnesJoueur(st, sc, vu) {
     <div class="panneau"><h2>Score de ${nom}</h2>${listeObjectifs(sc[vu])}</div>`;
 }
 
-function vuePartie() {
+/**
+ * Repeint la table. `enchainer` relance le fil des coups d'IA — on le coupe
+ * quand c'est le fil lui-même qui demande le rendu, pour qu'un coup n'en
+ * déclenche pas deux.
+ */
+function vuePartie(enchainer = true) {
   const st = store.partie;
   if (!st) { location.hash = '#/'; return; }
   appliquerJeuActif();
-
-  // On ne s'arrête jamais sur le tour d'une IA : ses coups sont résolus d'un
-  // bloc avant le rendu, pour rendre la main sans temps mort.
-  if (!st.finie && aUneHumaine(st) && !estHumaine(st)) {
-    if (resoudreIA(st)) return terminer();
-  }
   if (st.finie) return vueFin();
 
   const p = st.courant;
@@ -477,9 +490,14 @@ function vuePartie() {
   ${pied()}`, true);
 
   brancherPartie(st, humaine);
-  // Seule une table entièrement tenue par des IA se joue pas à pas : sans
-  // spectateur humain à qui rendre la main, il faut bien pouvoir la regarder.
-  if (!humaine) setTimeout(() => { if (coupIA(st)) terminer(); else vuePartie(); }, Math.max(60, st.cfg.vitesseIA || 300));
+  // La table dit qui joue : pendant un tour d'IA, la zone reste en place mais
+  // ne se laisse pas manipuler.
+  document.body.classList.toggle('ia-joue', !humaine);
+  // Le verrou se pose dès le rendu, pas au premier battement du vol : sans
+  // cela, la main revient à l'humaine le temps d'une image, sous une carte
+  // encore en l'air.
+  if (store.vols.length) document.body.classList.add('coup-en-vol');
+  if (enchainer) derouler(st).catch(() => { document.body.classList.remove('ia-joue', 'coup-en-vol'); });
 }
 
 // --- Le banc ---------------------------------------------------------------
@@ -488,6 +506,8 @@ function bancBloc(st, i, titre, interactif) {
   const banc = st.bancs[i];
   // Ce que chaque carte rapporte ici et maintenant, pour l'aperçu au survol.
   const points = new Map(compter(banc, st.cfg).lignes.map((l) => [l.plan, l.pts]));
+  // Le plan qui vient d'être posé : c'est là que la carte en vol atterrit.
+  const neuf = st.dernierPose && st.dernierPose.p === i ? st.dernierPose : null;
   const coups = interactif && store.formatChoisi
     ? coupsPossibles(st, i).filter((c) => c.format === store.formatChoisi)
     : [];
@@ -509,7 +529,10 @@ function bancBloc(st, i, titre, interactif) {
       || (c.action === 'GENERIQUE' && c.role === 'OUVERTURE' && si === 0))));
     morceaux.push(`<div class="sequence">`);
     morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche')));
-    seq.forEach((plan) => morceaux.push(renderPlan(plan, { points: plan.obj ? (points.get(plan) || 0) : 0 })));
+    seq.forEach((plan, k) => morceaux.push(renderPlan(plan, {
+      points: plan.obj ? (points.get(plan) || 0) : 0,
+      neuf: !!(neuf && neuf.seq === si && neuf.idx === k),
+    })));
     morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'droite')));
     morceaux.push('</div>');
   });
@@ -556,8 +579,7 @@ function brancherFentes(st, racine = app) {
     const partiel = JSON.parse(decodeURIComponent(el.dataset.coup));
     const carte = st.mains[st.courant][0];
     store.undo = JSON.stringify(st);
-    poser(st, st.courant, { ...partiel, carte });
-    store.formatChoisi = null;
+    poserAVue(st, st.courant, { ...partiel, carte });
     apresCoup(st, avancer(st));
   }));
 }
@@ -592,14 +614,18 @@ function zoneDepart(st, p) {
 
 function zoneDerushage(st) {
   const options = optionsDerushage(st);
-  const carte = (o) => `<div data-derush="${enc(o)}">${renderCarte(o.carte, false, { small: true, clickable: true })}</div>`;
+  // Les cartes du chutier portent leur rang : c'est l'ancre de la carte que la
+  // pioche y renvoie quand une place se libère.
+  const ancre = (o) => (o.source.startsWith('CHUTIER')
+    ? ` data-chutier="${o.source === 'CHUTIER_PL' ? 'PL' : 'PMGP'}" data-i="${o.index}"` : '');
+  const carte = (o) => `<div data-derush="${enc(o)}"${ancre(o)}>${renderCarte(o.carte, false, { small: true, clickable: true })}</div>`;
 
   // Une ligne par famille : sa pioche d'abord, puis son chutier.
-  const ligne = (titre, pioche, chutier) => `
+  const ligne = (titre, fam, pioche, chutier) => `
     <div class="derushage-ligne">
       <h3>${titre}</h3>
       <div class="derushage-cartes">
-        ${pioche}
+        <div class="pioche-place" id="pioche-${fam}">${pioche}</div>
         ${chutier || '<div class="aide" style="align-self:center">Chutier épuisé</div>'}
       </div>
     </div>`;
@@ -623,8 +649,8 @@ function zoneDerushage(st) {
       : '');
 
   return `<div class="derushage-lignes">
-    ${ligne('Plans Larges', dosPL, options.filter((o) => o.source === 'CHUTIER_PL').map(carte).join(''))}
-    ${ligne('Plans Moyens / Gros Plans', piochePMGP, options.filter((o) => o.source === 'CHUTIER_PMGP').map(carte).join(''))}
+    ${ligne('Plans Larges', 'PL', dosPL, options.filter((o) => o.source === 'CHUTIER_PL').map(carte).join(''))}
+    ${ligne('Plans Moyens / Gros Plans', 'PMGP', piochePMGP, options.filter((o) => o.source === 'CHUTIER_PMGP').map(carte).join(''))}
   </div>`;
 }
 
@@ -726,22 +752,24 @@ function brancherPartie(st, humaine) {
   // réservés à la joueuse humaine.
   if (humaine) {
     app.querySelectorAll('[data-depart]').forEach((el) => el.addEventListener('click', () => {
+      const k = +el.dataset.depart;
       store.undo = JSON.stringify(st);
-      poserDepart(st, st.courant, choixDepart(st, st.courant)[+el.dataset.depart]);
+      poserDepartAVue(st, st.courant, k, choixDepart(st, st.courant)[k]);
       apresCoup(st, avancer(st));
     }));
 
     app.querySelectorAll('[data-derush]').forEach((el) => el.addEventListener('click', () => {
       const choix = JSON.parse(decodeURIComponent(el.dataset.derush));
       store.undo = JSON.stringify(st);
-      derusher(st, st.courant, choix);
-      store.formatChoisi = null;
+      derusherAVue(st, st.courant, choix);
       apresCoup(st, avancer(st));
     }));
 
     // Le choix de la moitié ne touche pas à la partie : on repeint la seule
-    // carte concernée plutôt que toute la table.
-    app.querySelectorAll('#choix-carte .moitie[data-format]').forEach((el) => {
+    // carte concernée plutôt que toute la table. Un Plan Large n'a pas de
+    // moitié à choisir : cliquer dessus ne doit pas défaire sa sélection, ce
+    // qui escamoterait les emplacements de pose.
+    app.querySelectorAll('#choix-carte .carte.choix-moitie .moitie[data-format]').forEach((el) => {
       el.addEventListener('click', () => choisirMoitie(st, el.dataset.format));
     });
 
@@ -782,11 +810,18 @@ function brancherPartie(st, humaine) {
   });
   brancherApercu();
 
+  // Revenir en arrière ou quitter coupe le fil des IA et rappelle les cartes
+  // en vol : rien de la partie annulée ne doit se poser après coup.
   if (q('#undo')) q('#undo').addEventListener('click', () => {
-    if (store.undo) { store.partie = JSON.parse(store.undo); store.undo = null; store.formatChoisi = null; vuePartie(); }
+    if (!store.undo) return;
+    store.filIA++; store.vols = []; stopperVols();
+    store.partie = JSON.parse(store.undo); store.undo = null; store.formatChoisi = null;
+    vuePartie();
   });
   if (q('#quitter')) q('#quitter').addEventListener('click', () => {
-    if (confirm('Quitter la partie en cours ?')) { store.partie = null; location.hash = '#/'; }
+    if (!confirm('Quitter la partie en cours ?')) return;
+    store.filIA++; store.vols = []; stopperVols();
+    store.partie = null; location.hash = '#/';
   });
 
   document.onkeydown = humaine ? (e) => {
@@ -867,17 +902,84 @@ function brancherApercu(racine = app) {
 // ---------------------------------------------------------------------------
 // Les tours d'IA
 // ---------------------------------------------------------------------------
-// Une IA ne se regarde pas réfléchir : dès qu'une humaine est à la table, tous
-// les coups des IA en attente sont joués d'un bloc, sans attente ni rendu
-// intermédiaire. Entre deux clics, il ne se passe donc rien d'autre qu'un seul
-// rendu — la table ne clignote plus.
+// Le fil de la partie
+// ---------------------------------------------------------------------------
+// Les joueuses jouent l'une après l'autre, et cela se voit : un coup, un rendu,
+// la carte qui vole de sa pioche jusqu'au banc, une pause, la suivante. La
+// table ne change pas de forme entre deux coups — seules les cartes bougent.
+//
+// Le fil est un jeton : `store.filIA` est incrémenté à chaque nouveau départ,
+// ce qui périme silencieusement le fil précédent. Annuler, quitter ou relancer
+// une partie ne laisse donc jamais un coup en attente se jouer par surprise.
 
 function estHumaine(st) {
   return st.joueurs[st.courant].type === 'HUMAIN';
 }
 
-function aUneHumaine(st) {
-  return st.joueurs.some((j) => j.type === 'HUMAIN');
+const anime = () => store.cfg.animerCoups !== false;
+const dureeVol = () => (anime() ? Math.max(0, store.cfg.dureeVol ?? 360) : 0);
+const pause = (ms) => new Promise((r) => setTimeout(r, Math.max(0, ms || 0)));
+
+/**
+ * Relève une carte avant que l'état ne change, pour la faire voler après le
+ * rendu jusqu'à `arrivee`. Sans animation, rien n'est relevé : le coup se voit
+ * simplement d'un rendu à l'autre.
+ */
+function volDepuis(source, arrivee, opts) {
+  if (!anime()) return;
+  const dep = releve(app.querySelector(source));
+  if (dep) store.vols.push({ dep, arrivee, opts: opts || {} });
+}
+
+/**
+ * Fait voler, l'une après l'autre, les cartes relevées avant le rendu. Le
+ * temps du vol, la table ne se laisse pas cliquer : un clic la repeindrait
+ * sous la carte en mouvement.
+ */
+async function jouerVols() {
+  const liste = store.vols;
+  store.vols = [];
+  if (!liste.length) return;
+  document.body.classList.add('coup-en-vol');
+  for (const v of liste) {
+    const cible = app.querySelector(v.arrivee);
+    if (cible) await voler(v.dep, cible, dureeVol(), v.opts);
+  }
+  document.body.classList.remove('coup-en-vol');
+}
+
+// --- Les trois coups, joués à vue ------------------------------------------
+
+/** Le Plan de départ quitte la main et ouvre le banc. */
+function poserDepartAVue(st, p, k, choix) {
+  volDepuis(`[data-depart="${k}"] .moitie`, `[data-banc="${p}"] .moitie.neuf`);
+  poserDepart(st, p, choix);
+}
+
+/**
+ * La carte dérushée quitte le chutier — ou la pioche — et rejoint le banc de
+ * la joueuse : elle passe en main, elle ne se pose pas encore, donc elle
+ * s'efface en arrivant. La pioche recharge aussitôt le chutier, et cette
+ * carte-là vole à son tour jusqu'à la place laissée vide.
+ */
+function derusherAVue(st, p, o) {
+  const fam = o.source.endsWith('_PL') ? 'PL' : 'PMGP';
+  const pile = fam === 'PL' ? st.piochePL : st.piochePMGP;
+  const chutier = fam === 'PL' ? st.chutierPL : st.chutierPMGP;
+  const recharge = o.source.startsWith('CHUTIER') && pile.length > 0;
+  const rang = chutier.length - (o.source.startsWith('CHUTIER') ? 1 : 0);
+
+  volDepuis(`[data-derush="${enc(o)}"]`, `[data-banc="${p}"]`, { taille: false, fondu: true });
+  if (recharge) volDepuis(`#pioche-${fam}`, `[data-chutier="${fam}"][data-i="${rang}"]`);
+  derusher(st, p, o);
+  store.formatChoisi = null;
+}
+
+/** La carte en main se pose dans le banc, à l'emplacement choisi. */
+function poserAVue(st, p, coup) {
+  volDepuis(`#choix-carte .moitie[data-format="${coup.format}"]`, `[data-banc="${p}"] .moitie.neuf`);
+  poser(st, p, coup);
+  store.formatChoisi = null;
 }
 
 /** Joue le coup de l'IA courante. Renvoie true si la partie s'achève. */
@@ -886,34 +988,53 @@ function coupIA(st) {
   const p = st.courant;
 
   if (st.phase === 'DEPART') {
-    const d = choisirDepart(st, p); if (d) poserDepart(st, p, d);
+    const options = choixDepart(st, p);
+    const d = choisirDepart(st, p) || options[0];
+    // L'IA rend son propre relevé des choix : on retrouve la carte affichée
+    // par ce qu'elle désigne, pas par son identité d'objet.
+    const k = d ? options.findIndex((o) => o.carteIdx === d.carteIdx && o.face === d.face) : -1;
+    if (d) poserDepartAVue(st, p, Math.max(0, k), d);
   } else if (st.phase === 'DERUSHAGE') {
-    const o = choisirDerushage(st, p) || optionsDerushage(st)[0]; if (o) derusher(st, p, o);
+    const o = choisirDerushage(st, p) || optionsDerushage(st)[0];
+    if (o) derusherAVue(st, p, o);
   } else {
     const coups = coupsPossibles(st, p);
-    if (coups.length) poser(st, p, choisirCoup(st, p) || coups[0]);
+    if (coups.length) poserAVue(st, p, choisirCoup(st, p) || coups[0]);
     else st.mains[p] = [];
   }
   return avancer(st);
 }
 
-/** Enchaîne tous les coups d'IA en attente. Renvoie true si la partie s'achève. */
-function resoudreIA(st) {
-  let garde = 0;
-  while (!st.finie && !estHumaine(st) && garde++ < 400) {
-    if (coupIA(st)) return true;
+/**
+ * Déroule la partie jusqu'à ce qu'une humaine ait la main : d'abord les cartes
+ * du coup que l'on vient de voir, puis, tant que c'est à une IA de jouer, son
+ * coup, son rendu et ses cartes.
+ */
+async function derouler(st) {
+  const jeton = ++store.filIA;
+  const vivant = () => store.partie === st && jeton === store.filIA;
+  await jouerVols();
+  while (vivant() && !st.finie && !estHumaine(st)) {
+    await pause(anime() ? store.cfg.vitesseIA : 0);
+    if (!vivant()) return;
+    const fini = coupIA(st);
+    if (!vivant()) return;
+    if (fini) return terminer();
+    vuePartie(false);
+    await jouerVols();
   }
-  return st.finie;
 }
 
-/** Suite d'un coup humain : les IA enchaînent, puis un unique rendu. */
+/** Suite d'un coup humain : la carte se pose, puis les IA enchaînent. */
 function apresCoup(st, fini) {
-  if (fini || resoudreIA(st)) return terminer();
+  if (fini) return terminer();
   vuePartie();
 }
 
 function terminer() {
   const st = store.partie;
+  store.vols = []; stopperVols();
+  document.body.classList.remove('ia-joue', 'coup-en-vol');
   const cl = classement(st);
   store.historique.unshift({
     date: new Date().toISOString(),
