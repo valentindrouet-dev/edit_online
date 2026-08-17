@@ -290,6 +290,17 @@ La zone de jeu garde la même hauteur d'une phase à l'autre et reste affichée 
 d'IA : rien n'apparaît ni ne disparaît sous le curseur entre deux clics. Choisir une moitié ne
 repeint que la carte, sa consigne et les emplacements du banc.
 
+**L'emplacement se pré-visualise** : survoler un emplacement écarte le banc et y montre le plan en
+transparence, à la place exacte qu'il prendra — le mouvement est celui qu'aura le clic, et aucune
+carte n'en couvre une autre. L'aperçu passe par `planPose()` et `faceJouee()`, donc il montre la
+**face que le côté donne** : un Gros Plan accroché à gauche est celui du recto, à droite celui du
+verso. Sur le matériel imprimé les deux faces partagent le même minutage et l'aperçu se ressemble ;
+dès qu'une face est retouchée, la différence se voit avant de poser.
+
+Le nom d'une joueuse ne dit pas son genre : les textes qui la désignent n'emploient donc pas de
+pronom — « À son tour », et non « À elle de jouer ». Le rôle, lui, reste au féminin, comme dans les
+règles de l'auteur (« Vous incarnez une monteuse de cinéma »).
+
 ### Le fil de la partie
 
 Les joueuses jouent **l'une après l'autre, et cela se voit** : un coup, un rendu, la carte qui vole,

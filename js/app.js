@@ -2,25 +2,25 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.23';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.24';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
-  CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee,
-} from './data.js?v=1.23';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.23';
-import { elIcon } from './icons.js?v=1.23';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.23';
+  CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee,
+} from './data.js?v=1.24';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.24';
+import { elIcon } from './icons.js?v=1.24';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.24';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
-  coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.23';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.23';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.23';
-import { releve, voler, stopperVols } from './anim.js?v=1.23';
-import { campagne } from './lab.js?v=1.23';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.23';
+  coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
+} from './engine.js?v=1.24';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.24';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.24';
+import { releve, voler, stopperVols } from './anim.js?v=1.24';
+import { campagne } from './lab.js?v=1.24';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.24';
 
 const app = document.getElementById('app');
 
@@ -406,7 +406,7 @@ function colonnesJoueur(st, sc, vu) {
   return `
     <div class="panneau">
       <h2>Icônes du banc de ${nom}${suit ? '' : ' <span class="epingle">épinglé</span>'}</h2>
-      ${suit ? '' : '<button class="pill mini" id="suivre-tour">↩ suivre la joueuse en cours</button>'}
+      ${suit ? '' : '<button class="pill mini" id="suivre-tour">↩ suivre qui joue</button>'}
       ${blocRecensement(sc[vu])}
     </div>
     <div class="panneau"><h2>Score de ${nom}</h2>${listeObjectifs(sc[vu])}</div>`;
@@ -475,7 +475,7 @@ function vuePartie(enchainer = true) {
             <div class="aide" style="font-size:.78rem;margin-top:4px">
               ${sc[i].plans} plan${sc[i].plans > 1 ? 's' : ''} · ${sc[i].sequences} séquence${sc[i].sequences > 1 ? 's' : ''} · ${sc[i].cartesRaccord} raccord${sc[i].cartesRaccord > 1 ? 's' : ''}
             </div>
-            ${i === p ? '<span class="badge-tour">À elle de jouer</span>' : ''}
+            ${i === p ? '<span class="badge-tour">À son tour</span>' : ''}
           </div>`).join('')}
 
         <div id="colonnes-joueur">${colonnesJoueur(st, sc, vu)}</div>
@@ -502,6 +502,10 @@ function vuePartie(enchainer = true) {
 
 // --- Le banc ---------------------------------------------------------------
 
+// La largeur d'un plan dans un banc, en accord avec la feuille de style : elle
+// sert à faire la place à l'aperçu de pose.
+const LARGEUR_BANC = { GP: 85, PM: 169, PL: 254, DEP: 254 };
+
 function bancBloc(st, i, titre, interactif) {
   const banc = st.bancs[i];
   // Ce que chaque carte rapporte ici et maintenant, pour l'aperçu au survol.
@@ -512,10 +516,21 @@ function bancBloc(st, i, titre, interactif) {
     ? coupsPossibles(st, i).filter((c) => c.format === store.formatChoisi)
     : [];
 
+  // Au survol d'un emplacement, le banc s'écarte et le plan s'y montre en
+  // transparence, tel qu'il s'y poserait : la bonne moitié, et la face que le
+  // côté de pose lui donne. Le mouvement est celui qu'aura le clic.
+  const carteEnMain = interactif ? st.mains[i][0] : null;
+  const fenteChoix = (c) => {
+    const bouton = `<button class="fente-btn" data-coup="${encodeURIComponent(JSON.stringify(sansCarte(c)))}">${etiquetteCoup(c)}</button>`;
+    if (!carteEnMain) return `<span class="fente-choix">${bouton}</span>`;
+    const plan = planPose(carteEnMain, c.format, c.role, faceJouee(c.format, c.cote, st.cfg));
+    return `<span class="fente-choix" style="--ap:${LARGEUR_BANC[plan.format] || 169}px">
+      ${bouton}<span class="apercu-pose">${renderPlan(plan, { muet: true })}</span></span>`;
+  };
+
   const fente = (liste) => {
     if (!liste.length) return '<div class="ecart"></div>';
-    return `<div class="ecart actif">${liste.map((c) => `
-      <button class="fente-btn" data-coup="${encodeURIComponent(JSON.stringify(sansCarte(c)))}">${etiquetteCoup(c)}</button>`).join('')}</div>`;
+    return `<div class="ecart actif">${liste.map(fenteChoix).join('')}</div>`;
   };
 
   const morceaux = [];
@@ -650,7 +665,7 @@ function zoneDerushage(st, humaine = true) {
       : '');
 
   return `<div class="derushage-lignes">
-    ${humaine ? '' : `<p class="aide" id="aide-derushage"><b>${nom}</b> dérushe : elle prend une carte, puis la monte dans son banc.</p>`}
+    ${humaine ? '' : `<p class="aide" id="aide-derushage"><b>${nom}</b> dérushe : une carte prise dans un chutier, puis montée dans son banc.</p>`}
     ${ligne('Plans Larges', 'PL', dosPL, options.filter((o) => o.source === 'CHUTIER_PL').map(carte).join(''))}
     ${ligne('Plans Moyens / Gros Plans', 'PMGP', piochePMGP, options.filter((o) => o.source === 'CHUTIER_PMGP').map(carte).join(''))}
   </div>`;
@@ -668,8 +683,8 @@ function aideMontage(st, choisi, humaine = true) {
   // qu'elle est en train de faire.
   if (!humaine) {
     const nom = st.joueurs[st.courant].nom;
-    if (carte.type !== 'DOUBLE') return `<b>${nom}</b> a dérushé un Plan Large n°${carte.num}. Elle le monte dans son banc.`;
-    return `<b>${nom}</b> a dérushé une carte. Elle choisit sa moitié et la monte dans son banc.`;
+    if (carte.type !== 'DOUBLE') return `<b>${nom}</b> a dérushé un Plan Large n°${carte.num}, et le monte dans son banc.`;
+    return `<b>${nom}</b> a dérushé une carte, en choisit une moitié et la monte dans son banc.`;
   }
   if (carte.type !== 'DOUBLE') {
     return 'Un Plan Large ouvre une nouvelle séquence, détachée du reste du montage. Clique sur un emplacement de ton banc.';

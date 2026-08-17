@@ -453,6 +453,33 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 }
 .fente-btn:hover { background: rgba(249,115,22,.45); border-color: var(--orange); color: #fff; }
 
+/* Au survol d'un emplacement, le banc s'écarte de la largeur du plan et
+   celui-ci s'y montre en transparence, à la place exacte qu'il prendra. Le
+   mouvement est celui qu'aura le clic : on voit le voisinage tel qu'il sera,
+   sans qu'une carte en couvre une autre. `--ap` est la largeur du plan. */
+.fente-choix {
+  position: relative; display: block; min-width: 0;
+  transition: min-width .16s cubic-bezier(.3,.7,.4,1);
+}
+.fente-choix:hover { min-width: calc(var(--ap, 0px) + 10px); }
+.apercu-pose {
+  position: absolute; top: 50%; left: 0; z-index: 6; pointer-events: none;
+  transform: translateY(-50%) scale(.94); transform-origin: left center;
+  opacity: 0; transition: opacity .16s ease, transform .16s ease;
+  border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.45);
+  outline: 2px dashed var(--orange); outline-offset: 2px;
+}
+.fente-choix:hover .apercu-pose { opacity: .75; transform: translateY(-50%) scale(1); }
+/* L'étiquette de l'emplacement passe au-dessus de l'aperçu : elle dit ce que
+   le clic va faire, il ne faut pas que la carte la noie. */
+.fente-choix:hover .fente-btn {
+  position: relative; z-index: 7; background: rgba(20,16,28,.86); border-color: var(--orange); color: #fff;
+}
+.apercu-pose .moitie { height: 182px; border-radius: 5px; font-size: 12.7px; display: flex; }
+.apercu-pose .moitie.f-GP { width: 85px; }
+.apercu-pose .moitie.f-PM { width: 169px; }
+.apercu-pose .moitie.f-PL, .apercu-pose .moitie.f-DEP { width: 254px; }
+
 /* Un plan présenté seul (choix de face, Plan de départ) garde sa proportion. */
 /* Une carte qui ne porte qu'un plan se règle sur lui : `auto` la ferait
    s'étirer à la largeur disponible et laisserait le fond noir de la carte

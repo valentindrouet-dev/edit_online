@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.23';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.23';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.24';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.24';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -108,8 +108,10 @@ export function renderPlan(h, opts = {}) {
   // du minutage. Il n'apparaît qu'au montage, où le calcul a un sens.
   const jeton = opts.points === undefined ? ''
     : `<div class="jeton-pts ${opts.points ? '' : 'nul'}" title="Ce que ce plan rapporte">${opts.points}</div>`;
-  return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"
-      data-apercu="${donneesApercu(h, label, opts.points)}">
+  // `muet` : un plan qui n'est pas vraiment sur la table — un aperçu de pose —
+  // n'ouvre pas d'infobulle et ne se donne pas pour une carte du banc.
+  const bulle = opts.muet ? '' : ` data-apercu="${donneesApercu(h, label, opts.points)}"`;
+  return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"${bulle}>
     ${jeton}
     <div class="illus" style="${fond}">
       <div class="tcode ${h.tc === 0 || h.transition ? 'bleu' : ''}">${tc(h.tc)}</div>

@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.23';
-import { compter, bancVide } from './scoring.js?v=1.23';
+} from './data.js?v=1.24';
+import { compter, bancVide } from './scoring.js?v=1.24';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -79,7 +79,8 @@ export function plansVisibles(carte, face) {
   return [r.GP, r.PM, v.GP, v.PM];
 }
 
-function planPose(carte, format, role, face) {
+/** Le plan tel qu'il se posera : la bonne moitié, la bonne face, le bon rôle. */
+export function planPose(carte, format, role, face) {
   const plan = carte.type === 'DOUBLE' ? moitiesDe(carte, face)[format] : plHalf(carte);
   const copie = { ...plan, el: plan.el.slice(), carteId: carte.id };
   // La moitié Générique à double lecture est une Ouverture à gauche, des

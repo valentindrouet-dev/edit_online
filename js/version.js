@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.23';
-export const BUILD_DATE = '2026-08-15 18:20';
+export const VERSION = '1.24';
+export const BUILD_DATE = '2026-08-15 19:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.24',
+    date: '15/08/2026',
+    items: [
+      "<b>L’emplacement de pose se pré-visualise.</b> Une fois la moitié choisie, survoler un emplacement écarte le banc et y montre le plan en transparence, à la place exacte qu’il prendra — le mouvement est celui qu’aura le clic, sans qu’une carte en couvre une autre.",
+      "L’aperçu montre la <b>face que le côté donne</b> : un Gros Plan accroché à gauche est celui du recto, à droite celui du verso. On voit donc son vrai minutage avant de poser, pas celui de l’autre face.",
+      "On ne présume plus du genre d’une joueuse à son nom : « À elle de jouer » devient <b>« À son tour »</b>, et les consignes qui parlaient d’elle sont réécrites sans pronom.",
+    ],
+  },
   {
     v: '1.23',
     date: '15/08/2026',
