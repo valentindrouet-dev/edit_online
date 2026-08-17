@@ -238,13 +238,33 @@ bandeau redessiné, pas son libellé : c'est ainsi qu'on les lit en jouant.
 Deux pouvoirs sont « le même » quand ils ont la même **forme** — même famille, même cible, même sens
 et même seuil, même portée —, quelle que soit leur valeur : `signatureObj()` en donne la clé.
 « 1 × ◀Plan▶ » et « 2 × ◀Plan▶ » sont donc une seule ligne, et la colonne **valeurs** dit comment
-les points s'y répartissent (`1×13`, `2×4`). Chaque ligne donne le nombre de plans porteurs, sa
-**part du jeu** en barre, la répartition par cadrage, le total de points apporté, et l'**écart entre
-l'Imprimé et le Modifié** — un pouvoir ajouté ou retiré par retouche s'y voit tout de suite.
+les points s'y répartissent (`1×13`, `2×4`).
 
-En tête, cinq cartouches : formes distinctes, plans porteurs, plans sans bandeau, points en jeu,
-points par bandeau. En dessous, deux lectures plus courtes : **par famille de pouvoir** et **par
-valeur**.
+Le bandeau se lit en **deux colonnes** : **Points**, la pastille de valeur ; **Effet**, ce que cette
+valeur compte — le `×` ou le `si` restant avec l'effet, puisque c'est lui qui dit comment la valeur
+se déclenche.
+
+**Un bandeau ne vaut pas sa valeur : il vaut sa valeur multipliée par ce qu'il trouve à compter.**
+« 3 × ⛨ » ne rapporte trois points que s'il y a une arme sur la table, et trente s'il en trouve dix.
+La colonne **déclencheurs** compte donc, sur tout le matériel, les plans qui font marquer ce
+pouvoir-là (`declencheurs()`) — les armes pour un objectif d'arme, les couples appariés pour un
+objectif de couple, les plans du bon cadrage pour un objectif de cadrage. Les bandeaux qui se lisent
+« n si … » — absence, ordre, minutage absent — ne se déclenchent qu'une fois : leur compte est 1. Le
+**total** est le produit des deux, sommé sur les plans porteurs. C'est lui qui dit ce qu'un pouvoir
+pèse vraiment dans la boîte, et non le nombre de cartes qui l'affichent.
+
+Chaque ligne donne encore le nombre de plans porteurs, sa **part du jeu** en barre, la répartition
+par cadrage, et l'**écart entre l'Imprimé et le Modifié** — un pouvoir ajouté ou retiré par retouche
+s'y voit tout de suite.
+
+**Chaque en-tête range son tableau** (`thTri()`, `trierPar()`) : un premier clic trie du plus grand
+au plus petit — alphabétiquement sur une colonne de texte —, un second inverse le sens. Les trois
+tableaux gardent leur tri chacun de leur côté.
+
+En tête, cinq cartouches : plans porteurs, plans sans bandeau, formes distinctes, points en
+potentiel, points par bandeau. En dessous, deux lectures plus courtes : **par famille de pouvoir**
+et **par valeur** — où le total d'une valeur additionne, bandeau par bandeau, ce qu'elle peut
+vraiment rapporter, un 3 posé sur un pouvoir que rien ne déclenche ne valant rien.
 
 ### Persistance et export
 

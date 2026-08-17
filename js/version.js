@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.31';
-export const BUILD_DATE = '2026-08-17 14:10';
+export const VERSION = '1.32';
+export const BUILD_DATE = '2026-08-17 15:20';
 
 export const CHANGELOG = [
+  {
+    v: '1.32',
+    date: '17/08/2026',
+    items: [
+      "Statistiques des pouvoirs — <b>un bandeau ne vaut pas sa valeur, il vaut sa valeur multipliée par ce qu’il trouve à compter</b>. « 3 × ⛨ » ne rapporte 3 points que s’il y a une arme sur la table, et 30 s’il en trouve dix. La nouvelle colonne <b>déclencheurs</b> compte, sur tout le matériel, les plans qui font marquer ce pouvoir ; le <b>total</b> est le produit des deux. Les bandeaux en « n si… » ne se déclenchent qu’une fois.",
+      "La colonne du bandeau se lit désormais en deux : <b>Points</b>, la pastille de valeur, et <b>Effet</b>, ce que cette valeur compte.",
+      "<b>Chaque en-tête range son tableau.</b> Un premier clic trie du plus grand au plus petit — alphabétiquement sur une colonne de texte —, un second inverse. Les trois tableaux gardent leur tri chacun de leur côté.",
+    ],
+  },
   {
     v: '1.31',
     date: '17/08/2026',

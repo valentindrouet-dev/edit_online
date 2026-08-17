@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.31';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.32';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
-  CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee,
-} from './data.js?v=1.31';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.31';
-import { elIcon, numIcon } from './icons.js?v=1.31';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.31';
+  CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES,
+} from './data.js?v=1.32';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.32';
+import { elIcon, numIcon } from './icons.js?v=1.32';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.32';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.31';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.31';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.31';
-import { releve, voler, stopperVols } from './anim.js?v=1.31';
-import { campagne } from './lab.js?v=1.31';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.31';
+} from './engine.js?v=1.32';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.32';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.32';
+import { releve, voler, stopperVols } from './anim.js?v=1.32';
+import { campagne } from './lab.js?v=1.32';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.32';
 
 const app = document.getElementById('app');
 
@@ -1367,6 +1367,11 @@ const mat = {
   cartes: new Set(),    // identifiants des cartes sélectionnées
   ancre: null,          // dernier clic, pour la sélection au shift
   ancreVue: null,       // et la vue où il a eu lieu
+  // Le tri des trois tableaux de la vue des pouvoirs. `sens` vaut -1 pour
+  // décroissant, 1 pour croissant.
+  triPouvoirs: { col: 'plans', sens: -1 },
+  triFamilles: { col: 'plans', sens: -1 },
+  triValeurs: { col: 'valeur', sens: 1 },
 };
 
 const VUES = [
@@ -2197,8 +2202,46 @@ function signatureObj(o) {
 }
 
 /**
+ * Combien de plans du jeu **déclenchent** ce pouvoir. C'est la question qui
+ * compte : un bandeau ne vaut pas sa valeur, il vaut sa valeur multipliée par
+ * ce qu'il trouve à compter. « 3 × ⛨ » ne rapporte 3 points que s'il y a une
+ * arme sur la table, et 30 s'il en trouve dix.
+ *
+ * Les bandeaux qui se lisent « n si … » — absence, ordre, minutage absent — ne
+ * se déclenchent qu'une fois : leur compte est 1, quel que soit le matériel.
+ */
+function declencheurs(obj, plans) {
+  if (!obj) return 0;
+  switch (obj.kind) {
+    case 'RACCORD': return plans.filter(estRaccord).length;
+    case 'PLAN':    return plans.length;
+    case 'FORMAT':  return plans.filter((p) => p.format === obj.format).length;
+    case 'ELEMENT': return store.cfg.elementParIcone === false
+      ? plans.filter((p) => p.el.includes(obj.el)).length
+      : compteIcone(plans, obj.el);
+    case 'PAIRE': {
+      // Un couple s'apparie : quatre icônes font deux couples, cinq aussi.
+      const [x, y] = obj.els;
+      const nx = compteIcone(plans, x);
+      return x === y ? Math.floor(nx / 2) : Math.min(nx, compteIcone(plans, y));
+    }
+    case 'MORT':    return plans.filter((p) => p.mort).length;
+    case 'NEANT':   return plans.filter((p) => !p.el.some((e) => PERSONNAGES.includes(e))).length;
+    case 'MINUTAGE': return plans.filter((p) => (obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
+    // Les « si » : le pouvoir se déclenche, ou pas — jamais plusieurs fois.
+    case 'ABSENT': case 'CHRONO': case 'SANS_TC': return 1;
+    default: return 0;
+  }
+}
+
+/**
  * Le recensement des bandeaux d'un jeu de matériel : un par signature, avec
- * ses valeurs, ses cadrages et le total de points qu'il met sur la table.
+ * ses valeurs, ses cadrages, ce qui le déclenche et le potentiel de points
+ * qu'il met sur la table.
+ *
+ * `brut` est la simple somme des valeurs imprimées — ce que le bandeau annonce.
+ * `points` est ce qu'il peut vraiment rapporter : sa valeur multipliée par le
+ * nombre de plans qui le déclenchent, sur tout le matériel.
  */
 function pouvoirsDuJeu(modifie) {
   const etait = store.cfg.materielActif;
@@ -2206,18 +2249,27 @@ function pouvoirsDuJeu(modifie) {
   try {
     const plans = plansDuPaquet().filter(passeStats);
     const par = new Map();
-    let avec = 0, points = 0;
+    let avec = 0;
     for (const h of plans) {
       if (!h.obj) continue;
-      avec++; points += h.obj.n;
+      avec++;
       const cle = signatureObj(h.obj);
-      const e = par.get(cle) || { obj: h.obj, n: 0, valeurs: new Map(), cadrages: {}, points: 0 };
-      e.n++; e.points += h.obj.n;
+      const e = par.get(cle) || { obj: h.obj, n: 0, valeurs: new Map(), cadrages: {}, brut: 0 };
+      e.n++; e.brut += h.obj.n;
       e.valeurs.set(h.obj.n, (e.valeurs.get(h.obj.n) || 0) + 1);
       e.cadrages[h.format] = (e.cadrages[h.format] || 0) + 1;
       // Le dessin retenu est celui de la valeur la plus fréquente.
       if (e.valeurs.get(h.obj.n) >= (e.valeurs.get(e.obj.n) || 0)) e.obj = h.obj;
       par.set(cle, e);
+    }
+    // Ce qu'un bandeau trouve à compter ne dépend que de sa forme, jamais de sa
+    // valeur : une seule mesure par signature suffit.
+    let points = 0;
+    for (const e of par.values()) {
+      e.decl = declencheurs(e.obj, plans);
+      e.points = e.brut * e.decl;
+      e.cadr = Object.values(e.cadrages).reduce((a, b) => a + b, 0);
+      points += e.points;
     }
     const liste = [...par.values()].sort((a, b) => b.n - a.n || b.points - a.points);
     return { liste, plans: plans.length, avec, sans: plans.length - avec, points };
@@ -2231,6 +2283,54 @@ function pouvoirsDuJeu(modifie) {
 function barrePart(part) {
   return `<span class="barre-part" title="${(part * 100).toFixed(1)} %">
     <i style="width:${Math.max(2, part * 100).toFixed(1)}%"></i></span>`;
+}
+
+// Ce sur quoi chaque colonne trie. Un tableau, une clé par colonne : l'en-tête
+// porte son nom, le tri en tire la valeur à comparer.
+const TRI_POUVOIRS = {
+  points: (e) => e.obj.n,
+  effet: (e) => objLabel(e.obj, store.cfg),
+  plans: (e) => e.n,
+  part: (e) => e.n,
+  valeurs: (e) => Math.min(...e.valeurs.keys()),
+  cadrages: (e) => e.cadr,
+  decl: (e) => e.decl,
+  total: (e) => e.points,
+  ecart: (e) => e.ecart,
+};
+
+const TRI_FAMILLES = {
+  famille: (f) => f.l, plans: (f) => f.n, part: (f) => f.n,
+  formes: (f) => f.formes, total: (f) => f.points,
+};
+
+const TRI_VALEURS = {
+  valeur: (v) => v.v, bandeaux: (v) => v.n, part: (v) => v.n, total: (v) => v.points,
+};
+
+/**
+ * Range une liste selon l'état de tri donné. Les textes se comparent en
+ * français — sans quoi « Élément » passerait après « Zone ».
+ */
+function trierPar(liste, cles, etat) {
+  const cle = cles[etat.col] || Object.values(cles)[0];
+  return liste.slice().sort((a, b) => {
+    const x = cle(a), y = cle(b);
+    const d = typeof x === 'string' ? x.localeCompare(y, 'fr') : x - y;
+    return d * etat.sens;
+  });
+}
+
+/**
+ * Un en-tête cliquable : le nom, et la flèche du tri en cours. `mode` dit
+ * comment la colonne se lit — `num` la cale à droite, `texte` la fait partir
+ * dans l'ordre alphabétique quand tout le reste part du plus grand.
+ */
+function thTri(groupe, col, libelle, etat, mode = '') {
+  const on = etat.col === col;
+  return `<th class="th-tri ${mode === 'num' ? 'num' : ''} ${on ? 'trie' : ''}"
+    data-tri="${groupe}" data-col="${col}" data-sens0="${mode === 'texte' ? 1 : -1}"
+    title="Trier par ${libelle.toLowerCase()}">${libelle}<i>${on ? (etat.sens < 0 ? '▾' : '▴') : '↕'}</i></th>`;
 }
 
 function vuePouvoirs() {
@@ -2253,33 +2353,64 @@ function vuePouvoirs() {
     };
   }).filter((f) => f.n).sort((a, b) => b.n - a.n);
 
+  // Une valeur ne vaut pas la même chose selon le pouvoir qui la porte : un 3
+  // sur un bandeau que rien ne déclenche ne rapporte rien. Le total d'une
+  // valeur additionne donc, bandeau par bandeau, ce qu'elle peut vraiment
+  // rapporter.
   const valeurs = new Map();
-  for (const e of actif.liste) for (const [v, n] of e.valeurs) valeurs.set(v, (valeurs.get(v) || 0) + n);
-  const parValeur = [...valeurs.entries()].sort((a, b) => a[0] - b[0]);
+  for (const e of actif.liste) {
+    for (const [v, n] of e.valeurs) {
+      const c = valeurs.get(v) || { v, n: 0, points: 0 };
+      c.n += n; c.points += v * n * e.decl;
+      valeurs.set(v, c);
+    }
+  }
+
+  // L'écart avec l'autre jeu se calcule avant le tri : c'est une colonne comme
+  // une autre, et l'on doit pouvoir trier dessus.
+  for (const e of actif.liste) {
+    const ref = parCle.get(signatureObj(e.obj));
+    e.ecart = e.n - (ref ? ref.n : 0);
+  }
+
+  const parValeur = trierPar([...valeurs.values()], TRI_VALEURS, mat.triValeurs);
+  const parFamille = trierPar(familles, TRI_FAMILLES, mat.triFamilles);
+  const parBandeau = trierPar(actif.liste, TRI_POUVOIRS, mat.triPouvoirs);
 
   const ligne = (e) => {
-    const ref = parCle.get(signatureObj(e.obj));
-    const ecart = e.n - (ref ? ref.n : 0);
     const vals = [...e.valeurs.entries()].sort((a, b) => a[0] - b[0])
       .map(([v, n]) => `<span class="val-pouvoir">${v}<i>×${n}</i></span>`).join('');
     const cadrages = ['PL', 'PM', 'GP', 'DEP'].filter((f) => e.cadrages[f])
       .map((f) => `<span class="cadr-compte">${cadrageIcon(f)}${e.cadrages[f]}</span>`).join('');
+    // Le bandeau se lit en deux temps : ce qu'il vaut, et ce qu'il compte. Le
+    // « × » ou le « si » reste avec l'effet — c'est lui qui dit comment la
+    // valeur se déclenche.
     return `<tr>
-      <td class="pv-visuel">${objHTML(e.obj, 26, store.cfg)}</td>
+      <td class="pv-pts">${numIcon(e.obj.n, 26)}</td>
+      <td class="pv-visuel"><span class="obj-html"><span class="${estSi(e.obj) ? 'si' : 'x'}">${
+        estSi(e.obj) ? 'si' : '×'}</span>${objContenu(e.obj, 26, false, store.cfg)}</span></td>
       <td class="pv-texte">${objLabel(e.obj, store.cfg)}</td>
       <td class="num"><b>${e.n}</b></td>
       <td>${barrePart(actif.avec ? e.n / actif.avec : 0)}<span class="pv-part">${(100 * e.n / (actif.avec || 1)).toFixed(1)} %</span></td>
       <td class="pv-vals">${vals}</td>
       <td class="pv-cadr">${cadrages}</td>
-      <td class="num">${e.points}</td>
-      <td class="num ecart">${ecart ? (ecart > 0 ? `+${ecart}` : ecart) : '—'}</td>
+      <td class="num">${e.decl}</td>
+      <td class="num"><b>${e.points}</b></td>
+      <td class="num ecart">${e.ecart ? (e.ecart > 0 ? `+${e.ecart}` : e.ecart) : '—'}</td>
     </tr>`;
   };
 
   const filtre = Object.values(mat.statsFiltres).some(Boolean);
+  const th = (col, l, mode) => thTri('pouvoirs', col, l, mat.triPouvoirs, mode);
+  const thF = (col, l, mode) => thTri('familles', col, l, mat.triFamilles, mode);
+  const thV = (col, l, mode) => thTri('valeurs', col, l, mat.triValeurs, mode);
+
   return `<p class="aide" style="margin-top:14px">Tous les bandeaux du jeu <b>${nomActif}</b> —
-  celui qui part en partie —, un par forme distincte, dessinés comme sur la carte. La colonne
-  <b>écart</b> les compare au jeu ${nomAutre}.</p>
+  celui qui part en partie —, un par forme distincte, dessinés comme sur la carte. Un bandeau ne
+  vaut pas sa valeur : il vaut sa valeur <b>multipliée par ce qu’il trouve à compter</b>. La colonne
+  <b>déclencheurs</b> dit combien de plans du matériel le font marquer, et <b>total</b> ce qu’il
+  peut rapporter en tout. La colonne <b>écart</b> compare au jeu ${nomAutre}. Chaque en-tête range
+  le tableau.</p>
   ${barreStats()}
   ${filtre ? `<p class="aide filtre-actif">Les filtres ne retiennent que <b>${actif.plans} plans</b>
     — tout ce qui suit ne compte qu’eux.</p>` : ''}
@@ -2288,26 +2419,29 @@ function vuePouvoirs() {
     <div class="pv-cartouche"><b>${actif.avec}</b><span>plans portent un bandeau</span></div>
     <div class="pv-cartouche"><b>${actif.sans}</b><span>plans sans bandeau</span></div>
     <div class="pv-cartouche"><b>${actif.liste.length}</b><span>formes distinctes</span></div>
-    <div class="pv-cartouche"><b>${actif.points}</b><span>points sur la table</span></div>
-    <div class="pv-cartouche"><b>${actif.avec ? (actif.points / actif.avec).toFixed(2) : '0'}</b><span>points par bandeau</span></div>
+    <div class="pv-cartouche"><b>${actif.points}</b><span>points en potentiel</span></div>
+    <div class="pv-cartouche"><b>${actif.avec ? (actif.points / actif.avec).toFixed(1) : '0'}</b><span>points par bandeau</span></div>
   </div>
 
   <h3>Chaque bandeau</h3>
   <div class="tbl-defile">
     <table class="tbl tbl-pouvoirs">
       <thead><tr>
-        <th>Bandeau</th><th>Ce qu’il compte</th><th class="num">Plans</th><th>Part</th>
-        <th>Valeurs</th><th>Cadrages</th><th class="num">Points</th><th class="num">Écart</th>
+        ${th('points', 'Points')}${th('effet', 'Effet', 'texte')}<th>Ce qu’il compte</th>
+        ${th('plans', 'Plans', 'num')}${th('part', 'Part')}${th('valeurs', 'Valeurs')}
+        ${th('cadrages', 'Cadrages')}${th('decl', 'Déclencheurs', 'num')}
+        ${th('total', 'Total', 'num')}${th('ecart', 'Écart', 'num')}
       </tr></thead>
-      <tbody>${actif.liste.map(ligne).join('')
-        || '<tr><td colspan="8" class="aide">Aucun bandeau ne passe les filtres.</td></tr>'}</tbody>
+      <tbody>${parBandeau.map(ligne).join('')
+        || '<tr><td colspan="10" class="aide">Aucun bandeau ne passe les filtres.</td></tr>'}</tbody>
     </table>
   </div>
 
   <h3>Par famille de pouvoir</h3>
   <table class="tbl tbl-pouvoirs">
-    <thead><tr><th>Famille</th><th class="num">Plans</th><th>Part</th><th class="num">Formes</th><th class="num">Points</th></tr></thead>
-    <tbody>${familles.map((f) => `<tr>
+    <thead><tr>${thF('famille', 'Famille', 'texte')}${thF('plans', 'Plans', 'num')}${thF('part', 'Part')}
+      ${thF('formes', 'Formes', 'num')}${thF('total', 'Total', 'num')}</tr></thead>
+    <tbody>${parFamille.map((f) => `<tr>
       <td>${f.l}</td><td class="num"><b>${f.n}</b></td>
       <td>${barrePart(actif.avec ? f.n / actif.avec : 0)}<span class="pv-part">${(100 * f.n / (actif.avec || 1)).toFixed(1)} %</span></td>
       <td class="num">${f.formes}</td><td class="num">${f.points}</td>
@@ -2316,11 +2450,12 @@ function vuePouvoirs() {
 
   <h3>Par valeur</h3>
   <table class="tbl tbl-pouvoirs">
-    <thead><tr><th>Valeur</th><th class="num">Bandeaux</th><th>Part</th><th class="num">Points</th></tr></thead>
-    <tbody>${parValeur.map(([v, n]) => `<tr>
-      <td>${numIcon(v, 24)}</td><td class="num"><b>${n}</b></td>
-      <td>${barrePart(actif.avec ? n / actif.avec : 0)}<span class="pv-part">${(100 * n / (actif.avec || 1)).toFixed(1)} %</span></td>
-      <td class="num">${v * n}</td>
+    <thead><tr>${thV('valeur', 'Valeur')}${thV('bandeaux', 'Bandeaux', 'num')}${thV('part', 'Part')}
+      ${thV('total', 'Total', 'num')}</tr></thead>
+    <tbody>${parValeur.map((c) => `<tr>
+      <td>${numIcon(c.v, 24)}</td><td class="num"><b>${c.n}</b></td>
+      <td>${barrePart(actif.avec ? c.n / actif.avec : 0)}<span class="pv-part">${(100 * c.n / (actif.avec || 1)).toFixed(1)} %</span></td>
+      <td class="num">${c.points}</td>
     </tr>`).join('')}</tbody>
   </table>`;
 }
@@ -2389,6 +2524,18 @@ function brancherMateriel() {
 
   app.querySelectorAll('[data-stat]').forEach((el) => el.addEventListener('change', () => {
     mat.statsFiltres[el.dataset.stat] = el.value; refaire();
+  }));
+
+  // Les en-têtes rangent leur tableau. Recliquer la même colonne inverse le
+  // sens ; une nouvelle colonne part du plus parlant — décroissant sur un
+  // nombre, alphabétique sur un texte.
+  const ETATS_TRI = { pouvoirs: 'triPouvoirs', familles: 'triFamilles', valeurs: 'triValeurs' };
+  app.querySelectorAll('[data-tri][data-col]').forEach((el) => el.addEventListener('click', () => {
+    const etat = mat[ETATS_TRI[el.dataset.tri]];
+    if (!etat) return;
+    if (etat.col === el.dataset.col) etat.sens = -etat.sens;
+    else { etat.col = el.dataset.col; etat.sens = +el.dataset.sens0; }
+    refaire();
   }));
   const sraz = app.querySelector('#stats-raz');
   if (sraz) sraz.addEventListener('click', () => {

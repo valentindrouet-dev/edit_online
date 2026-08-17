@@ -1001,8 +1001,22 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 .tbl-pouvoirs td { vertical-align: middle; }
 .tbl-pouvoirs .pv-visuel { white-space: nowrap; }
+.tbl-pouvoirs .pv-pts { white-space: nowrap; padding-right: 0; }
 .tbl-pouvoirs .pv-texte { font-size: .82rem; color: var(--encre-doux); }
 .tbl-pouvoirs .ecart { color: var(--gris); }
+
+/* Un en-tête qui range son tableau. La flèche est toujours là — pâle tant que
+   la colonne ne trie pas —, sinon la ligne d'en-tête sauterait à chaque clic. */
+.th-tri { cursor: pointer; user-select: none; white-space: nowrap; }
+/* Un en-tête de nombre se cale à droite, au-dessus de sa colonne de chiffres. */
+table.tbl th.th-tri.num { text-align: right; }
+.th-tri:hover { color: var(--violet); }
+.th-tri i {
+  font-style: normal; margin-left: 5px; font-size: .78em; opacity: .28;
+  display: inline-block; width: .8em; text-align: center;
+}
+.th-tri.trie { color: var(--violet); }
+.th-tri.trie i { opacity: 1; }
 .barre-part {
   display: inline-block; vertical-align: middle; width: 96px; height: 8px; border-radius: 999px;
   background: var(--gris-clair); overflow: hidden; margin-right: 8px;
