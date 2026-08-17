@@ -165,6 +165,17 @@ tous deux de cette valeur**, et c'est l'éditeur qui reçoit les vraies valeurs 
 - sa **portée** — voir ci-dessous : là où le pouvoir va compter ;
 - **un second pouvoir**, s'il en faut un — voir plus bas.
 
+  Les **flèches de portée prennent la couleur de l'icône qu'elles entourent** — rouge sombre autour
+  de l'Ennemi, brun autour d'un Véhicule, vert sombre autour de l'Héroïne (`ENCRES` et `teinteObj()`
+  dans `js/data.js`). Les encres sont volontairement foncées, pour tenir sur un bandeau vert, orange,
+  rouge ou gris, et un halo clair les détache du gris sombre d'un Raccord. Un couple prend la couleur
+  de sa première icône ; ce qui ne montre pas d'icône reste dans l'encre neutre.
+
+  Une **icône barrée** — le pouvoir qui la veut absente — porte une croix de deux barres rouges
+  dessinées (`croixNon()` dans `js/cards.js`), cernées de blanc. Un « ✕ » de fonte, agrandi jusqu'à
+  se voir, finissait par recouvrir l'icône et l'on ne savait plus ce qui était interdit : deux barres
+  laissent quatre quartiers ouverts, la croix domine et l'icône se lit encore.
+
   Le **couple d'icônes** n'est pas une adjacence : il apparie les icônes réunies dans sa portée.
   Quatre icônes font deux couples, cinq en font deux aussi ; un couple de deux icônes différentes
   en demande une de chaque.
@@ -253,6 +264,11 @@ retiennent. Ce qu'il compte : la boîte, les
 cadrages, les icônes, les types de pouvoir, et les minutages (le plus court, le plus long, la
 moyenne, la distribution par tranche de dix). La colonne surlignée est le jeu qui se lance.
 
+Les icônes s'y comptent **deux fois, en deux tableaux** : celles qui sont **sur les cartes** — ce que
+la boîte offre — et celles que **les bandeaux réclament** — ce que les pouvoirs cherchent à compter.
+Ce sont deux grandeurs différentes, qu'un seul nombre confondait. Un couple réclame ses deux icônes ;
+une absence réclame la sienne, en creux.
+
 ### Statistiques des pouvoirs
 
 Un second onglet ne regarde que les **bandeaux**, et les présente **comme sur les cartes** — le
@@ -331,6 +347,12 @@ directement dans un tableur français.
 
 Colonne de gauche : la zone de pioche, puis les bancs de montage. Colonne de droite : joueuses,
 score, recensement des icônes et bandeaux du banc.
+
+Les **emplacements de pose se dressent en bandes verticales** entre les cartes. Couchés, un
+« ＋ séquence » ou un « ⛓ raccorder » coûtait près de cent pixels, et trois d'entre eux suffisaient à
+faire passer le banc à la ligne **avant même la pose** — pour revenir en arrière aussitôt la carte
+posée. Debout, un emplacement en coûte trente : le banc garde donc, pendant qu'on vise, la largeur
+qu'il aura une fois la carte posée. Il ne se réorganise qu'après, jamais pendant.
 
 Le banc **tient sur une ligne tant que tout y entre**, puis passe à la ligne. Ce qui bascule, ce sont
 les **séquences entières** : une séquence est un bloc insécable — ses plans se touchent, on ne les
@@ -545,7 +567,11 @@ Chacun de ces points est une variable réglable dans l'écran **Variables** :
 - **Le sens de pose** : aux deux bouts d'une séquence, ou à droite seulement.
 - **Le symbole ✕ noir** des bandeaux de la famille Mort, interprété ici en « plan sans personnage ».
 - **Le rôle du minutage** : affiché, mais il ne rapporte rien tant que le bonus de chronologie
-  (variante hors règles) est à zéro.
+  (variante hors règles) est à zéro. Le bandeau « n si le montage est dans l'ordre », lui, se lit
+  toujours sur **tout le film**, de gauche à droite et séquences confondues — sa portée ne se règle
+  donc pas. Les Raccords et Génériques, à 00:00, sont **retirés de la lecture** plutôt que de la
+  couper : sans cela, un Raccord glissé entre un plan à 75:00 et un plan à 65:00 masquait le désordre
+  et le montage marquait quand même ses points (`chronologique()`, `chronoIgnoreZero`).
 - **L'appariement recto-verso des Plans de départ** : les 4 faces du PDF sont groupées deux à deux
   dans l'ordre du fichier — quelles faces sont au dos l'une de l'autre reste à confirmer. Les quatre
   étant de toute façon proposées, cela ne change rien au choix, seulement au matériel imprimé.

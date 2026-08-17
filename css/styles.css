@@ -392,7 +392,15 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .paire { display: inline-flex; align-items: center; height: 100%; }
 .paire i { width: .4em; height: .28em; background: #e8e8ec; display: block; }
 .barre { position: relative; display: inline-flex; align-items: center; height: 100%; }
-.barre b { position: absolute; inset: 0; display: grid; place-items: center; color: #e11d48; font-size: 1.2em; }
+/* L'icône barrée : la croix doit se voir avant l'icône, sinon on lit
+   « compte cet élément » là où il faut lire « cet élément doit être absent ».
+   Elle déborde donc volontairement de la pastille, tout en laissant voir
+   dessous de quelle icône il s'agit. */
+.croix-non { position: absolute; inset: -6%; pointer-events: none; }
+.croix-non svg { width: 100%; height: 100%; display: block; overflow: visible; }
+/* Sur un seuil de minutage, la croix barre une étiquette large : elle s'étire
+   avec elle plutôt que de se perdre au milieu. */
+.barre .tc-seuil + .croix-non { inset: -4% -2%; }
 
 .moitie .libelle {
   text-align: center; font-size: .54em; font-weight: 800; letter-spacing: .07em;
@@ -515,13 +523,26 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .banc .moitie.f-PL, .banc .moitie.f-DEP { width: 254px; }
 
 .banc .ecart { flex: 0 0 auto; width: 18px; }
+/* Les emplacements se rangent en bandes verticales, côte à côte : un
+   emplacement large — « ＋ séquence », « ⛓ raccorder » — coûtait près de cent
+   pixels et suffisait à faire passer le banc à la ligne, avant même qu'on ait
+   posé quoi que ce soit. Debout, il en coûte trente : le banc garde donc la
+   largeur qu'il aura une fois la carte posée, et ne se réorganise qu'après. */
 .banc .ecart.actif {
-  width: auto; display: flex; flex-direction: column; gap: 5px; justify-content: center; padding: 0 6px;
+  width: auto; display: flex; flex-direction: row; gap: 4px;
+  justify-content: center; align-items: stretch; padding: 0 4px;
 }
 .fente-btn {
   border: 2px dashed rgba(255,255,255,.35); background: rgba(255,255,255,.07); color: #e9e6f0;
   border-radius: 8px; padding: 7px 9px; font-size: .74rem; font-weight: 700; cursor: pointer;
   white-space: nowrap; transition: .14s;
+}
+/* `rotate(180deg)` par-dessus l'écriture verticale fait lire de bas en haut,
+   sens habituel d'une étiquette de tranche. Les emplacements qui ne portent
+   qu'une flèche restent couchés : les faire tourner les ferait mentir. */
+.fente-btn.debout {
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  padding: 9px 6px; align-self: stretch;
 }
 .fente-btn:hover { background: rgba(249,115,22,.45); border-color: var(--orange); color: #fff; }
 
@@ -1138,9 +1159,16 @@ table.tbl th.th-tri.num { text-align: right; }
 /* La portée d'un pouvoir : la flèche pointe le côté compté. Elle se serre
    contre ce qu'elle porte — .obj-noyau — car elle en fait partie. */
 .obj-noyau { display: inline-flex; align-items: center; height: 100%; gap: .06em; }
-.fleche-pos { font-weight: 900; color: #f6f2ea; opacity: .95; }
+/* La flèche porte la couleur de l'icône qu'elle entoure (`--fl`, posée au
+   rendu). Le halo clair la détache aussi bien d'un bandeau vert que du gris
+   sombre d'un Raccord : sans lui, une encre foncée disparaîtrait sur l'un ou
+   sur l'autre. */
+.fleche-pos {
+  font-weight: 900; color: var(--fl, #f6f2ea); opacity: 1;
+  text-shadow: 0 0 2px rgba(255, 255, 255, .85), 0 0 4px rgba(255, 255, 255, .55);
+}
 .apercu-obj .fleche-pos, .tbl-materiel .fleche-pos,
-.ap-obj-visuel .fleche-pos { color: var(--encre); }
+.ap-obj-visuel .fleche-pos { color: var(--fl, var(--encre)); }
 
 /* Une icône peut être portée plusieurs fois : le compte s'affiche en pastille. */
 .choix-icones .ic { position: relative; }

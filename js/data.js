@@ -18,6 +18,38 @@ export const ELEMENTS = {
 };
 
 export const ELEMENT_IDS = Object.keys(ELEMENTS);
+
+/**
+ * L'encre d'un élément : sa couleur propre, assez foncée pour rester lisible
+ * sur n'importe quel fond de bandeau — le vert du Plan Large, l'orange du Plan
+ * Moyen, le rouge du Gros Plan, le gris du Raccord. Elle sert aux flèches de
+ * portée, qui prennent la couleur de ce qu'elles entourent.
+ */
+export const ENCRES = {
+  HEROINE: '#14520d', ENNEMI: '#6e1010', ALLIE: '#0e3454',
+  OBJET: '#7d5400', ARME: '#31363c', VEHICULE: '#5f3c18',
+  MORT: '#141418', NEANT: '#26262e',
+};
+
+// Les cadrages, assombris de la même façon.
+const ENCRES_FORMAT = { PL: '#2b6210', PM: '#7d5400', GP: '#8a330d', DEP: '#1e4b62', TR: '#31363c' };
+
+/**
+ * La couleur des flèches d'un bandeau : celle de l'icône qu'elles entourent.
+ * Un couple prend celle de sa première icône ; ce qui ne montre pas d'icône —
+ * un plan, un raccord, un minutage — reste dans l'encre neutre.
+ */
+export function teinteObj(o) {
+  if (!o) return ENCRES.NEANT;
+  switch (o.kind) {
+    case 'ELEMENT': case 'ABSENT': return ENCRES[o.el] || ENCRES.NEANT;
+    case 'PAIRE':   return ENCRES[o.els[0]] || ENCRES.NEANT;
+    case 'MORT':    return ENCRES.MORT;
+    case 'NEANT':   return ENCRES.NEANT;
+    case 'FORMAT':  return ENCRES_FORMAT[o.format] || ENCRES.NEANT;
+    default:        return ENCRES.NEANT;
+  }
+}
 export const PERSONNAGES = ELEMENT_IDS.filter((e) => ELEMENTS[e].famille === 'PERSONNAGE');
 
 // --- Cadrages --------------------------------------------------------------
@@ -127,6 +159,8 @@ export function objLabel(o, cfg) {
  */
 export function objPortee(o, cfg) {
   if (!o) return 'MONTAGE';
+  // « Dans l'ordre » ne se règle pas : c'est le film entier que l'on juge.
+  if (o.kind === 'CHRONO') return 'MONTAGE';
   if (PORTEE_IDS.includes(o.portee)) return o.portee;
   return cfg && cfg.porteeParDefaut === 'SEQUENCE' ? 'SEQUENCE' : 'MONTAGE';
 }

@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.33';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.34';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
-} from './data.js?v=1.33';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.33';
-import { elIcon, numIcon } from './icons.js?v=1.33';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.33';
+} from './data.js?v=1.34';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.34';
+import { elIcon, numIcon } from './icons.js?v=1.34';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.34';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.33';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.33';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.33';
-import { releve, voler, stopperVols } from './anim.js?v=1.33';
-import { campagne } from './lab.js?v=1.33';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.33';
+} from './engine.js?v=1.34';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.34';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.34';
+import { releve, voler, stopperVols } from './anim.js?v=1.34';
+import { campagne } from './lab.js?v=1.34';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.34';
 
 const app = document.getElementById('app');
 
@@ -483,9 +483,15 @@ function bancBloc(st, i, titre, interactif) {
   // transparence, tel qu'il s'y poserait : la bonne moitié, et la face que le
   // côté de pose lui donne. Le mouvement est celui qu'aura le clic.
   const carteEnMain = interactif ? st.mains[i][0] : null;
+  // Un emplacement occupe une bande verticale, pas un pavé : c'est ce qui
+  // permet au banc de garder la même largeur qu'il aura une fois la carte
+  // posée. Les emplacements ne doivent pas décider de la mise en page — sinon
+  // le banc se réorganise pendant qu'on vise, puis se réorganise encore une
+  // fois la carte posée, et l'on s'y perd.
   const fenteChoix = (c) => {
     const coup = encodeURIComponent(JSON.stringify(sansCarte(c)));
-    const bouton = `<button class="fente-btn" data-coup="${coup}">${etiquetteCoup(c)}</button>`;
+    const lg = etiquetteCoup(c);
+    const bouton = `<button class="fente-btn ${lg.length > 3 ? 'debout' : ''}" data-coup="${coup}">${lg}</button>`;
     if (!carteEnMain) return `<span class="fente-choix">${bouton}</span>`;
     const plan = planPose(carteEnMain, c.format, c.role, faceJouee(c.format, c.cote, st.cfg));
     // L'aperçu porte lui aussi le coup : c'est toute la carte en pointillés qui
@@ -1975,11 +1981,11 @@ function blocPouvoir(o, ou, rang = 1) {
       <select data-champ-obj="${ou}"${R} data-part="kind">${KINDS.map(([k, l]) => opt(k, l, kind === k)).join('')}</select>
       ${complement}
     </div>
-    ${o ? `<div class="portee-choix">
+    ${o && o.kind !== 'CHRONO' ? `<div class="portee-choix">
       ${PORTEES.map((x) => `<button class="pp ${objPortee(o, store.cfg) === x.id ? 'on' : ''}"
         data-champ-portee="${ou}"${R} data-portee="${x.id}" title="${x.label}">
         ${x.gauche ? '◀' : ''} ${x.court} ${x.droite ? '▶' : ''}</button>`).join('')}
-    </div>` : ''}
+    </div>` : (o ? '<div class="aide portee-fixe">« Dans l’ordre » se lit toujours sur le montage entier.</div>' : '')}
     <div class="apercu-obj">${o ? `${objHTML(o, 26, store.cfg)}<span class="lit">${objLabel(o, store.cfg)}</span>`
       : '<span class="aide">Bandeau vide</span>'}</div>
   </div>`;
@@ -2097,6 +2103,10 @@ function statsJeu(modifie) {
       plans: plans.length,
       cadrages: { PL: 0, PM: 0, GP: 0 },
       elements: Object.fromEntries(ELEMENT_IDS.map((e) => [e, 0])),
+      // Ce que les bandeaux réclament, par icône : une autre grandeur que ce
+      // que les cartes portent, et qu'on ne doit pas y mélanger.
+      demandes: Object.fromEntries(ELEMENT_IDS.map((e) => [e, 0])),
+      demandeMort: 0, demandeNeant: 0,
       morts: 0, sansIcone: 0, sansPouvoir: 0,
       pouvoirs: Object.fromEntries(KINDS.filter(([k]) => k).map(([k]) => [k, 0])),
       tcMin: 99, tcMax: 0, tcSomme: 0,
@@ -2110,6 +2120,14 @@ function statsJeu(modifie) {
       if (!h.el.length) s.sansIcone++;
       const os = objsDe(h);
       if (os.length) for (const o of os) s.pouvoirs[o.kind]++; else s.sansPouvoir++;
+      // Un couple réclame ses deux icônes ; une absence réclame la sienne, en
+      // creux, mais c'est bien elle que le bandeau désigne.
+      for (const o of os) {
+        if (o.kind === 'ELEMENT' || o.kind === 'ABSENT') { if (s.demandes[o.el] !== undefined) s.demandes[o.el]++; }
+        else if (o.kind === 'PAIRE') for (const e of o.els) { if (s.demandes[e] !== undefined) s.demandes[e]++; }
+        else if (o.kind === 'MORT') s.demandeMort++;
+        else if (o.kind === 'NEANT') s.demandeNeant++;
+      }
       s.tcMin = Math.min(s.tcMin, h.tc); s.tcMax = Math.max(s.tcMax, h.tc);
       s.tcSomme += h.tc;
       s.tranches[Math.min(90, Math.floor(h.tc / 10) * 10)]++;
@@ -2163,7 +2181,8 @@ function vueStats() {
     </tr>`;
   };
 
-  const tableau = (titre, lignes) => `<h3>${titre}</h3>
+  const tableau = (titre, lignes, aide) => `<h3>${titre}</h3>
+    ${aide ? `<p class="aide" style="margin:-6px 0 8px">${aide}</p>` : ''}
     <table class="tbl tbl-stats">
       <thead><tr><th></th><th class="num">Origine</th><th class="num">Modifié</th><th class="num">Écart</th></tr></thead>
       <tbody>${lignes}</tbody>
@@ -2187,11 +2206,17 @@ function vueStats() {
   ${tableau('Les cadrages', ['PL', 'PM', 'GP', 'DEP'].map((f) =>
     ligne(FORMATS[f].label, imp.cadrages[f], mod.cadrages[f], cadrageIcon(f))).join(''))}
 
-  ${tableau('Les icônes', [
+  ${tableau('Les icônes sur les cartes', [
     ...ELEMENT_IDS.map((e) => ligne(ELEMENTS[e].label, imp.elements[e], mod.elements[e], elIcon(e, 20))),
     ligne('Plans de mort', imp.morts, mod.morts, elIcon('MORT', 20)),
     ligne('Plans sans aucune icône', imp.sansIcone, mod.sansIcone),
   ].join(''))}
+
+  ${tableau('Les icônes réclamées par les bandeaux', [
+    ...ELEMENT_IDS.map((e) => ligne(ELEMENTS[e].label, imp.demandes[e], mod.demandes[e], elIcon(e, 20))),
+    ligne('Mort', imp.demandeMort, mod.demandeMort, elIcon('MORT', 20)),
+    ligne('Plan sans personnage', imp.demandeNeant, mod.demandeNeant, elIcon('NEANT', 20)),
+  ].join(''), 'Ce que les pouvoirs cherchent à compter — l’offre du tableau précédent, ici la demande. Un couple réclame ses deux icônes ; une absence réclame la sienne, en creux.')}
 
   ${tableau('Les pouvoirs', [
     ...KINDS.filter(([k]) => k).map(([k, l]) => ligne(l.replace('…', ''), imp.pouvoirs[k], mod.pouvoirs[k])),

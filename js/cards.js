@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe } from './data.js?v=1.33';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.33';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj } from './data.js?v=1.34';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.34';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -26,10 +26,30 @@ export function tc(min) {
 export function objContenu(obj, taille, compact, cfg) {
   if (!obj) return '';
   const p = PORTEES.find((x) => x.id === objPortee(obj, cfg)) || PORTEES[3];
-  const fleche = (cote) => (p[cote] ? `<span class="fleche-pos">${cote === 'gauche' ? '◀' : '▶'}</span>` : '');
+  // La flèche prend la couleur de ce qu'elle entoure : rouge sombre autour de
+  // l'Ennemi, brun autour d'un Véhicule. On la voit ainsi comme une partie de
+  // l'icône, et non comme une décoration posée à côté.
+  const teinte = teinteObj(obj);
+  const fleche = (cote) => (p[cote]
+    ? `<span class="fleche-pos" style="--fl:${teinte}">${cote === 'gauche' ? '◀' : '▶'}</span>` : '');
   // Les flèches se serrent contre ce qu'elles portent : elles en font partie,
   // et sur un Gros Plan chaque dixième d'em compte.
   return `<span class="obj-noyau">${fleche('gauche')}${objCoeur(obj, taille, compact)}${fleche('droite')}</span>`;
+}
+
+/**
+ * La croix de l'interdit, sur une icône que le bandeau veut absente. Deux
+ * barres plutôt qu'un caractère : un « ✕ » de fonte, agrandi jusqu'à se voir,
+ * finit par recouvrir l'icône et l'on ne sait plus ce qui est interdit. Deux
+ * barres laissent quatre quartiers ouverts — la croix domine, l'icône se lit
+ * encore. Le liseré blanc la détache de tout ce qu'elle recouvre.
+ */
+function croixNon() {
+  const traits = '<line x1="15" y1="15" x2="85" y2="85"/><line x1="85" y1="15" x2="15" y2="85"/>';
+  return `<span class="croix-non" aria-hidden="true"><svg viewBox="0 0 100 100">
+    <g stroke="#fff" stroke-width="19" stroke-linecap="round" opacity=".9">${traits}</g>
+    <g stroke="#e0102f" stroke-width="10.5" stroke-linecap="round">${traits}</g>
+  </svg></span>`;
 }
 
 /** Ce que le bandeau compte, sans les flèches de portée. */
@@ -42,7 +62,7 @@ function objCoeur(obj, taille, compact) {
     case 'PAIRE':   return `<span class="paire">${elIcon(obj.els[0], taille)}<i></i>${elIcon(obj.els[1], taille)}</span>`;
     case 'MORT':    return elIcon('MORT', taille);
     case 'NEANT':   return elIcon('NEANT', taille);
-    case 'ABSENT':  return `<span class="barre">${elIcon(obj.el, taille)}<b>✕</b></span>`;
+    case 'ABSENT':  return `<span class="barre">${elIcon(obj.el, taille)}${croixNon()}</span>`;
     // Sur un bandeau, la place manque : « avant / après » se lit « < » et « > ».
     // Le libellé en toutes lettres reste dans l'aperçu au survol.
     case 'MINUTAGE': return `${compact ? '' : '<span class="tag tag-blanc">Plan</span>'}
@@ -50,7 +70,7 @@ function objCoeur(obj, taille, compact) {
     case 'CHRONO':  return `<span class="tag tag-chrono">↗ ordre</span>`;
     case 'SANS_TC': return `<span class="barre"><span class="tc-seuil">${
       obj.sens === 'AVANT' ? '&lt;' : obj.sens === 'APRES' ? '&gt;' : '='
-    }&nbsp;${tcTexte(obj.seuil)}</span><b>✕</b></span>`;
+    }&nbsp;${tcTexte(obj.seuil)}</span>${croixNon()}</span>`;
     default: return '';
   }
 }

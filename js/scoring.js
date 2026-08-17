@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, objPortee, objsDe } from './data.js?v=1.33';
+import { PERSONNAGES, ELEMENT_IDS, objPortee, objsDe } from './data.js?v=1.34';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -68,6 +68,10 @@ function couples(plans, els) {
  */
 export function porteeDe(obj, sequence, banc, cfg, porteur) {
   const montage = tousLesPlans(banc);
+  // « Dans l'ordre » se lit sur le film entier, de gauche à droite : c'est le
+  // montage que l'on juge, pas un morceau. Une séquence bien rangée à côté
+  // d'une autre qui ne l'est pas ne fait pas un film dans l'ordre.
+  if (obj.kind === 'CHRONO') return montage;
   const p = objPortee(obj, cfg);
   if (p === 'SEQUENCE') return sequence;
   if (p === 'AVANT' || p === 'APRES') {
@@ -127,15 +131,17 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur) {
 
 /**
  * Une suite de plans se lit-elle dans l'ordre ? Chaque minutage doit être
- * supérieur ou égal à celui de son voisin de gauche. Les plans à 00:00 —
- * Raccords et Génériques — sont neutres tant que `chronoIgnoreZero` le dit.
+ * supérieur ou égal à celui de son voisin de gauche.
+ *
+ * Les Raccords et les Génériques sont à 00:00 : ils ne racontent rien, ils
+ * relient. On les **retire de la lecture** — `chronoIgnoreZero` — au lieu de
+ * sauter les comparaisons qui les touchent. La nuance décide de tout : sauter
+ * la comparaison laissait un Raccord glissé entre 75:00 et 65:00 masquer le
+ * désordre, et un montage à contresens marquait quand même ses points.
  */
 export function chronologique(plans, cfg) {
-  for (let i = 0; i < plans.length - 1; i++) {
-    const a = plans[i], b = plans[i + 1];
-    if (cfg.chronoIgnoreZero && (a.tc === 0 || b.tc === 0)) continue;
-    if (b.tc < a.tc) return false;
-  }
+  const suite = cfg.chronoIgnoreZero ? plans.filter((p) => p.tc !== 0) : plans;
+  for (let i = 0; i < suite.length - 1; i++) if (suite[i + 1].tc < suite[i].tc) return false;
   return true;
 }
 

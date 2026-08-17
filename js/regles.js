@@ -13,13 +13,23 @@
 // Les versions précédentes du texte restent lisibles dans l'onglet
 // « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.33';
-import { elIcon } from './icons.js?v=1.33';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.34';
+import { elIcon } from './icons.js?v=1.34';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.13.15',
+    date: '17/08/2026',
+    origine: 'Correction demandée par l’auteur',
+    corps: (c) => corps_0_13_15(c),
+    items: [
+      'Le bandeau « n si le montage est dans l’ordre » se lit sur <b>tout le film, de gauche à droite</b>, séquences confondues. Une séquence bien rangée à côté d’une autre qui ne l’est pas ne fait pas un montage dans l’ordre.',
+      'Les Raccords et les Génériques, à 00:00, sont <b>retirés de la lecture</b> — ils ne la coupent pas. Un Raccord glissé entre un plan à 75:00 et un plan à 65:00 ne sauve donc plus le désordre.',
+    ],
+  },
   {
     v: '0.13.14',
     date: '16/08/2026',
@@ -490,6 +500,20 @@ function corps_0_13_13(c) {
       de ${n(c.chutierPL)}.</li>
       <li>Les Plans Moyens / Gros Plans forment une <b>pioche face visible</b> — ces cartes sont
       recto-verso, une pioche ne peut pas les cacher — et un chutier de ${n(c.chutierPMGP)}.</li>`));
+}
+
+// --- v0.13.15 --------------------------------------------------------------
+// « Dans l'ordre » se lit sur le film entier, Raccords retirés de la lecture.
+
+function corps_0_13_15(c) {
+  return corps_0_13_14(c).replace(
+    /<tr><td><b>n si montage dans l’ordre<\/b><\/td>\s*<td>[\s\S]*?<\/td>\s*<td>Le montage<\/td><\/tr>/,
+    maj('0.13.15', `<tr><td><b>n si montage dans l’ordre</b></td>
+      <td>n points si, lu de gauche à droite sur <b>tout le montage</b>, séquences confondues,
+      chaque minutage est supérieur ou égal au précédent${c.chronoIgnoreZero
+        ? ' — les Raccords et Génériques, à 00:00, sont <b>retirés de la lecture</b> : ils ne la coupent pas'
+        : ''}</td>
+      <td>Le montage entier</td></tr>`));
 }
 
 // --- v0.13.14 --------------------------------------------------------------

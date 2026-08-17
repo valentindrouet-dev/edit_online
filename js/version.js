@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.33';
-export const BUILD_DATE = '2026-08-17 17:05';
+export const VERSION = '1.34';
+export const BUILD_DATE = '2026-08-17 18:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.34',
+    date: '17/08/2026',
+    items: [
+      "<b>Les flèches de portée prennent la couleur de l’icône qu’elles entourent</b> — rouge sombre autour de l’Ennemi, brun autour d’un Véhicule, vert sombre autour de l’Héroïne. Des encres assez foncées pour tenir sur un bandeau vert, orange, rouge ou gris, avec un halo clair qui les détache partout. Sur les cartes comme dans les colonnes de score.",
+      "<b>L’icône barrée se voit enfin.</b> La croix n’est plus un caractère minuscule mais deux barres rouges dessinées, bien plus grosses et cernées de blanc — tout en laissant voir, dans leurs quartiers, de quelle icône il s’agit.",
+      "<b>« Le montage dans l’ordre » se lit sur tout le film</b>, de gauche à droite, séquences confondues. Et les Raccords, à 00:00, sont retirés de la lecture au lieu de l’interrompre : un Raccord glissé entre un plan à 75:00 et un plan à 65:00 ne sauve plus le désordre. Règles v0.13.15.",
+      "Statistiques : les icônes <b>sur les cartes</b> et les icônes <b>réclamées par les bandeaux</b> font désormais deux tableaux distincts — l’offre et la demande, qu’un seul nombre confondait.",
+      "<b>Le banc ne se réorganise plus pendant qu’on vise.</b> Les emplacements de pose se dressent en bandes verticales : ils coûtaient près de cent pixels chacun et suffisaient à faire passer le banc à la ligne avant même la pose, pour revenir en arrière juste après. Le banc garde donc la largeur qu’il aura une fois la carte posée.",
+    ],
+  },
   {
     v: '1.33',
     date: '17/08/2026',
