@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.26';
-export const BUILD_DATE = '2026-08-16 12:05';
+export const VERSION = '1.27';
+export const BUILD_DATE = '2026-08-16 17:25';
 
 export const CHANGELOG = [
+  {
+    v: '1.27',
+    date: '16/08/2026',
+    items: [
+      "Nouvelle vue du matériel : <b>Tous les plans</b> — Gros Plans, Plans Moyens, Plans Larges et Plans de départ dans une seule galerie, 150 plans triés par numéro. On y règle exactement comme ailleurs ; c’est la même vitre sur le même matériel, pas un autre jeu de cartes.",
+      "<b>La rivière est déjà là pendant le choix du Plan de départ</b> : les deux chutiers s’affichent sous les quatre faces proposées, avec leurs boutons de rotation. On voit ce qui attend au premier dérushage — les cartes ne se prennent pas encore.",
+      "L’infobulle d’une carte ne répète plus son pouvoir en toutes lettres sous les icônes : le bandeau en grand suffisait.",
+      "<b>La rivière montre toujours trois cartes par famille</b>, quel que soit le nombre de joueuses : trois Plans Larges et trois cartes Plan Moyen / Gros Plan. À côté d’elles, leur pioche — celle des Plans Larges face cachée, celle des Plans Moyens / Gros Plans face visible. Règles v0.13.13.",
+      "Le <b>nombre de cartes restantes</b> s’affiche sous chaque pioche. Il ne figure plus sur le dos de la pioche, qui le répétait.",
+    ],
+  },
   {
     v: '1.26',
     date: '16/08/2026',

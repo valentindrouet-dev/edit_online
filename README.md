@@ -195,9 +195,11 @@ Une carte double s'édite avec **ses deux faces affichées** et ses quatre plans
 Chaque carte s'**active ou s'écarte de la boîte** : seules les cartes activées partent dans le
 paquet, dans l'un comme dans l'autre jeu.
 
-Cinq vues de galerie : les cartes Plan Moyen / Gros Plan, les **Gros Plans seuls**, les **Plans
+Six vues de galerie : les cartes Plan Moyen / Gros Plan, les **Gros Plans seuls**, les **Plans
 Moyens seuls** (recto et verso y figurent séparément, moitiés orphelines comprises), les Plans
-Larges et les Plans de départ. Plus **Tableau complet** et **Statistiques**.
+Larges, les Plans de départ, et **Tous les plans** — les 150 plans du jeu dans une seule galerie,
+triés par numéro. Toutes règlent le même matériel : ce sont des vitres différentes, pas d'autres
+cartes. Plus **Tableau complet** et **Statistiques**.
 
 La **sélection est multiple** : un clic simple la remplace, maj+clic l'étend — du dernier plan cliqué
 jusqu'à celui-ci, ou un plan isolé de plus. Elle **survit au changement de vue**, si bien qu'on règle
@@ -293,6 +295,13 @@ et la carte prise garde la face sur laquelle elle a été prise (`retourner()`).
 une lecture : c'est le côté de pose qui décide de la face jouée, et l'aperçu de l'emplacement dit
 laquelle on obtiendra.
 
+La rivière montre **trois cartes par famille**, quel que soit le nombre de joueuses (`chutierPL`,
+`chutierPMGP`), et le nombre de cartes restantes s'affiche sous chaque pioche.
+
+Pendant le choix du **Plan de départ**, les deux chutiers s'affichent déjà sous les quatre faces
+proposées : on voit ce qui attend au premier dérushage, avec les boutons de rotation, mais les
+cartes ne s'y prennent pas encore.
+
 Au montage, une carte Plan Moyen / Gros Plan est présentée **entière**, gauche et droite soudées
 comme sur la table : on clique la moitié que l'on veut laisser visible, puis l'emplacement dans son
 banc. La moitié écartée n'est pas éteinte — la carte reste entièrement lisible, un cadre orange
@@ -361,7 +370,7 @@ L'emplacement d'arrivée est connu : `poser()` enregistre `state.dernierPose = {
 banc marque ce plan-là d'une classe `neuf`.
 
 Sur une carte, le survol ouvre un aperçu : minutage en grand, chaque pastille nommée, et le bandeau
-d'objectif avec ce qu'il rapporte. Les pastilles se resserrent quand elles sont nombreuses, pour ne
+d'objectif redessiné en grand. Les pastilles se resserrent quand elles sont nombreuses, pour ne
 jamais déborder du cadre de la carte — y compris sur un Gros Plan, qui n'occupe qu'une demi-largeur.
 
 Chaque plan du banc porte au **coin haut droit ce qu'il rapporte**, en face de son minutage : la

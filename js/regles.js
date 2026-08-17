@@ -13,13 +13,23 @@
 // Les versions précédentes du texte restent lisibles dans l'onglet
 // « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.26';
-import { elIcon } from './icons.js?v=1.26';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.27';
+import { elIcon } from './icons.js?v=1.27';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.13.13',
+    date: '16/08/2026',
+    origine: 'Précision demandée par l’auteur',
+    corps: (c) => corps_0_13_13(c),
+    items: [
+      'La rivière montre toujours trois cartes par famille, quel que soit le nombre de joueuses : trois Plans Larges et trois cartes Plan Moyen / Gros Plan.',
+      'À côté d’elles, leur pioche : celle des Plans Larges face cachée, celle des Plans Moyens / Gros Plans face visible.',
+    ],
+  },
   {
     v: '0.13.12',
     date: '15/08/2026',
@@ -456,4 +466,18 @@ function corps_0_13_12(c) {
     poser sans relier. Aux <b>deux bouts du montage</b>, en revanche, il se pose comme un plan
     ordinaire. Un Raccord posé entre deux séquences sans les relier n'existe pas.
     Il rapporte 1 point par carte de sa séquence.</li>`));
+}
+
+// --- v0.13.13 --------------------------------------------------------------
+// La rivière montre toujours trois cartes par famille.
+
+function corps_0_13_13(c) {
+  const n = (v) => (v ? `${v} carte${v > 1 ? 's' : ''}` : 'autant de cartes que de joueuses');
+  return corps_0_13_12(c)
+    .replace(`<li>Les Plans Larges forment une pioche et un <b>chutier</b> de ${c.chutierPL || 'autant de cartes que de joueuses'}.</li>
+    <li>Les Plans Moyens / Gros Plans forment une pioche et un chutier de ${c.chutierPMGP || 'autant de cartes que de joueuses'}.</li>`,
+      maj('0.13.13', `<li>Les Plans Larges forment une <b>pioche face cachée</b> et un <b>chutier</b>
+      de ${n(c.chutierPL)}.</li>
+      <li>Les Plans Moyens / Gros Plans forment une <b>pioche face visible</b> — ces cartes sont
+      recto-verso, une pioche ne peut pas les cacher — et un chutier de ${n(c.chutierPMGP)}.</li>`));
 }

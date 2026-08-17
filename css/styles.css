@@ -303,8 +303,14 @@ body.sans-points .jeton-pts { display: none; }
 body.ia-joue .table-jeu .zone-phase,
 body.coup-en-vol .table-jeu { pointer-events: none; }
 /* La place de la pioche : un repère stable pour la carte qui en sort, même
-   quand la pioche est vide. */
+   quand la pioche est vide. Son compte est dessous — c'est une donnée de jeu. */
 .pioche-place { display: flex; align-items: flex-start; }
+.pioche-colonne { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pioche-reste {
+  font-size: .72rem; font-weight: 700; letter-spacing: .02em; color: var(--encre-doux);
+  background: var(--violet-pale); padding: 3px 10px; border-radius: 999px; white-space: nowrap;
+}
+.pioche-reste.vide { background: var(--gris-clair); color: var(--gris); }
 
 /* La couche des cartes en vol : au-dessus de tout, transparente aux clics. */
 .couche-vol { position: fixed; inset: 0; z-index: 90; pointer-events: none; }
@@ -408,6 +414,14 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .derushage-lignes { display: flex; flex-direction: column; gap: 18px; }
 .derushage-ligne h3 { margin: 0 0 10px; font-size: .95rem; }
 .derushage-cartes { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-start; }
+
+/* La rivière pendant le choix du Plan de départ : elle se lit, elle ne se
+   prend pas encore. */
+.riviere-apercu {
+  margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--gris-clair);
+}
+.riviere-apercu > .aide { margin-bottom: 10px; }
+.riviere-apercu .derushage-ligne h3 { font-size: .82rem; }
 
 /* Une carte du chutier et, dessous, son bouton de rotation : une carte double
    ne tombe pas toujours du côté de son recto. */
@@ -561,10 +575,6 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .dos-logo i { display: block; }
 .dos-marque { font-weight: 800; font-size: 1.08em; letter-spacing: .34em; text-indent: .34em; line-height: 1; }
 .dos-titre { font-size: .62em; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #b9aee0; }
-.dos-reste {
-  position: relative; z-index: 1; font-size: .64em; font-weight: 700; letter-spacing: .06em;
-  color: #0f0c16; background: var(--orange-clair); padding: .18em .7em; border-radius: 999px;
-}
 
 .dos-pioche {
   width: 120px; height: 158px; border-radius: 10px; cursor: pointer; color: #fff;
@@ -783,7 +793,6 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 }
 .ap-obj-visuel .obj-html .pastille, .ap-obj-visuel .obj-html .pastille-num { width: 44px; height: 44px; }
 .ap-obj-visuel .obj-html .tag { font-size: .78rem; padding: 5px 9px; }
-.ap-obj-texte { font-size: .84rem; font-weight: 600; color: var(--encre); }
 .ap-vide { font-size: .82rem; color: var(--gris); margin-top: 8px; }
 
 .pill.mini { padding: 5px 12px; font-size: .82rem; }

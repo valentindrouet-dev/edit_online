@@ -4,13 +4,15 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.26';
+import { ELEMENT_IDS } from './data.js?v=1.27';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
   tours: 10,                 // plans dans le banc, Plan de départ compris
-  chutierPL: 0,              // taille du Chutier Plans Larges — 0 = nb de joueuses
-  chutierPMGP: 0,            // taille du Chutier Plans Moyens / Gros Plans
+  // La rivière montre toujours trois cartes par famille, plus la pioche :
+  // Plans Larges face cachée, Plans Moyens / Gros Plans face visible.
+  chutierPL: 3,              // taille du Chutier Plans Larges — 0 = nb de joueuses
+  chutierPMGP: 3,            // taille du Chutier Plans Moyens / Gros Plans
   piocheDirectePL: false,    // piocher au sommet de la pioche Plans Larges
   piocheDirectePMGP: true,   // piocher au sommet de la pioche PM / GP
   // Les Plans de départ ne se tirent pas : chaque joueuse a toujours les deux

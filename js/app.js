@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.26';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.27';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee,
-} from './data.js?v=1.26';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.26';
-import { elIcon } from './icons.js?v=1.26';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.26';
+} from './data.js?v=1.27';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.27';
+import { elIcon } from './icons.js?v=1.27';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.27';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.26';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.26';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.26';
-import { releve, voler, stopperVols } from './anim.js?v=1.26';
-import { campagne } from './lab.js?v=1.26';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.26';
+} from './engine.js?v=1.27';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.27';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.27';
+import { releve, voler, stopperVols } from './anim.js?v=1.27';
+import { campagne } from './lab.js?v=1.27';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.27';
 
 const app = document.getElementById('app');
 
@@ -434,7 +434,7 @@ function vuePartie(enchainer = true) {
   // La zone garde toujours la même forme, quel que soit celui qui joue : seuls
   // les clics sont réservés à la joueuse humaine.
   let zone;
-  if (st.phase === 'DEPART') zone = zoneDepart(st, p);
+  if (st.phase === 'DEPART') zone = zoneDepart(st, p, humaine);
   else if (st.phase === 'DERUSHAGE') zone = zoneDerushage(st, humaine);
   else zone = zoneMontage(st, p, humaine);
 
@@ -619,13 +619,20 @@ function etiquetteCoup(c) {
 
 // --- Phase de mise en place -----------------------------------------------
 
-function zoneDepart(st, p) {
+function zoneDepart(st, p, humaine = true) {
   const options = choixDepart(st, p);
+  // La rivière est déjà là pendant qu'on choisit son Plan de départ : on voit
+  // ce qui attend au premier dérushage, et l'on choisit en connaissance de
+  // cause. Elle ne se prend pas encore — seule la rotation y répond.
   return `<div class="main-cartes">
     ${options.map((o, k) => `<div class="item">
-      <div class="carte solo clickable" data-depart="${k}">${renderPlan(o.plan)}</div>
+      <div class="carte solo ${humaine ? 'clickable' : ''}" data-depart="${k}">${renderPlan(o.plan)}</div>
       <div class="lg">Version ${o.carte.version} — face ${o.face + 1}</div>
     </div>`).join('')}
+  </div>
+  <div class="riviere-apercu">
+    <p class="aide">Les chutiers, tels qu’ils attendent le premier dérushage.</p>
+    ${zoneDerushage(st, humaine, true)}
   </div>`;
 }
 
@@ -643,7 +650,12 @@ function boutonRotation(st, carte) {
 
 // --- Phase A ---------------------------------------------------------------
 
-function zoneDerushage(st, humaine = true) {
+/**
+ * La rivière : les deux pioches et leurs chutiers. `apercu` la montre sans
+ * qu'on puisse y puiser — pendant le choix du Plan de départ, elle est déjà là
+ * pour être lue, pas encore pour être prise.
+ */
+function zoneDerushage(st, humaine = true, apercu = false) {
   const options = optionsDerushage(st);
   const nom = st.joueurs[st.courant].nom;
   // Les cartes du chutier portent leur rang : c'est l'ancre de la carte que la
@@ -653,17 +665,23 @@ function zoneDerushage(st, humaine = true) {
   // Une carte double ne tombe pas toujours du côté de son recto : elle se
   // présente sur la face que le hasard lui a donnée, et un bouton la retourne
   // avant qu'on la choisisse.
+  const prise = (o) => (apercu ? '' : ` data-derush="${enc(o)}"`);
   const carte = (o) => `<div class="carte-retournable">
-      <div data-derush="${enc(o)}"${ancre(o)}>${renderCarte(o.carte, faceVisible(st, o.carte) === 'V', { small: true, clickable: true })}</div>
+      <div${prise(o)}${ancre(o)}>${renderCarte(o.carte, faceVisible(st, o.carte) === 'V', { small: true, clickable: !apercu })}</div>
       ${boutonRotation(st, o.carte)}
     </div>`;
 
-  // Une ligne par famille : sa pioche d'abord, puis son chutier.
-  const ligne = (titre, fam, pioche, chutier) => `
+  // Une ligne par famille : sa pioche d'abord, puis son chutier. Le compte de
+  // la pioche est sous elle — c'est une donnée de jeu, pas une décoration.
+  const ligne = (titre, fam, pioche, reste, chutier) => `
     <div class="derushage-ligne">
       <h3>${titre}</h3>
       <div class="derushage-cartes">
-        <div class="pioche-place" id="pioche-${fam}">${pioche}</div>
+        <div class="pioche-colonne">
+          <div class="pioche-place" id="pioche-${fam}">${pioche}</div>
+          <span class="pioche-reste ${reste ? '' : 'vide'}">${reste
+            ? `${reste} carte${reste > 1 ? 's' : ''} en pioche` : 'pioche épuisée'}</span>
+        </div>
         ${chutier || '<div class="aide" style="align-self:center">Chutier épuisé</div>'}
       </div>
     </div>`;
@@ -671,7 +689,7 @@ function zoneDerushage(st, humaine = true) {
   // La pioche des Plans Larges reste face cachée : ces cartes ont un vrai dos.
   const sommetPL = options.find((o) => o.source === 'PIOCHE_PL');
   const dosPL = st.piochePL.length
-    ? enPile(sommetPL
+    ? enPile(sommetPL && !apercu
       ? `<div data-derush="${enc(sommetPL)}">${renderDos('Plans Larges', st.piochePL.length, { small: true, clickable: true })}</div>`
       : `<div class="pioche-fermee" title="Cette pioche n’est pas accessible : on ne pioche que dans son chutier.">${renderDos('Plans Larges', st.piochePL.length, { small: true })}</div>`,
       st.piochePL.length)
@@ -680,16 +698,18 @@ function zoneDerushage(st, humaine = true) {
   // Celle des Plans Moyens / Gros Plans montre sa face du dessus : ces cartes
   // étant recto-verso, une pioche ne peut pas les cacher.
   const sommetPMGP = options.find((o) => o.source === 'PIOCHE_PMGP');
-  const piochePMGP = sommetPMGP
+  const piochePMGP = sommetPMGP && !apercu
     ? enPile(carte(sommetPMGP), st.piochePMGP.length)
     : (st.piochePMGP.length
       ? enPile(`<div class="pioche-fermee">${renderCarte(st.piochePMGP[0], faceVisible(st, st.piochePMGP[0]) === 'V', { small: true })}</div>`, st.piochePMGP.length)
       : '');
 
   return `<div class="derushage-lignes">
-    ${humaine ? '' : `<p class="aide" id="aide-derushage"><b>${nom}</b> dérushe : une carte prise dans un chutier, puis montée dans son banc.</p>`}
-    ${ligne('Plans Larges', 'PL', dosPL, options.filter((o) => o.source === 'CHUTIER_PL').map(carte).join(''))}
-    ${ligne('Plans Moyens / Gros Plans', 'PMGP', piochePMGP, options.filter((o) => o.source === 'CHUTIER_PMGP').map(carte).join(''))}
+    ${humaine || apercu ? '' : `<p class="aide" id="aide-derushage"><b>${nom}</b> dérushe : une carte prise dans un chutier, puis montée dans son banc.</p>`}
+    ${ligne('Plans Larges', 'PL', dosPL, st.piochePL.length,
+      options.filter((o) => o.source === 'CHUTIER_PL').map(carte).join(''))}
+    ${ligne('Plans Moyens / Gros Plans', 'PMGP', piochePMGP, st.piochePMGP.length,
+      options.filter((o) => o.source === 'CHUTIER_PMGP').map(carte).join(''))}
   </div>`;
 }
 
@@ -963,7 +983,6 @@ function contenuApercu(d) {
     })()}
     ${d.obj ? `<div class="ap-obj">
       <div class="ap-obj-visuel">${objHTML(d.obj, 44, store.cfg)}</div>
-      <div class="ap-obj-texte">${objLabel(d.obj, store.cfg)}</div>
     </div>` : '<div class="ap-vide">Aucun bandeau</div>'}
     ${d.points === null || d.points === undefined ? '' : `<div class="ap-points">
       Cette carte rapporte <b>${d.points}</b> point${Math.abs(d.points) > 1 ? 's' : ''} dans ce montage
@@ -1269,11 +1288,11 @@ const mat = {
 
 const VUES = [
   ['CARTES', 'Cartes PM / GP'], ['GP', 'Gros Plans'], ['PM', 'Plans Moyens'],
-  ['PL', 'Plans Larges'], ['DEPART', 'Plans de départ'],
+  ['PL', 'Plans Larges'], ['DEPART', 'Plans de départ'], ['TOUS', 'Tous les plans'],
   ['TABLE', 'Tableau complet'], ['STATS', 'Statistiques'],
 ];
 
-const VUES_GALERIE = ['CARTES', 'GP', 'PM', 'PL', 'DEPART'];
+const VUES_GALERIE = ['CARTES', 'GP', 'PM', 'PL', 'DEPART', 'TOUS'];
 
 // Ce que compte un pouvoir. Les libellés se lisent à la suite du « n × » du
 // bandeau : « 2 × par plan du cadrage — Plan Large ».
@@ -1359,6 +1378,12 @@ function cartesDe(vue) {
  * n'apparie, comme le Générique de fin, s'éditent elles aussi.
  */
 function tuilesDe(vue) {
+  // Tous les plans du jeu dans une seule galerie : les moitiés Gros Plan et
+  // Plan Moyen, les Plans Larges et les Plans de départ. Ce sont les mêmes
+  // plans que dans les autres vues — une seule vitre, pas un autre matériel.
+  if (vue === 'TOUS') {
+    return [...tuilesDe('GP'), ...tuilesDe('PM'), ...tuilesDe('PL'), ...tuilesDe('DEPART')];
+  }
   if (vue === 'GP' || vue === 'PM') {
     return surLeModifie(() => catalogue()
       .filter((p) => p.format === vue)

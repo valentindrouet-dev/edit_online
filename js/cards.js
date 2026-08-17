@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.26';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.26';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.27';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.27';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -171,7 +171,6 @@ export function renderDos(libelle, reste, opts = {}) {
         <span class="dos-marque">EDIT</span>
         <span class="dos-titre">${libelle}</span>
       </span>
-      <span class="dos-reste">${reste} carte${reste > 1 ? 's' : ''}</span>
     </div>
   </div>`;
 }
