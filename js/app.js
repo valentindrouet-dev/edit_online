@@ -2,25 +2,25 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.22';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.23';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee,
-} from './data.js?v=1.22';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.22';
-import { elIcon } from './icons.js?v=1.22';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.22';
+} from './data.js?v=1.23';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.23';
+import { elIcon } from './icons.js?v=1.23';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.23';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine,
-} from './engine.js?v=1.22';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.22';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.22';
-import { releve, voler, stopperVols } from './anim.js?v=1.22';
-import { campagne } from './lab.js?v=1.22';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.22';
+} from './engine.js?v=1.23';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.23';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.23';
+import { releve, voler, stopperVols } from './anim.js?v=1.23';
+import { campagne } from './lab.js?v=1.23';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.23';
 
 const app = document.getElementById('app');
 
@@ -434,8 +434,8 @@ function vuePartie(enchainer = true) {
   // les clics sont réservés à la joueuse humaine.
   let zone;
   if (st.phase === 'DEPART') zone = zoneDepart(st, p);
-  else if (st.phase === 'DERUSHAGE') zone = zoneDerushage(st);
-  else zone = zoneMontage(st, p);
+  else if (st.phase === 'DERUSHAGE') zone = zoneDerushage(st, humaine);
+  else zone = zoneMontage(st, p, humaine);
 
   html(`${topbar('#/partie')}
   <div class="wrap large">
@@ -612,8 +612,9 @@ function zoneDepart(st, p) {
 
 // --- Phase A ---------------------------------------------------------------
 
-function zoneDerushage(st) {
+function zoneDerushage(st, humaine = true) {
   const options = optionsDerushage(st);
+  const nom = st.joueurs[st.courant].nom;
   // Les cartes du chutier portent leur rang : c'est l'ancre de la carte que la
   // pioche y renvoie quand une place se libère.
   const ancre = (o) => (o.source.startsWith('CHUTIER')
@@ -649,6 +650,7 @@ function zoneDerushage(st) {
       : '');
 
   return `<div class="derushage-lignes">
+    ${humaine ? '' : `<p class="aide" id="aide-derushage"><b>${nom}</b> dérushe : elle prend une carte, puis la monte dans son banc.</p>`}
     ${ligne('Plans Larges', 'PL', dosPL, options.filter((o) => o.source === 'CHUTIER_PL').map(carte).join(''))}
     ${ligne('Plans Moyens / Gros Plans', 'PMGP', piochePMGP, options.filter((o) => o.source === 'CHUTIER_PMGP').map(carte).join(''))}
   </div>`;
@@ -659,9 +661,16 @@ const enc = (o) => encodeURIComponent(JSON.stringify({ source: o.source, index: 
 // --- Phase B ---------------------------------------------------------------
 
 /** Le texte sous la carte en cours de pose, seul élément qui suit le choix. */
-function aideMontage(st, choisi) {
+function aideMontage(st, choisi, humaine = true) {
   const carte = st.mains[st.courant][0];
   if (!carte) return '';
+  // Pendant le tour d'une IA, la consigne n'a pas de destinataire : on dit ce
+  // qu'elle est en train de faire.
+  if (!humaine) {
+    const nom = st.joueurs[st.courant].nom;
+    if (carte.type !== 'DOUBLE') return `<b>${nom}</b> a dérushé un Plan Large n°${carte.num}. Elle le monte dans son banc.`;
+    return `<b>${nom}</b> a dérushé une carte. Elle choisit sa moitié et la monte dans son banc.`;
+  }
   if (carte.type !== 'DOUBLE') {
     return 'Un Plan Large ouvre une nouvelle séquence, détachée du reste du montage. Clique sur un emplacement de ton banc.';
   }
@@ -671,7 +680,7 @@ function aideMontage(st, choisi) {
   return `Tu gardes le <b>${quoi}</b>. Clique maintenant sur un emplacement de ton banc.`;
 }
 
-function zoneMontage(st, p) {
+function zoneMontage(st, p, humaine = true) {
   const carte = st.mains[p][0];
   if (!carte) return '<div class="zone-montage"><p class="aide">Aucune carte dérushée.</p></div>';
 
@@ -680,14 +689,14 @@ function zoneMontage(st, p) {
     store.formatChoisi = 'PL';
     return `<div class="zone-montage">
       <div id="choix-carte">${renderCarte(carte, false, {})}</div>
-      <p class="aide" id="aide-montage">${aideMontage(st, 'PL')}</p>
+      <p class="aide" id="aide-montage">${aideMontage(st, 'PL', humaine)}</p>
     </div>`;
   }
 
   const choisi = store.formatChoisi === 'GP' || store.formatChoisi === 'PM' ? store.formatChoisi : null;
   return `<div class="zone-montage">
-    <div id="choix-carte">${renderCarte(carte, false, { moitiesChoisissables: true, formatChoisi: choisi })}</div>
-    <p class="aide" id="aide-montage">${aideMontage(st, choisi)}</p>
+    <div id="choix-carte">${renderCarte(carte, false, { moitiesChoisissables: humaine, formatChoisi: choisi })}</div>
+    <p class="aide" id="aide-montage">${aideMontage(st, choisi, humaine)}</p>
   </div>`;
 }
 
@@ -758,11 +767,10 @@ function brancherPartie(st, humaine) {
       apresCoup(st, avancer(st));
     }));
 
-    app.querySelectorAll('[data-derush]').forEach((el) => el.addEventListener('click', () => {
+    app.querySelectorAll('[data-derush]').forEach((el) => el.addEventListener('click', async () => {
       const choix = JSON.parse(decodeURIComponent(el.dataset.derush));
       store.undo = JSON.stringify(st);
-      derusherAVue(st, st.courant, choix);
-      apresCoup(st, avancer(st));
+      apresCoup(st, await jouerDerushage(st, st.courant, choix));
     }));
 
     // Le choix de la moitié ne touche pas à la partie : on repeint la seule
@@ -957,22 +965,30 @@ function poserDepartAVue(st, p, k, choix) {
 }
 
 /**
- * La carte dérushée quitte le chutier — ou la pioche — et rejoint le banc de
- * la joueuse : elle passe en main, elle ne se pose pas encore, donc elle
- * s'efface en arrivant. La pioche recharge aussitôt le chutier, et cette
- * carte-là vole à son tour jusqu'à la place laissée vide.
+ * Le dérushage se joue en deux temps, et le premier reste dans le chutier :
+ * la carte prise en sort et gagne le centre de la table — elle passe en main —
+ * pendant que la pioche renvoie une carte à la place laissée vide. Ce n'est
+ * qu'ensuite que la main change de zone : sans cette étape, le chutier aurait
+ * déjà disparu et l'on ne verrait jamais la pioche le recharger.
+ *
+ * Rend true si la partie s'achève.
  */
-function derusherAVue(st, p, o) {
+async function jouerDerushage(st, p, o) {
   const fam = o.source.endsWith('_PL') ? 'PL' : 'PMGP';
   const pile = fam === 'PL' ? st.piochePL : st.piochePMGP;
   const chutier = fam === 'PL' ? st.chutierPL : st.chutierPMGP;
-  const recharge = o.source.startsWith('CHUTIER') && pile.length > 0;
-  const rang = chutier.length - (o.source.startsWith('CHUTIER') ? 1 : 0);
+  const duChutier = o.source.startsWith('CHUTIER');
+  const rang = chutier.length - (duChutier ? 1 : 0);
 
-  volDepuis(`[data-derush="${enc(o)}"]`, `[data-banc="${p}"]`, { taille: false, fondu: true });
-  if (recharge) volDepuis(`#pioche-${fam}`, `[data-chutier="${fam}"][data-i="${rang}"]`);
+  volDepuis(`[data-derush="${enc(o)}"]`, '.zone-phase', { taille: false });
+  if (duChutier && pile.length) volDepuis(`#pioche-${fam}`, `[data-chutier="${fam}"][data-i="${rang}"]`);
   derusher(st, p, o);
   store.formatChoisi = null;
+
+  // Premier temps : le chutier tel qu'il est maintenant, carte en vol au-dessus.
+  vuePartie(false);
+  await jouerVols();
+  return avancer(st);
 }
 
 /** La carte en main se pose dans le banc, à l'emplacement choisi. */
@@ -983,7 +999,7 @@ function poserAVue(st, p, coup) {
 }
 
 /** Joue le coup de l'IA courante. Renvoie true si la partie s'achève. */
-function coupIA(st) {
+async function coupIA(st) {
   if (!st || st.finie || estHumaine(st)) return false;
   const p = st.courant;
 
@@ -994,14 +1010,17 @@ function coupIA(st) {
     // par ce qu'elle désigne, pas par son identité d'objet.
     const k = d ? options.findIndex((o) => o.carteIdx === d.carteIdx && o.face === d.face) : -1;
     if (d) poserDepartAVue(st, p, Math.max(0, k), d);
-  } else if (st.phase === 'DERUSHAGE') {
-    const o = choisirDerushage(st, p) || optionsDerushage(st)[0];
-    if (o) derusherAVue(st, p, o);
-  } else {
-    const coups = coupsPossibles(st, p);
-    if (coups.length) poserAVue(st, p, choisirCoup(st, p) || coups[0]);
-    else st.mains[p] = [];
+    return avancer(st);
   }
+
+  if (st.phase === 'DERUSHAGE') {
+    const o = choisirDerushage(st, p) || optionsDerushage(st)[0];
+    return o ? jouerDerushage(st, p, o) : avancer(st);
+  }
+
+  const coups = coupsPossibles(st, p);
+  if (coups.length) poserAVue(st, p, choisirCoup(st, p) || coups[0]);
+  else st.mains[p] = [];
   return avancer(st);
 }
 
@@ -1017,7 +1036,7 @@ async function derouler(st) {
   while (vivant() && !st.finie && !estHumaine(st)) {
     await pause(anime() ? store.cfg.vitesseIA : 0);
     if (!vivant()) return;
-    const fini = coupIA(st);
+    const fini = await coupIA(st);
     if (!vivant()) return;
     if (fini) return terminer();
     vuePartie(false);

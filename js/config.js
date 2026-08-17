@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.22';
+import { ELEMENT_IDS } from './data.js?v=1.23';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -17,6 +17,10 @@ export const DEFAULTS = {
   // versions A et B devant elle, donc les quatre faces au choix.
   premierJoueurAleatoire: true,
   premierJoueur: 0,          // qui commence quand le tirage au sort est écarté
+  // Le tour d'une joueuse d'un seul tenant : elle dérushe, elle monte, puis
+  // elle passe la main. À false, l'ordre imprimé : toutes dérushent, puis
+  // toutes montent.
+  tourComplet: true,
 
   // --- Pose ----------------------------------------------------------------
   sensPose: 'bords',         // 'bords' (les deux bouts d'une séquence) | 'droite'
@@ -130,6 +134,8 @@ export const SCHEMA = [
     { k: 'premierJoueurAleatoire', l: 'Première joueuse tirée au sort', t: 'bool' },
     { k: 'premierJoueur', l: 'Sinon, qui commence', t: 'int', min: 0, max: 3,
       aide: 'le rang de la joueuse, 0 pour la première de la liste' },
+    { k: 'tourComplet', l: 'Le tour d’une joueuse d’un seul tenant', t: 'bool',
+      aide: 'elle dérushe puis monte ; sinon, toutes dérushent, puis toutes montent' },
   ] },
   { groupe: 'Rythme', champs: [
     { k: 'animerCoups', l: 'Voir les cartes se déplacer', t: 'bool',

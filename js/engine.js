@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.22';
-import { compter, bancVide } from './scoring.js?v=1.22';
+} from './data.js?v=1.23';
+import { compter, bancVide } from './scoring.js?v=1.23';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -364,24 +364,48 @@ export function poser(state, p, coup) {
 
 // --- Enchaînement ----------------------------------------------------------
 
-/** Passe à la joueuse suivante, change de phase et détecte la fin. */
+/** Le dernier plan du banc est posé : la partie s'achève. */
+function finirSiComplet(state) {
+  // `tours` est le nombre de plans du banc, Plan de départ compris : il ne
+  // reste donc que tours - 1 tours de montage à jouer.
+  if (state.tour > state.cfg.tours - 1) {
+    state.finie = true;
+    state.duree = Date.now() - state.debut;
+    journal(state, 'Fin du montage — décompte');
+  }
+}
+
+/**
+ * Passe à la joueuse suivante, change de phase et détecte la fin.
+ *
+ * `tourComplet` — la lecture par défaut — donne à chaque joueuse un tour d'un
+ * seul tenant : elle dérushe, elle monte, puis elle passe la main. On suit
+ * ainsi le coup entier de celle qui joue, carte prise et carte posée. Le texte
+ * imprimé décrit l'autre ordre, par phases : toutes dérushent, puis toutes
+ * montent. `tourComplet: false` le rétablit.
+ */
 export function avancer(state) {
   const n = state.joueurs.length;
+  const complet = state.cfg.tourComplet !== false && state.phase !== 'DEPART';
+
+  // Dérusher n'est plus passer la main : la même joueuse enchaîne son montage.
+  if (complet && state.phase === 'DERUSHAGE') {
+    state.phase = 'MONTAGE';
+    return state.finie;
+  }
+
   state.courant = (state.courant + 1) % n;
 
-  if (state.courant === state.premier) {
+  if (complet) {
+    state.phase = 'DERUSHAGE';
+    if (state.courant === state.premier) { state.tour++; finirSiComplet(state); }
+  } else if (state.courant === state.premier) {
     if (state.phase === 'DEPART') state.phase = 'DERUSHAGE';
     else if (state.phase === 'DERUSHAGE') state.phase = 'MONTAGE';
     else {
       state.tour++;
       state.phase = 'DERUSHAGE';
-      // `tours` est le nombre de plans du banc, Plan de départ compris : il ne
-      // reste donc que tours - 1 tours de montage à jouer.
-      if (state.tour > state.cfg.tours - 1) {
-        state.finie = true;
-        state.duree = Date.now() - state.debut;
-        journal(state, 'Fin du montage — décompte');
-      }
+      finirSiComplet(state);
     }
   }
 

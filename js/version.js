@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.22';
-export const BUILD_DATE = '2026-08-15 14:10';
+export const VERSION = '1.23';
+export const BUILD_DATE = '2026-08-15 17:40';
 
 export const CHANGELOG = [
+  {
+    v: '1.23',
+    date: '15/08/2026',
+    items: [
+      "<b>Le tour d’une joueuse est désormais d’un seul tenant</b> : elle dérushe, elle monte, puis elle passe la main. On voit donc son coup entier — la carte qu’elle prend, puis la carte qu’elle pose dans son banc — au lieu de la voir disparaître d’un côté et réapparaître un tour plus tard de l’autre.",
+      "Le dérushage se joue lui-même en deux temps, et le premier reste dans le chutier : la carte prise en sort pendant que la pioche renvoie une carte à la place laissée vide. Sans cette étape, le chutier avait déjà disparu et l’on ne voyait jamais la pioche le recharger.",
+      "Pendant le tour d’une IA, la table ne s’adresse plus à vous par erreur : la consigne dit ce que la joueuse en cours est en train de faire, et sa carte ne se donne plus comme cliquable.",
+      "L’ordre imprimé — toutes dérushent, puis toutes montent — reste disponible dans <b>Variables › Déroulé</b>. Sur 500 parties à trois IA Équilibrées et première joueuse fixée, le tour d’un seul tenant <b>réduit légèrement l’avantage du premier siège</b> : 38 / 34 / 27 % de victoires, contre 41 / 31 / 28 % dans l’ordre imprimé.",
+      "Règles v0.13.10.",
+    ],
+  },
   {
     v: '1.22',
     date: '15/08/2026',

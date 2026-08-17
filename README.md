@@ -318,9 +318,14 @@ Trois vols, un par coup :
 | Coup | D'où | Vers |
 |---|---|---|
 | Plan de départ | la face choisie | le plan qui ouvre le banc |
-| Dérushage | la carte du chutier, ou la pioche | le banc de la joueuse, où elle s'efface (elle passe en main) |
-| — puis | la pioche | la place laissée vide dans le chutier |
+| Dérushage | la carte du chutier, ou la pioche | le centre de la table — elle passe en main |
+| — en même temps | la pioche | la place laissée vide dans le chutier |
 | Montage | la moitié retenue | l'emplacement exact dans le banc |
+
+Le dérushage se rend **en deux temps**, et le premier reste dans le chutier : la carte prise en sort
+pendant que la pioche le recharge, et ce n'est qu'ensuite que la zone passe au montage. Sans cette
+étape, le chutier aurait déjà disparu et l'on ne verrait jamais la pioche le recharger
+(`jouerDerushage()`).
 
 L'emplacement d'arrivée est connu : `poser()` enregistre `state.dernierPose = { p, seq, idx }`, et le
 banc marque ce plan-là d'une classe `neuf`.
@@ -356,6 +361,13 @@ La partie s'ouvre sans aucun tirage : chaque joueuse a devant elle les **deux** 
 exemplaires de chaque version, un par joueuse. La **première joueuse** est tirée au sort
 (`premierJoueurAleatoire`) ou **désignée** avant la partie (`premierJoueur`, le rang dans la liste) ;
 c'est elle qui ouvre chaque phase et qui la referme.
+
+Le **tour d'une joueuse est d'un seul tenant** (`tourComplet`, la lecture par défaut) : elle dérushe,
+elle monte, puis elle passe la main — on suit ainsi son coup entier, carte prise et carte posée. Le
+texte imprimé décrit l'autre ordre, par phases : toutes dérushent, puis toutes montent
+(`tourComplet: false`). Sur 500 parties à trois IA Équilibrées et première joueuse fixée, le tour
+d'un seul tenant réduit légèrement l'avantage du premier siège — **38 / 34 / 27 %** de victoires,
+contre **41 / 31 / 28 %** dans l'ordre imprimé.
 
 Le tour se joue ensuite en deux phases : **Dérushage** (chacune pioche une carte dans un chutier ou
 sur une pioche), puis **Montage** (chacune la pose). La partie s'arrête quand chaque banc compte

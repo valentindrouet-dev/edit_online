@@ -13,13 +13,23 @@
 // Les versions précédentes du texte restent lisibles dans l'onglet
 // « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.22';
-import { elIcon } from './icons.js?v=1.22';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.23';
+import { elIcon } from './icons.js?v=1.23';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.13.10',
+    date: '15/08/2026',
+    origine: 'Précision demandée par l’auteur',
+    corps: (c) => corps_0_13_10(c),
+    items: [
+      'Le tour d’une joueuse est d’un seul tenant : elle dérushe, elle monte, puis elle passe la main. On suit ainsi son coup entier, carte prise et carte posée.',
+      'Le texte imprimé décrit l’autre ordre, par phases : toutes dérushent, puis toutes montent. Il reste disponible dans Variables.',
+    ],
+  },
   {
     v: '0.13.9',
     date: '15/08/2026',
@@ -377,5 +387,23 @@ function corps_0_13_9(c) {
       l’autre, dans l’ordre, à partir de la première. Chaque coup se joue à vue : la carte quitte le
       chutier — ou la pioche — pour rejoindre le banc de la joueuse, et la pioche recharge aussitôt
       la place laissée vide.`)}
+      <h3>Phase A — Le Dérushage</h3>`);
+}
+
+// --- v0.13.10 --------------------------------------------------------------
+// Le tour d'une joueuse d'un seul tenant.
+
+function corps_0_13_10(c) {
+  const ordre = c.tourComplet === false;
+  return corps_0_13_9(c)
+    .replace('<h3>Phase A — Le Dérushage</h3>',
+      `${majBloc('0.13.10', `<b>Le tour d’une joueuse est d’un seul tenant.</b> Elle dérushe, elle
+      monte, puis elle passe la main : les deux phases ci-dessous sont les deux temps de
+      <i>son</i> tour, pas deux tours de table. On suit ainsi son coup entier — la carte qu’elle
+      prend et la carte qu’elle pose.<br>
+      Le texte imprimé décrit l’autre ordre : toutes dérushent, puis toutes montent. Il se rétablit
+      dans <b>Variables ⚙</b> — ${ordre
+        ? 'c’est d’ailleurs l’ordre en vigueur pour cette partie.'
+        : 'c’est le tour d’un seul tenant qui vaut pour cette partie.'}`)}
       <h3>Phase A — Le Dérushage</h3>`);
 }
