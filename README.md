@@ -322,10 +322,17 @@ Trois vols, un par coup :
 | — en même temps | la pioche | la place laissée vide dans le chutier |
 | Montage | la moitié retenue | l'emplacement exact dans le banc |
 
-Le dérushage se rend **en deux temps**, et le premier reste dans le chutier : la carte prise en sort
-pendant que la pioche le recharge, et ce n'est qu'ensuite que la zone passe au montage. Sans cette
-étape, le chutier aurait déjà disparu et l'on ne verrait jamais la pioche le recharger
-(`jouerDerushage()`).
+Les vols d'un même coup partent **ensemble** : la carte prise s'en va pendant que la pioche la
+remplace, ce qui se lit comme un seul mouvement.
+
+Le dérushage **d'une joueuse humaine** se rend en deux temps, et le premier reste dans le chutier :
+la carte prise en sort pendant que la pioche le recharge, et ce n'est qu'ensuite que la zone passe au
+montage. Sans cette étape, le chutier aurait déjà disparu et l'on ne verrait jamais la pioche le
+recharger (`jouerDerushage()`).
+
+Le tour **d'une IA** tient au contraire en un seul écran (`tourIA()`) : elle dérushe et monte d'un
+bloc, sa carte va du chutier à son banc sans passer par le centre de la table. L'étape « carte en
+main » n'a de sens que pour qui doit y décider quelque chose.
 
 L'emplacement d'arrivée est connu : `poser()` enregistre `state.dernierPose = { p, seq, idx }`, et le
 banc marque ce plan-là d'une classe `neuf`.

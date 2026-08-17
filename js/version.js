@@ -1,12 +1,14 @@
 // Compteur de version — incrémenter à chaque modification livrée.
 export const VERSION = '1.23';
-export const BUILD_DATE = '2026-08-15 17:40';
+export const BUILD_DATE = '2026-08-15 18:20';
 
 export const CHANGELOG = [
   {
     v: '1.23',
     date: '15/08/2026',
     items: [
+      "<b>Le tour d’une IA tient en un seul écran</b> : sa carte quitte le chutier et se pose directement dans son banc, la pioche recharge la place laissée vide, et la main passe. L’étape où sa carte attend au centre de la table n’est plus montrée — il n’y a rien à y décider. La joueuse humaine, elle, garde ses deux temps : la carte vient en main, puis elle choisit sa moitié et son emplacement.",
+      "Les cartes d’un même coup volent ensemble plutôt que l’une après l’autre : la carte prise s’en va pendant que la pioche la remplace, ce qui se lit comme un seul mouvement.",
       "<b>Le tour d’une joueuse est désormais d’un seul tenant</b> : elle dérushe, elle monte, puis elle passe la main. On voit donc son coup entier — la carte qu’elle prend, puis la carte qu’elle pose dans son banc — au lieu de la voir disparaître d’un côté et réapparaître un tour plus tard de l’autre.",
       "Le dérushage se joue lui-même en deux temps, et le premier reste dans le chutier : la carte prise en sort pendant que la pioche renvoie une carte à la place laissée vide. Sans cette étape, le chutier avait déjà disparu et l’on ne voyait jamais la pioche le recharger.",
       "Pendant le tour d’une IA, la table ne s’adresse plus à vous par erreur : la consigne dit ce que la joueuse en cours est en train de faire, et sa carte ne se donne plus comme cliquable.",

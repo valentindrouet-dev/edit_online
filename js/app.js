@@ -928,31 +928,38 @@ const anime = () => store.cfg.animerCoups !== false;
 const dureeVol = () => (anime() ? Math.max(0, store.cfg.dureeVol ?? 360) : 0);
 const pause = (ms) => new Promise((r) => setTimeout(r, Math.max(0, ms || 0)));
 
-/**
- * Relève une carte avant que l'état ne change, pour la faire voler après le
- * rendu jusqu'à `arrivee`. Sans animation, rien n'est relevé : le coup se voit
- * simplement d'un rendu à l'autre.
- */
-function volDepuis(source, arrivee, opts) {
-  if (!anime()) return;
-  const dep = releve(app.querySelector(source));
+/** Relève une carte avant que l'état ne change. */
+const preleve = (source) => (anime() ? releve(app.querySelector(source)) : null);
+
+/** Programme le vol d'un relevé vers un élément que le rendu fera paraître. */
+function programmerVol(dep, arrivee, opts) {
   if (dep) store.vols.push({ dep, arrivee, opts: opts || {} });
 }
 
 /**
- * Fait voler, l'une après l'autre, les cartes relevées avant le rendu. Le
- * temps du vol, la table ne se laisse pas cliquer : un clic la repeindrait
- * sous la carte en mouvement.
+ * Relève et programme d'un geste, quand la destination est connue d'avance.
+ * Sans animation, rien n'est relevé : le coup se voit simplement d'un rendu à
+ * l'autre.
+ */
+function volDepuis(source, arrivee, opts) {
+  programmerVol(preleve(source), arrivee, opts);
+}
+
+/**
+ * Fait voler les cartes relevées avant le rendu. Elles partent ensemble : la
+ * carte prise quitte le chutier pendant que la pioche l'y remplace, ce qui se
+ * lit comme un seul mouvement. Le temps du vol, la table ne se laisse pas
+ * cliquer — un clic la repeindrait sous la carte.
  */
 async function jouerVols() {
   const liste = store.vols;
   store.vols = [];
   if (!liste.length) return;
   document.body.classList.add('coup-en-vol');
-  for (const v of liste) {
+  await Promise.all(liste.map((v) => {
     const cible = app.querySelector(v.arrivee);
-    if (cible) await voler(v.dep, cible, dureeVol(), v.opts);
-  }
+    return cible ? voler(v.dep, cible, dureeVol(), v.opts) : Promise.resolve();
+  }));
   document.body.classList.remove('coup-en-vol');
 }
 
@@ -964,24 +971,33 @@ function poserDepartAVue(st, p, k, choix) {
   poserDepart(st, p, choix);
 }
 
-/**
- * Le dérushage se joue en deux temps, et le premier reste dans le chutier :
- * la carte prise en sort et gagne le centre de la table — elle passe en main —
- * pendant que la pioche renvoie une carte à la place laissée vide. Ce n'est
- * qu'ensuite que la main change de zone : sans cette étape, le chutier aurait
- * déjà disparu et l'on ne verrait jamais la pioche le recharger.
- *
- * Rend true si la partie s'achève.
- */
-async function jouerDerushage(st, p, o) {
+/** Où la carte va être prise, et où la pioche la remplacera. */
+function ancresDerushage(st, o) {
   const fam = o.source.endsWith('_PL') ? 'PL' : 'PMGP';
   const pile = fam === 'PL' ? st.piochePL : st.piochePMGP;
   const chutier = fam === 'PL' ? st.chutierPL : st.chutierPMGP;
   const duChutier = o.source.startsWith('CHUTIER');
-  const rang = chutier.length - (duChutier ? 1 : 0);
+  return {
+    carte: preleve(`[data-derush="${enc(o)}"]`),
+    pioche: duChutier && pile.length ? preleve(`#pioche-${fam}`) : null,
+    place: `[data-chutier="${fam}"][data-i="${chutier.length - (duChutier ? 1 : 0)}"]`,
+  };
+}
 
-  volDepuis(`[data-derush="${enc(o)}"]`, '.zone-phase', { taille: false });
-  if (duChutier && pile.length) volDepuis(`#pioche-${fam}`, `[data-chutier="${fam}"][data-i="${rang}"]`);
+/**
+ * Le dérushage d'une joueuse humaine se joue en deux temps, et le premier reste
+ * dans le chutier : la carte prise en sort et gagne le centre de la table —
+ * elle passe en main — pendant que la pioche renvoie une carte à la place
+ * laissée vide. Ce n'est qu'ensuite que la zone passe au montage : sans cette
+ * étape, le chutier aurait déjà disparu et l'on ne verrait jamais la pioche le
+ * recharger.
+ *
+ * Rend true si la partie s'achève.
+ */
+async function jouerDerushage(st, p, o) {
+  const a = ancresDerushage(st, o);
+  programmerVol(a.carte, '.zone-phase', { taille: false });
+  programmerVol(a.pioche, a.place);
   derusher(st, p, o);
   store.formatChoisi = null;
 
@@ -989,6 +1005,37 @@ async function jouerDerushage(st, p, o) {
   vuePartie(false);
   await jouerVols();
   return avancer(st);
+}
+
+/**
+ * Le tour d'une IA tient en un seul geste : sa carte quitte le chutier et se
+ * pose dans son banc, la pioche recharge la place laissée vide, et la table
+ * passe à la joueuse suivante. On ne montre pas l'étape où la carte est en
+ * main — il n'y a rien à y décider, et cela ferait un écran de plus.
+ *
+ * Rend true si la partie s'achève.
+ */
+function tourIA(st, p, o) {
+  const a = ancresDerushage(st, o);
+  derusher(st, p, o);
+  store.formatChoisi = null;
+  let fini = avancer(st);
+
+  // Le montage de la même joueuse, dans la foulée — sauf en ordre imprimé, où
+  // la main est déjà passée.
+  let pose = false;
+  if (!fini && st.phase === 'MONTAGE' && st.courant === p) {
+    const coups = coupsPossibles(st, p);
+    if (coups.length) { poser(st, p, choisirCoup(st, p) || coups[0]); pose = true; }
+    else st.mains[p] = [];
+    store.formatChoisi = null;
+    fini = avancer(st);
+  }
+
+  programmerVol(a.carte, pose ? `[data-banc="${p}"] .moitie.neuf` : `[data-banc="${p}"]`,
+    pose ? {} : { taille: false, fondu: true });
+  programmerVol(a.pioche, a.place);
+  return fini;
 }
 
 /** La carte en main se pose dans le banc, à l'emplacement choisi. */
@@ -1015,7 +1062,7 @@ async function coupIA(st) {
 
   if (st.phase === 'DERUSHAGE') {
     const o = choisirDerushage(st, p) || optionsDerushage(st)[0];
-    return o ? jouerDerushage(st, p, o) : avancer(st);
+    return o ? tourIA(st, p, o) : avancer(st);
   }
 
   const coups = coupsPossibles(st, p);
