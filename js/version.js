@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.32';
-export const BUILD_DATE = '2026-08-17 15:20';
+export const VERSION = '1.33';
+export const BUILD_DATE = '2026-08-17 17:05';
 
 export const CHANGELOG = [
+  {
+    v: '1.33',
+    date: '17/08/2026',
+    items: [
+      "<b>Un pouvoir peut valoir des points négatifs.</b> La pastille passe alors au rouge — chiffre rouge sombre sur fond rouge clair — et un gros signe moins se dessine en barre pleine devant le chiffre. Au montage, le jeton du coin suit : rouge lui aussi quand le plan coûte des points.",
+      "<b>Un plan peut porter deux pouvoirs</b>, côte à côte sur son bandeau, séparés d’un trait. Ils comptent tous les deux, chacun dans sa propre portée, et s’affichent tous les deux — sur la carte, dans l’infobulle, dans la colonne de score, dans les statistiques. L’éditeur ouvre le second emplacement d’un bouton <b>+ second pouvoir</b>, et le CSV a ses colonnes suffixées en 2.",
+      "<b>Le banc de montage passe à la ligne.</b> Tant que tout tient, il reste sur une seule ligne ; dès que cela déborde, les séquences basculent en dessous. Une séquence ne se coupe jamais : ses plans se touchent, ils restent ensemble. Seule une séquence à elle seule plus large que le banc fait encore défiler.",
+    ],
+  },
   {
     v: '1.32',
     date: '17/08/2026',

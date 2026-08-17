@@ -237,6 +237,26 @@ button { font-family: inherit; }
              background: rgba(255,255,255,.62); overflow: hidden; }
 .bandeau   { flex: 0 0 18%;   display: flex; align-items: center; justify-content: center;
              gap: .24em; overflow: hidden; background: var(--fmt-gp); }
+/* Deux pouvoirs sur un même bandeau : côte à côte, séparés d'un trait, chacun
+   libre de se resserrer pour que les deux tiennent dans la même hauteur. */
+/* `align-self: stretch` donne au groupe une hauteur définie : sans elle, les
+   pastilles — dimensionnées en pourcentage de leur parent — retomberaient à
+   zéro, puisqu'un parent de hauteur automatique n'offre aucune référence. */
+.bandeau-obj {
+  display: flex; align-items: center; justify-content: center; gap: .24em;
+  min-width: 0; align-self: stretch;
+}
+.bandeau.deux { gap: .18em; }
+.bandeau.deux .bandeau-obj { flex: 0 1 auto; gap: .16em; }
+.bandeau-sep {
+  flex: 0 0 auto; width: 1.5px; align-self: stretch; margin: .22em .04em;
+  background: rgba(0, 0, 0, .28); border-radius: 1px;
+}
+.bandeau.deux .pastille-num { height: 74%; }
+.bandeau.deux .tag { font-size: .74em; padding: .2em .34em; }
+.bandeau.deux .x, .bandeau.deux .si { font-size: 1.15em; }
+.bandeau.deux .fleche-pos { font-size: 1em; }
+.moitie.f-GP .bandeau.deux .x, .moitie.f-GP .bandeau.deux .si { font-size: .95em; }
 .libelle   { flex: 0 0 8%;    display: flex; align-items: center; justify-content: center; }
 
 /* --- Lecture nue, sans illustration ---------------------------------------
@@ -296,6 +316,9 @@ body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
   box-shadow: 0 1px 3px rgba(0, 0, 0, .35);
 }
 .moitie .jeton-pts.nul { background: rgba(24, 22, 34, .5); border-color: rgba(255, 255, 255, .3); }
+/* Ce qui coûte des points se lit d'un coup d'œil : rouge, et jamais confondu
+   avec un gain. Le signe moins fait partie du chiffre. */
+.moitie .jeton-pts.negatif { background: #b91c1c; border-color: rgba(255, 220, 220, .75); }
 body.sans-points .jeton-pts { display: none; }
 
 /* Pendant le coup d'une IA ou le vol d'une carte, la table reste en place mais
@@ -469,10 +492,17 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
   display: flex; gap: 0; overflow-x: auto; padding: 12px; border-radius: var(--r-s);
   background: linear-gradient(180deg, #2a2530, #1d1a24); min-height: 176px; align-items: stretch;
 }
-/* La piste garde l'ensemble des cartes centré : avec margin auto, le contenu
-   reste au milieu tant qu'il tient, et devient défilable sans se coller à
-   gauche quand il dépasse — ce que justify-content: center ne permet pas. */
-.banc-piste { display: flex; align-items: stretch; margin: auto; }
+/* La piste tient sur une ligne tant que tout y entre, puis passe à la ligne.
+   Ce qui bascule, ce sont les séquences entières : une séquence est un bloc
+   insécable — ses plans se touchent, on ne les sépare pas d'un retour à la
+   ligne. Le contenu reste centré tant qu'il tient sur une ligne, et le
+   défilement horizontal ne sert plus que d'ultime recours, pour une séquence
+   à elle seule plus large que le banc. */
+.banc-piste {
+  display: flex; flex-wrap: wrap; align-items: stretch; align-content: center;
+  justify-content: center; margin: auto; row-gap: 10px;
+}
+.banc .sequence { flex-wrap: nowrap; }
 
 /* Le banc de montage : des séquences séparées par un écart. */
 .banc .sequence {

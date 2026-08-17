@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.32';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.32';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe } from './data.js?v=1.33';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.33';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -66,12 +66,21 @@ export function objHTML(obj, taille, cfg) {
 const OBJ_SI = ['ABSENT', 'CHRONO', 'SANS_TC'];
 export const estSi = (o) => !!o && OBJ_SI.includes(o.kind);
 
-function bandeau(obj, format) {
+/**
+ * Le bandeau d'un plan — un pouvoir, deux, ou aucun. Deux pouvoirs se posent
+ * côte à côte, séparés d'un trait : ils comptent tous les deux. La place étant
+ * alors deux fois plus courte, ils se lisent en version compacte, comme sur un
+ * Gros Plan.
+ */
+function bandeau(objs, format) {
   // Même sans objectif le bandeau reste : c'est lui qui aligne le bas des
   // deux moitiés d'une carte.
-  if (!obj) return '<div class="bandeau sans-objectif"></div>';
-  const contenu = `${numIcon(obj.n)}<span class="${estSi(obj) ? 'si' : 'x'}">${estSi(obj) ? 'si' : '×'}</span>${objContenu(obj, undefined, format === 'GP')}`;
-  return `<div class="bandeau">${contenu}</div>`;
+  if (!objs.length) return '<div class="bandeau sans-objectif"></div>';
+  const compact = format === 'GP' || objs.length > 1;
+  const un = (o) => `<span class="bandeau-obj">${numIcon(o.n)}<span class="${
+    estSi(o) ? 'si' : 'x'}">${estSi(o) ? 'si' : '×'}</span>${objContenu(o, undefined, compact)}</span>`;
+  return `<div class="bandeau ${objs.length > 1 ? 'deux' : ''}">${
+    objs.map(un).join('<i class="bandeau-sep"></i>')}</div>`;
 }
 
 /**
@@ -81,7 +90,7 @@ function bandeau(obj, format) {
  */
 function donneesApercu(h, label, points) {
   return encodeURIComponent(JSON.stringify({
-    tc: h.tc, el: h.el, obj: h.obj || null, format: h.format,
+    tc: h.tc, el: h.el, objs: objsDe(h), format: h.format,
     num: h.num, label, transition: h.transition || null,
     mort: !!h.mort,
     points: points === undefined ? null : points,
@@ -110,8 +119,11 @@ export function renderPlan(h, opts = {}) {
   const icones = h.mort ? [...h.el, 'MORT'] : h.el;
   // Ce que ce plan-là rapporte, ici et maintenant : un jeton au coin, en face
   // du minutage. Il n'apparaît qu'au montage, où le calcul a un sens.
+  // Un plan peut coûter des points autant qu'il peut en rapporter : le jeton
+  // passe alors au rouge, avec son signe.
   const jeton = opts.points === undefined ? ''
-    : `<div class="jeton-pts ${opts.points ? '' : 'nul'}" title="Ce que ce plan rapporte">${opts.points}</div>`;
+    : `<div class="jeton-pts ${opts.points < 0 ? 'negatif' : (opts.points ? '' : 'nul')}"
+        title="Ce que ce plan rapporte">${opts.points}</div>`;
   // `muet` : un plan qui n'est pas vraiment sur la table — un aperçu de pose —
   // n'ouvre pas d'infobulle et ne se donne pas pour une carte du banc.
   const bulle = opts.muet ? '' : ` data-apercu="${donneesApercu(h, label, opts.points)}"`;
@@ -121,7 +133,7 @@ export function renderPlan(h, opts = {}) {
       <div class="tcode ${h.tc === 0 || h.transition ? 'bleu' : ''}">${tc(h.tc)}</div>
     </div>
     <div class="pastilles" style="--n:${Math.max(1, icones.length)}">${icones.map((e) => elIcon(e)).join('')}</div>
-    ${bandeau(h.obj, h.format)}
+    ${bandeau(objsDe(h), h.format)}
     <div class="libelle" style="--c:${F.color}">${label}</div>
   </div>`;
 }

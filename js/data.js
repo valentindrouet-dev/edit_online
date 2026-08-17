@@ -353,6 +353,27 @@ export function objDe(cle, defaut) {
   return s.obj ? { ...s.obj } : null;
 }
 
+/**
+ * Le second pouvoir d'un plan. Une carte peut en porter deux, côte à côte sur
+ * le bandeau : ils comptent tous les deux, et s'affichent tous les deux. Rien
+ * ne l'impose — la plupart des plans n'en ont qu'un, et beaucoup aucun.
+ */
+export function obj2De(cle, defaut) {
+  const s = sur(cle);
+  if (!s || s.obj2 === undefined) return defaut || null;
+  return s.obj2 ? { ...s.obj2 } : null;
+}
+
+/**
+ * Les pouvoirs d'un plan, dans l'ordre où ils se lisent sur le bandeau. Un
+ * plan sans pouvoir en rend une liste vide : tout ce qui compte les bandeaux
+ * passe par ici plutôt que par `plan.obj`, et n'a rien à savoir de leur nombre.
+ */
+export function objsDe(plan) {
+  if (!plan) return [];
+  return [plan.obj, plan.obj2].filter(Boolean);
+}
+
 export function mortDe(cle, defaut) {
   const s = sur(cle);
   return !s || s.mort === undefined ? !!defaut : !!s.mort;
@@ -413,6 +434,7 @@ export function halfInfo(sceneIdx, format, opts = {}) {
     tc: tcDe(cle, s.tc),
     el: elDe(cle, side.el),
     obj: objDe(cle, side.obj),
+    obj2: obj2De(cle, side.obj2),
     mort: mortDe(cle, s.mort),
     num: numDe(cle, origine),
     numOrigine: origine,
@@ -446,6 +468,7 @@ export function plHalf(carte) {
     tc: tcDe(cle, carte.tc),
     el: elDe(cle, carte.el),
     obj: objDe(cle, carte.obj),
+    obj2: obj2De(cle, carte.obj2),
     mort: mortDe(cle, false),
     num: numDe(cle, carte.num),
     numOrigine: carte.num,
@@ -467,10 +490,11 @@ export function catalogue() {
       cle, num, numOrigine: origine, face, format, famille,
       quoi: `${FORMATS[format].label} ${num}${face ? ` — ${face === 'R' ? 'recto' : 'verso'}` : ''}`,
       tc: tcDe(cle, defauts.tc), el: elDe(cle, defauts.el), obj: objDe(cle, defauts.obj),
+      obj2: obj2De(cle, defauts.obj2),
       mort: mortDe(cle, defauts.mort), modifie: planModifie(cle),
       imprime: {
         tc: defauts.tc, el: (defauts.el || []).slice(), obj: defauts.obj || null,
-        mort: !!defauts.mort, num: origine,
+        obj2: defauts.obj2 || null, mort: !!defauts.mort, num: origine,
       },
       image: `assets/${format === 'PL' || format === 'DEP' ? 'pl' : format === 'GP' ? 'gp' : 'pm'}/${origine}.webp`,
       ...extra,
@@ -479,18 +503,18 @@ export function catalogue() {
 
   for (const s of SCENES) {
     for (const f of FACES) {
-      pousse(s.pmNum, f.id, { tc: s.tc, el: s.pm.el, obj: s.pm.obj, mort: s.mort },
+      pousse(s.pmNum, f.id, { tc: s.tc, el: s.pm.el, obj: s.pm.obj, obj2: s.pm.obj2, mort: s.mort },
         'PM', s.famille, { scene: s.idx, titre: s.titre || null });
-      pousse(s.gpNum, f.id, { tc: s.tc, el: s.gp.el, obj: s.gp.obj, mort: s.mort },
+      pousse(s.gpNum, f.id, { tc: s.tc, el: s.gp.el, obj: s.gp.obj, obj2: s.gp.obj2, mort: s.mort },
         'GP', s.famille, { scene: s.idx, titre: s.titre || null });
     }
   }
   for (const p of PLANS_LARGES) {
-    pousse(p.num, null, { tc: p.tc, el: p.el, obj: p.obj, mort: false },
+    pousse(p.num, null, { tc: p.tc, el: p.el, obj: p.obj, obj2: p.obj2, mort: false },
       'PL', 'PLAN LARGE', { brouillon: !!p.brouillon });
   }
   for (const d of DEPARTS) {
-    d.faces.forEach((f, k) => pousse(f.num, null, { tc: f.tc, el: f.el, obj: f.obj, mort: false },
+    d.faces.forEach((f, k) => pousse(f.num, null, { tc: f.tc, el: f.el, obj: f.obj, obj2: f.obj2, mort: false },
       'DEP', 'DÉPART', { version: d.type, faceDepart: k + 1 }));
   }
   return out;

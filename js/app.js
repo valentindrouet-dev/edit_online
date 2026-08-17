@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.32';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.33';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
-  CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES,
-} from './data.js?v=1.32';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.32';
-import { elIcon, numIcon } from './icons.js?v=1.32';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.32';
+  CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
+} from './data.js?v=1.33';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.33';
+import { elIcon, numIcon } from './icons.js?v=1.33';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.33';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.32';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.32';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.32';
-import { releve, voler, stopperVols } from './anim.js?v=1.32';
-import { campagne } from './lab.js?v=1.32';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.32';
+} from './engine.js?v=1.33';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.33';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.33';
+import { releve, voler, stopperVols } from './anim.js?v=1.33';
+import { campagne } from './lab.js?v=1.33';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.33';
 
 const app = document.getElementById('app');
 
@@ -470,7 +470,9 @@ const LARGEUR_BANC = { GP: 85, PM: 169, PL: 254, DEP: 254 };
 function bancBloc(st, i, titre, interactif) {
   const banc = st.bancs[i];
   // Ce que chaque carte rapporte ici et maintenant, pour l'aperçu au survol.
-  const points = new Map(compter(banc, st.cfg).lignes.map((l) => [l.plan, l.pts]));
+  // Un plan qui porte deux pouvoirs produit deux lignes : on les additionne.
+  const points = new Map();
+  for (const l of compter(banc, st.cfg).lignes) points.set(l.plan, (points.get(l.plan) || 0) + l.pts);
   // Le plan qui vient d'être posé : c'est là que la carte en vol atterrit.
   const neuf = st.dernierPose && st.dernierPose.p === i ? st.dernierPose : null;
   const coups = interactif && store.formatChoisi
@@ -509,7 +511,7 @@ function bancBloc(st, i, titre, interactif) {
     morceaux.push(`<div class="sequence">`);
     morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche')));
     seq.forEach((plan, k) => morceaux.push(renderPlan(plan, {
-      points: plan.obj ? (points.get(plan) || 0) : 0,
+      points: objsDe(plan).length ? (points.get(plan) || 0) : 0,
       neuf: !!(neuf && neuf.seq === si && neuf.idx === k),
     })));
     morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'droite')));
@@ -703,7 +705,8 @@ function aideMontage(st, choisi, humaine = true) {
   // type, comme la carte elle-même.
   const quoi = plan.transition
     ? `${FORMATS.TR.label.toLowerCase()} n°${plan.num}`
-    : `${FORMATS[choisi].label} n°${plan.num}${plan.obj ? ` — ${objLabel(plan.obj)}` : ' — sans bandeau'}`;
+    : `${FORMATS[choisi].label} n°${plan.num}${objsDe(plan).length
+      ? ` — ${objsDe(plan).map((o) => objLabel(o)).join(' et ')}` : ' — sans bandeau'}`;
   // Une moitié peut n'avoir aucun emplacement — un Raccord entre deux
   // Génériques, par exemple. Mieux vaut le dire que de laisser un banc sans
   // bouton.
@@ -957,8 +960,8 @@ function contenuApercu(d) {
         ${ic.map((e) => `<span class="ap-icone">${elIcon(e, 54)}<span>${e === 'MORT' ? 'Mort' : (ELEMENTS[e]?.label || e)}</span></span>`).join('')}
       </div>` : '<div class="ap-vide">Aucune icône</div>';
     })()}
-    ${d.obj ? `<div class="ap-obj">
-      <div class="ap-obj-visuel">${objHTML(d.obj, 44, store.cfg)}</div>
+    ${(d.objs || []).length ? `<div class="ap-obj">
+      ${d.objs.map((o) => `<div class="ap-obj-visuel">${objHTML(o, 44, store.cfg)}</div>`).join('')}
     </div>` : '<div class="ap-vide">Aucun bandeau</div>'}
     ${d.points === null || d.points === undefined ? '' : `<div class="ap-points">
       Cette carte rapporte <b>${d.points}</b> point${Math.abs(d.points) > 1 ? 's' : ''} dans ce montage
@@ -1512,9 +1515,9 @@ function passeFiltres(t) {
     else if (!un((h) => h.el.includes(f.icone))) return false;
   }
   if (f.pouvoir) {
-    if (f.pouvoir === 'AVEC') { if (!un((h) => h.obj)) return false; }
-    else if (f.pouvoir === 'SANS') { if (!un((h) => !h.obj)) return false; }
-    else if (!un((h) => h.obj && h.obj.kind === f.pouvoir)) return false;
+    if (f.pouvoir === 'AVEC') { if (!un((h) => objsDe(h).length)) return false; }
+    else if (f.pouvoir === 'SANS') { if (!un((h) => !objsDe(h).length)) return false; }
+    else if (!un((h) => objsDe(h).some((o) => o.kind === f.pouvoir))) return false;
   }
   if (f.tcMin !== '' && !un((h) => h.tc >= Number(f.tcMin))) return false;
   if (f.tcMax !== '' && !un((h) => h.tc <= Number(f.tcMax))) return false;
@@ -1819,10 +1822,18 @@ function blocPlan(h) {
 
     ${blocPouvoir(h.obj, h.cle)}
     <div class="rangee-mini">
-      <button class="pill mini" data-vider="obj" data-cles="${h.cle}" ${h.obj ? '' : 'disabled'}>Enlever le pouvoir</button>
+      <button class="pill mini" data-vider="obj" data-rang="1" data-cles="${h.cle}" ${h.obj ? '' : 'disabled'}>Enlever le pouvoir</button>
+      ${h.obj && !h.obj2 ? `<button class="pill mini" data-second="${h.cle}">+ second pouvoir</button>` : ''}
     </div>
     ${memeObjectif(h.obj, imp.obj) ? '' : `<div class="imp-rappel ligne">imprimé :
       ${imp.obj ? `${objHTML(imp.obj, 20, store.cfg)} ${objLabel(imp.obj, store.cfg)}` : 'bandeau vide'}</div>`}
+
+    ${h.obj2 ? `${blocPouvoir(h.obj2, h.cle, 2)}
+    <div class="rangee-mini">
+      <button class="pill mini" data-vider="obj" data-rang="2" data-cles="${h.cle}">Enlever le second pouvoir</button>
+    </div>
+    ${memeObjectif(h.obj2, imp.obj2) ? '' : `<div class="imp-rappel ligne">imprimé :
+      ${imp.obj2 ? `${objHTML(imp.obj2, 20, store.cfg)} ${objLabel(imp.obj2, store.cfg)}` : 'pas de second bandeau'}</div>`}` : ''}
   </div>`;
 }
 
@@ -1862,7 +1873,7 @@ function blocLot(plans) {
 
     ${blocPouvoir(objCommunDe(plans), 'lot')}
     <div class="rangee-mini">
-      <button class="pill mini" data-vider="obj" data-cles="${cles}"
+      <button class="pill mini" data-vider="obj" data-rang="1" data-cles="${cles}"
         ${plans.some((p) => p.obj) ? '' : 'disabled'}>Enlever le pouvoir des ${plans.length} plans</button>
     </div>
 
@@ -1873,10 +1884,14 @@ function blocLot(plans) {
   </div>`;
 }
 
-/** Le pouvoir commun à une sélection, ou rien si les plans divergent. */
-function objCommunDe(plans) {
-  const v = JSON.stringify(plans[0].obj || null);
-  return plans.every((p) => JSON.stringify(p.obj || null) === v) ? plans[0].obj : null;
+/**
+ * Le pouvoir commun à une sélection, ou rien si les plans divergent. `rang`
+ * dit lequel des deux emplacements du bandeau on regarde.
+ */
+function objCommunDe(plans, rang = 1) {
+  const champ = rang === 2 ? 'obj2' : 'obj';
+  const v = JSON.stringify(plans[0][champ] || null);
+  return plans.every((p) => JSON.stringify(p[champ] || null) === v) ? plans[0][champ] : null;
 }
 
 /**
@@ -1920,48 +1935,49 @@ function ajusterIcones(liste, e, delta) {
 }
 
 /** X points × <ce qu'on compte>. `ou` vaut la clé du plan, ou « lot ». */
-function blocPouvoir(o, ou) {
+function blocPouvoir(o, ou, rang = 1) {
   const kind = o ? o.kind : '';
+  const R = ` data-rang="${rang}"`;
   const opt = (v, l, on) => `<option value="${v}" ${on ? 'selected' : ''}>${l}</option>`;
   const elOpts = (choisi) => ELEMENT_IDS.map((e) => opt(e, ELEMENTS[e].label, choisi === e)).join('');
 
   let complement = '';
   if (kind === 'FORMAT') {
-    complement = `<select data-champ-obj="${ou}" data-part="format">
+    complement = `<select data-champ-obj="${ou}"${R} data-part="format">
       ${['PL', 'PM', 'GP'].map((f) => opt(f, FORMATS[f].label, o.format === f)).join('')}</select>`;
   } else if (kind === 'ELEMENT' || kind === 'ABSENT') {
-    complement = `<select data-champ-obj="${ou}" data-part="el">${elOpts(o.el)}</select>`;
+    complement = `<select data-champ-obj="${ou}"${R} data-part="el">${elOpts(o.el)}</select>`;
   } else if (kind === 'PAIRE') {
-    complement = `<select data-champ-obj="${ou}" data-part="el0">${elOpts(o.els[0])}</select>
+    complement = `<select data-champ-obj="${ou}"${R} data-part="el0">${elOpts(o.els[0])}</select>
       <span class="plus">+</span>
-      <select data-champ-obj="${ou}" data-part="el1">${elOpts(o.els[1])}</select>`;
+      <select data-champ-obj="${ou}"${R} data-part="el1">${elOpts(o.els[1])}</select>`;
   } else if (kind === 'SANS_TC') {
-    complement = `<select data-champ-obj="${ou}" data-part="sens">
+    complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
         ${opt('EGAL', 'à', o.sens !== 'AVANT' && o.sens !== 'APRES')}
         ${opt('AVANT', 'avant', o.sens === 'AVANT')}${opt('APRES', 'après', o.sens === 'APRES')}
       </select>
-      <input type="number" class="pts" min="0" max="99" value="${o.seuil}" data-champ-obj="${ou}" data-part="seuil">
+      <input type="number" class="pts" min="0" max="99" value="${o.seuil}" data-champ-obj="${ou}"${R} data-part="seuil">
       <span class="tc-apercu">${tc(o.seuil)}</span>`;
   } else if (kind === 'MINUTAGE') {
-    complement = `<select data-champ-obj="${ou}" data-part="sens">
+    complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
         ${opt('AVANT', 'avant', o.sens !== 'APRES')}${opt('APRES', 'après', o.sens === 'APRES')}
       </select>
-      <input type="number" class="pts" min="0" max="99" value="${o.seuil}" data-champ-obj="${ou}" data-part="seuil">
+      <input type="number" class="pts" min="0" max="99" value="${o.seuil}" data-champ-obj="${ou}"${R} data-part="seuil">
       <span class="tc-apercu">${tc(o.seuil)}</span>`;
   }
 
   return `<div class="champ-bloc">
-    <span class="ch-lg">Pouvoir</span>
+    <span class="ch-lg">${rang === 2 ? 'Second pouvoir' : 'Pouvoir'}</span>
     <div class="editeur-obj">
-      <input type="number" class="pts" min="0" max="20" value="${o ? o.n : 1}"
-        data-champ-obj="${ou}" data-part="n" ${o ? '' : 'disabled'}>
+      <input type="number" class="pts" min="-20" max="20" value="${o ? o.n : 1}"
+        data-champ-obj="${ou}"${R} data-part="n" ${o ? '' : 'disabled'}>
       <span class="x">${estSi(o) ? 'si' : '×'}</span>
-      <select data-champ-obj="${ou}" data-part="kind">${KINDS.map(([k, l]) => opt(k, l, kind === k)).join('')}</select>
+      <select data-champ-obj="${ou}"${R} data-part="kind">${KINDS.map(([k, l]) => opt(k, l, kind === k)).join('')}</select>
       ${complement}
     </div>
     ${o ? `<div class="portee-choix">
       ${PORTEES.map((x) => `<button class="pp ${objPortee(o, store.cfg) === x.id ? 'on' : ''}"
-        data-champ-portee="${ou}" data-portee="${x.id}" title="${x.label}">
+        data-champ-portee="${ou}"${R} data-portee="${x.id}" title="${x.label}">
         ${x.gauche ? '◀' : ''} ${x.court} ${x.droite ? '▶' : ''}</button>`).join('')}
     </div>` : ''}
     <div class="apercu-obj">${o ? `${objHTML(o, 26, store.cfg)}<span class="lit">${objLabel(o, store.cfg)}</span>`
@@ -2014,7 +2030,8 @@ function tableauPlans(cat) {
       <td>${p.famille}</td>
       <td class="num">${tc(p.tc)}</td>
       <td>${p.el.map((e) => elIcon(e, 20)).join('') || '—'}${p.mort ? elIcon('MORT', 20) : ''}</td>
-      <td>${p.obj ? `${objHTML(p.obj, 20, store.cfg)} <span class="aide">${objLabel(p.obj, store.cfg)}</span>` : '—'}</td>
+      <td>${objsDe(p).length ? objsDe(p).map((o) => `${objHTML(o, 20, store.cfg)}
+        <span class="aide">${objLabel(o, store.cfg)}</span>`).join('<br>') : '—'}</td>
       <td>${p.modifie ? 'retouché' : 'imprimé'}</td>
     </tr>`).join('')}</tbody>
   </table>`;
@@ -2063,9 +2080,9 @@ function passeStats(h) {
     else if (!h.el.includes(f.icone)) return false;
   }
   if (f.pouvoir) {
-    if (f.pouvoir === 'AVEC') { if (!h.obj) return false; }
-    else if (f.pouvoir === 'SANS') { if (h.obj) return false; }
-    else if (!h.obj || h.obj.kind !== f.pouvoir) return false;
+    if (f.pouvoir === 'AVEC') { if (!objsDe(h).length) return false; }
+    else if (f.pouvoir === 'SANS') { if (objsDe(h).length) return false; }
+    else if (!objsDe(h).some((o) => o.kind === f.pouvoir)) return false;
   }
   return true;
 }
@@ -2091,7 +2108,8 @@ function statsJeu(modifie) {
       for (const e of h.el) if (s.elements[e] !== undefined) s.elements[e]++;
       if (h.mort) s.morts++;
       if (!h.el.length) s.sansIcone++;
-      if (h.obj) s.pouvoirs[h.obj.kind]++; else s.sansPouvoir++;
+      const os = objsDe(h);
+      if (os.length) for (const o of os) s.pouvoirs[o.kind]++; else s.sansPouvoir++;
       s.tcMin = Math.min(s.tcMin, h.tc); s.tcMax = Math.max(s.tcMax, h.tc);
       s.tcSomme += h.tc;
       s.tranches[Math.min(90, Math.floor(h.tc / 10) * 10)]++;
@@ -2251,16 +2269,21 @@ function pouvoirsDuJeu(modifie) {
     const par = new Map();
     let avec = 0;
     for (const h of plans) {
-      if (!h.obj) continue;
+      const os = objsDe(h);
+      if (!os.length) continue;
+      // `avec` compte les plans porteurs, pas les bandeaux : un plan qui en
+      // porte deux reste un plan. Chaque bandeau, lui, alimente sa ligne.
       avec++;
-      const cle = signatureObj(h.obj);
-      const e = par.get(cle) || { obj: h.obj, n: 0, valeurs: new Map(), cadrages: {}, brut: 0 };
-      e.n++; e.brut += h.obj.n;
-      e.valeurs.set(h.obj.n, (e.valeurs.get(h.obj.n) || 0) + 1);
-      e.cadrages[h.format] = (e.cadrages[h.format] || 0) + 1;
-      // Le dessin retenu est celui de la valeur la plus fréquente.
-      if (e.valeurs.get(h.obj.n) >= (e.valeurs.get(e.obj.n) || 0)) e.obj = h.obj;
-      par.set(cle, e);
+      for (const o of os) {
+        const cle = signatureObj(o);
+        const e = par.get(cle) || { obj: o, n: 0, valeurs: new Map(), cadrages: {}, brut: 0 };
+        e.n++; e.brut += o.n;
+        e.valeurs.set(o.n, (e.valeurs.get(o.n) || 0) + 1);
+        e.cadrages[h.format] = (e.cadrages[h.format] || 0) + 1;
+        // Le dessin retenu est celui de la valeur la plus fréquente.
+        if (e.valeurs.get(o.n) >= (e.valeurs.get(e.obj.n) || 0)) e.obj = o;
+        par.set(cle, e);
+      }
     }
     // Ce qu'un bandeau trouve à compter ne dépend que de sa forme, jamais de sa
     // valeur : une seule mesure par signature suffit.
@@ -2637,7 +2660,14 @@ function brancherEditeur(refaire) {
   app.querySelectorAll('[data-vider]').forEach((el) => el.addEventListener('click', () => {
     const cles = el.dataset.cles.split(' ').filter(Boolean);
     if (el.dataset.vider === 'el') { poserIcones(cles, []); poserMort(cles, false); }
-    else poserObj(cles, null);
+    else poserObj(cles, null, +(el.dataset.rang || 1));
+    sauverCfg(); refaire();
+  }));
+
+  // Ouvrir le second emplacement du bandeau : on y pose un pouvoir par défaut,
+  // que l'on règle ensuite comme le premier.
+  app.querySelectorAll('[data-second]').forEach((el) => el.addEventListener('click', () => {
+    poserObj([el.dataset.second], OBJ.plan(1), 2);
     sauverCfg(); refaire();
   }));
 
@@ -2645,13 +2675,13 @@ function brancherEditeur(refaire) {
   // attend son bouton.
   app.querySelectorAll('[data-champ-obj]').forEach((el) => el.addEventListener('change', () => {
     const cibles = el.dataset.champObj === 'lot' ? plans.map((p) => p.cle) : [el.dataset.champObj];
-    majObjectif(cibles, el.dataset.part, el.value);
+    majObjectif(cibles, el.dataset.part, el.value, +(el.dataset.rang || 1));
     sauverCfg(); refaire();
   }));
 
   app.querySelectorAll('[data-champ-portee]').forEach((el) => el.addEventListener('click', () => {
     const cibles = el.dataset.champPortee === 'lot' ? plans.map((p) => p.cle) : [el.dataset.champPortee];
-    majObjectif(cibles, 'portee', el.dataset.portee);
+    majObjectif(cibles, 'portee', el.dataset.portee, +(el.dataset.rang || 1));
     sauverCfg(); refaire();
   }));
 
@@ -2750,11 +2780,13 @@ function poserMort(cles, v) {
   });
 }
 
-function poserObj(cles, obj) {
+function poserObj(cles, obj, rang = 1) {
+  const champ = rang === 2 ? 'obj2' : 'obj';
   surLeModifie(() => {
     for (const c of cles) {
       const p = planDeCle(c);
-      retoucher(c, 'obj', memeObjectif(obj, p ? p.imprime.obj : null) ? undefined : (obj ? JSON.parse(JSON.stringify(obj)) : null));
+      const imprime = p ? p.imprime[champ] : null;
+      retoucher(c, champ, memeObjectif(obj, imprime) ? undefined : (obj ? JSON.parse(JSON.stringify(obj)) : null));
     }
   });
 }
@@ -2788,15 +2820,16 @@ function construireObj(kind, actuel) {
  * une sélection, la base est le pouvoir que tous les plans ont en commun —
  * c'est celui que le formulaire montre.
  */
-function majObjectif(cles, part, valeur) {
+function majObjectif(cles, part, valeur, rang = 1) {
   const plans = surLeModifie(() => cles.map(planDeCle).filter(Boolean));
   if (!plans.length) return;
-  const actuel = objCommunDe(plans);
+  const actuel = objCommunDe(plans, rang);
 
-  if (part === 'kind') return poserObj(cles, construireObj(valeur, actuel));
+  if (part === 'kind') return poserObj(cles, construireObj(valeur, actuel), rang);
   if (!actuel) return;
   const o = JSON.parse(JSON.stringify(actuel));
-  if (part === 'n') o.n = Math.max(0, Math.min(20, parseInt(valeur, 10) || 0));
+  // Une valeur peut être négative : un pouvoir qui coûte des points.
+  if (part === 'n') o.n = Math.max(-20, Math.min(20, parseInt(valeur, 10) || 0));
   else if (part === 'format') o.format = valeur;
   else if (part === 'el') o.el = valeur;
   else if (part === 'el0') o.els = [valeur, o.els[1]];
@@ -2804,7 +2837,7 @@ function majObjectif(cles, part, valeur) {
   else if (part === 'sens') o.sens = valeur;
   else if (part === 'seuil') o.seuil = Math.max(0, Math.min(99, parseInt(valeur, 10) || 0));
   else if (part === 'portee') o.portee = valeur;
-  poserObj(cles, o);
+  poserObj(cles, o, rang);
 }
 
 function memeObjectif(a, b) {
@@ -2818,8 +2851,12 @@ function memeObjectif(a, b) {
 // avec l'imprimé est retenue, si bien qu'un aller-retour ne crée aucune
 // retouche fantôme.
 
+// Un plan peut porter deux pouvoirs : le second a ses propres colonnes,
+// suffixées en 2. Une colonne vide vaut « pas de second pouvoir ».
 const CSV_COLS = ['objet', 'cle', 'numero', 'minutage', 'icones', 'mort',
-  'pouvoir', 'points', 'cible', 'portee', 'sens', 'seuil', 'gros_plan', 'plan_moyen', 'boite'];
+  'pouvoir', 'points', 'cible', 'portee', 'sens', 'seuil',
+  'pouvoir2', 'points2', 'cible2', 'portee2', 'sens2', 'seuil2',
+  'gros_plan', 'plan_moyen', 'boite'];
 
 function csvEchappe(v) {
   const t = v === undefined || v === null ? '' : String(v);
@@ -2837,21 +2874,24 @@ function cibleObj(o) {
 function exporterCSV() {
   const lignes = [CSV_COLS.join(';')];
   surLeModifie(() => {
+    // Les six colonnes d'un pouvoir, vides s'il n'y en a pas.
+    const colsObj = (o) => [
+      o ? o.kind : '', o ? o.n : '', cibleObj(o), o ? objPortee(o, store.cfg) : '',
+      o && o.sens ? o.sens : '', o && o.seuil !== undefined ? o.seuil : '',
+    ];
     for (const p of catalogue()) {
-      const o = p.obj;
       lignes.push([
         'plan', p.cle, p.num, p.tc, p.el.join('|'), p.mort ? 'oui' : 'non',
-        o ? o.kind : '', o ? o.n : '', cibleObj(o), o ? objPortee(o, store.cfg) : '',
-        o && o.sens ? o.sens : '', o && o.seuil !== undefined ? o.seuil : '', '', '', '',
+        ...colsObj(p.obj), ...colsObj(p.obj2), '', '', '',
       ].map(csvEchappe).join(';'));
     }
     for (const c of buildCartesDoubles()) {
-      lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '',
+      lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
         c.gpNum, c.pmNum, estDesactivee(c.id) ? 'non' : 'oui'].map(csvEchappe).join(';'));
     }
     for (const f of ['PL', 'DEPART']) {
       for (const c of cartesDe(f)) {
-        lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '',
+        lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
           '', '', estDesactivee(c.id) ? 'non' : 'oui'].map(csvEchappe).join(';'));
       }
     }
@@ -2885,17 +2925,21 @@ function csvLigne(t) {
   return out;
 }
 
-/** Reconstruit un pouvoir depuis sa ligne de tableau. */
-function objDepuisCSV(r) {
-  const kind = (r.pouvoir || '').trim().toUpperCase();
+/**
+ * Reconstruit un pouvoir depuis sa ligne de tableau. `suf` vaut '2' pour le
+ * second pouvoir, qui a les mêmes colonnes suffixées.
+ */
+function objDepuisCSV(r, suf = '') {
+  const kind = (r[`pouvoir${suf}`] || '').trim().toUpperCase();
   if (!kind) return null;
-  const n = Math.max(0, Math.min(20, parseInt(r.points, 10) || 0));
-  const cible = (r.cible || '').trim().toUpperCase();
-  const sens0 = (r.sens || '').trim().toUpperCase();
+  // La valeur peut être négative : un pouvoir qui coûte des points.
+  const n = Math.max(-20, Math.min(20, parseInt(r[`points${suf}`], 10) || 0));
+  const cible = (r[`cible${suf}`] || '').trim().toUpperCase();
+  const sens0 = (r[`sens${suf}`] || '').trim().toUpperCase();
   const sens = sens0 === 'APRES' ? 'APRES' : 'AVANT';
-  const pt = (r.portee || '').trim().toUpperCase();
+  const pt = (r[`portee${suf}`] || '').trim().toUpperCase();
   const portee = PORTEE_IDS.includes(pt) ? pt : undefined;
-  const seuil = Math.max(0, Math.min(99, parseInt(r.seuil, 10) || 0));
+  const seuil = Math.max(0, Math.min(99, parseInt(r[`seuil${suf}`], 10) || 0));
   switch (kind) {
     case 'RACCORD': return OBJ.raccord(n, portee);
     case 'PLAN':    return OBJ.plan(n, portee);
@@ -2968,6 +3012,8 @@ function appliquerCSV(texte) {
         if (mort !== !!p.imprime.mort) mis.mort = mort;
         const o = objDepuisCSV(r);
         if (JSON.stringify(o || null) !== JSON.stringify(p.imprime.obj || null)) mis.obj = o;
+        const o2 = objDepuisCSV(r, '2');
+        if (JSON.stringify(o2 || null) !== JSON.stringify(p.imprime.obj2 || null)) mis.obj2 = o2;
         if (Object.keys(mis).length) plans[p.cle] = mis;
 
       } else if (objet === 'carte') {

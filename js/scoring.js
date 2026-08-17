@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, objPortee } from './data.js?v=1.32';
+import { PERSONNAGES, ELEMENT_IDS, objPortee, objsDe } from './data.js?v=1.33';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -174,13 +174,16 @@ export function compter(banc, cfg) {
   };
   const lignes = [];
 
+  // Un plan peut porter deux pouvoirs, côte à côte sur son bandeau. Ils
+  // comptent tous les deux, chacun pour son compte, dans sa propre portée.
   banc.sequences.forEach((seq, si) => {
     seq.forEach((p) => {
-      if (!p.obj) return;
       if (p.depart && !cfg.scorerDepart) return;
-      const pts = Math.round(valeurObjectif(p.obj, seq, banc, cfg, p) * mult);
-      detail[p.obj.kind] += pts;
-      lignes.push({ sequence: si, obj: p.obj, pts, plan: p });
+      for (const obj of objsDe(p)) {
+        const pts = Math.round(valeurObjectif(obj, seq, banc, cfg, p) * mult);
+        detail[obj.kind] += pts;
+        lignes.push({ sequence: si, obj, pts, plan: p });
+      }
     });
   });
 
@@ -238,7 +241,7 @@ export function recenser(banc) {
     sequences: banc.sequences.length,
     plusLongue: banc.sequences.reduce((m, s) => Math.max(m, s.length), 0),
     // Les bandeaux visibles, dans l'ordre de lecture du banc.
-    bandeaux: plans.filter((p) => p.obj).map((p) => p.obj),
+    bandeaux: plans.flatMap(objsDe),
   };
 }
 

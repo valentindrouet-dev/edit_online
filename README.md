@@ -162,11 +162,34 @@ tous deux de cette valeur**, et c'est l'éditeur qui reçoit les vraies valeurs 
   qu'**aucun plan n'ait un minutage donné**, égal au seuil, ou strictement avant, ou strictement
   après : réglé sur 00:00, il vise les Raccords et les Génériques, dont le minutage s'affiche en
   bleu ;
-- sa **portée** — voir ci-dessous : là où le pouvoir va compter.
+- sa **portée** — voir ci-dessous : là où le pouvoir va compter ;
+- **un second pouvoir**, s'il en faut un — voir plus bas.
 
   Le **couple d'icônes** n'est pas une adjacence : il apparie les icônes réunies dans sa portée.
   Quatre icônes font deux couples, cinq en font deux aussi ; un couple de deux icônes différentes
   en demande une de chaque.
+
+  La **valeur d'un pouvoir peut être négative** : `-2 ×` retranche deux points par élément compté.
+  La pastille passe alors au rouge — chiffre rouge sombre sur fond rouge clair — et le signe moins
+  s'y dessine en **barre pleine** devant le chiffre, jamais en caractère typographique : à la taille
+  d'un bandeau de Gros Plan, un tiret se confond avec le trait du cercle. Au montage, le jeton du
+  coin suit la même règle. Rien d'autre ne change : le décompte additionne, et une somme peut être
+  négative.
+
+### Deux pouvoirs sur un même plan
+
+Un plan peut porter **deux pouvoirs**, côte à côte sur son bandeau et séparés d'un trait. Ils
+comptent **tous les deux**, chacun avec sa propre valeur et sa propre portée, et s'affichent tous les
+deux — sur la carte, dans l'infobulle, dans la colonne de score, dans les statistiques.
+
+Le modèle les nomme `obj` et `obj2` ; tout ce qui lit les pouvoirs passe par `objsDe(plan)`, qui rend
+la liste de ceux qui existent, si bien qu'aucun calcul n'a à savoir combien il y en a. L'éditeur
+ouvre le second emplacement d'un bouton **+ second pouvoir** et le règle exactement comme le premier.
+Un plan qui en porte deux produit **deux lignes de décompte** : la colonne de score les montre
+séparément, et le jeton du coin en donne la somme.
+
+Sur le bandeau, deux pouvoirs se lisent en version compacte — celle du Gros Plan — pour tenir dans la
+même hauteur.
 
 ### La portée d'un pouvoir
 
@@ -271,7 +294,7 @@ vraiment rapporter, un 3 posé sur un pouvoir que rien ne déclenche ne valant r
 Les retouches vivent dans `cfg.materiel` :
 
 ```
-plans[clé]  = { tc, el, obj, mort }   chaque champ absent = la valeur imprimée
+plans[clé]  = { tc, el, obj, obj2, mort }   chaque champ absent = la valeur imprimée
 paires[i]   = [pmNum, gpNum]          l'appariement de la i-ème carte
 ```
 
@@ -294,9 +317,9 @@ tout le matériel — une ligne par plan, une par carte —, pas seulement les r
 se lit et se corrige dans un tableur :
 
 ```
-objet;cle;numero;minutage;icones;mort;pouvoir;points;cible;sens;seuil;gros_plan;plan_moyen;boite
-plan;201R;201;42;HEROINE|ARME|ARME;oui;PAIRE;3;ARME+ARME;;;;;
-carte;D01;;;;;;;;;;317;201;oui
+objet;cle;numero;minutage;icones;mort;pouvoir;points;cible;portee;sens;seuil;pouvoir2;points2;…;boite
+plan;201R;201;42;HEROINE|ARME|ARME;oui;PAIRE;3;ARME+ARME;MONTAGE;;;MORT;-2;…;
+carte;D01;;;;;;;;;;;;;…;oui
 ```
 
 À la relecture, seule la **différence avec l'imprimé** est retenue : un aller-retour ne crée donc
@@ -308,6 +331,12 @@ directement dans un tableur français.
 
 Colonne de gauche : la zone de pioche, puis les bancs de montage. Colonne de droite : joueuses,
 score, recensement des icônes et bandeaux du banc.
+
+Le banc **tient sur une ligne tant que tout y entre**, puis passe à la ligne. Ce qui bascule, ce sont
+les **séquences entières** : une séquence est un bloc insécable — ses plans se touchent, on ne les
+sépare pas d'un retour à la ligne —, tandis que deux séquences distinctes s'empilent volontiers l'une
+sous l'autre. Le défilement horizontal ne sert plus que d'ultime recours, pour une séquence à elle
+seule plus large que le banc.
 
 Les colonnes de lecture suivent la joueuse dont c'est le tour, mais **s'épinglent** sur une autre
 d'un clic sur sa case — et y restent jusqu'à ce qu'on en désigne une autre, ou qu'on revienne à
