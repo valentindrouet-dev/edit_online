@@ -2,25 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.25';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.26';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee,
-} from './data.js?v=1.25';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.25';
-import { elIcon } from './icons.js?v=1.25';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.25';
+} from './data.js?v=1.26';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.26';
+import { elIcon } from './icons.js?v=1.26';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.26';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
-} from './engine.js?v=1.25';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.25';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.25';
-import { releve, voler, stopperVols } from './anim.js?v=1.25';
-import { campagne } from './lab.js?v=1.25';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.25';
+  faceVisible, retourner,
+} from './engine.js?v=1.26';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.26';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.26';
+import { releve, voler, stopperVols } from './anim.js?v=1.26';
+import { campagne } from './lab.js?v=1.26';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.26';
 
 const app = document.getElementById('app');
 
@@ -212,7 +213,7 @@ function vueAccueil() {
             ${chip('animerCoups', 'Voir les cartes se déplacer')}
             ${chip('piocheDirectePMGP', 'Pioche PM / GP au sommet')}
             ${chip('piocheDirectePL', 'Pioche Plans Larges au sommet')}
-            ${chip('raccordConnecte', 'Les Raccords soudent les séquences')}
+            ${chip('raccordConnecte', 'Les Raccords relient les séquences')}
             ${chip('generiqueBloque', 'Le Générique ferme le montage')}
             ${chip('plContigu', 'Deux Plans Larges peuvent se toucher')}
           </div>
@@ -610,7 +611,7 @@ function sansCarte(c) {
 function etiquetteCoup(c) {
   switch (c.action) {
     case 'NOUVELLE_SEQUENCE': return '＋ séquence';
-    case 'SOUDER': return '⛓ souder';
+    case 'SOUDER': return '⛓ raccorder';
     case 'GENERIQUE': return c.role === 'OUVERTURE' ? '▶ ouverture' : '■ fin';
     default: return c.cote === 'gauche' ? '◀' : '▶';
   }
@@ -637,7 +638,20 @@ function zoneDerushage(st, humaine = true) {
   // pioche y renvoie quand une place se libère.
   const ancre = (o) => (o.source.startsWith('CHUTIER')
     ? ` data-chutier="${o.source === 'CHUTIER_PL' ? 'PL' : 'PMGP'}" data-i="${o.index}"` : '');
-  const carte = (o) => `<div data-derush="${enc(o)}"${ancre(o)}>${renderCarte(o.carte, false, { small: true, clickable: true })}</div>`;
+  // Une carte double ne tombe pas toujours du côté de son recto : elle se
+  // présente sur la face que le hasard lui a donnée, et un bouton la retourne
+  // avant qu'on la choisisse.
+  const carte = (o) => {
+    const verso = faceVisible(st, o.carte) === 'V';
+    const retourne = o.carte && o.carte.type === 'DOUBLE'
+      ? `<button class="pill rotation" data-retourner="${o.carte.id}"
+          title="Retourner la carte sur son autre face">⟲ rotation<span class="face">${verso ? 'verso' : 'recto'}</span></button>`
+      : '';
+    return `<div class="chutier-carte">
+      <div data-derush="${enc(o)}"${ancre(o)}>${renderCarte(o.carte, verso, { small: true, clickable: true })}</div>
+      ${retourne}
+    </div>`;
+  };
 
   // Une ligne par famille : sa pioche d'abord, puis son chutier.
   const ligne = (titre, fam, pioche, chutier) => `
@@ -664,7 +678,7 @@ function zoneDerushage(st, humaine = true) {
   const piochePMGP = sommetPMGP
     ? enPile(carte(sommetPMGP), st.piochePMGP.length)
     : (st.piochePMGP.length
-      ? enPile(`<div class="pioche-fermee">${renderCarte(st.piochePMGP[0], false, { small: true })}</div>`, st.piochePMGP.length)
+      ? enPile(`<div class="pioche-fermee">${renderCarte(st.piochePMGP[0], faceVisible(st, st.piochePMGP[0]) === 'V', { small: true })}</div>`, st.piochePMGP.length)
       : '');
 
   return `<div class="derushage-lignes">
@@ -694,7 +708,18 @@ function aideMontage(st, choisi, humaine = true) {
   }
   if (!choisi) return 'La carte se glisse sous les précédentes : clique sur la moitié que tu veux laisser visible.';
   const plan = moitiesDe(carte)[choisi];
-  const quoi = `${FORMATS[choisi].label} n°${plan.num}${plan.obj ? ` — ${objLabel(plan.obj)}` : ' — sans bandeau'}`;
+  const quoi = plan.transition
+    ? `${plan.transition.toLowerCase()} n°${plan.num}`
+    : `${FORMATS[choisi].label} n°${plan.num}${plan.obj ? ` — ${objLabel(plan.obj)}` : ' — sans bandeau'}`;
+  // Un Raccord ne se pose qu'entre deux séquences : sans deux séquences, cette
+  // moitié n'a aucun emplacement, et il faut le dire plutôt que de laisser un
+  // banc sans bouton.
+  const possibles = coupsPossibles(st, st.courant).filter((c) => c.format === choisi);
+  if (!possibles.length) {
+    return plan.transition === 'RACCORD'
+      ? `Un <b>Raccord</b> relie deux séquences : il se pose entre elles, jamais ailleurs. Ton banc n’en a qu’une — garde plutôt l’autre moitié.`
+      : `Le <b>${quoi}</b> n’a aucun emplacement possible dans ton banc — garde plutôt l’autre moitié.`;
+  }
   return `Tu gardes le <b>${quoi}</b>. Clique maintenant sur un emplacement de ton banc.`;
 }
 
@@ -702,18 +727,22 @@ function zoneMontage(st, p, humaine = true) {
   const carte = st.mains[p][0];
   if (!carte) return '<div class="zone-montage"><p class="aide">Aucune carte dérushée.</p></div>';
 
+  // La carte se regarde sur la face où elle a été prise : on ne la retourne
+  // pas dans son dos.
+  const verso = faceVisible(st, carte) === 'V';
+
   // Un Plan Large n'a pas de moitié à choisir.
   if (carte.type !== 'DOUBLE') {
     store.formatChoisi = 'PL';
     return `<div class="zone-montage">
-      <div id="choix-carte">${renderCarte(carte, false, {})}</div>
+      <div id="choix-carte">${renderCarte(carte, verso, {})}</div>
       <p class="aide" id="aide-montage">${aideMontage(st, 'PL', humaine)}</p>
     </div>`;
   }
 
   const choisi = store.formatChoisi === 'GP' || store.formatChoisi === 'PM' ? store.formatChoisi : null;
   return `<div class="zone-montage">
-    <div id="choix-carte">${renderCarte(carte, false, { moitiesChoisissables: humaine, formatChoisi: choisi })}</div>
+    <div id="choix-carte">${renderCarte(carte, verso, { moitiesChoisissables: humaine, formatChoisi: choisi })}</div>
     <p class="aide" id="aide-montage">${aideMontage(st, choisi, humaine)}</p>
   </div>`;
 }
@@ -789,6 +818,25 @@ function brancherPartie(st, humaine) {
       const choix = JSON.parse(decodeURIComponent(el.dataset.derush));
       store.undo = JSON.stringify(st);
       apresCoup(st, await jouerDerushage(st, st.courant, choix));
+    }));
+
+    // Retourner une carte du chutier ne joue pas le tour : on repeint la seule
+    // carte concernée, sans toucher au reste de la table.
+    app.querySelectorAll('[data-retourner]').forEach((el) => el.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const carte = [...st.chutierPL, ...st.chutierPMGP, st.piochePMGP[0]]
+        .find((c) => c && c.id === el.dataset.retourner);
+      if (!carte) return;
+      retourner(st, carte);
+      const boite = el.closest('.chutier-carte');
+      const enveloppe = boite && boite.querySelector('[data-derush]');
+      if (!enveloppe) return vuePartie();
+      const verso = faceVisible(st, carte) === 'V';
+      enveloppe.innerHTML = renderCarte(carte, verso, { small: true, clickable: true });
+      el.querySelector('.face').textContent = verso ? 'verso' : 'recto';
+      boite.classList.add('tourne');
+      setTimeout(() => boite.classList.remove('tourne'), 320);
+      brancherApercu(boite);
     }));
 
     // Le choix de la moitié ne touche pas à la partie : on repeint la seule

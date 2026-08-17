@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.25';
-import { compter, bancVide } from './scoring.js?v=1.25';
+} from './data.js?v=1.26';
+import { compter, bancVide } from './scoring.js?v=1.26';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -192,6 +192,27 @@ export function optionsDerushage(state) {
   return out;
 }
 
+/**
+ * La face sur laquelle une carte double se présente. Une carte posée sur la
+ * table tombe d'un côté ou de l'autre : ce n'est pas toujours son recto. Le
+ * tirage se déduit de la graine et de l'identité de la carte — reproductible,
+ * et sans rien à retenir tant que personne ne la retourne.
+ */
+export function faceVisible(state, carte) {
+  if (!carte || carte.type !== 'DOUBLE') return 'R';
+  const forcee = state.faces && state.faces[carte.id];
+  if (forcee) return forcee;
+  return (hashSeed(`${state.seed}|${carte.id}`) & 1) ? 'V' : 'R';
+}
+
+/** Retourner une carte du chutier, avant de la prendre ou non. */
+export function retourner(state, carte) {
+  if (!carte || carte.type !== 'DOUBLE') return 'R';
+  state.faces = state.faces || {};
+  state.faces[carte.id] = faceVisible(state, carte) === 'R' ? 'V' : 'R';
+  return state.faces[carte.id];
+}
+
 export function derusher(state, p, choix) {
   let carte = null;
   if (choix.source === 'CHUTIER_PL') {
@@ -261,13 +282,17 @@ export function coupsPossibles(state, p) {
       if (!brut.dual) continue;
     }
 
-    // Une Carte Raccord peut souder deux séquences voisines.
+    // Une Carte Raccord relie : posée entre deux cartes, elle raccorde
+    // forcément leurs séquences. Elle ne se pose donc nulle part ailleurs —
+    // une séquence qui commencerait par un Raccord ne relierait rien.
+    // `raccordConnecte: false` en refait un plan ordinaire (variante).
     if (cfg.raccordConnecte && brut.transition === 'RACCORD') {
       for (let i = 0; i < banc.sequences.length - 1; i++) {
         const g = banc.sequences[i], d = banc.sequences[i + 1];
         if (!poseAutorisee(cfg, g[g.length - 1], brut) || !poseAutorisee(cfg, d[0], brut)) continue;
         out.push({ carte, format, action: 'SOUDER', pos: i });
       }
+      continue;
     }
 
     // Pose ordinaire : au bout d'une séquence existante.

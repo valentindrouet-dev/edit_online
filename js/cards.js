@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.25';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.25';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.26';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.26';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -157,9 +157,20 @@ export function enPile(html, reste) {
 
 export function renderDos(libelle, reste, opts = {}) {
   const cls = ['carte', 'dos', opts.small ? 'small' : '', opts.clickable ? 'clickable' : ''].join(' ');
+  // Le dos est une amorce de pellicule : perforations aux deux bords, bandeau
+  // central, la marque au milieu. Tout en dégradés — aucune image à charger.
   return `<div class="${cls}">
     <div class="dos-motif">
-      <span class="dos-titre">${libelle}</span>
+      <span class="dos-perfos gauche"></span>
+      <span class="dos-perfos droite"></span>
+      <span class="dos-bande">
+        <span class="dos-logo">
+          <i style="background:#7c3aed"></i><i style="background:#f97316"></i>
+          <i style="background:#f59e0b"></i><i style="background:#c026d3"></i>
+        </span>
+        <span class="dos-marque">EDIT</span>
+        <span class="dos-titre">${libelle}</span>
+      </span>
       <span class="dos-reste">${reste} carte${reste > 1 ? 's' : ''}</span>
     </div>
   </div>`;

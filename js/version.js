@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.25';
-export const BUILD_DATE = '2026-08-15 21:15';
+export const VERSION = '1.26';
+export const BUILD_DATE = '2026-08-16 10:20';
 
 export const CHANGELOG = [
+  {
+    v: '1.26',
+    date: '16/08/2026',
+    items: [
+      "<b>Une Carte Raccord relie, et ne fait que cela.</b> Posée entre deux cartes, elle raccorde forcément leurs séquences : elle ne se pose donc ni au bout d’une séquence, ni pour en ouvrir une. Le seul emplacement offert est <b>⛓ raccorder</b> — l’ancien « souder ». Une séquence qui commencerait par un Raccord ne reliait rien : cette configuration n’existe plus. Règles v0.13.12.",
+      "<b>Les cartes Plan Moyen / Gros Plan ne se présentent plus toujours sur leur recto.</b> Une carte posée sur la table tombe d’un côté ou de l’autre : la face visible est tirée au sort, reproductible par la graine de la partie. La carte prise garde la face sur laquelle elle a été prise.",
+      "Un bouton <b>⟲ rotation</b> sous chaque carte du chutier la retourne sur son autre face avant qu’on la choisisse, et dit laquelle est visible. Retourner ne joue pas le tour.",
+      "<b>Nouveau dos de pioche</b> : une amorce de pellicule — perforations aux deux bords, la marque au centre, le compte en pastille. Une pioche à laquelle on ne peut pas puiser se retire d’un cran au lieu de se délaver.",
+    ],
+  },
   {
     v: '1.25',
     date: '15/08/2026',

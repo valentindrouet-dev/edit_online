@@ -284,6 +284,12 @@ La pioche des **Plans Larges** est face cachée : ces cartes ont un vrai dos. Ce
 Moyens / Gros Plans** montre sa face du dessus — ces cartes étant recto-verso, une pioche ne peut
 pas les cacher. L'IA en tient compte : elle évalue cette carte comme une carte connue.
 
+Une carte double **ne se présente pas toujours sur son recto** : posée sur la table, elle tombe d'un
+côté ou de l'autre. La face visible se déduit de la graine et de l'identité de la carte
+(`faceVisible()`) — reproductible, et sans rien à retenir tant que personne ne la retourne. Un bouton
+**⟲ rotation** sous chaque carte du chutier la retourne avant qu'on la choisisse ; retourner ne joue
+pas le tour, et la carte prise garde la face sur laquelle elle a été prise (`retourner()`).
+
 Au montage, une carte Plan Moyen / Gros Plan est présentée **entière**, gauche et droite soudées
 comme sur la table : on clique la moitié que l'on veut laisser visible, puis l'emplacement dans son
 banc. La moitié écartée n'est pas éteinte — la carte reste entièrement lisible, un cadre orange
@@ -373,7 +379,10 @@ Un banc de montage est une suite de **séquences**, chaque séquence une suite d
   séquence il l'accroche.
 - Une carte **Plan Large** ouvre toujours une nouvelle séquence, détachée du reste. Deux Plans
   Larges ne peuvent pas se toucher.
-- Une **Carte Raccord** peut se poser entre deux séquences voisines pour les souder.
+- Une **Carte Raccord** relie, et ne fait que cela : elle se pose **entre deux séquences voisines**,
+  qu'elle raccorde, et **nulle part ailleurs** — ni au bout d'une séquence, ni pour en ouvrir une.
+  Une séquence qui commencerait par un Raccord ne relierait rien : cette configuration n'existe pas.
+  `raccordConnecte: false` en refait un plan ordinaire, comme variante.
 - Un **Générique** se pose en tête (Ouverture) ou en fin (Crédits) de montage et bloque ce bord.
   La moitié à double lecture peut être jouée dans l'un ou l'autre rôle.
 

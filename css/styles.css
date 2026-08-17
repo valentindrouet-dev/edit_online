@@ -409,6 +409,26 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .derushage-ligne h3 { margin: 0 0 10px; font-size: .95rem; }
 .derushage-cartes { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-start; }
 
+/* Une carte du chutier et, dessous, son bouton de rotation : une carte double
+   ne tombe pas toujours du côté de son recto. */
+.chutier-carte { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.chutier-carte .carte { transition: transform .3s cubic-bezier(.3,.7,.4,1); }
+.chutier-carte.tourne .carte { animation: retourne .32s ease; }
+@keyframes retourne {
+  0%   { transform: rotateY(0deg)   scaleX(1); }
+  50%  { transform: rotateY(84deg)  scaleX(.12); }
+  100% { transform: rotateY(0deg)   scaleX(1); }
+}
+.pill.rotation {
+  font-size: .68rem; padding: 3px 9px; display: inline-flex; align-items: center; gap: 6px;
+  color: var(--encre-doux); border-color: var(--gris-clair);
+}
+.pill.rotation .face {
+  font-size: .62rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  background: var(--violet-pale); color: var(--violet); padding: 1px 6px; border-radius: 999px;
+}
+.pill.rotation:hover { border-color: var(--violet-clair); color: var(--violet); }
+
 /* La pioche se distingue par une pile de cartes décalées sous la première. */
 .pile { position: relative; margin-right: 12px; }
 .pile-couche {
@@ -496,16 +516,55 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .carte.solo .moitie.f-PL, .carte.solo .moitie.f-DEP { width: 20em; }
 
 .carte.dos { background: #12101a; }
+/* Une pioche à laquelle on ne peut pas puiser reste lisible : elle se retire
+   d'un cran, elle ne se délave pas. */
 .pioche-fermee { position: relative; }
-.pioche-fermee .carte { opacity: .55; filter: grayscale(.4); cursor: not-allowed; }
+.pioche-fermee .carte { opacity: .82; filter: saturate(.8); cursor: not-allowed; }
+/* Le dos d'une pioche : une amorce de pellicule. Deux bandes de perforations
+   encadrent un bandeau central qui porte la marque — le tout en dégradés, sans
+   la moindre image à charger, et en em pour suivre la taille de la carte. */
 .dos-motif {
-  flex: 1 1 auto; border-radius: 6px; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: .4em; color: #fff; text-align: center;
-  background: repeating-linear-gradient(45deg, #5b21b6 0 10px, #7c3aed 10px 20px);
-  border: 2px solid #4c1d95;
+  position: relative; flex: 1 1 auto; border-radius: 6px; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: .5em; color: #fff; text-align: center;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(124,58,237,.55), transparent 70%),
+    linear-gradient(160deg, #241d33 0%, #17131f 55%, #221a30 100%);
+  border: 1px solid #3a2f52;
 }
-.dos-titre { font-weight: 800; font-size: .95em; letter-spacing: .04em; }
-.dos-reste { font-size: .8em; opacity: .85; }
+.dos-perfos {
+  position: absolute; top: 0; bottom: 0; width: 1.05em;
+  background:
+    linear-gradient(#0d0b13, #0d0b13) padding-box,
+    repeating-linear-gradient(#0000 0 .34em, #efeaf8 .34em .92em, #0000 .92em 1.26em);
+  background-blend-mode: normal;
+}
+/* Les perforations : des encoches claires régulières sur une bande sombre. */
+.dos-perfos::before {
+  content: ''; position: absolute; inset: 0 .22em;
+  background: repeating-linear-gradient(#0000 0 .32em, #efeaf8 .32em .9em, #0000 .9em 1.24em);
+  border-radius: .12em;
+}
+.dos-perfos.gauche { left: 0; }
+.dos-perfos.droite { right: 0; }
+.dos-bande {
+  position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center;
+  gap: .42em; padding: .7em 1.1em; border-radius: .5em;
+  background: linear-gradient(180deg, rgba(38,30,56,.94), rgba(22,18,32,.94));
+  border: 1px solid rgba(167,139,250,.35);
+  box-shadow: 0 .3em 1.2em rgba(0,0,0,.5);
+}
+.dos-logo {
+  width: 1.9em; height: 1.9em; border-radius: .5em; overflow: hidden;
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+}
+.dos-logo i { display: block; }
+.dos-marque { font-weight: 800; font-size: 1.08em; letter-spacing: .34em; text-indent: .34em; line-height: 1; }
+.dos-titre { font-size: .62em; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #b9aee0; }
+.dos-reste {
+  position: relative; z-index: 1; font-size: .64em; font-weight: 700; letter-spacing: .06em;
+  color: #0f0c16; background: var(--orange-clair); padding: .18em .7em; border-radius: 999px;
+}
 
 .dos-pioche {
   width: 120px; height: 158px; border-radius: 10px; cursor: pointer; color: #fff;

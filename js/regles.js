@@ -13,13 +13,23 @@
 // Les versions précédentes du texte restent lisibles dans l'onglet
 // « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.25';
-import { elIcon } from './icons.js?v=1.25';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.26';
+import { elIcon } from './icons.js?v=1.26';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.13.12',
+    date: '15/08/2026',
+    origine: 'Précision demandée par l’auteur',
+    corps: (c) => corps_0_13_12(c),
+    items: [
+      'Une Carte Raccord relie : posée entre deux cartes, elle raccorde forcément leurs séquences.',
+      'Elle ne se pose donc nulle part ailleurs — ni au bout d’une séquence, ni pour en ouvrir une. Une séquence qui commencerait par un Raccord ne relierait rien : cette configuration n’existe pas.',
+    ],
+  },
   {
     v: '0.13.11',
     date: '15/08/2026',
@@ -433,4 +443,16 @@ function corps_0_13_11(c) {
       <b>Plan Moyen à gauche et son Gros Plan à droite</b> sur le recto ; le verso, retourné autour
       de l'axe vertical, les échange. Les quatre plans sont distincts, chacun avec son minutage — on
       note « 301R » et « 301V ». ${texte}`)}`);
+}
+
+// --- v0.13.12 --------------------------------------------------------------
+// Un Raccord relie, et ne fait que cela.
+
+function corps_0_13_12(c) {
+  return corps_0_13_11(c).replace(
+    '<li><b>Raccord</b> — connecte deux séquences et démultiplie donc la valeur des cartes.\n    Il rapporte 1 point par carte de sa séquence.</li>',
+    maj('0.13.12', `<li><b>Raccord</b> — <b>relie</b> deux séquences, et démultiplie donc la valeur
+    des cartes. Il se pose <b>entre deux séquences, et nulle part ailleurs</b> : posé entre deux
+    cartes, il raccorde forcément. Une séquence qui commencerait par un Raccord ne relierait rien —
+    cette configuration n'existe pas. Il rapporte 1 point par carte de sa séquence.</li>`));
 }

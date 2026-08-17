@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.25';
+import { ELEMENT_IDS } from './data.js?v=1.26';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -26,7 +26,10 @@ export const DEFAULTS = {
   sensPose: 'bords',         // 'bords' (les deux bouts d'une séquence) | 'droite'
   plNouvelleSequence: true,  // un Plan Large ouvre toujours une nouvelle séquence
   plContigu: false,          // autoriser deux Plans Larges côte à côte
-  raccordConnecte: true,     // une Carte Raccord peut souder deux séquences
+  // Une Carte Raccord relie : posée entre deux cartes, elle raccorde forcément
+  // leurs séquences, et ne se pose nulle part ailleurs. À false, elle redevient
+  // un plan ordinaire — variante hors règles.
+  raccordConnecte: true,
   generiqueBloque: true,     // rien avant l'Ouverture, rien après les Crédits
 
   // --- Décompte ------------------------------------------------------------
@@ -149,7 +152,8 @@ export const SCHEMA = [
     ] },
     { k: 'plNouvelleSequence', l: 'Un Plan Large ouvre une séquence', t: 'bool' },
     { k: 'plContigu', l: 'Deux Plans Larges peuvent se toucher', t: 'bool' },
-    { k: 'raccordConnecte', l: 'Une Carte Raccord soude deux séquences', t: 'bool' },
+    { k: 'raccordConnecte', l: 'Une Carte Raccord relie deux séquences', t: 'bool',
+      aide: 'et ne se pose que là ; sinon, c’est un plan ordinaire' },
     { k: 'generiqueBloque', l: 'Le Générique ferme le montage', t: 'bool' },
     { k: 'faceSelonPose', l: 'La face jouée suit le sens de pose', t: 'bool',
       aide: 'sinon une carte est toujours jouée sur son recto' },
