@@ -411,9 +411,9 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 
 /* Une carte du chutier et, dessous, son bouton de rotation : une carte double
    ne tombe pas toujours du côté de son recto. */
-.chutier-carte { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.chutier-carte .carte { transition: transform .3s cubic-bezier(.3,.7,.4,1); }
-.chutier-carte.tourne .carte { animation: retourne .32s ease; }
+.carte-retournable { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.carte-retournable .carte { transition: transform .3s cubic-bezier(.3,.7,.4,1); }
+.carte-retournable.tourne .carte { animation: retourne .32s ease; }
 @keyframes retourne {
   0%   { transform: rotateY(0deg)   scaleX(1); }
   50%  { transform: rotateY(84deg)  scaleX(.12); }

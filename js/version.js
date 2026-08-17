@@ -1,15 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
 export const VERSION = '1.26';
-export const BUILD_DATE = '2026-08-16 10:20';
+export const BUILD_DATE = '2026-08-16 12:05';
 
 export const CHANGELOG = [
   {
     v: '1.26',
     date: '16/08/2026',
     items: [
-      "<b>Une Carte Raccord relie, et ne fait que cela.</b> Posée entre deux cartes, elle raccorde forcément leurs séquences : elle ne se pose donc ni au bout d’une séquence, ni pour en ouvrir une. Le seul emplacement offert est <b>⛓ raccorder</b> — l’ancien « souder ». Une séquence qui commencerait par un Raccord ne reliait rien : cette configuration n’existe plus. Règles v0.13.12.",
+      "<b>Une Carte Raccord relie.</b> Glissée entre deux séquences, elle les raccorde forcément — elle ne peut plus s’y poser sans relier, et l’emplacement s’appelle <b>⛓ raccorder</b> (l’ancien « souder »). Aux deux bouts du montage, en revanche, elle se pose comme un plan ordinaire : on peut donc toujours la jouer, même sans deux séquences à relier. Règles v0.13.12.",
       "<b>Les cartes Plan Moyen / Gros Plan ne se présentent plus toujours sur leur recto.</b> Une carte posée sur la table tombe d’un côté ou de l’autre : la face visible est tirée au sort, reproductible par la graine de la partie. La carte prise garde la face sur laquelle elle a été prise.",
-      "Un bouton <b>⟲ rotation</b> sous chaque carte du chutier la retourne sur son autre face avant qu’on la choisisse, et dit laquelle est visible. Retourner ne joue pas le tour.",
+      "Un bouton <b>⟲ rotation</b> retourne une carte double sur son autre face et dit laquelle est visible : sous chaque carte du chutier avant de la prendre, et sous la carte en main pendant qu’on choisit sa moitié. Retourner ne joue pas le tour, et la moitié déjà choisie le reste.",
       "<b>Nouveau dos de pioche</b> : une amorce de pellicule — perforations aux deux bords, la marque au centre, le compte en pastille. Une pioche à laquelle on ne peut pas puiser se retire d’un cran au lieu de se délaver.",
     ],
   },

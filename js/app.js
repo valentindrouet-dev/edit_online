@@ -629,6 +629,18 @@ function zoneDepart(st, p) {
   </div>`;
 }
 
+/**
+ * Le bouton qui retourne une carte double sur son autre face — dans le chutier
+ * avant de la prendre, et en main pendant qu'on choisit sa moitié. Retourner ne
+ * joue rien : c'est un geste de lecture.
+ */
+function boutonRotation(st, carte) {
+  if (!carte || carte.type !== 'DOUBLE') return '';
+  const verso = faceVisible(st, carte) === 'V';
+  return `<button class="pill rotation" data-retourner="${carte.id}"
+    title="Retourner la carte sur son autre face">⟲ rotation<span class="face">${verso ? 'verso' : 'recto'}</span></button>`;
+}
+
 // --- Phase A ---------------------------------------------------------------
 
 function zoneDerushage(st, humaine = true) {
@@ -641,17 +653,10 @@ function zoneDerushage(st, humaine = true) {
   // Une carte double ne tombe pas toujours du côté de son recto : elle se
   // présente sur la face que le hasard lui a donnée, et un bouton la retourne
   // avant qu'on la choisisse.
-  const carte = (o) => {
-    const verso = faceVisible(st, o.carte) === 'V';
-    const retourne = o.carte && o.carte.type === 'DOUBLE'
-      ? `<button class="pill rotation" data-retourner="${o.carte.id}"
-          title="Retourner la carte sur son autre face">⟲ rotation<span class="face">${verso ? 'verso' : 'recto'}</span></button>`
-      : '';
-    return `<div class="chutier-carte">
-      <div data-derush="${enc(o)}"${ancre(o)}>${renderCarte(o.carte, verso, { small: true, clickable: true })}</div>
-      ${retourne}
+  const carte = (o) => `<div class="carte-retournable">
+      <div data-derush="${enc(o)}"${ancre(o)}>${renderCarte(o.carte, faceVisible(st, o.carte) === 'V', { small: true, clickable: true })}</div>
+      ${boutonRotation(st, o.carte)}
     </div>`;
-  };
 
   // Une ligne par famille : sa pioche d'abord, puis son chutier.
   const ligne = (titre, fam, pioche, chutier) => `
@@ -711,14 +716,16 @@ function aideMontage(st, choisi, humaine = true) {
   const quoi = plan.transition
     ? `${plan.transition.toLowerCase()} n°${plan.num}`
     : `${FORMATS[choisi].label} n°${plan.num}${plan.obj ? ` — ${objLabel(plan.obj)}` : ' — sans bandeau'}`;
-  // Un Raccord ne se pose qu'entre deux séquences : sans deux séquences, cette
-  // moitié n'a aucun emplacement, et il faut le dire plutôt que de laisser un
-  // banc sans bouton.
+  // Une moitié peut n'avoir aucun emplacement — un Raccord entre deux
+  // Génériques, par exemple. Mieux vaut le dire que de laisser un banc sans
+  // bouton.
   const possibles = coupsPossibles(st, st.courant).filter((c) => c.format === choisi);
   if (!possibles.length) {
-    return plan.transition === 'RACCORD'
-      ? `Un <b>Raccord</b> relie deux séquences : il se pose entre elles, jamais ailleurs. Ton banc n’en a qu’une — garde plutôt l’autre moitié.`
-      : `Le <b>${quoi}</b> n’a aucun emplacement possible dans ton banc — garde plutôt l’autre moitié.`;
+    return `Le <b>${quoi}</b> n’a aucun emplacement possible dans ton banc — garde plutôt l’autre moitié.`;
+  }
+  if (plan.transition === 'RACCORD' && possibles.some((c) => c.action === 'SOUDER')) {
+    return `Tu gardes le <b>${quoi}</b>. Entre deux séquences il les <b>raccorde</b> ; aux deux bouts
+    du montage, il se pose comme un plan.`;
   }
   return `Tu gardes le <b>${quoi}</b>. Clique maintenant sur un emplacement de ton banc.`;
 }
@@ -740,9 +747,15 @@ function zoneMontage(st, p, humaine = true) {
     </div>`;
   }
 
+  // La carte se retourne aussi en main : on regarde son autre face pendant
+  // qu'on choisit sa moitié. L'aperçu de pose dit, lui, la face qu'elle aura
+  // vraiment à l'emplacement visé.
   const choisi = store.formatChoisi === 'GP' || store.formatChoisi === 'PM' ? store.formatChoisi : null;
   return `<div class="zone-montage">
-    <div id="choix-carte">${renderCarte(carte, verso, { moitiesChoisissables: humaine, formatChoisi: choisi })}</div>
+    <div class="carte-retournable">
+      <div id="choix-carte">${renderCarte(carte, verso, { moitiesChoisissables: humaine, formatChoisi: choisi })}</div>
+      ${humaine ? boutonRotation(st, carte) : ''}
+    </div>
     <p class="aide" id="aide-montage">${aideMontage(st, choisi, humaine)}</p>
   </div>`;
 }
@@ -820,22 +833,31 @@ function brancherPartie(st, humaine) {
       apresCoup(st, await jouerDerushage(st, st.courant, choix));
     }));
 
-    // Retourner une carte du chutier ne joue pas le tour : on repeint la seule
-    // carte concernée, sans toucher au reste de la table.
+    // Retourner une carte ne joue pas le tour : on repeint la seule carte
+    // concernée — dans le chutier avant de la prendre, en main pendant qu'on
+    // choisit sa moitié.
     app.querySelectorAll('[data-retourner]').forEach((el) => el.addEventListener('click', (ev) => {
       ev.stopPropagation();
-      const carte = [...st.chutierPL, ...st.chutierPMGP, st.piochePMGP[0]]
+      const carte = [...st.chutierPL, ...st.chutierPMGP, st.piochePMGP[0], ...st.mains[st.courant]]
         .find((c) => c && c.id === el.dataset.retourner);
       if (!carte) return;
       retourner(st, carte);
-      const boite = el.closest('.chutier-carte');
-      const enveloppe = boite && boite.querySelector('[data-derush]');
+      const boite = el.closest('.carte-retournable');
+      const enveloppe = boite && boite.querySelector('[data-derush], #choix-carte');
       if (!enveloppe) return vuePartie();
       const verso = faceVisible(st, carte) === 'V';
-      enveloppe.innerHTML = renderCarte(carte, verso, { small: true, clickable: true });
+      const enMain = enveloppe.id === 'choix-carte';
+      enveloppe.innerHTML = enMain
+        ? renderCarte(carte, verso, { moitiesChoisissables: true, formatChoisi: store.formatChoisi })
+        : renderCarte(carte, verso, { small: true, clickable: true });
       el.querySelector('.face').textContent = verso ? 'verso' : 'recto';
       boite.classList.add('tourne');
       setTimeout(() => boite.classList.remove('tourne'), 320);
+      if (enMain) {
+        enveloppe.querySelectorAll('.carte.choix-moitie .moitie[data-format]').forEach((m) => {
+          m.addEventListener('click', () => choisirMoitie(st, m.dataset.format));
+        });
+      }
       brancherApercu(boite);
     }));
 

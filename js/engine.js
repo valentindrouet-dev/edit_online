@@ -282,25 +282,28 @@ export function coupsPossibles(state, p) {
       if (!brut.dual) continue;
     }
 
-    // Une Carte Raccord relie : posée entre deux cartes, elle raccorde
-    // forcément leurs séquences. Elle ne se pose donc nulle part ailleurs —
-    // une séquence qui commencerait par un Raccord ne relierait rien.
-    // `raccordConnecte: false` en refait un plan ordinaire (variante).
-    if (cfg.raccordConnecte && brut.transition === 'RACCORD') {
+    // Une Carte Raccord relie : glissée entre deux séquences, elle les raccorde
+    // forcément — elle ne peut pas s'y poser sans relier. Aux deux bouts du
+    // montage, en revanche, elle se pose comme un plan ordinaire.
+    // `raccordConnecte: false` en refait un plan ordinaire partout (variante).
+    const raccord = cfg.raccordConnecte && brut.transition === 'RACCORD';
+    if (raccord) {
       for (let i = 0; i < banc.sequences.length - 1; i++) {
         const g = banc.sequences[i], d = banc.sequences[i + 1];
         if (!poseAutorisee(cfg, g[g.length - 1], brut) || !poseAutorisee(cfg, d[0], brut)) continue;
         out.push({ carte, format, action: 'SOUDER', pos: i });
       }
-      continue;
     }
 
-    // Pose ordinaire : au bout d'une séquence existante.
+    // Pose ordinaire : au bout d'une séquence existante. Un Raccord n'a droit
+    // qu'aux deux bouts du montage : à l'intérieur, il serait entre deux
+    // séquences sans les relier, ce qui n'existe pas — c'est « raccorder ».
     banc.sequences.forEach((seq, i) => {
       const cotes = cfg.sensPose === 'droite' ? ['droite'] : ['gauche', 'droite'];
       for (const cote of cotes) {
         if (cote === 'gauche' && i === 0 && bloqueGauche) continue;
         if (cote === 'droite' && i === banc.sequences.length - 1 && bloqueDroite) continue;
+        if (raccord && !(cote === 'gauche' ? i === 0 : i === banc.sequences.length - 1)) continue;
         const voisin = cote === 'gauche' ? seq[0] : seq[seq.length - 1];
         if (!poseAutorisee(cfg, voisin, brut)) continue;
         out.push({ carte, format, action: 'ETENDRE', seq: i, cote });
