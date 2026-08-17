@@ -5,9 +5,9 @@
 // Équilibré : compare tous les placements et évite d'éparpiller ses séquences.
 // Stratège  : anticipe le tour suivant à partir de ce qu'offrent les chutiers.
 
-import { coupsPossibles, appliquer, optionsDerushage, choixDepart } from './engine.js?v=1.35';
-import { compter } from './scoring.js?v=1.35';
-import { PROFILS_IA } from './config.js?v=1.35';
+import { coupsPossibles, appliquer, optionsDerushage, choixDepart } from './engine.js?v=1.36';
+import { compter } from './scoring.js?v=1.36';
+import { PROFILS_IA } from './config.js?v=1.36';
 
 function cloneBanc(b) {
   return { sequences: b.sequences.map((s) => s.slice()), ouverture: b.ouverture, fermeture: b.fermeture };

@@ -408,9 +408,13 @@ La zone de jeu garde la même hauteur d'une phase à l'autre et reste affichée 
 d'IA : rien n'apparaît ni ne disparaît sous le curseur entre deux clics. Choisir une moitié ne
 repeint que la carte, sa consigne et les emplacements du banc.
 
-**L'emplacement se pré-visualise** : survoler un emplacement écarte le banc et y montre le plan en
-transparence, à la place exacte qu'il prendra — le mouvement est celui qu'aura le clic, et aucune
-carte n'en couvre une autre. L'aperçu passe par `planPose()` et `faceJouee()`, donc il montre la
+**L'emplacement se pré-visualise** : survoler un emplacement y montre le plan en transparence, à la
+place exacte qu'il prendra. L'aperçu se pose **par-dessus** le banc et ne l'écarte pas — écarter les
+plans déjà posés au simple survol les faisait tous bouger sous le curseur, et, depuis que le banc
+passe à la ligne, pouvait le faire basculer d'une ligne à l'autre puis revenir : le banc sautait et
+clignotait. **Le banc ne bouge donc qu'au clic**, quand la carte est vraiment posée. Aux deux bouts,
+l'aperçu se range vers l'intérieur pour ne pas sortir du cadre.
+L'aperçu passe par `planPose()` et `faceJouee()`, donc il montre la
 **face que le côté donne** : un Gros Plan accroché à gauche est celui du verso, à droite celui du
 recto. Sur le matériel imprimé les deux faces partagent le même minutage et l'aperçu se ressemble ;
 dès qu'une face est retouchée, la différence se voit avant de poser.
@@ -467,7 +471,10 @@ L'emplacement d'arrivée est connu : `poser()` enregistre `state.dernierPose = {
 banc marque ce plan-là d'une classe `neuf`.
 
 Sur une carte, le survol ouvre un aperçu : minutage en grand, chaque pastille nommée, et le bandeau
-d'objectif redessiné en grand. Les pastilles se resserrent quand elles sont nombreuses, pour ne
+d'objectif redessiné en grand. **Chaque bandeau y montre son calcul** — « 5 trouvés × 2 = 10 pts » —
+avant le total de la carte (`compteObj()`). Sur une carte à deux pouvoirs, et surtout quand leur
+portée diffère, le total ne se croyait sinon que sur parole ; les points de chaque bandeau sont
+transportés dans l'infobulle par `objsPts`. Les pastilles se resserrent quand elles sont nombreuses, pour ne
 jamais déborder du cadre de la carte — y compris sur un Gros Plan, qui n'occupe qu'une demi-largeur.
 
 Chaque plan du banc porte au **coin haut droit ce qu'il rapporte**, en face de son minutage : la

@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.35';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.36';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
-} from './data.js?v=1.35';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.35';
-import { elIcon, numIcon } from './icons.js?v=1.35';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.35';
+} from './data.js?v=1.36';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.36';
+import { elIcon, numIcon } from './icons.js?v=1.36';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.36';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.35';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.35';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.35';
-import { releve, voler, stopperVols } from './anim.js?v=1.35';
-import { campagne } from './lab.js?v=1.35';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.35';
+} from './engine.js?v=1.36';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.36';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.36';
+import { releve, voler, stopperVols } from './anim.js?v=1.36';
+import { campagne } from './lab.js?v=1.36';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.36';
 
 const app = document.getElementById('app');
 
@@ -470,9 +470,14 @@ const LARGEUR_BANC = { GP: 85, PM: 169, PL: 254, DEP: 254 };
 function bancBloc(st, i, titre, interactif) {
   const banc = st.bancs[i];
   // Ce que chaque carte rapporte ici et maintenant, pour l'aperçu au survol.
-  // Un plan qui porte deux pouvoirs produit deux lignes : on les additionne.
+  // Un plan qui porte deux pouvoirs produit deux lignes : on garde le détail
+  // — l'infobulle montre alors d'où vient chaque point — et leur somme.
   const points = new Map();
-  for (const l of compter(banc, st.cfg).lignes) points.set(l.plan, (points.get(l.plan) || 0) + l.pts);
+  const detail = new Map();
+  for (const l of compter(banc, st.cfg).lignes) {
+    points.set(l.plan, (points.get(l.plan) || 0) + l.pts);
+    const a = detail.get(l.plan) || []; a.push(l.pts); detail.set(l.plan, a);
+  }
   // Le plan qui vient d'être posé : c'est là que la carte en vol atterrit.
   const neuf = st.dernierPose && st.dernierPose.p === i ? st.dernierPose : null;
   const coups = interactif && store.formatChoisi
@@ -518,6 +523,7 @@ function bancBloc(st, i, titre, interactif) {
     morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche')));
     seq.forEach((plan, k) => morceaux.push(renderPlan(plan, {
       points: objsDe(plan).length ? (points.get(plan) || 0) : 0,
+      detail: detail.get(plan) || [],
       neuf: !!(neuf && neuf.seq === si && neuf.idx === k),
     })));
     morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'droite')));
@@ -529,7 +535,7 @@ function bancBloc(st, i, titre, interactif) {
 
   return `<div class="panneau">
     <h2>${titre}</h2>
-    <div class="banc" data-banc="${i}"><div class="banc-piste">${morceaux.join('')}</div></div>
+    <div class="banc ${coups.length ? 'vise' : ''}" data-banc="${i}"><div class="banc-piste">${morceaux.join('')}</div></div>
   </div>`;
 }
 
@@ -974,6 +980,28 @@ function boiteApercu() {
   return apercuEl;
 }
 
+/**
+ * Le calcul d'un bandeau, en clair : ce qu'il a trouvé, et ce que cela lui
+ * rapporte. Sans cela, une carte à deux pouvoirs affiche un total que rien
+ * n'explique — « pourquoi 10 et pas 12 ? ». Ce qu'un bandeau compte dépend de
+ * sa portée : les flèches la disent, le libellé la dit en toutes lettres.
+ */
+function compteObj(o, pts) {
+  if (pts === undefined || pts === null) return '';
+  const lg = objLabel(o, store.cfg);
+  if (estSi(o)) {
+    return `<span class="ap-calc" title="${lg}">${pts ? 'obtenu' : 'non obtenu'}
+      <b>${pts}</b> pt${Math.abs(pts) > 1 ? 's' : ''}</span>`;
+  }
+  const n = o.n;
+  const trouve = n ? pts / n : 0;
+  // Si le compte ne retombe pas juste — un multiplicateur de partie, par
+  // exemple —, on s'en tient au résultat plutôt que d'inventer une explication.
+  if (!Number.isInteger(trouve)) return `<span class="ap-calc" title="${lg}"><b>${pts}</b> pts</span>`;
+  return `<span class="ap-calc" title="${lg}">${trouve} trouvé${trouve > 1 ? 's' : ''} × ${n}
+    = <b>${pts}</b> pt${Math.abs(pts) > 1 ? 's' : ''}</span>`;
+}
+
 function contenuApercu(d) {
   const cadrage = d.transition ? 'Raccord' : (FORMATS[d.format]?.label || d.format);
   return `
@@ -988,7 +1016,9 @@ function contenuApercu(d) {
       </div>` : '<div class="ap-vide">Aucune icône</div>';
     })()}
     ${(d.objs || []).length ? `<div class="ap-obj">
-      ${d.objs.map((o) => `<div class="ap-obj-visuel">${objHTML(o, 44, store.cfg)}</div>`).join('')}
+      ${d.objs.map((o, i) => `<div class="ap-obj-visuel">
+        ${objHTML(o, 44, store.cfg)}${compteObj(o, (d.objsPts || [])[i])}
+      </div>`).join('')}
     </div>` : '<div class="ap-vide">Aucun bandeau</div>'}
     ${d.points === null || d.points === undefined ? '' : `<div class="ap-points">
       Cette carte rapporte <b>${d.points}</b> point${Math.abs(d.points) > 1 ? 's' : ''} dans ce montage

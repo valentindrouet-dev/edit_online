@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj } from './data.js?v=1.35';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.35';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj } from './data.js?v=1.36';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.36';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -108,12 +108,15 @@ function bandeau(objs, format) {
  * que sur un banc de montage : c'est ce que cette carte-là rapporte, ici et
  * maintenant.
  */
-function donneesApercu(h, label, points) {
+function donneesApercu(h, label, points, detail) {
   return encodeURIComponent(JSON.stringify({
     tc: h.tc, el: h.el, objs: objsDe(h), format: h.format,
     num: h.num, label, transition: h.transition || null,
     mort: !!h.mort,
     points: points === undefined ? null : points,
+    // Ce que chaque bandeau rapporte séparément : l'infobulle montre le calcul
+    // plutôt qu'un total à croire sur parole.
+    objsPts: detail || null,
   }));
 }
 
@@ -146,7 +149,7 @@ export function renderPlan(h, opts = {}) {
         title="Ce que ce plan rapporte">${opts.points}</div>`;
   // `muet` : un plan qui n'est pas vraiment sur la table — un aperçu de pose —
   // n'ouvre pas d'infobulle et ne se donne pas pour une carte du banc.
-  const bulle = opts.muet ? '' : ` data-apercu="${donneesApercu(h, label, opts.points)}"`;
+  const bulle = opts.muet ? '' : ` data-apercu="${donneesApercu(h, label, opts.points, opts.detail)}"`;
   return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"${bulle}>
     ${jeton}
     <div class="illus" style="${fond}">

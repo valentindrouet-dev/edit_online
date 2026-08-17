@@ -500,6 +500,10 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
   display: flex; gap: 0; overflow-x: auto; padding: 12px; border-radius: var(--r-s);
   background: linear-gradient(180deg, #2a2530, #1d1a24); min-height: 176px; align-items: stretch;
 }
+/* Pendant qu'on vise, le banc cesse de défiler : l'aperçu se pose par-dessus
+   les cartes, et une barre de défilement qui apparaîtrait sous le curseur
+   déplacerait tout ce qu'on regarde. */
+.banc.vise { overflow: visible; }
 /* La piste tient sur une ligne tant que tout y entre, puis passe à la ligne.
    Ce qui bascule, ce sont les séquences entières : une séquence est un bloc
    insécable — ses plans se touchent, on ne les sépare pas d'un retour à la
@@ -550,23 +554,30 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    celui-ci s'y montre en transparence, à la place exacte qu'il prendra. Le
    mouvement est celui qu'aura le clic : on voit le voisinage tel qu'il sera,
    sans qu'une carte en couvre une autre. `--ap` est la largeur du plan. */
-.fente-choix {
-  position: relative; display: block; min-width: 0;
-  transition: min-width .16s cubic-bezier(.3,.7,.4,1);
-}
-.fente-choix:hover { min-width: calc(var(--ap, 0px) + 10px); }
+.fente-choix { position: relative; display: block; min-width: 0; }
+/* L'aperçu se pose PAR-DESSUS le banc, sans l'écarter. Écarter les plans déjà
+   posés au simple survol les faisait tous bouger sous le curseur — et, depuis
+   que le banc passe à la ligne, pouvait le faire basculer d'une ligne à
+   l'autre puis revenir : le banc sautait et clignotait. Le banc ne bouge donc
+   plus qu'au clic, quand la carte est vraiment posée. */
 .apercu-pose {
-  position: absolute; top: 50%; left: 0; z-index: 6; pointer-events: none;
-  transform: translateY(-50%) scale(.94); transform-origin: left center;
-  opacity: 0; transition: opacity .16s ease, transform .16s ease;
-  border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.45);
+  position: absolute; top: 50%; left: 50%; z-index: 6; pointer-events: none;
+  transform: translate(-50%, -50%) scale(.94); transform-origin: center;
+  opacity: 0; transition: opacity .14s ease, transform .14s ease;
+  border-radius: 6px; box-shadow: 0 6px 22px rgba(0,0,0,.55);
   outline: 2px dashed var(--orange); outline-offset: 2px;
 }
+/* Aux deux bouts du banc, l'aperçu se range vers l'intérieur : centré sur un
+   écart de bord, il sortirait du cadre et serait rogné. */
+.banc .ecart:first-child .apercu-pose { left: 0; transform: translate(0, -50%) scale(.94); }
+.banc .ecart:last-child .apercu-pose { left: auto; right: 0; transform: translate(0, -50%) scale(.94); }
 /* Toute la carte en pointillés se clique, pas seulement son étiquette : c'est
    là que le regard est, et c'est la cible la plus large. */
 .fente-choix:hover .apercu-pose {
-  opacity: .94; transform: translateY(-50%) scale(1); pointer-events: auto; cursor: pointer;
+  opacity: .97; transform: translate(-50%, -50%) scale(1); pointer-events: auto; cursor: pointer;
 }
+.banc .ecart:first-child .fente-choix:hover .apercu-pose { transform: translate(0, -50%) scale(1); }
+.banc .ecart:last-child .fente-choix:hover .apercu-pose { transform: translate(0, -50%) scale(1); }
 /* L'étiquette de l'emplacement passe au-dessus de l'aperçu : elle dit ce que
    le clic va faire, il ne faut pas que la carte la noie. */
 .fente-choix:hover .fente-btn {
@@ -851,6 +862,10 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
   display: flex; flex-direction: column; gap: 8px; align-items: flex-start;
 }
 .ap-obj-visuel .obj-html .pastille, .ap-obj-visuel .obj-html .pastille-num { width: 44px; height: 44px; }
+/* Le calcul du bandeau, à sa droite : ce qu'il a trouvé, et ce que cela vaut. */
+.ap-obj-visuel { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.ap-calc { font-size: .82rem; color: var(--encre-doux); white-space: nowrap; }
+.ap-calc b { color: var(--encre); font-size: 1.05rem; }
 .ap-obj-visuel .obj-html .tag { font-size: .78rem; padding: 5px 9px; }
 .ap-vide { font-size: .82rem; color: var(--gris); margin-top: 8px; }
 

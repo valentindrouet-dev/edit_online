@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.35';
-export const BUILD_DATE = '2026-08-17 19:40';
+export const VERSION = '1.36';
+export const BUILD_DATE = '2026-08-17 20:50';
 
 export const CHANGELOG = [
+  {
+    v: '1.36',
+    date: '17/08/2026',
+    items: [
+      "<b>L’aperçu de pose ne déplace plus le banc.</b> Survoler un emplacement écartait les plans déjà posés pour faire de la place : tout bougeait sous le curseur, et depuis que le banc passe à la ligne, cela pouvait le faire basculer d’une ligne à l’autre puis revenir — d’où les sauts et le clignotement. L’aperçu se pose désormais <b>par-dessus</b> le banc, qui ne bouge plus qu’au clic, une fois la carte vraiment posée.",
+      "<b>L’infobulle d’une carte montre son calcul.</b> Chaque bandeau y dit ce qu’il a trouvé et ce que cela lui rapporte — « 5 trouvés × 2 = 10 pts » — avant le total. Sur une carte à deux pouvoirs, le total ne se croyait plus que sur parole.",
+    ],
+  },
   {
     v: '1.35',
     date: '17/08/2026',
