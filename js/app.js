@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.27';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.28';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee,
-} from './data.js?v=1.27';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.27';
-import { elIcon } from './icons.js?v=1.27';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.27';
+} from './data.js?v=1.28';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.28';
+import { elIcon } from './icons.js?v=1.28';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.28';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.27';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.27';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.27';
-import { releve, voler, stopperVols } from './anim.js?v=1.27';
-import { campagne } from './lab.js?v=1.27';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.27';
+} from './engine.js?v=1.28';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.28';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.28';
+import { releve, voler, stopperVols } from './anim.js?v=1.28';
+import { campagne } from './lab.js?v=1.28';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.28';
 
 const app = document.getElementById('app');
 
@@ -442,7 +442,8 @@ function vuePartie(enchainer = true) {
   <div class="wrap large">
     <div class="bandeau-tour">
       <span>${st.phase === 'DEPART' ? 'Plan de départ'
-        : `Plan <b>${Math.min(st.tour + 1, st.cfg.tours)} / ${st.cfg.tours}</b>`}</span><span>·</span>
+        : `Plan <b>${Math.min(sc[p].plans + 1, st.cfg.tours)} / ${st.cfg.tours}</b>`}</span><span>·</span>
+      ${st.finDeclenchee == null ? '' : '<span class="jeton-dernier">dernier tour</span><span>·</span>'}
       <span><b>${PHASES[st.phase]}</b></span><span>·</span>
       <span style="color:${encreDe(j.couleur)}"><b>${j.nom}</b></span>
       <span class="jeton-materiel ${st.cfg.materielActif === 'MODIFIE' ? 'modifie' : ''}"

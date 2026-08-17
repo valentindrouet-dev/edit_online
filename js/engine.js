@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.27';
-import { compter, bancVide } from './scoring.js?v=1.27';
+} from './data.js?v=1.28';
+import { compter, bancVide, plansComptes } from './scoring.js?v=1.28';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -167,6 +167,7 @@ export function poserDepart(state, p, choix) {
   state.dernierPose = { p, seq: 0, idx: 0 };
   state.departsProposes[p] = [];
   journal(state, `${state.joueurs[p].nom} ouvre son banc avec le Plan de départ ${plan.num}`, p);
+  declencherFin(state, p);
 }
 
 export function departsFaits(state) {
@@ -379,6 +380,7 @@ export function poser(state, p, coup) {
   appliquer(banc, coup, state.cfg);
   state.dernierPose = { p, ...positionPosee(banc, coup, avantSouder) };
   state.posees[p]++;
+  declencherFin(state, p);
   state.mains[p] = [];
   const quoi = coup.format === 'PL' ? `Plan Large ${coup.carte.num}`
     : `${coup.format === 'GP' ? 'Gros Plan' : 'Plan Moyen'} ${coup.format === 'GP' ? coup.carte.gpNum : coup.carte.pmNum}`;
@@ -393,15 +395,26 @@ export function poser(state, p, coup) {
 
 // --- Enchaînement ----------------------------------------------------------
 
-/** Le dernier plan du banc est posé : la partie s'achève. */
-function finirSiComplet(state) {
-  // `tours` est le nombre de plans du banc, Plan de départ compris : il ne
-  // reste donc que tours - 1 tours de montage à jouer.
-  if (state.tour > state.cfg.tours - 1) {
-    state.finie = true;
-    state.duree = Date.now() - state.debut;
-    journal(state, 'Fin du montage — décompte');
-  }
+/**
+ * Une joueuse vient de poser son dernier plan : les autres ont droit à un tour
+ * chacune, puis la partie s'arrête. On retient qui a déclenché la fin, et l'on
+ * compte les tours joués depuis.
+ */
+function declencherFin(state, p) {
+  if (state.finDeclenchee != null) return;
+  if (plansComptes(state.bancs[p]) < state.cfg.tours) return;
+  state.finDeclenchee = p;
+  state.toursApresFin = 0;
+  journal(state, `${state.joueurs[p].nom} pose son ${state.cfg.tours}e plan — un dernier tour pour les autres`, p);
+}
+
+/** Le tour de la dernière joueuse est joué : on arrête. */
+function finirSiTourBoucle(state) {
+  if (state.finDeclenchee == null) return;
+  if (state.toursApresFin < state.joueurs.length - 1) return;
+  state.finie = true;
+  state.duree = Date.now() - state.debut;
+  journal(state, 'Fin du montage — décompte');
 }
 
 /**
@@ -423,19 +436,28 @@ export function avancer(state) {
     return state.finie;
   }
 
+  // Un tour de montage s'achève : s'il appartient à une autre que celle qui a
+  // déclenché la fin, c'est un des derniers tours.
+  if (state.phase === 'MONTAGE' && state.finDeclenchee != null && state.courant !== state.finDeclenchee) {
+    state.toursApresFin = (state.toursApresFin || 0) + 1;
+  }
+
   state.courant = (state.courant + 1) % n;
 
   if (complet) {
     state.phase = 'DERUSHAGE';
-    if (state.courant === state.premier) { state.tour++; finirSiComplet(state); }
+    if (state.courant === state.premier) state.tour++;
+    finirSiTourBoucle(state);
   } else if (state.courant === state.premier) {
     if (state.phase === 'DEPART') state.phase = 'DERUSHAGE';
     else if (state.phase === 'DERUSHAGE') state.phase = 'MONTAGE';
     else {
       state.tour++;
       state.phase = 'DERUSHAGE';
-      finirSiComplet(state);
     }
+    finirSiTourBoucle(state);
+  } else {
+    finirSiTourBoucle(state);
   }
 
   // Plus rien à dérusher : la partie s'arrête aussi.

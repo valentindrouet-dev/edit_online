@@ -13,13 +13,23 @@
 // Les versions précédentes du texte restent lisibles dans l'onglet
 // « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.27';
-import { elIcon } from './icons.js?v=1.27';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.28';
+import { elIcon } from './icons.js?v=1.28';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.13.14',
+    date: '16/08/2026',
+    origine: 'Correction demandée par l’auteur',
+    corps: (c) => corps_0_13_14(c),
+    items: [
+      'Un Raccord, une Ouverture, un Générique ne sont pas des plans : ils ne comptent pas dans le total qui arrête la partie. En jouer un n’avance donc pas vers la fin.',
+      'Dès qu’une joueuse pose son dernier plan, les autres ont droit à un tour chacune, puis la partie s’arrête. Elles ne finissent donc plus forcément avec le même nombre de plans.',
+    ],
+  },
   {
     v: '0.13.13',
     date: '16/08/2026',
@@ -480,4 +490,21 @@ function corps_0_13_13(c) {
       de ${n(c.chutierPL)}.</li>
       <li>Les Plans Moyens / Gros Plans forment une <b>pioche face visible</b> — ces cartes sont
       recto-verso, une pioche ne peut pas les cacher — et un chutier de ${n(c.chutierPMGP)}.</li>`));
+}
+
+// --- v0.13.14 --------------------------------------------------------------
+// Un Raccord n'est pas un plan, et la fin se déclenche sur la première.
+
+function corps_0_13_14(c) {
+  // Le paragraphe de fin est réécrit en entier : on le repère par son titre,
+  // car son texte a déjà changé en v0.13.6 et porte ses propres balises.
+  return corps_0_13_13(c).replace(
+    /(<h3>Fin de partie<\/h3>\s*)<p>[\s\S]*?<\/p>/,
+    '$1' + majBloc('0.13.14', `<b>Un Raccord n'est pas un plan.</b> Un Raccord, une Ouverture, un Générique
+    relient ou encadrent le film : ils ne le racontent pas. Ils ne comptent donc pas dans le total
+    des ${c.tours} plans — en jouer un n'avance pas vers la fin.<br>
+    <b>Dès qu'une joueuse pose son ${c.tours}<sup>e</sup> plan</b>, les autres ont droit à un tour
+    chacune, puis la partie s'arrête : elles ne finissent donc pas forcément avec le même nombre de
+    plans. On inscrit alors les points rapportés par chaque <b>plan visible</b> ; le plus haut total
+    l'emporte.`));
 }

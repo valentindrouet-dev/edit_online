@@ -412,6 +412,13 @@ texte imprimé décrit l'autre ordre, par phases : toutes dérushent, puis toute
 d'un seul tenant réduit légèrement l'avantage du premier siège — **38 / 34 / 27 %** de victoires,
 contre **41 / 31 / 28 %** dans l'ordre imprimé.
 
+Un **Raccord, une Ouverture, un Générique ne sont pas des plans** : ils relient ou encadrent le film,
+ils ne le racontent pas. Ils ne comptent donc pas dans le total qui arrête la partie
+(`plansComptes()`), et en jouer un n'avance pas vers la fin. La partie s'arrête **dès qu'une joueuse
+pose son `tours`-ième plan** : les autres ont alors droit à un tour chacune, puis on compte. Elles ne
+finissent donc pas forcément avec le même nombre de plans — `state.finDeclenchee` retient qui a
+déclenché, `state.toursApresFin` compte les tours joués depuis.
+
 Le tour se joue ensuite en deux phases : **Dérushage** (chacune pioche une carte dans un chutier ou
 sur une pioche), puis **Montage** (chacune la pose). La partie s'arrête quand chaque banc compte
 **dix plans, Plan de départ compris** — il reste donc neuf plans à monter (`cfg.tours`).

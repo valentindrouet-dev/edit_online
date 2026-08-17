@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, objPortee } from './data.js?v=1.27';
+import { PERSONNAGES, ELEMENT_IDS, objPortee } from './data.js?v=1.28';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -21,6 +21,16 @@ export function tousLesPlans(banc) {
 
 export function estRaccord(p) {
   return !!p.transition;
+}
+
+/**
+ * Les plans qui comptent dans le total du banc. Un Raccord, une Ouverture, un
+ * Générique ne sont pas des plans : ils relient ou encadrent le film, ils ne
+ * le racontent pas. Ils ne comptent donc pas dans les dix plans qui arrêtent
+ * la partie.
+ */
+export function plansComptes(banc) {
+  return tousLesPlans(banc).filter((p) => !estRaccord(p)).length;
 }
 
 /** Deux plans voisins partagent-ils assez d'éléments ? (variante hors règles) */
@@ -187,7 +197,10 @@ export function compter(banc, cfg) {
     detail,
     lignes,
     recensement: recenser(banc),
-    plans: montage.length,
+    // `plans` ne compte que les vrais plans — c'est ce total qui arrête la
+    // partie. `cartes` compte tout ce qui est posé, Raccords compris.
+    plans: montage.filter((p) => !estRaccord(p)).length,
+    cartes: montage.length,
     sequences: banc.sequences.length,
     cartesRaccord: montage.filter(estRaccord).length,
     plusLongue: banc.sequences.reduce((m, s) => Math.max(m, s.length), 0),

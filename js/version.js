@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.27';
-export const BUILD_DATE = '2026-08-16 17:25';
+export const VERSION = '1.28';
+export const BUILD_DATE = '2026-08-16 19:50';
 
 export const CHANGELOG = [
+  {
+    v: '1.28',
+    date: '16/08/2026',
+    items: [
+      "<b>Un Raccord n’est pas un plan.</b> Un Raccord, une Ouverture, un Générique relient ou encadrent le film : ils ne le racontent pas. Ils ne comptent donc plus dans le total qui arrête la partie — en jouer un n’avance pas vers la fin.",
+      "<b>La fin se déclenche sur la première joueuse arrivée au bout.</b> Dès qu’elle pose son dernier plan, les autres ont droit à un tour chacune, puis la partie s’arrête. Elles ne finissent donc plus forcément avec le même nombre de plans, et un jeton <b>dernier tour</b> le signale dans le bandeau. Règles v0.13.14.",
+      "Le compteur du bandeau suit le banc de celle qui joue — son nombre de plans, et non plus le numéro du tour de table.",
+      "Le nombre de cartes restantes n’est plus recouvert par la pile de la pioche : la place qu’occupent ses couches décalées est réservée sous elle.",
+    ],
+  },
   {
     v: '1.27',
     date: '16/08/2026',
