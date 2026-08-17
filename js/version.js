@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.34';
-export const BUILD_DATE = '2026-08-17 18:30';
+export const VERSION = '1.35';
+export const BUILD_DATE = '2026-08-17 19:40';
 
 export const CHANGELOG = [
+  {
+    v: '1.35',
+    date: '17/08/2026',
+    items: [
+      "<b>Les bandeaux identiques d’un même banc tiennent sur une ligne</b>, avec leur nombre en pastille — « ×6 » — et la somme de ce qu’ils ont rapporté. Six fois « 3 × Mort » occupaient six lignes pour une seule information : dans la colonne de score en partie, dans le détail de fin de partie, et dans le palmarès des bandeaux qui ont le plus rapporté, où le regroupement se fait joueuse par joueuse.",
+      "L’éditeur : le bouton <b>+ second pouvoir</b> manquait dès qu’on sélectionnait plusieurs plans. Il est là, avec son bloc de réglage et son bouton d’effacement — un second pouvoir se pose donc sur toute une sélection d’un coup, comme le premier.",
+    ],
+  },
   {
     v: '1.34',
     date: '17/08/2026',

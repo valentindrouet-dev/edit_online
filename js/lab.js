@@ -5,9 +5,9 @@
 import {
   creerPartie, poserDepart, derusher, poser, avancer, scores, rng, nouvelleGraine,
   coupsPossibles, optionsDerushage,
-} from './engine.js?v=1.34';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.34';
-import { SOURCES_LABEL } from './scoring.js?v=1.34';
+} from './engine.js?v=1.35';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.35';
+import { SOURCES_LABEL } from './scoring.js?v=1.35';
 
 /** Joue une partie entière en mémoire et renvoie son résumé. */
 export function simulerPartie(joueurs, cfg, graine) {

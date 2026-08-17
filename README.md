@@ -195,7 +195,8 @@ deux — sur la carte, dans l'infobulle, dans la colonne de score, dans les stat
 
 Le modèle les nomme `obj` et `obj2` ; tout ce qui lit les pouvoirs passe par `objsDe(plan)`, qui rend
 la liste de ceux qui existent, si bien qu'aucun calcul n'a à savoir combien il y en a. L'éditeur
-ouvre le second emplacement d'un bouton **+ second pouvoir** et le règle exactement comme le premier.
+ouvre le second emplacement d'un bouton **+ second pouvoir** et le règle exactement comme le premier
+— sur un plan seul comme sur **toute une sélection**.
 Un plan qui en porte deux produit **deux lignes de décompte** : la colonne de score les montre
 séparément, et le jeton du coin en donne la somme.
 
@@ -478,6 +479,11 @@ La colonne de droite lit le banc suivi : **Icônes du banc** — le recensement 
 main — puis **Score de la joueuse**, chaque bandeau posé avec ce qu'il rapporte, les points hors
 bandeau s'il y en a, et le total.
 
+Les **bandeaux identiques y sont réunis en une ligne** (`grouperBandeaux()`), avec leur nombre en
+pastille — « ×6 » — et la somme de ce qu'ils ont rapporté. Six fois « 3 × Mort » occupaient six
+lignes pour une seule information. Deux bandeaux sont identiques quand ils ont la même forme **et**
+la même valeur : ce que l'œil lit comme un même bandeau.
+
 ### L'accueil ne garde que ce qui se voit
 
 L'accueil ne propose plus que trois cases — **Illustrations**, **Points visibles**, **Mouvement des
@@ -500,7 +506,11 @@ L'écran de décompte ouvre sur le **podium**, puis :
   les points**, en barres de part ; puis **les bandeaux qui ont le plus rapporté**, les huit
   premiers, dessinés comme sur les cartes ;
 - le **détail par joueuse**, qui n'est plus un tableau de texte mais la **colonne de score du jeu**
-  (`listeObjectifs()`) : les mêmes bandeaux, au même endroit, avec les mêmes points.
+  (`listeObjectifs()`) : les mêmes bandeaux, au même endroit, avec les mêmes points — bandeaux
+  identiques réunis, ici aussi.
+
+Le palmarès regroupe **joueuse par joueuse** : deux joueuses qui posent le même bandeau gardent
+chacune leur ligne, c'est bien ce qu'elles en ont tiré séparément que l'on compare.
 
 ## Le modèle de jeu
 

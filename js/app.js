@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.34';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.35';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
-} from './data.js?v=1.34';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.34';
-import { elIcon, numIcon } from './icons.js?v=1.34';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.34';
+} from './data.js?v=1.35';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.35';
+import { elIcon, numIcon } from './icons.js?v=1.35';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.35';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.34';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.34';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.34';
-import { releve, voler, stopperVols } from './anim.js?v=1.34';
-import { campagne } from './lab.js?v=1.34';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.34';
+} from './engine.js?v=1.35';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.35';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.35';
+import { releve, voler, stopperVols } from './anim.js?v=1.35';
+import { campagne } from './lab.js?v=1.35';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.35';
 
 const app = document.getElementById('app');
 
@@ -773,6 +773,27 @@ function tableauScore(s) {
  * rapporte, puis les points qui ne viennent d'aucun bandeau — pose, jonctions,
  * chronologie — et le total. La colonne dit d'où vient chaque point.
  */
+/**
+ * Les bandeaux identiques d'un même banc, réunis en une ligne. Un montage qui
+ * porte six fois « 3 × Mort » produit six lignes strictement semblables :
+ * autant les compter une fois, avec leur nombre et leur somme. Deux bandeaux
+ * sont identiques quand ils ont la même forme **et** la même valeur — ce que
+ * l'œil lit comme un même bandeau.
+ */
+function grouperBandeaux(lignes) {
+  const par = new Map();
+  for (const l of lignes) {
+    const cle = `${signatureObj(l.obj)}|${l.obj.n}`;
+    const e = par.get(cle);
+    if (e) { e.n++; e.pts += l.pts; }
+    else par.set(cle, { obj: l.obj, n: 1, pts: l.pts });
+  }
+  return [...par.values()];
+}
+
+/** « ×6 » quand un bandeau est posé plusieurs fois. */
+const jetonNombre = (n) => (n > 1 ? `<span class="grp-n" title="${n} fois sur le banc">×${n}</span>` : '');
+
 function listeObjectifs(s) {
   const hors = ['POSE', 'JONCTION', 'CHRONOLOGIE'].filter((k) => s.detail[k]);
   if (!s.lignes.length && !hors.length) {
@@ -782,9 +803,9 @@ function listeObjectifs(s) {
     </table>`;
   }
   return `<table class="tableau-score">
-    ${s.lignes.map((l) => `<tr>
-      <td>${objHTML(l.obj)}</td>
-      <td title="${objLabel(l.obj)}">${l.pts}</td>
+    ${grouperBandeaux(s.lignes).map((g) => `<tr>
+      <td>${objHTML(g.obj)}${jetonNombre(g.n)}</td>
+      <td title="${objLabel(g.obj)}${g.n > 1 ? ` — ${g.n} fois` : ''}">${g.pts}</td>
     </tr>`).join('')}
     ${hors.map((k) => `<tr><td class="hors-bandeau">${SOURCES_LABEL[k]}</td><td>${s.detail[k]}</td></tr>`).join('')}
     <tr class="total"><td>Total</td><td>${s.total}</td></tr>
@@ -1259,6 +1280,9 @@ function courbeScores(st, cl) {
 /** Ce que la partie a produit, au-delà du classement. */
 function statsPartie(st, cl) {
   const tous = cl.flatMap((c) => c.lignes);
+  // Le palmarès regroupe les bandeaux identiques d'une même joueuse : six fois
+  // « 3 × Mort » chez Justine tenaient six lignes pour une seule information.
+  const groupes = cl.flatMap((c) => grouperBandeaux(c.lignes).map((g) => ({ ...g, nom: c.joueur.nom })));
   const parKind = {};
   for (const c of cl) for (const [k, v] of Object.entries(c.detail)) parKind[k] = (parKind[k] || 0) + v;
   const sources = Object.entries(parKind).filter(([, v]) => v).sort((a, b) => b[1] - a[1]);
@@ -1296,13 +1320,10 @@ function statsPartie(st, cl) {
         <h3>Les bandeaux qui ont le plus rapporté</h3>
         <table class="tbl tbl-pouvoirs">
           <thead><tr><th>Bandeau</th><th>Chez</th><th class="num">Points</th></tr></thead>
-          <tbody>${tous.slice().sort((a, b) => b.pts - a.pts).slice(0, 8).map((l) => {
-            const q = cl.find((c) => c.lignes.includes(l));
-            return `<tr>
-              <td class="pv-visuel">${objHTML(l.obj, 24, st.cfg)}</td>
-              <td>${q ? q.joueur.nom : ''}</td><td class="num"><b>${l.pts}</b></td>
-            </tr>`;
-          }).join('') || '<tr><td colspan="3" class="aide">Aucun bandeau posé.</td></tr>'}</tbody>
+          <tbody>${groupes.slice().sort((a, b) => b.pts - a.pts).slice(0, 8).map((g) => `<tr>
+              <td class="pv-visuel">${objHTML(g.obj, 24, st.cfg)}${jetonNombre(g.n)}</td>
+              <td>${g.nom}</td><td class="num"><b>${g.pts}</b></td>
+            </tr>`).join('') || '<tr><td colspan="3" class="aide">Aucun bandeau posé.</td></tr>'}</tbody>
         </table>
         ${meilleur ? `<p class="aide">Le meilleur bandeau de la partie rapporte
           <b>${meilleur.pts} point${Math.abs(meilleur.pts) > 1 ? 's' : ''}</b> à lui seul.</p>` : ''}
@@ -1881,7 +1902,14 @@ function blocLot(plans) {
     <div class="rangee-mini">
       <button class="pill mini" data-vider="obj" data-rang="1" data-cles="${cles}"
         ${plans.some((p) => p.obj) ? '' : 'disabled'}>Enlever le pouvoir des ${plans.length} plans</button>
+      ${plans.some((p) => p.obj) && !plans.every((p) => p.obj2)
+        ? `<button class="pill mini" data-second="${cles}">+ second pouvoir</button>` : ''}
     </div>
+
+    ${plans.some((p) => p.obj2) ? `${blocPouvoir(objCommunDe(plans, 2), 'lot', 2)}
+    <div class="rangee-mini">
+      <button class="pill mini" data-vider="obj" data-rang="2" data-cles="${cles}">Enlever le second pouvoir des ${plans.length} plans</button>
+    </div>` : ''}
 
     <div class="liste-lot">
       ${plans.map((p) => `<span class="jeton ${retoucheDe(p.cle) ? 'mod' : ''}" data-oter="${p.cle}"
@@ -2692,7 +2720,7 @@ function brancherEditeur(refaire) {
   // Ouvrir le second emplacement du bandeau : on y pose un pouvoir par défaut,
   // que l'on règle ensuite comme le premier.
   app.querySelectorAll('[data-second]').forEach((el) => el.addEventListener('click', () => {
-    poserObj([el.dataset.second], OBJ.plan(1), 2);
+    poserObj(el.dataset.second.split(' ').filter(Boolean), OBJ.plan(1), 2);
     sauverCfg(); refaire();
   }));
 

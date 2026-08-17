@@ -1068,6 +1068,14 @@ table.tbl th.th-tri.num { text-align: right; }
 }
 .th-tri.trie { color: var(--violet); }
 .th-tri.trie i { opacity: 1; }
+/* « ×6 » : le même bandeau posé plusieurs fois tient sur une ligne, et son
+   nombre se lit à côté de lui plutôt que de multiplier les lignes. */
+.grp-n {
+  display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 999px;
+  background: var(--violet-pale); color: var(--violet); font-size: .74em; font-weight: 800;
+  vertical-align: middle; font-variant-numeric: tabular-nums;
+}
+
 .barre-part {
   display: inline-block; vertical-align: middle; width: 96px; height: 8px; border-radius: 999px;
   background: var(--gris-clair); overflow: hidden; margin-right: 8px;
