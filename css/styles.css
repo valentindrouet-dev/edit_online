@@ -554,33 +554,38 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    celui-ci s'y montre en transparence, à la place exacte qu'il prendra. Le
    mouvement est celui qu'aura le clic : on voit le voisinage tel qu'il sera,
    sans qu'une carte en couvre une autre. `--ap` est la largeur du plan. */
-.fente-choix { position: relative; display: block; min-width: 0; }
-/* L'aperçu se pose PAR-DESSUS le banc, sans l'écarter. Écarter les plans déjà
-   posés au simple survol les faisait tous bouger sous le curseur — et, depuis
-   que le banc passe à la ligne, pouvait le faire basculer d'une ligne à
-   l'autre puis revenir : le banc sautait et clignotait. Le banc ne bouge donc
-   plus qu'au clic, quand la carte est vraiment posée. */
+/* `static` : l'aperçu ne se positionne pas par rapport à son emplacement mais
+   par rapport au banc, ce qui lui permet d'aller se poser dans la bande du bas
+   plutôt que sur les cartes. */
+.fente-choix { position: static; display: block; min-width: 0; }
+/* L'aperçu ne bouscule rien et ne recouvre rien : le banc réserve une bande
+   sous les cartes dès qu'on vise, et l'aperçu s'y range, aligné sous
+   l'emplacement visé (`--gx`, posée au survol). Écarter les plans déjà posés
+   les faisait tous bouger sous le curseur ; les recouvrir cachait ce qu'on
+   cherchait justement à comparer. */
 .apercu-pose {
-  position: absolute; top: 50%; left: 50%; z-index: 6; pointer-events: none;
-  transform: translate(-50%, -50%) scale(.94); transform-origin: center;
+  position: absolute; bottom: 12px; left: var(--gx, 50%); z-index: 6; pointer-events: none;
+  transform: translateX(-50%) scale(.94); transform-origin: bottom center;
   opacity: 0; transition: opacity .14s ease, transform .14s ease;
-  border-radius: 6px; box-shadow: 0 6px 22px rgba(0,0,0,.55);
+  border-radius: 6px; box-shadow: 0 8px 26px rgba(0,0,0,.6);
   outline: 2px dashed var(--orange); outline-offset: 2px;
 }
-/* Aux deux bouts du banc, l'aperçu se range vers l'intérieur : centré sur un
-   écart de bord, il sortirait du cadre et serait rogné. */
-.banc .ecart:first-child .apercu-pose { left: 0; transform: translate(0, -50%) scale(.94); }
-.banc .ecart:last-child .apercu-pose { left: auto; right: 0; transform: translate(0, -50%) scale(.94); }
+/* La bande réservée apparaît en même temps que les emplacements — une seule
+   fois, quand on choisit sa moitié — et non au survol : les cartes posées ne
+   bougent jamais pendant qu'on vise. */
+.banc.vise { position: relative; padding-bottom: 206px; }
+.banc.vise::after {
+  content: ''; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 190px;
+  border: 2px dashed rgba(255,255,255,.09); border-radius: 10px; pointer-events: none;
+}
 /* Toute la carte en pointillés se clique, pas seulement son étiquette : c'est
    là que le regard est, et c'est la cible la plus large. */
-.fente-choix:hover .apercu-pose {
-  opacity: .97; transform: translate(-50%, -50%) scale(1); pointer-events: auto; cursor: pointer;
+.fente-choix.ouverte .apercu-pose {
+  opacity: 1; transform: translateX(-50%) scale(1); pointer-events: auto; cursor: pointer;
 }
-.banc .ecart:first-child .fente-choix:hover .apercu-pose { transform: translate(0, -50%) scale(1); }
-.banc .ecart:last-child .fente-choix:hover .apercu-pose { transform: translate(0, -50%) scale(1); }
 /* L'étiquette de l'emplacement passe au-dessus de l'aperçu : elle dit ce que
    le clic va faire, il ne faut pas que la carte la noie. */
-.fente-choix:hover .fente-btn {
+.fente-choix:hover .fente-btn, .fente-choix.ouverte .fente-btn {
   position: relative; z-index: 7; background: rgba(20,16,28,.86); border-color: var(--orange); color: #fff;
 }
 .apercu-pose .moitie { height: 182px; border-radius: 5px; font-size: 12.7px; display: flex; }
@@ -1085,6 +1090,13 @@ table.tbl th.th-tri.num { text-align: right; }
 .th-tri.trie i { opacity: 1; }
 /* « ×6 » : le même bandeau posé plusieurs fois tient sur une ligne, et son
    nombre se lit à côté de lui plutôt que de multiplier les lignes. */
+/* La carte visée dans la rivière : soulevée, et sa moitié retenue encadrée.
+   C'est elle que l'on est en train de poser — elle doit se distinguer des
+   autres cartes du chutier sans les effacer. */
+.carte-retournable.visee { transform: translateY(-8px); }
+.carte-retournable { transition: transform .14s ease; }
+.carte-retournable.visee .carte { box-shadow: 0 10px 26px rgba(249,115,22,.45); border-radius: 8px; }
+
 .grp-n {
   display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 999px;
   background: var(--violet-pale); color: var(--violet); font-size: .74em; font-weight: 800;

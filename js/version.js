@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.36';
-export const BUILD_DATE = '2026-08-17 20:50';
+export const VERSION = '1.37';
+export const BUILD_DATE = '2026-08-17 22:15';
 
 export const CHANGELOG = [
+  {
+    v: '1.37',
+    date: '17/08/2026',
+    items: [
+      "<b>Le tour se joue sur un seul écran.</b> Plus de Phase A ni de Phase B : on vise une moitié dans la rivière — elle se soulève, sa moitié se cadre —, le banc ouvre aussitôt ses emplacements, et un clic pose la carte. Elle vole du chutier au banc d’un seul geste. Plus de fenêtre intermédiaire où la carte attendait seule, plus de changement d’écran, plus d’attente. Les règles ne bougent pas : on dérushe, puis on monte — c’est l’écran qui ne les sépare plus.",
+      "<b>L’aperçu de pose ne recouvre plus rien.</b> Le banc réserve une bande sous les cartes dès qu’on vise — une seule fois, pas au survol —, et l’aperçu s’y range, aligné sous l’emplacement visé. Les plans déjà posés ne bougent pas, et rien ne vient les cacher.",
+      "La carte de la rivière se retourne toujours sans jouer le tour, et la moitié visée <b>survit au retournement</b>.",
+    ],
+  },
   {
     v: '1.36',
     date: '17/08/2026',

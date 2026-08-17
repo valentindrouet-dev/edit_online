@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.36';
-import { compter, bancVide, plansComptes } from './scoring.js?v=1.36';
+} from './data.js?v=1.37';
+import { compter, bancVide, plansComptes } from './scoring.js?v=1.37';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -259,10 +259,16 @@ function poseAutorisee(cfg, voisin, plan) {
   return !(voisin && estPL(voisin) && estPL(plan));
 }
 
-export function coupsPossibles(state, p) {
+/**
+ * Les coups légaux avec la carte en main. `hypothese` permet de les demander
+ * pour une carte que l'on n'a pas encore prise : c'est ce qui autorise à viser
+ * son emplacement depuis la rivière, avant même de dérusher. La partie n'est
+ * pas touchée — on ne fait que lire le banc.
+ */
+export function coupsPossibles(state, p, hypothese) {
   const cfg = state.cfg;
   const banc = state.bancs[p];
-  const carte = state.mains[p][0];
+  const carte = hypothese || state.mains[p][0];
   if (!carte) return [];
   const out = [];
 

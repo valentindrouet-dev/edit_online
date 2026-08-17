@@ -399,21 +399,41 @@ Pendant le choix du **Plan de départ**, les deux chutiers s'affichent déjà so
 proposées : on voit ce qui attend au premier dérushage, avec les boutons de rotation, mais les
 cartes ne s'y prennent pas encore.
 
-Au montage, une carte Plan Moyen / Gros Plan est présentée **entière**, gauche et droite soudées
-comme sur la table : on clique la moitié que l'on veut laisser visible, puis l'emplacement dans son
-banc. La moitié écartée n'est pas éteinte — la carte reste entièrement lisible, un cadre orange
-marque simplement le côté retenu.
+### Le tour tient sur un écran
 
-La zone de jeu garde la même hauteur d'une phase à l'autre et reste affichée pendant les tours
-d'IA : rien n'apparaît ni ne disparaît sous le curseur entre deux clics. Choisir une moitié ne
-repeint que la carte, sa consigne et les emplacements du banc.
+Les règles gardent leurs deux temps — on dérushe, puis on monte — mais **l'écran ne les sépare
+plus**. On reste devant la rivière du début à la fin du tour :
 
-**L'emplacement se pré-visualise** : survoler un emplacement y montre le plan en transparence, à la
-place exacte qu'il prendra. L'aperçu se pose **par-dessus** le banc et ne l'écarte pas — écarter les
-plans déjà posés au simple survol les faisait tous bouger sous le curseur, et, depuis que le banc
-passe à la ligne, pouvait le faire basculer d'une ligne à l'autre puis revenir : le banc sautait et
-clignotait. **Le banc ne bouge donc qu'au clic**, quand la carte est vraiment posée. Aux deux bouts,
-l'aperçu se range vers l'intérieur pour ne pas sortir du cadre.
+1. on clique la **moitié** que l'on veut garder sur une carte du chutier — la carte se soulève, la
+   moitié retenue se cadre d'orange (`store.choixRiviere`) ;
+2. le **banc ouvre aussitôt ses emplacements**, calculés sur cette carte-là sans qu'elle ait quitté
+   le chutier (`coupsPossibles(state, p, hypothese)` — une lecture, la partie n'est pas touchée) ;
+3. un clic sur un emplacement **joue le tour entier** : la carte quitte le chutier, la pioche
+   recharge la place laissée vide, et le plan se pose dans le banc — un seul vol, un seul rendu
+   (`jouerTour()`).
+
+Il n'y a donc plus de fenêtre intermédiaire où la carte attendait seule au centre de la table, ni de
+changement d'écran entre les deux temps. La zone de jeu garde exactement la même hauteur qu'on vise
+ou non, et reste affichée pendant les tours d'IA : rien n'apparaît ni ne disparaît sous le curseur.
+Viser ne repeint que les cartes de la rivière et le banc de qui joue (`rafraichirVisee()`).
+
+Deux cas gardent l'ancien chemin en deux temps, et l'écran de montage avec : la **pioche face
+cachée**, dont on ne peut pas viser une moitié qu'on ne voit pas, et l'**ordre imprimé**
+(`tourComplet: false`), où la main passe entre le dérushage et le montage. Une carte qui ne se pose
+nulle part se prend quand même — dérusher n'est pas facultatif.
+
+**L'emplacement se pré-visualise** : survoler un emplacement montre le plan tel qu'il s'y posera.
+L'aperçu ne bouscule rien et ne recouvre rien — le banc **réserve une bande sous les cartes** dès
+qu'on vise, une seule fois et non au survol, et l'aperçu s'y range, aligné sous l'emplacement visé
+(`--gx`, posée au survol par `suivreFente()`). Écarter les plans déjà posés les faisait tous bouger
+sous le curseur — et, depuis que le banc passe à la ligne, pouvait le faire basculer d'une ligne à
+l'autre puis revenir : le banc sautait et clignotait. Les recouvrir cachait ce qu'on cherchait
+justement à comparer. **Le banc ne bouge donc qu'au clic**, quand la carte est vraiment posée.
+
+L'aperçu se clique aussi — c'est la cible la plus large. Sa visibilité ne peut pas tenir au seul
+`:hover` : il s'affiche loin de son emplacement, et le curseur qui va vers lui quitte l'emplacement
+avant de l'atteindre ; l'aperçu s'effacerait juste avant d'être cliquable. C'est donc le banc qui
+retient lequel est ouvert (`.fente-choix.ouverte`), jusqu'à ce qu'on sorte du banc.
 L'aperçu passe par `planPose()` et `faceJouee()`, donc il montre la
 **face que le côté donne** : un Gros Plan accroché à gauche est celui du verso, à droite celui du
 recto. Sur le matériel imprimé les deux faces partagent le même minutage et l'aperçu se ressemble ;

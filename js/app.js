@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.36';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.37';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
-} from './data.js?v=1.36';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.36';
-import { elIcon, numIcon } from './icons.js?v=1.36';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.36';
+} from './data.js?v=1.37';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.37';
+import { elIcon, numIcon } from './icons.js?v=1.37';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.37';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.36';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.36';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.36';
-import { releve, voler, stopperVols } from './anim.js?v=1.36';
-import { campagne } from './lab.js?v=1.36';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.36';
+} from './engine.js?v=1.37';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.37';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.37';
+import { releve, voler, stopperVols } from './anim.js?v=1.37';
+import { campagne } from './lab.js?v=1.37';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.37';
 
 const app = document.getElementById('app');
 
@@ -43,6 +43,10 @@ const store = {
   labo: null,
   laboEnCours: false,
   formatChoisi: null,   // 'GP' | 'PM' | 'PL' pendant la phase de montage
+  // La carte visée dans la rivière, et la moitié retenue : { o, format }. Le
+  // tour se joue d'un bout à l'autre depuis le même écran — on choisit dans
+  // la rivière, on pose dans le banc, sans étape intermédiaire.
+  choixRiviere: null,
   joueurVu: null,       // le banc dont on lit les colonnes ; null = celui qui joue
   undo: null,
   vols: [],             // les cartes à faire voler au prochain rendu
@@ -344,15 +348,19 @@ function lancerPartie() {
   // La partie fige son matériel : à partir d'ici c'est le sien qui vaut.
   appliquerJeuActif();
   store.formatChoisi = null;
+  store.choixRiviere = null;
   store.undo = null;
   store.joueurVu = null;
   location.hash = '#/partie';
 }
 
+// Les deux temps du tour restent ceux des règles — on dérushe, puis on monte —
+// mais l'écran ne les sépare plus : on prend dans la rivière et l'on pose dans
+// son banc sans changer de fenêtre. Le bandeau n'a donc plus de phase à nommer.
 const PHASES = {
   DEPART: 'Mise en place — choix du Plan de départ',
-  DERUSHAGE: 'Phase A — Dérushage',
-  MONTAGE: 'Phase B — Montage',
+  DERUSHAGE: 'Dérushage et montage',
+  MONTAGE: 'Montage',
 };
 
 /**
@@ -420,7 +428,8 @@ function vuePartie(enchainer = true) {
     <div class="table-jeu">
       <div class="zone-gauche">
         <div class="panneau zone-phase">${zone}</div>
-        ${st.joueurs.map((jj, i) => bancBloc(st, i, `Banc de ${jj.nom}`, i === p && humaine && st.phase === 'MONTAGE')).join('')}
+        ${st.joueurs.map((jj, i) => bancBloc(st, i, `Banc de ${jj.nom}`,
+          i === p && humaine && (st.phase === 'MONTAGE' || st.phase === 'DERUSHAGE'))).join('')}
       </div>
 
       <div class="colonne-info">
@@ -480,14 +489,17 @@ function bancBloc(st, i, titre, interactif) {
   }
   // Le plan qui vient d'être posé : c'est là que la carte en vol atterrit.
   const neuf = st.dernierPose && st.dernierPose.p === i ? st.dernierPose : null;
-  const coups = interactif && store.formatChoisi
-    ? coupsPossibles(st, i).filter((c) => c.format === store.formatChoisi)
+  // Deux façons de viser un emplacement : depuis la rivière, avant même
+  // d'avoir pris la carte — c'est le tour ordinaire —, ou depuis la carte en
+  // main, quand l'ordre imprimé sépare le dérushage du montage.
+  const vise = interactif ? viseeCourante(st, i) : null;
+  const coups = vise
+    ? coupsPossibles(st, i, vise.carte).filter((c) => c.format === vise.format)
     : [];
 
-  // Au survol d'un emplacement, le banc s'écarte et le plan s'y montre en
-  // transparence, tel qu'il s'y poserait : la bonne moitié, et la face que le
-  // côté de pose lui donne. Le mouvement est celui qu'aura le clic.
-  const carteEnMain = interactif ? st.mains[i][0] : null;
+  // Au survol d'un emplacement, le plan s'y montre en transparence, tel qu'il
+  // s'y poserait : la bonne moitié, et la face que le côté de pose lui donne.
+  const carteEnMain = vise ? vise.carte : null;
   // Un emplacement occupe une bande verticale, pas un pavé : c'est ce qui
   // permet au banc de garder la même largeur qu'il aura une fois la carte
   // posée. Les emplacements ne doivent pas décider de la mise en page — sinon
@@ -544,6 +556,49 @@ function bancBloc(st, i, titre, interactif) {
  * la carte et le banc concernés plutôt que toute la table, pour que rien ne
  * clignote entre le clic sur la moitié et le clic sur l'emplacement.
  */
+/**
+ * Viser une moitié dans la rivière. Rien n'est joué : on désigne seulement ce
+ * que l'on veut poser, et le banc montre aussitôt où. Re-cliquer la même
+ * moitié annule la visée.
+ */
+function viser(st, o, format) {
+  const c = store.choixRiviere;
+  store.choixRiviere = (c && memeOption(c.o, o) && c.format === format) ? null : { o, format };
+  rafraichirVisee(st);
+}
+
+/**
+ * Repeint ce que la visée change — les cartes de la rivière et le banc de qui
+ * joue —, pas toute la table : une visée n'est pas un coup, et rien d'autre
+ * ne doit bouger sous le curseur.
+ */
+function rafraichirVisee(st) {
+  const p = st.courant;
+  const vise = store.choixRiviere;
+  app.querySelectorAll('[data-derush]').forEach((el) => {
+    const o = JSON.parse(decodeURIComponent(el.dataset.derush));
+    const f = vise && memeOption(vise.o, o) ? vise.format : null;
+    const boite = el.closest('.carte-retournable');
+    if (boite) boite.classList.toggle('visee', !!f);
+    el.querySelectorAll('.moitie[data-format]').forEach((m) => {
+      m.classList.toggle('choisi', m.dataset.format === f);
+    });
+  });
+
+  const aide = app.querySelector('#aide-derushage');
+  if (aide) aide.innerHTML = aidePose(st);
+
+  const banc = app.querySelector(`.banc[data-banc="${p}"]`);
+  const piste = banc && banc.querySelector('.banc-piste');
+  if (!piste) return vuePartie();
+  const bloc = document.createElement('div');
+  bloc.innerHTML = bancBloc(st, p, '', true);
+  piste.innerHTML = bloc.querySelector('.banc-piste').innerHTML;
+  banc.classList.toggle('vise', !!bloc.querySelector('.banc').classList.contains('vise'));
+  brancherFentes(st, piste);
+  brancherApercu(piste);
+}
+
 function choisirMoitie(st, format) {
   store.formatChoisi = store.formatChoisi === format ? null : format;
 
@@ -566,12 +621,50 @@ function choisirMoitie(st, format) {
   }
 }
 
+/**
+ * L'aperçu se range dans la bande du bas, aligné sous l'emplacement visé :
+ * c'est le survol qui lui donne son abscisse, en coordonnées du banc, bornée
+ * pour qu'il ne sorte jamais du cadre.
+ */
+function suivreFente(el) {
+  const banc = el.closest('.banc');
+  const ap = el.querySelector('.apercu-pose');
+  if (!banc || !ap) return;
+  const rb = banc.getBoundingClientRect();
+  const re = el.getBoundingClientRect();
+  const demi = (ap.offsetWidth || 170) / 2 + 6;
+  const x = re.left - rb.left + re.width / 2 + banc.scrollLeft;
+  banc.style.setProperty('--gx', `${Math.min(Math.max(x, demi), rb.width - demi)}px`);
+  // L'aperçu ne peut pas dépendre du seul `:hover` : il se montre loin de son
+  // emplacement, et le curseur qui va vers lui quitte l'emplacement avant de
+  // l'atteindre — l'aperçu disparaîtrait juste avant d'être cliquable. C'est
+  // donc le banc qui retient lequel est ouvert, jusqu'à ce qu'on en sorte.
+  banc.querySelectorAll('.fente-choix.ouverte').forEach((f) => f.classList.remove('ouverte'));
+  el.classList.add('ouverte');
+}
+
 /** (Re)branche les emplacements de pose du banc courant. */
 function brancherFentes(st, racine = app) {
-  racine.querySelectorAll('[data-coup]').forEach((el) => el.addEventListener('click', () => {
+  racine.querySelectorAll('.fente-choix').forEach((el) => {
+    el.addEventListener('mouseenter', () => suivreFente(el));
+  });
+  const banc = racine.closest ? racine.closest('.banc') : null;
+  (banc ? [banc] : [...racine.querySelectorAll('.banc')]).forEach((b) => {
+    b.addEventListener('mouseleave', () => {
+      b.querySelectorAll('.fente-choix.ouverte').forEach((f) => f.classList.remove('ouverte'));
+    });
+  });
+  racine.querySelectorAll('[data-coup]').forEach((el) => el.addEventListener('click', async () => {
     const partiel = JSON.parse(decodeURIComponent(el.dataset.coup));
-    const carte = st.mains[st.courant][0];
     store.undo = JSON.stringify(st);
+    // Depuis la rivière, le tour se joue d'un seul geste : la carte quitte le
+    // chutier et se pose dans le banc. Depuis la main — ordre imprimé —, elle
+    // n'a plus qu'à se poser.
+    if (st.phase === 'DERUSHAGE' && store.choixRiviere) {
+      apresCoup(st, await jouerTour(st, st.courant, store.choixRiviere.o, partiel));
+      return;
+    }
+    const carte = st.mains[st.courant][0];
     poserAVue(st, st.courant, { ...partiel, carte });
     apresCoup(st, avancer(st));
   }));
@@ -604,6 +697,23 @@ function zoneDepart(st, p, humaine = true) {
     </div>`).join('')}
   </div>
   <div class="riviere-apercu">${zoneDerushage(st, humaine, true)}</div>`;
+}
+
+/**
+ * Ce que la joueuse vise en ce moment : la carte et la moitié retenue, qu'elle
+ * vienne de la rivière — le tour ordinaire, où l'on prend et l'on pose du même
+ * geste — ou de sa main, quand l'ordre imprimé sépare les deux temps.
+ */
+function viseeCourante(st, p) {
+  if (st.phase === 'DERUSHAGE' && store.choixRiviere) {
+    const carte = carteOption(st, store.choixRiviere.o);
+    return carte ? { carte, format: store.choixRiviere.format, o: store.choixRiviere.o } : null;
+  }
+  if (st.phase === 'MONTAGE' && store.formatChoisi) {
+    const carte = st.mains[p][0];
+    return carte ? { carte, format: store.formatChoisi, o: null } : null;
+  }
+  return null;
 }
 
 /**
@@ -646,15 +756,24 @@ function zoneDerushage(st, humaine = true, apercu = false) {
   // présente sur la face que le hasard lui a donnée, et un bouton la retourne
   // avant qu'on la choisisse.
   const prise = (o) => (apercu ? '' : ` data-derush="${enc(o)}"`);
-  const carte = (o) => `<div class="carte-retournable">
-      <div${prise(o)}${ancre(o)}>${renderCarte(o.carte, faceVisible(st, o.carte) === 'V', { small: true, clickable: !apercu })}</div>
+  // On vise depuis la rivière : cliquer une moitié la retient, et le banc
+  // montre aussitôt où elle peut se poser. La carte visée se soulève, sa
+  // moitié retenue s'encadre.
+  const vise = (o) => (!apercu && humaine && store.choixRiviere
+    && memeOption(store.choixRiviere.o, o) ? store.choixRiviere.format : null);
+  const carte = (o) => {
+    const f = vise(o);
+    return `<div class="carte-retournable ${f ? 'visee' : ''}">
+      <div${prise(o)}${ancre(o)}>${renderCarte(o.carte, faceVisible(st, o.carte) === 'V',
+        { small: true, clickable: !apercu, moitiesChoisissables: !apercu && humaine, formatChoisi: f })}</div>
       ${boutonRotation(st, o.carte)}
     </div>`;
+  };
 
   // Une ligne par famille : sa pioche d'abord, puis son chutier. Le compte de
   // la pioche est sous elle — c'est une donnée de jeu, pas une décoration.
   const ligne = (titre, fam, pioche, reste, chutier) => `
-    <div class="derushage-ligne">
+    <div class="derushage-ligne" data-famille="${fam}">
       <h3>${titre}</h3>
       <div class="derushage-cartes">
         <div class="pioche-colonne">
@@ -685,7 +804,8 @@ function zoneDerushage(st, humaine = true, apercu = false) {
       : '');
 
   return `<div class="derushage-lignes">
-    ${humaine || apercu ? '' : `<p class="aide" id="aide-derushage"><b>${nom}</b> dérushe : une carte prise dans un chutier, puis montée dans son banc.</p>`}
+    ${apercu ? '' : `<p class="aide" id="aide-derushage">${humaine ? aidePose(st)
+      : `<b>${nom}</b> dérushe : une carte prise dans un chutier, puis montée dans son banc.`}</p>`}
     ${ligne('Plans Larges', 'PL', dosPL, st.piochePL.length,
       options.filter((o) => o.source === 'CHUTIER_PL').map(carte).join(''))}
     ${ligne('Plans Moyens / Gros Plans', 'PMGP', piochePMGP, st.piochePMGP.length,
@@ -695,11 +815,24 @@ function zoneDerushage(st, humaine = true, apercu = false) {
 
 const enc = (o) => encodeURIComponent(JSON.stringify({ source: o.source, index: o.index }));
 
+/** Deux options de dérushage désignent-elles la même carte de la rivière ? */
+const memeOption = (a, b) => !!a && !!b && a.source === b.source && a.index === b.index;
+
+/** La carte de la rivière que désigne une option, telle qu'elle est. */
+function carteOption(st, o) {
+  if (!o) return null;
+  if (o.source === 'CHUTIER_PL') return st.chutierPL[o.index];
+  if (o.source === 'CHUTIER_PMGP') return st.chutierPMGP[o.index];
+  if (o.source === 'PIOCHE_PL') return st.piochePL[0];
+  if (o.source === 'PIOCHE_PMGP') return st.piochePMGP[0];
+  return null;
+}
+
 // --- Phase B ---------------------------------------------------------------
 
 /** Le texte sous la carte en cours de pose, seul élément qui suit le choix. */
-function aideMontage(st, choisi, humaine = true) {
-  const carte = st.mains[st.courant][0];
+function aideMontage(st, choisi, humaine = true, carteVisee) {
+  const carte = carteVisee || st.mains[st.courant][0];
   if (!carte) return '';
   // Pendant le tour d'une IA, la consigne n'a pas de destinataire : on dit ce
   // qu'elle est en train de faire.
@@ -722,7 +855,7 @@ function aideMontage(st, choisi, humaine = true) {
   // Une moitié peut n'avoir aucun emplacement — un Raccord entre deux
   // Génériques, par exemple. Mieux vaut le dire que de laisser un banc sans
   // bouton.
-  const possibles = coupsPossibles(st, st.courant).filter((c) => c.format === choisi);
+  const possibles = coupsPossibles(st, st.courant, carteVisee).filter((c) => c.format === choisi);
   if (!possibles.length) {
     return `Le <b>${quoi}</b> n’a aucun emplacement possible dans ton banc — garde plutôt l’autre moitié.`;
   }
@@ -731,6 +864,28 @@ function aideMontage(st, choisi, humaine = true) {
     du montage, il se pose comme un plan.`;
   }
   return `Tu gardes le <b>${quoi}</b>. Clique maintenant sur un emplacement de ton banc.`;
+}
+
+/**
+ * La consigne du tour, telle qu'on la lit au-dessus de la rivière. Tant qu'on
+ * n'a rien visé, elle dit quoi faire ; une fois une moitié retenue, elle dit
+ * ce qu'on tient et où le poser.
+ */
+function aidePose(st) {
+  const v = store.choixRiviere;
+  if (!v) {
+    return 'Clique la moitié que tu veux garder — ou le Plan Large entier —, puis l’emplacement où la poser dans ton banc.';
+  }
+  const carte = carteOption(st, v.o);
+  if (!carte) return '';
+  const texte = aideMontage(st, v.format, true, carte);
+  const possibles = coupsPossibles(st, st.courant, carte).filter((c) => c.format === v.format);
+  // Une carte qui ne se pose nulle part doit tout de même pouvoir être prise :
+  // le dérushage n'est pas facultatif.
+  if (!possibles.length && !coupsPossibles(st, st.courant, carte).length) {
+    return `${texte} <button class="pill mini" data-prendre="1">Prendre la carte quand même</button>`;
+  }
+  return texte;
 }
 
 function zoneMontage(st, p, humaine = true) {
@@ -851,11 +1006,35 @@ function brancherPartie(st, humaine) {
       apresCoup(st, avancer(st));
     }));
 
+    // Viser une moitié de la rivière ne joue rien : cela désigne ce que l'on
+    // veut poser, et le banc montre aussitôt où. C'est le clic sur
+    // l'emplacement qui joue le tour, d'un seul geste.
+    app.querySelectorAll('[data-derush] .moitie[data-format]').forEach((el) => {
+      el.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const hote = el.closest('[data-derush]');
+        viser(st, JSON.parse(decodeURIComponent(hote.dataset.derush)), el.dataset.format);
+      });
+    });
+
+    // Une pioche face cachée n'a pas de moitié à viser : on la prend, et le
+    // montage se joue ensuite comme dans l'ordre imprimé.
     app.querySelectorAll('[data-derush]').forEach((el) => el.addEventListener('click', async () => {
+      if (el.querySelector('.moitie[data-format]')) return;
       const choix = JSON.parse(decodeURIComponent(el.dataset.derush));
       store.undo = JSON.stringify(st);
       apresCoup(st, await jouerDerushage(st, st.courant, choix));
     }));
+
+    // La carte qui ne se pose nulle part se prend quand même : dérusher n'est
+    // pas facultatif.
+    const prendre = app.querySelector('[data-prendre]');
+    if (prendre) prendre.addEventListener('click', async () => {
+      const v = store.choixRiviere;
+      if (!v) return;
+      store.undo = JSON.stringify(st);
+      apresCoup(st, await jouerDerushage(st, st.courant, v.o));
+    });
 
     // Retourner une carte ne joue pas le tour : on repeint la seule carte
     // concernée — dans le chutier avant de la prendre, en main pendant qu'on
@@ -871,17 +1050,27 @@ function brancherPartie(st, humaine) {
       if (!enveloppe) return vuePartie();
       const verso = faceVisible(st, carte) === 'V';
       const enMain = enveloppe.id === 'choix-carte';
+      // Dans la rivière, la carte reste visable après avoir tourné : on la
+      // redessine avec ses moitiés cliquables et la visée qu'elle portait.
+      const o = enMain ? null : JSON.parse(decodeURIComponent(enveloppe.dataset.derush));
+      const visee = o && store.choixRiviere && memeOption(store.choixRiviere.o, o)
+        ? store.choixRiviere.format : null;
       enveloppe.innerHTML = enMain
         ? renderCarte(carte, verso, { moitiesChoisissables: true, formatChoisi: store.formatChoisi })
-        : renderCarte(carte, verso, { small: true, clickable: true });
+        : renderCarte(carte, verso, { small: true, clickable: true, moitiesChoisissables: true, formatChoisi: visee });
       el.querySelector('.face').textContent = verso ? 'verso' : 'recto';
       boite.classList.add('tourne');
       setTimeout(() => boite.classList.remove('tourne'), 320);
-      if (enMain) {
-        enveloppe.querySelectorAll('.carte.choix-moitie .moitie[data-format]').forEach((m) => {
-          m.addEventListener('click', () => choisirMoitie(st, m.dataset.format));
+      enveloppe.querySelectorAll('.carte.choix-moitie .moitie[data-format]').forEach((m) => {
+        m.addEventListener('click', (e2) => {
+          e2.stopPropagation();
+          if (enMain) choisirMoitie(st, m.dataset.format);
+          else viser(st, o, m.dataset.format);
         });
-      }
+      });
+      // La face a changé : ce que l'emplacement montrerait aussi. Le banc se
+      // recalcule sur la carte telle qu'elle est maintenant.
+      if (!enMain && visee) rafraichirVisee(st);
       brancherApercu(boite);
     }));
 
@@ -935,7 +1124,8 @@ function brancherPartie(st, humaine) {
   if (q('#undo')) q('#undo').addEventListener('click', () => {
     if (!store.undo) return;
     store.filIA++; store.vols = []; stopperVols();
-    store.partie = JSON.parse(store.undo); store.undo = null; store.formatChoisi = null;
+    store.partie = JSON.parse(store.undo); store.undo = null;
+    store.formatChoisi = null; store.choixRiviere = null;
     vuePartie();
   });
   if (q('#quitter')) q('#quitter').addEventListener('click', () => {
@@ -1143,11 +1333,52 @@ async function jouerDerushage(st, p, o) {
   programmerVol(a.pioche, a.place);
   derusher(st, p, o);
   store.formatChoisi = null;
+  store.choixRiviere = null;
 
   // Premier temps : le chutier tel qu'il est maintenant, carte en vol au-dessus.
   vuePartie(false);
   await jouerVols();
   return avancer(st);
+}
+
+/**
+ * Le tour d'une joueuse humaine, d'un seul geste : la carte visée quitte la
+ * rivière et se pose dans le banc, la pioche recharge la place laissée vide.
+ * Les deux temps des règles — dérusher, puis monter — sont bien tous les deux
+ * joués ; c'est l'écran qui ne les sépare plus.
+ *
+ * Dans l'ordre imprimé (`tourComplet: false`), la main passe entre les deux :
+ * la carte reste alors en main et le montage se joue à son tour, comme avant.
+ *
+ * Rend true si la partie s'achève.
+ */
+async function jouerTour(st, p, o, partiel) {
+  const a = ancresDerushage(st, o);
+  derusher(st, p, o);
+  store.choixRiviere = null;
+  store.formatChoisi = null;
+  let fini = avancer(st);
+
+  let pose = false;
+  if (!fini && st.phase === 'MONTAGE' && st.courant === p) {
+    const carte = st.mains[p][0];
+    const coups = coupsPossibles(st, p);
+    // L'emplacement a été calculé sur la carte de la rivière : c'est la même,
+    // mais on la retrouve dans la liste plutôt que de la supposer valide.
+    const coup = coups.find((c) => c.format === partiel.format && c.action === partiel.action
+      && c.pos === partiel.pos && c.seq === partiel.seq && c.cote === partiel.cote && c.role === partiel.role);
+    if (coup) { poser(st, p, coup); pose = true; }
+    else if (coups.length) { poser(st, p, coups[0]); pose = true; }
+    else st.mains[p] = [];
+    fini = avancer(st);
+  }
+
+  programmerVol(a.carte, pose ? `[data-banc="${p}"] .moitie.neuf` : `[data-banc="${p}"]`,
+    pose ? {} : { taille: false, fondu: true });
+  programmerVol(a.pioche, a.place);
+  vuePartie(false);
+  await jouerVols();
+  return fini;
 }
 
 /**
@@ -1162,6 +1393,7 @@ function tourIA(st, p, o) {
   const a = ancresDerushage(st, o);
   derusher(st, p, o);
   store.formatChoisi = null;
+  store.choixRiviere = null;
   let fini = avancer(st);
 
   // Le montage de la même joueuse, dans la foulée — sauf en ordre imprimé, où
