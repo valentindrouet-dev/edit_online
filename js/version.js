@@ -1,8 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.28';
-export const BUILD_DATE = '2026-08-16 19:50';
+export const VERSION = '1.29';
+export const BUILD_DATE = '2026-08-16 21:10';
 
 export const CHANGELOG = [
+  {
+    v: '1.29',
+    date: '16/08/2026',
+    items: [
+      "L’accueil crédite l’illustrateur : « Un jeu de <b>Valentin Drouet</b>, illustré par <b>Anders Lazaret</b> ».",
+    ],
+  },
   {
     v: '1.28',
     date: '16/08/2026',

@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.28';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.29';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee,
-} from './data.js?v=1.28';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.28';
-import { elIcon } from './icons.js?v=1.28';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.28';
+} from './data.js?v=1.29';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.29';
+import { elIcon } from './icons.js?v=1.29';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.29';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.28';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.28';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.28';
-import { releve, voler, stopperVols } from './anim.js?v=1.28';
-import { campagne } from './lab.js?v=1.28';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.28';
+} from './engine.js?v=1.29';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.29';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.29';
+import { releve, voler, stopperVols } from './anim.js?v=1.29';
+import { campagne } from './lab.js?v=1.29';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.29';
 
 const app = document.getElementById('app');
 
@@ -181,7 +181,7 @@ function vueAccueil() {
   <div class="hero">
     <h1>${titre}</h1>
     <div class="credits">
-      Un jeu de <b>Valentin Drouet</b><br>
+      Un jeu de <b>Valentin Drouet</b>, illustré par <b>Anders Lazaret</b><br>
       Édité par <b>Big Budi Games</b>
     </div>
   </div>

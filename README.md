@@ -1,7 +1,8 @@
 # EDIT — plateforme de jeu
 
 Plateforme de jeu et laboratoire d'équilibrage pour **EDIT**, jeu de placement de Cartes Plan dans
-un banc de montage. Édité par Big Budi Games. Moteur conforme aux règles **v0.13**.
+un banc de montage. Un jeu de Valentin Drouet, illustré par Anders Lazaret, édité par Big Budi
+Games. Moteur conforme aux règles **v0.13**.
 
 Site statique : aucune dépendance, aucune étape de compilation. Ouvrir `index.html`, ou servir le
 dossier (`python3 -m http.server`).
