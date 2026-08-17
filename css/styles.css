@@ -469,7 +469,11 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
   border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.45);
   outline: 2px dashed var(--orange); outline-offset: 2px;
 }
-.fente-choix:hover .apercu-pose { opacity: .75; transform: translateY(-50%) scale(1); }
+/* Toute la carte en pointillés se clique, pas seulement son étiquette : c'est
+   là que le regard est, et c'est la cible la plus large. */
+.fente-choix:hover .apercu-pose {
+  opacity: .94; transform: translateY(-50%) scale(1); pointer-events: auto; cursor: pointer;
+}
 /* L'étiquette de l'emplacement passe au-dessus de l'aperçu : elle dit ce que
    le clic va faire, il ne faut pas que la carte la noie. */
 .fente-choix:hover .fente-btn {

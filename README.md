@@ -129,11 +129,14 @@ elle a été lancée.
 
 ### Recto et verso
 
-Le recto et le verso d'une carte Plan Moyen / Gros Plan ne portent pas les mêmes plans : « 201R » et
+Une carte Plan Moyen / Gros Plan porte son **Plan Moyen à gauche et son Gros Plan à droite** sur le
+recto ; le verso, retourné autour de l'axe vertical, les échange.
+
+Ses deux faces ne portent pas les mêmes plans : « 201R » et
 « 201V » sont deux plans distincts, avec leur propre minutage, leurs propres icônes et leur propre
 pouvoir. La **face jouée se déduit de la pose** — la moitié laissée visible se retrouve au bout libre
-de la carte, donc un Gros Plan accroché à gauche d'une séquence est celui du recto et à droite celui
-du verso (`faceSelonPose`, réglable dans Variables).
+de la carte, donc un Gros Plan accroché à gauche d'une séquence est celui du **verso** et à droite
+celui du **recto** (`faceSelonPose`, réglable dans Variables).
 
 Le matériel extrait des PDF ne donne qu'un minutage par numéro : le recto et le verso **partent donc
 tous deux de cette valeur**, et c'est l'éditeur qui reçoit les vraies valeurs de verso.
@@ -293,8 +296,8 @@ repeint que la carte, sa consigne et les emplacements du banc.
 **L'emplacement se pré-visualise** : survoler un emplacement écarte le banc et y montre le plan en
 transparence, à la place exacte qu'il prendra — le mouvement est celui qu'aura le clic, et aucune
 carte n'en couvre une autre. L'aperçu passe par `planPose()` et `faceJouee()`, donc il montre la
-**face que le côté donne** : un Gros Plan accroché à gauche est celui du recto, à droite celui du
-verso. Sur le matériel imprimé les deux faces partagent le même minutage et l'aperçu se ressemble ;
+**face que le côté donne** : un Gros Plan accroché à gauche est celui du verso, à droite celui du
+recto. Sur le matériel imprimé les deux faces partagent le même minutage et l'aperçu se ressemble ;
 dès qu'une face est retouchée, la différence se voit avant de poser.
 
 Le nom d'une joueuse ne dit pas son genre : les textes qui la désignent n'emploient donc pas de

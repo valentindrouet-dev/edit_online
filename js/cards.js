@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.24';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.24';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.25';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.25';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -124,10 +124,12 @@ export function renderPlan(h, opts = {}) {
 
 /** Une carte entière. `verso` échange la position des deux moitiés. */
 export function renderCarte(carte, verso, opts = {}) {
-  // Le verso ne se contente pas d'inverser les deux moitiés du recto : ce sont
-  // d'autres plans, avec leur propre minutage. Il faut donc les demander.
+  // Le recto porte le Plan Moyen à gauche et le Gros Plan à droite ; le verso,
+  // retourné autour de l'axe vertical, les échange. Il ne se contente pas
+  // d'inverser les moitiés du recto : ce sont d'autres plans, avec leur propre
+  // minutage. Il faut donc les demander.
   const m = carte.type === 'DOUBLE' ? moitiesDe(carte, verso ? 'V' : 'R') : null;
-  const plans = m ? (verso ? [m.PM, m.GP] : [m.GP, m.PM]) : [plHalf(carte)];
+  const plans = m ? (verso ? [m.GP, m.PM] : [m.PM, m.GP]) : [plHalf(carte)];
   const cls = ['carte', opts.selected ? 'sel' : '', opts.small ? 'small' : '', opts.tiny ? 'tiny' : '',
     opts.clickable ? 'clickable' : '', opts.moitiesChoisissables ? 'choix-moitie' : ''].join(' ');
   return `<div class="${cls}" data-carte="${carte.id}" data-verso="${verso ? 1 : 0}">

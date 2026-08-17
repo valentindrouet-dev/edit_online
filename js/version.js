@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.24';
-export const BUILD_DATE = '2026-08-15 19:30';
+export const VERSION = '1.25';
+export const BUILD_DATE = '2026-08-15 21:15';
 
 export const CHANGELOG = [
+  {
+    v: '1.25',
+    date: '15/08/2026',
+    items: [
+      "<b>Correction : les deux moitiés d’une carte double étaient inversées.</b> Le recto porte le <b>Plan Moyen à gauche et le Gros Plan à droite</b> ; le verso, retourné autour de l’axe vertical, les échange. Les cartes se dessinent désormais dans ce sens, partout.",
+      "La face jouée suit cette correction : un Gros Plan accroché <b>à gauche</b> d’une séquence est celui du <b>verso</b>, et à droite celui du <b>recto</b>. C’est l’inverse de ce qui était appliqué. Règles v0.13.11.",
+      "L’emplacement de pose se clique sur <b>toute la carte en pointillés</b>, pas seulement sur son étiquette — c’est là que le regard est, et c’est la cible la plus large.",
+      "L’aperçu de pose est nettement moins transparent : il se lit maintenant comme une carte, pas comme une ombre.",
+    ],
+  },
   {
     v: '1.24',
     date: '15/08/2026',

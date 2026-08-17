@@ -537,13 +537,16 @@ export function doublonsNumeros() {
 
 /**
  * La face jouée d'une carte double se déduit de la pose : la moitié laissée
- * visible se retrouve au bout libre de la carte. Un Gros Plan accroché à
- * gauche d'une séquence est donc à gauche de sa carte — c'est le recto ; à
- * droite, c'est le verso. Réglable dans Variables : sans cette lecture, une
+ * visible se retrouve au bout libre de la carte.
+ *
+ * Le recto porte le Plan Moyen à gauche et le Gros Plan à droite ; le verso,
+ * retourné autour de l'axe vertical, les échange. Un Gros Plan accroché à
+ * gauche d'une séquence est donc à gauche de sa carte — c'est le verso ; à
+ * droite, c'est le recto. Réglable dans Variables : sans cette lecture, une
  * carte est toujours jouée sur son recto.
  */
 export function faceJouee(format, cote, cfg) {
   if (!cfg || cfg.faceSelonPose === false) return 'R';
   if (cote !== 'gauche' && cote !== 'droite') return 'R';
-  return (format === 'GP') === (cote === 'gauche') ? 'R' : 'V';
+  return (format === 'GP') === (cote === 'gauche') ? 'V' : 'R';
 }

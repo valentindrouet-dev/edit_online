@@ -13,13 +13,23 @@
 // Les versions précédentes du texte restent lisibles dans l'onglet
 // « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.24';
-import { elIcon } from './icons.js?v=1.24';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.25';
+import { elIcon } from './icons.js?v=1.25';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.13.11',
+    date: '15/08/2026',
+    origine: 'Correction demandée par l’auteur',
+    corps: (c) => corps_0_13_11(c),
+    items: [
+      'Une carte Plan Moyen / Gros Plan porte son Plan Moyen à gauche et son Gros Plan à droite sur le recto ; le verso, retourné autour de l’axe vertical, les échange.',
+      'La face jouée suit : un Gros Plan accroché à gauche d’une séquence est celui du verso, et à droite celui du recto. C’est l’inverse de ce qui était écrit.',
+    ],
+  },
   {
     v: '0.13.10',
     date: '15/08/2026',
@@ -406,4 +416,21 @@ function corps_0_13_10(c) {
         ? 'c’est d’ailleurs l’ordre en vigueur pour cette partie.'
         : 'c’est le tour d’un seul tenant qui vaut pour cette partie.'}`)}
       <h3>Phase A — Le Dérushage</h3>`);
+}
+
+// --- v0.13.11 --------------------------------------------------------------
+// Le sens des moitiés sur une carte double.
+
+function corps_0_13_11(c) {
+  const texte = c.faceSelonPose === false
+    ? 'Ici, une carte est toujours jouée sur son recto (réglable dans <b>Variables</b>).'
+    : `La face jouée se déduit de la pose : la moitié laissée visible se retrouve au bout libre de
+      la carte, donc un Gros Plan accroché à gauche d'une séquence est celui du verso, et à droite
+      celui du recto. Réglable dans <b>Variables</b> ⚙.`;
+  return corps_0_13_10(c)
+    .replace(/<b>Le recto et le verso\.<\/b>[\s\S]*?(?=<\/div>\s*<h3>Phase A)/,
+      `${maj('0.13.11', `<b>Le recto et le verso.</b> Une carte Plan Moyen / Gros Plan porte son
+      <b>Plan Moyen à gauche et son Gros Plan à droite</b> sur le recto ; le verso, retourné autour
+      de l'axe vertical, les échange. Les quatre plans sont distincts, chacun avec son minutage — on
+      note « 301R » et « 301V ». ${texte}`)}`);
 }

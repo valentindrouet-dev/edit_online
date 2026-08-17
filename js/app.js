@@ -2,25 +2,25 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.24';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.25';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee,
-} from './data.js?v=1.24';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.24';
-import { elIcon } from './icons.js?v=1.24';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.24';
+} from './data.js?v=1.25';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.25';
+import { elIcon } from './icons.js?v=1.25';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.25';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
-} from './engine.js?v=1.24';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.24';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.24';
-import { releve, voler, stopperVols } from './anim.js?v=1.24';
-import { campagne } from './lab.js?v=1.24';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.24';
+} from './engine.js?v=1.25';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.25';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.25';
+import { releve, voler, stopperVols } from './anim.js?v=1.25';
+import { campagne } from './lab.js?v=1.25';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.25';
 
 const app = document.getElementById('app');
 
@@ -521,11 +521,14 @@ function bancBloc(st, i, titre, interactif) {
   // côté de pose lui donne. Le mouvement est celui qu'aura le clic.
   const carteEnMain = interactif ? st.mains[i][0] : null;
   const fenteChoix = (c) => {
-    const bouton = `<button class="fente-btn" data-coup="${encodeURIComponent(JSON.stringify(sansCarte(c)))}">${etiquetteCoup(c)}</button>`;
+    const coup = encodeURIComponent(JSON.stringify(sansCarte(c)));
+    const bouton = `<button class="fente-btn" data-coup="${coup}">${etiquetteCoup(c)}</button>`;
     if (!carteEnMain) return `<span class="fente-choix">${bouton}</span>`;
     const plan = planPose(carteEnMain, c.format, c.role, faceJouee(c.format, c.cote, st.cfg));
+    // L'aperçu porte lui aussi le coup : c'est toute la carte en pointillés qui
+    // se clique, pas seulement son étiquette.
     return `<span class="fente-choix" style="--ap:${LARGEUR_BANC[plan.format] || 169}px">
-      ${bouton}<span class="apercu-pose">${renderPlan(plan, { muet: true })}</span></span>`;
+      ${bouton}<span class="apercu-pose" data-coup="${coup}">${renderPlan(plan, { muet: true })}</span></span>`;
   };
 
   const fente = (liste) => {
