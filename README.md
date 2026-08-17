@@ -316,6 +316,13 @@ si le curseur n'est sur aucune carte retournable, et ne joue jamais le tour.
 La rivière montre **trois cartes par famille**, quel que soit le nombre de joueuses (`chutierPL`,
 `chutierPMGP`), et le nombre de cartes restantes s'affiche sous chaque pioche.
 
+Une configuration enregistrée écrase les valeurs par défaut — c'est ce qu'on lui demande. Mais un
+réglage dont la valeur par défaut change ensuite garderait l'ancienne indéfiniment, sans que rien ne
+le dise : c'est ainsi qu'une partie à deux joueuses a pu continuer à ne montrer que deux cartes par
+famille, parce que le navigateur avait retenu le `chutierPL: 0` d'avant la v1.27 — « autant de cartes
+que de joueuses ». `migrerCfg()` rattrape ces cas à la relecture, à l'ouverture comme à l'import
+JSON. Un réglage qu'on repose soi-même à 0 retrouve l'ancienne lecture.
+
 Pendant le choix du **Plan de départ**, les deux chutiers s'affichent déjà sous les quatre faces
 proposées : on voit ce qui attend au premier dérushage, avec les boutons de rotation, mais les
 cartes ne s'y prennent pas encore.
@@ -441,9 +448,16 @@ Un banc de montage est une suite de **séquences**, chaque séquence une suite d
 - Un **Générique** se pose en tête (Ouverture) ou en fin (Crédits) de montage et bloque ce bord.
   La moitié à double lecture peut être jouée dans l'un ou l'autre rôle.
 
+Une Ouverture, un Générique de fin et un Raccord sont tous les trois des **Cartes Raccord** : c'est
+leur type. Le libellé du bas d'un plan dit ce type, et non le rôle que la carte tient — il indique
+donc « Raccord » sur les trois. Ce que la carte fait — ouvrir, fermer, relier — se lit à son
+illustration et aux emplacements qu'elle propose. Le code garde la distinction dans `plan.transition`,
+qui pilote la pose ; le décompte, lui, ne connaît que `estRaccord()`.
+
 La partie s'ouvre sans aucun tirage : chaque joueuse a devant elle les **deux** cartes Plan de départ
-— version A et version B — donc ses **quatre faces** au choix. La boîte en contient quatre
-exemplaires de chaque version, un par joueuse. La **première joueuse** est tirée au sort
+— version A et version B — donc ses **quatre faces** au choix, rangées **par minutage croissant**
+pour se comparer dans l'ordre du film (`choixDepart()`). La boîte contient quatre exemplaires de
+chaque version, un par joueuse. La **première joueuse** est tirée au sort
 (`premierJoueurAleatoire`) ou **désignée** avant la partie (`premierJoueur`, le rang dans la liste) ;
 c'est elle qui ouvre chaque phase et qui la referme.
 

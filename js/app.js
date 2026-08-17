@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.30';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.31';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee,
-} from './data.js?v=1.30';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.30';
-import { elIcon, numIcon } from './icons.js?v=1.30';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.30';
+} from './data.js?v=1.31';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.31';
+import { elIcon, numIcon } from './icons.js?v=1.31';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.31';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.30';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.30';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.30';
-import { releve, voler, stopperVols } from './anim.js?v=1.30';
-import { campagne } from './lab.js?v=1.30';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.30';
+} from './engine.js?v=1.31';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.31';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.31';
+import { releve, voler, stopperVols } from './anim.js?v=1.31';
+import { campagne } from './lab.js?v=1.31';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.31';
 
 const app = document.getElementById('app');
 
@@ -33,7 +33,7 @@ const LS = {
 };
 
 const store = {
-  cfg: Object.assign(cloneConfig(DEFAULTS), LS.get('cfg', {})),
+  cfg: Object.assign(cloneConfig(DEFAULTS), migrerCfg(LS.get('cfg', {}))),
   joueurs: LS.get('joueurs', [
     { nom: 'Val', couleur: COULEURS_JOUEURS[0], type: 'HUMAIN' },
     { nom: 'Justine', couleur: COULEURS_JOUEURS[1], type: 'EQUILIBRE' },
@@ -206,8 +206,6 @@ function vueAccueil() {
       <div>
         <div class="panneau">
           <h2>Options de partie</h2>
-          <p class="aide" style="margin-bottom:12px">Ce qui se voit à l’écran. Tout ce qui touche au
-          déroulé, au décompte et au paquet est dans <b>Variables</b>.</p>
           <div class="chips">
             ${chip('illustrations', 'Illustrations')}
             ${chip('pointsSurCartes', 'Points visibles')}
@@ -589,7 +587,6 @@ function zoneDepart(st, p, humaine = true) {
   return `<div class="main-cartes">
     ${options.map((o, k) => `<div class="item">
       <div class="carte solo ${humaine ? 'clickable' : ''}" data-depart="${k}">${renderPlan(o.plan)}</div>
-      <div class="lg">Version ${o.carte.version} — face ${o.face + 1}</div>
     </div>`).join('')}
   </div>
   <div class="riviere-apercu">${zoneDerushage(st, humaine, true)}</div>`;
@@ -702,8 +699,10 @@ function aideMontage(st, choisi, humaine = true) {
   }
   if (!choisi) return 'La carte se glisse sous les précédentes : clique sur la moitié que tu veux laisser visible.';
   const plan = moitiesDe(carte)[choisi];
+  // Ouverture, Générique, Raccord : tous des Raccords. On les nomme par leur
+  // type, comme la carte elle-même.
   const quoi = plan.transition
-    ? `${plan.transition.toLowerCase()} n°${plan.num}`
+    ? `${FORMATS.TR.label.toLowerCase()} n°${plan.num}`
     : `${FORMATS[choisi].label} n°${plan.num}${plan.obj ? ` — ${objLabel(plan.obj)}` : ' — sans bandeau'}`;
   // Une moitié peut n'avoir aucun emplacement — un Raccord entre deux
   // Génériques, par exemple. Mieux vaut le dire que de laisser un banc sans
@@ -3027,7 +3026,7 @@ function vueVariables() {
         try {
           const lu = JSON.parse(t);
           const materiel = store.cfg.materiel;
-          store.cfg = Object.assign(cloneConfig(DEFAULTS), lu);
+          store.cfg = Object.assign(cloneConfig(DEFAULTS), migrerCfg(lu));
           // Un fichier antérieur à l'éditeur ne porte pas de matériel : on
           // garde alors les retouches en place plutôt que de les effacer.
           if (!lu.materiel) store.cfg.materiel = materiel;

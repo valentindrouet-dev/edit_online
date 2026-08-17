@@ -4,15 +4,15 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.30';
+import { ELEMENT_IDS } from './data.js?v=1.31';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
   tours: 10,                 // plans dans le banc, Plan de départ compris
   // La rivière montre toujours trois cartes par famille, plus la pioche :
   // Plans Larges face cachée, Plans Moyens / Gros Plans face visible.
-  chutierPL: 3,              // taille du Chutier Plans Larges — 0 = nb de joueuses
-  chutierPMGP: 3,            // taille du Chutier Plans Moyens / Gros Plans
+  chutierPL: 3,              // cartes visibles dans la rivière — 0 = nb de joueuses
+  chutierPMGP: 3,            // idem pour les Plans Moyens / Gros Plans
   piocheDirectePL: false,    // piocher au sommet de la pioche Plans Larges
   piocheDirectePMGP: true,   // piocher au sommet de la pioche PM / GP
   // Les Plans de départ ne se tirent pas : chaque joueuse a toujours les deux
@@ -129,11 +129,29 @@ export function cloneConfig(src = DEFAULTS) {
   return JSON.parse(JSON.stringify(src));
 }
 
+/**
+ * Une configuration enregistrée hier, relue aujourd'hui. Elle écrase les
+ * valeurs par défaut : un réglage dont la valeur par défaut a changé depuis
+ * garderait donc l'ancienne, indéfiniment, sans que rien ne le dise. Les cas
+ * connus se rattrapent ici, à la relecture.
+ *
+ * — `chutierPL` / `chutierPMGP` valaient 0, ce qui voulait dire « autant de
+ *   cartes que de joueuses ». Depuis la v1.27 la rivière montre trois cartes
+ *   par famille quel que soit le nombre de joueuses : le 0 enregistré retombe
+ *   sur la valeur par défaut. Qui veut l'ancienne lecture la repose à la main.
+ */
+export function migrerCfg(lu) {
+  if (!lu || typeof lu !== 'object') return {};
+  const out = { ...lu };
+  for (const k of ['chutierPL', 'chutierPMGP']) if (out[k] === 0) delete out[k];
+  return out;
+}
+
 export const SCHEMA = [
   { groupe: 'Déroulé', champs: [
     { k: 'tours', l: 'Plans dans le banc', t: 'int', min: 2, max: 30, aide: 'Plan de départ compris' },
-    { k: 'chutierPL', l: 'Chutier Plans Larges', t: 'int', min: 0, max: 8, aide: '0 = autant que de joueuses' },
-    { k: 'chutierPMGP', l: 'Chutier Plans Moyens / Gros Plans', t: 'int', min: 0, max: 8, aide: '0 = autant que de joueuses' },
+    { k: 'chutierPL', l: 'Chutier Plans Larges', t: 'int', min: 0, max: 8, aide: 'trois par les règles ; 0 = autant que de joueuses' },
+    { k: 'chutierPMGP', l: 'Chutier Plans Moyens / Gros Plans', t: 'int', min: 0, max: 8, aide: 'trois par les règles ; 0 = autant que de joueuses' },
     { k: 'piocheDirectePMGP', l: 'Pioche PM / GP accessible au sommet', t: 'bool' },
     { k: 'piocheDirectePL', l: 'Pioche Plans Larges accessible au sommet', t: 'bool' },
     { k: 'premierJoueurAleatoire', l: 'Première joueuse tirée au sort', t: 'bool' },

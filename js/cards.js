@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.30';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.30';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES } from './data.js?v=1.31';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.31';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -98,7 +98,11 @@ export function renderPlan(h, opts = {}) {
   const cls = ['moitie', `f-${h.format}`, h.transition ? 'transition' : '', h.depart ? 'depart' : '',
     opts.clickable ? 'choisissable' : '', opts.selected ? 'choisi' : '', opts.neuf ? 'neuf' : ''].join(' ');
   const flex = large ? '1 1 100%' : (h.format === 'GP' ? '0 0 33.6%' : '1 1 66.4%');
-  const label = h.depart ? 'Plan de départ' : (h.transition ? h.transition.toLowerCase() : F.label);
+  // Le libellé du bas dit le TYPE du plan, pas son rôle : une Ouverture, un
+  // Générique de fin et un Raccord sont tous trois des Raccords. Ce que la
+  // carte fait — ouvrir, fermer, relier — se lit à son illustration et aux
+  // emplacements qu'elle propose.
+  const label = h.depart ? 'Plan de départ' : F.label;
   // L'image est posée en style inline : dans une variable CSS, url() se
   // résoudrait contre la feuille de style et non contre le document.
   const fond = h.image ? `background-image:url('${h.image}');` : '';

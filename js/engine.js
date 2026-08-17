@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.30';
-import { compter, bancVide, plansComptes } from './scoring.js?v=1.30';
+} from './data.js?v=1.31';
+import { compter, bancVide, plansComptes } from './scoring.js?v=1.31';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -160,6 +160,11 @@ function journal(state, texte, joueur = null) {
 
 // --- Choix du Plan de départ ----------------------------------------------
 
+/**
+ * Les quatre faces proposées, rangées par minutage croissant : on les compare
+ * dans l'ordre du film, pas dans celui du fichier. À minutage égal, le numéro
+ * de plan tranche, pour que l'ordre ne bouge pas d'une partie à l'autre.
+ */
 export function choixDepart(state, p) {
   const out = [];
   state.departsProposes[p].forEach((carte, i) => {
@@ -167,7 +172,7 @@ export function choixDepart(state, p) {
       out.push({ type: 'DEPART', carte, carteIdx: i, face: f, plan: plHalf({ ...face, depart: true }) });
     });
   });
-  return out;
+  return out.sort((a, b) => a.plan.tc - b.plan.tc || a.plan.num - b.plan.num);
 }
 
 export function poserDepart(state, p, choix) {

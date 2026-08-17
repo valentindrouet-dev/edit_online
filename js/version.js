@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.30';
-export const BUILD_DATE = '2026-08-17 11:30';
+export const VERSION = '1.31';
+export const BUILD_DATE = '2026-08-17 14:10';
 
 export const CHANGELOG = [
+  {
+    v: '1.31',
+    date: '17/08/2026',
+    items: [
+      "<b>La rivière montre bien trois cartes par famille</b> — y compris pour qui jouait déjà avant la v1.27. Une configuration enregistrée alors gardait l’ancien réglage « autant de cartes que de joueuses », et l’écrasait à chaque partie : à deux joueuses, la rivière n’en montrait que deux. La configuration se met désormais à jour à la relecture.",
+      "Les quatre <b>Plans de départ sont rangés par minutage</b>, du plus court au plus long : on les compare dans l’ordre du film.",
+      "<b>Ouverture, Générique de fin, Raccord : tous des Raccords.</b> Le libellé du bas d’un plan dit son type, pas son rôle — il indique donc « Raccord » sur les trois. Ce que la carte fait, on le lit à son illustration et aux emplacements qu’elle propose.",
+      "Deux lignes de texte retirées : l’explication sous « Options de partie » et le « Version A — face 1 » sous les Plans de départ.",
+    ],
+  },
   {
     v: '1.30',
     date: '17/08/2026',
