@@ -816,6 +816,8 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
   max-width: 2000px;
 }
 .materiel-2col > .panneau { margin: 0; }
+/* Tableau, statistiques : pas de plan à régler, donc pas de rail d'édition. */
+.wrap.large.materiel-2col.pleine { grid-template-columns: minmax(0, 1fr); }
 .editeur { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; }
 
 .filtre-barre .pill.on { background: var(--violet); color: #fff; border-color: var(--violet); }
@@ -986,6 +988,48 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .tbl-stats .col-actif { background: var(--violet-pale); font-weight: 700; color: var(--violet); }
 .tbl-stats .ecart { color: var(--gris); }
 .tbl-stats .ligne-retouchee .ecart { color: var(--violet); font-weight: 700; }
+
+/* --- Statistiques des pouvoirs -------------------------------------------
+   Chaque bandeau y est dessiné comme sur la carte, pas décrit en mots. */
+.pv-cartouches { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0 6px; }
+.pv-cartouche {
+  flex: 1 1 130px; background: var(--violet-pale); border-radius: var(--r-s); padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.pv-cartouche b { font-size: 1.5rem; font-weight: 800; color: var(--violet); line-height: 1.1; }
+.pv-cartouche span { font-size: .76rem; color: var(--encre-doux); }
+
+.tbl-pouvoirs td { vertical-align: middle; }
+.tbl-pouvoirs .pv-visuel { white-space: nowrap; }
+.tbl-pouvoirs .pv-texte { font-size: .82rem; color: var(--encre-doux); }
+.tbl-pouvoirs .ecart { color: var(--gris); }
+.barre-part {
+  display: inline-block; vertical-align: middle; width: 96px; height: 8px; border-radius: 999px;
+  background: var(--gris-clair); overflow: hidden; margin-right: 8px;
+}
+.barre-part i { display: block; height: 100%; background: var(--violet-clair); border-radius: 999px; }
+.pv-part { font-size: .74rem; color: var(--encre-doux); font-variant-numeric: tabular-nums; }
+.val-pouvoir {
+  display: inline-flex; align-items: baseline; gap: 2px; background: var(--gris-clair);
+  border-radius: 999px; padding: 2px 8px; margin: 2px 4px 2px 0; font-weight: 800; font-size: .8rem;
+}
+.val-pouvoir i { font-style: normal; font-weight: 600; font-size: .7rem; color: var(--encre-doux); }
+.cadr-compte {
+  display: inline-flex; align-items: center; gap: 4px; margin-right: 8px;
+  font-size: .78rem; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+
+/* --- La courbe des points, en fin de partie ------------------------------ */
+.courbe-boite { width: 100%; overflow: hidden; border-radius: var(--r-s); background: #fbfaff; padding: 6px 0; }
+.courbe { width: 100%; height: 280px; display: block; }
+.cbe-grille { stroke: var(--gris-clair); stroke-width: 1; }
+.cbe-ligne { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round;
+  vector-effect: non-scaling-stroke; }
+.cbe-fin { stroke: #fff; stroke-width: 1.5; }
+.cbe-lg { font-size: 11px; fill: var(--gris); font-weight: 600; }
+.cbe-legende { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; }
+.cbe-item { display: inline-flex; align-items: center; gap: 7px; font-size: .84rem; color: var(--encre-doux); }
+.cbe-item i { width: 14px; height: 4px; border-radius: 999px; display: inline-block; }
 .imp-rappel {
   font-size: .74rem; color: var(--gris); font-style: italic; white-space: nowrap;
 }

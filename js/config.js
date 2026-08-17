@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.29';
+import { ELEMENT_IDS } from './data.js?v=1.30';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -179,6 +179,9 @@ export const SCHEMA = [
     { k: 'chronoBonus', l: 'Bonus par paire dans l’ordre', t: 'int', min: 0, max: 10 },
     { k: 'chronoMalus', l: 'Malus par paire à contresens', t: 'int', min: 0, max: 10 },
     { k: 'chronoIgnoreZero', l: 'Les plans à 00:00 sont neutres', t: 'bool' },
+  ] },
+  { groupe: 'Divers', champs: [
+    { k: 'graine', l: 'Graine de partie', t: 'texte', aide: 'vide = tirage aléatoire ; une graine rejoue la même distribution' },
   ] },
   { groupe: 'Paquet', champs: [
     { k: 'exemplairesDouble', l: 'Exemplaires des cartes PM / GP', t: 'int', min: 1, max: 4 },

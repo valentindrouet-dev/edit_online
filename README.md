@@ -11,7 +11,7 @@ dossier (`python3 -m http.server`).
 
 | Écran | Rôle |
 |---|---|
-| **Accueil** | Table de 1 à 4 joueuses, humaines ou IA, options de partie, réglages rapides |
+| **Accueil** | Table de 1 à 4 joueuses, humaines ou IA, et les trois options d'affichage — tout le reste se règle dans Variables |
 | **Partie** | Zone de pioche, bancs de montage, recensement des icônes et score détaillé |
 | **Matériel** | Galerie et **éditeur** de toutes les cartes — minutage, icônes, pouvoir, appariement — plus le tableau complet et son export PDF |
 | **Règles** | Les règles telles qu'implémentées, avec les points restés ouverts |
@@ -200,7 +200,7 @@ Six vues de galerie : les cartes Plan Moyen / Gros Plan, les **Gros Plans seuls*
 Moyens seuls** (recto et verso y figurent séparément, moitiés orphelines comprises), les Plans
 Larges, les Plans de départ, et **Tous les plans** — les 150 plans du jeu dans une seule galerie,
 triés par numéro. Toutes règlent le même matériel : ce sont des vitres différentes, pas d'autres
-cartes. Plus **Tableau complet** et **Statistiques**.
+cartes. Plus **Tableau complet**, **Statistiques** et **Statistiques des pouvoirs**.
 
 La **sélection est multiple** : un clic simple la remplace, maj+clic l'étend — du dernier plan cliqué
 jusqu'à celui-ci, ou un plan isolé de plus. Elle **survit au changement de vue**, si bien qu'on règle
@@ -229,6 +229,22 @@ cadrage, par icône et par type de pouvoir ; un bandeau rappelle alors combien d
 retiennent. Ce qu'il compte : la boîte, les
 cadrages, les icônes, les types de pouvoir, et les minutages (le plus court, le plus long, la
 moyenne, la distribution par tranche de dix). La colonne surlignée est le jeu qui se lance.
+
+### Statistiques des pouvoirs
+
+Un second onglet ne regarde que les **bandeaux**, et les présente **comme sur les cartes** — le
+bandeau redessiné, pas son libellé : c'est ainsi qu'on les lit en jouant.
+
+Deux pouvoirs sont « le même » quand ils ont la même **forme** — même famille, même cible, même sens
+et même seuil, même portée —, quelle que soit leur valeur : `signatureObj()` en donne la clé.
+« 1 × ◀Plan▶ » et « 2 × ◀Plan▶ » sont donc une seule ligne, et la colonne **valeurs** dit comment
+les points s'y répartissent (`1×13`, `2×4`). Chaque ligne donne le nombre de plans porteurs, sa
+**part du jeu** en barre, la répartition par cadrage, le total de points apporté, et l'**écart entre
+l'Imprimé et le Modifié** — un pouvoir ajouté ou retiré par retouche s'y voit tout de suite.
+
+En tête, cinq cartouches : formes distinctes, plans porteurs, plans sans bandeau, points en jeu,
+points par bandeau. En dessous, deux lectures plus courtes : **par famille de pouvoir** et **par
+valeur**.
 
 ### Persistance et export
 
@@ -294,7 +310,8 @@ côté ou de l'autre. La face visible se déduit de la graine et de l'identité 
 main pendant qu'on choisit sa moitié. Retourner ne joue pas le tour, la moitié déjà choisie le reste,
 et la carte prise garde la face sur laquelle elle a été prise (`retourner()`). La face affichée est
 une lecture : c'est le côté de pose qui décide de la face jouée, et l'aperçu de l'emplacement dit
-laquelle on obtiendra.
+laquelle on obtiendra. Le bouton a un raccourci : **F**, la carte survolée. La touche ne fait rien
+si le curseur n'est sur aucune carte retournable, et ne joue jamais le tour.
 
 La rivière montre **trois cartes par famille**, quel que soit le nombre de joueuses (`chutierPL`,
 `chutierPMGP`), et le nombre de cartes restantes s'affiche sous chaque pioche.
@@ -383,6 +400,30 @@ La colonne de droite lit le banc suivi : **Icônes du banc** — le recensement 
 main — puis **Score de la joueuse**, chaque bandeau posé avec ce qu'il rapporte, les points hors
 bandeau s'il y en a, et le total.
 
+### L'accueil ne garde que ce qui se voit
+
+L'accueil ne propose plus que trois cases — **Illustrations**, **Points visibles**, **Mouvement des
+cartes** : les trois seules qui changent ce que l'on voit, et qu'on a envie de basculer juste avant
+de lancer. Tout le reste — sens de pose, portée par défaut, rythme, graine de partie, règles
+optionnelles — vit dans **Variables**, où chaque réglage est décrit et groupé. Un réglage n'est
+donc **jamais à deux endroits** : les anciens « réglages rapides » doublonnaient les Variables, et
+les options figées par les règles (première joueuse au sort, pioche PM/GP face visible, Raccords qui
+relient, deux Plans Larges qui ne se touchent pas) n'avaient plus à être proposées du tout.
+
+### La fin de partie
+
+L'écran de décompte ouvre sur le **podium**, puis :
+
+- la **courbe des points de victoire** (`courbeScores()`) — une polyligne par joueuse, dans sa
+  couleur, un point par carte posée, lue depuis `state.courbe` que le moteur alimente à chaque pose.
+  Un SVG écrit à la main, sans bibliothèque ;
+- les **statistiques de la partie** (`statsPartie()`) : points marqués, points par carte posée,
+  écart entre la première et la dernière, Raccords joués, séquences, durée ; puis **d'où viennent
+  les points**, en barres de part ; puis **les bandeaux qui ont le plus rapporté**, les huit
+  premiers, dessinés comme sur les cartes ;
+- le **détail par joueuse**, qui n'est plus un tableau de texte mais la **colonne de score du jeu**
+  (`listeObjectifs()`) : les mêmes bandeaux, au même endroit, avec les mêmes points.
+
 ## Le modèle de jeu
 
 Un banc de montage est une suite de **séquences**, chaque séquence une suite de **plans visibles**.
@@ -420,9 +461,9 @@ pose son `tours`-ième plan** : les autres ont alors droit à un tour chacune, p
 finissent donc pas forcément avec le même nombre de plans — `state.finDeclenchee` retient qui a
 déclenché, `state.toursApresFin` compte les tours joués depuis.
 
-Le tour se joue ensuite en deux phases : **Dérushage** (chacune pioche une carte dans un chutier ou
-sur une pioche), puis **Montage** (chacune la pose). La partie s'arrête quand chaque banc compte
-**dix plans, Plan de départ compris** — il reste donc neuf plans à monter (`cfg.tours`).
+Le tour se joue ensuite en deux phases : **Dérushage** (pioche d'une carte dans un chutier ou sur une
+pioche), puis **Montage** (pose de cette carte). Le seuil qui déclenche la fin est de **dix plans,
+Plan de départ compris** (`cfg.tours`) — il en reste donc neuf à monter.
 
 Un **Plan de départ n'est pas un Plan Large** : il a son propre cadrage, `DEP`. C'est un plan comme
 un autre pour tout ce qui compte des cartes du montage — couples d'icônes, minutages, positions,

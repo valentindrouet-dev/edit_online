@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.29';
-import { compter, bancVide, plansComptes } from './scoring.js?v=1.29';
+} from './data.js?v=1.30';
+import { compter, bancVide, plansComptes } from './scoring.js?v=1.30';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -114,6 +114,9 @@ export function creerPartie(joueurs, cfg, graine) {
     courant: 0,
     finie: false,
     journal: [],
+    // Le score de chaque joueuse après chacun de ses coups : la courbe de fin
+    // de partie s'y lit directement.
+    courbe: joueurs.map(() => []),
     debut: Date.now(),
   };
 
@@ -144,6 +147,12 @@ export function creerPartie(joueurs, cfg, graine) {
   return state;
 }
 
+/** Un point de plus sur la courbe de cette joueuse. */
+function noterCourbe(state, p) {
+  if (!state.courbe) state.courbe = state.joueurs.map(() => []);
+  state.courbe[p].push(compter(state.bancs[p], state.cfg).total);
+}
+
 function journal(state, texte, joueur = null) {
   state.journal.push({ tour: state.tour, texte, joueur });
   if (state.journal.length > 400) state.journal.shift();
@@ -165,6 +174,7 @@ export function poserDepart(state, p, choix) {
   const plan = { ...choix.plan, carteId: `${choix.carte.id}f${choix.face}`, depart: true };
   state.bancs[p] = { sequences: [[plan]], ouverture: false, fermeture: false };
   state.dernierPose = { p, seq: 0, idx: 0 };
+  noterCourbe(state, p);
   state.departsProposes[p] = [];
   journal(state, `${state.joueurs[p].nom} ouvre son banc avec le Plan de départ ${plan.num}`, p);
   declencherFin(state, p);
@@ -380,6 +390,7 @@ export function poser(state, p, coup) {
   appliquer(banc, coup, state.cfg);
   state.dernierPose = { p, ...positionPosee(banc, coup, avantSouder) };
   state.posees[p]++;
+  noterCourbe(state, p);
   declencherFin(state, p);
   state.mains[p] = [];
   const quoi = coup.format === 'PL' ? `Plan Large ${coup.carte.num}`

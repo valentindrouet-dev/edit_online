@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.29';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.30';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee,
-} from './data.js?v=1.29';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.29';
-import { elIcon } from './icons.js?v=1.29';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.29';
+} from './data.js?v=1.30';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig } from './config.js?v=1.30';
+import { elIcon, numIcon } from './icons.js?v=1.30';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.30';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.29';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.29';
-import { compter, SOURCES_LABEL } from './scoring.js?v=1.29';
-import { releve, voler, stopperVols } from './anim.js?v=1.29';
-import { campagne } from './lab.js?v=1.29';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.29';
+} from './engine.js?v=1.30';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.30';
+import { compter, SOURCES_LABEL } from './scoring.js?v=1.30';
+import { releve, voler, stopperVols } from './anim.js?v=1.30';
+import { campagne } from './lab.js?v=1.30';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.30';
 
 const app = document.getElementById('app');
 
@@ -206,51 +206,13 @@ function vueAccueil() {
       <div>
         <div class="panneau">
           <h2>Options de partie</h2>
+          <p class="aide" style="margin-bottom:12px">Ce qui se voit à l’écran. Tout ce qui touche au
+          déroulé, au décompte et au paquet est dans <b>Variables</b>.</p>
           <div class="chips">
-            ${chip('illustrations', 'Illustrations sur les cartes')}
-            ${chip('pointsSurCartes', 'Points au coin des plans')}
-            ${chip('premierJoueurAleatoire', '1re joueuse tirée au sort')}
-            ${chip('animerCoups', 'Voir les cartes se déplacer')}
-            ${chip('piocheDirectePMGP', 'Pioche PM / GP au sommet')}
-            ${chip('piocheDirectePL', 'Pioche Plans Larges au sommet')}
-            ${chip('raccordConnecte', 'Les Raccords relient les séquences')}
-            ${chip('generiqueBloque', 'Le Générique ferme le montage')}
-            ${chip('plContigu', 'Deux Plans Larges peuvent se toucher')}
+            ${chip('illustrations', 'Illustrations')}
+            ${chip('pointsSurCartes', 'Points visibles')}
+            ${chip('animerCoups', 'Mouvement des cartes')}
           </div>
-          <div class="champ" style="margin-top:14px" id="champ-premier"
-            ${store.cfg.premierJoueurAleatoire ? 'hidden' : ''}>
-            <label>Qui commence <small>le tirage au sort est écarté</small></label>
-            <select data-cfg="premierJoueur">
-              ${store.joueurs.map((j, i) => `<option value="${i}"
-                ${(store.cfg.premierJoueur | 0) === i ? 'selected' : ''}>${j.nom}</option>`).join('')}
-            </select>
-          </div>
-          <div class="champ" style="margin-top:14px">
-            <label>Graine de partie <small>vide = tirage aléatoire</small></label>
-            <input type="text" id="graine" value="${store.cfg.graine || ''}" placeholder="aléatoire"
-              style="width:150px;padding:7px 9px;border-radius:9px;border:1px solid var(--gris-clair)">
-          </div>
-        </div>
-
-        <div class="panneau">
-          <h2>Réglages rapides</h2>
-          ${[
-            ['tours', 'Plans dans le banc', 2, 30],
-            ['chutierPMGP', 'Chutier PM / GP', 0, 8],
-            ['chutierPL', 'Chutier Plans Larges', 0, 8],
-          ].map(([k, l, min, max]) => `
-            <div class="champ"><label>${l}</label>
-              <input type="number" data-cfg="${k}" value="${store.cfg[k]}" min="${min}" max="${max}"></div>`).join('')}
-          <div class="champ">
-            <label>Portée des bandeaux <small>hors Raccord et Générique</small></label>
-            <select data-cfg="porteeParDefaut">
-              <option value="MONTAGE" ${store.cfg.porteeParDefaut === 'MONTAGE' ? 'selected' : ''}>Le montage entier</option>
-              <option value="SEQUENCE" ${store.cfg.porteeParDefaut === 'SEQUENCE' ? 'selected' : ''}>La séquence porteuse</option>
-            </select>
-          </div>
-          <p class="aide" style="margin-top:14px">
-            Le reste — valeur de chaque objectif, composition du paquet, variantes — est dans <b>Variables</b>.
-          </p>
         </div>
       </div>
     </div>
@@ -277,7 +239,6 @@ function vueAccueil() {
   brancherJeuAccueil(vueAccueil);
   brancherChips(vueAccueil);
   brancherChamps(vueAccueil);
-  app.querySelector('#graine').addEventListener('change', (e) => { store.cfg.graine = e.target.value.trim(); sauverCfg(); });
   app.querySelector('#go').addEventListener('click', lancerPartie);
 }
 
@@ -631,10 +592,7 @@ function zoneDepart(st, p, humaine = true) {
       <div class="lg">Version ${o.carte.version} — face ${o.face + 1}</div>
     </div>`).join('')}
   </div>
-  <div class="riviere-apercu">
-    <p class="aide">Les chutiers, tels qu’ils attendent le premier dérushage.</p>
-    ${zoneDerushage(st, humaine, true)}
-  </div>`;
+  <div class="riviere-apercu">${zoneDerushage(st, humaine, true)}</div>`;
 }
 
 /**
@@ -646,7 +604,17 @@ function boutonRotation(st, carte) {
   if (!carte || carte.type !== 'DOUBLE') return '';
   const verso = faceVisible(st, carte) === 'V';
   return `<button class="pill rotation" data-retourner="${carte.id}"
-    title="Retourner la carte sur son autre face">⟲ rotation<span class="face">${verso ? 'verso' : 'recto'}</span></button>`;
+    title="Retourner la carte sur son autre face — touche F au survol">⟲ rotation<span class="face">${verso ? 'verso' : 'recto'}</span></button>`;
+}
+
+// La carte sous le curseur : la touche F la retourne, sans viser son bouton.
+let carteSurvolee = null;
+
+function brancherRotationClavier(racine = app) {
+  racine.querySelectorAll('.carte-retournable').forEach((el) => {
+    el.addEventListener('mouseenter', () => { carteSurvolee = el; });
+    el.addEventListener('mouseleave', () => { if (carteSurvolee === el) carteSurvolee = null; });
+  });
 }
 
 // --- Phase A ---------------------------------------------------------------
@@ -941,7 +909,15 @@ function brancherPartie(st, humaine) {
     store.partie = null; location.hash = '#/';
   });
 
+  brancherRotationClavier();
+
   document.onkeydown = humaine ? (e) => {
+    // F retourne la carte sous le curseur : on lit son autre face sans viser
+    // le petit bouton.
+    if ((e.key === 'f' || e.key === 'F') && carteSurvolee && carteSurvolee.isConnected) {
+      const b = carteSurvolee.querySelector('[data-retourner]');
+      if (b) { e.preventDefault(); b.click(); return; }
+    }
     // Échap annule le choix de la moitié — sauf sur un Plan Large, qui n'en a
     // pas et perdrait alors ses emplacements de pose.
     const carte = st.mains[st.courant] && st.mains[st.courant][0];
@@ -1222,6 +1198,111 @@ function terminer() {
   vueFin();
 }
 
+/**
+ * La courbe des points, coup par coup. Chaque joueuse a sa ligne, dans sa
+ * couleur : on y lit qui a mené, où l'écart s'est creusé, et ce que le dernier
+ * plan a rapporté. Un SVG, sans dépendance.
+ */
+function courbeScores(st, cl) {
+  const series = st.courbe || [];
+  const long = Math.max(1, ...series.map((s) => s.length));
+  const haut = Math.max(1, ...series.flat());
+  if (long < 2) return '';
+
+  const L = 900, H = 260, mg = { g: 44, d: 16, h: 16, b: 30 };
+  const px = (i) => mg.g + (i / (long - 1)) * (L - mg.g - mg.d);
+  const py = (v) => H - mg.b - (v / haut) * (H - mg.h - mg.b);
+
+  // Des repères ronds plutôt que la valeur maximale exacte.
+  const pas = haut <= 20 ? 5 : haut <= 60 ? 10 : haut <= 150 ? 25 : 50;
+  const paliers = [];
+  for (let v = 0; v <= haut; v += pas) paliers.push(v);
+
+  const lignes = st.joueurs.map((j, i) => {
+    const s = series[i] || [];
+    if (s.length < 2) return '';
+    const pts = s.map((v, k) => `${px(k).toFixed(1)},${py(v).toFixed(1)}`).join(' ');
+    return `<polyline class="cbe-ligne" points="${pts}" stroke="${encreDe(j.couleur)}"></polyline>
+      <circle class="cbe-fin" cx="${px(s.length - 1).toFixed(1)}" cy="${py(s[s.length - 1]).toFixed(1)}"
+        r="4" fill="${encreDe(j.couleur)}"></circle>`;
+  }).join('');
+
+  return `<div class="panneau">
+    <h2>La courbe des points</h2>
+    <p class="aide">Le score de chaque joueuse après chacun de ses coups, du Plan de départ au
+    dernier plan posé.</p>
+    <div class="courbe-boite">
+      <svg viewBox="0 0 ${L} ${H}" class="courbe" preserveAspectRatio="none" role="img"
+        aria-label="Courbe des points par coup">
+        ${paliers.map((v) => `<line class="cbe-grille" x1="${mg.g}" x2="${L - mg.d}"
+          y1="${py(v).toFixed(1)}" y2="${py(v).toFixed(1)}"></line>
+          <text class="cbe-lg" x="${mg.g - 8}" y="${(py(v) + 4).toFixed(1)}" text-anchor="end">${v}</text>`).join('')}
+        ${Array.from({ length: long }, (_, k) => k).filter((k) => k === 0 || k === long - 1 || (k + 1) % 3 === 0)
+          .map((k) => `<text class="cbe-lg" x="${px(k).toFixed(1)}" y="${H - 8}" text-anchor="middle">${k + 1}</text>`).join('')}
+        ${lignes}
+      </svg>
+    </div>
+    <div class="cbe-legende">${cl.map((c) => `<span class="cbe-item">
+      <i style="background:${encreDe(c.joueur.couleur)}"></i>${c.joueur.nom} — <b>${c.total}</b>
+    </span>`).join('')}</div>
+  </div>`;
+}
+
+/** Ce que la partie a produit, au-delà du classement. */
+function statsPartie(st, cl) {
+  const tous = cl.flatMap((c) => c.lignes);
+  const parKind = {};
+  for (const c of cl) for (const [k, v] of Object.entries(c.detail)) parKind[k] = (parKind[k] || 0) + v;
+  const sources = Object.entries(parKind).filter(([, v]) => v).sort((a, b) => b[1] - a[1]);
+  const totalPts = cl.reduce((s, c) => s + c.total, 0);
+  const meilleur = tous.slice().sort((a, b) => b.pts - a.pts)[0];
+  const cartes = cl.reduce((s, c) => s + c.cartes, 0);
+  const duree = st.duree ? Math.round(st.duree / 1000) : 0;
+  const ecart = cl.length > 1 ? cl[0].total - cl[cl.length - 1].total : 0;
+
+  const cartouche = (v, l) => `<div class="pv-cartouche"><b>${v}</b><span>${l}</span></div>`;
+
+  return `<div class="panneau">
+    <h2>Statistiques de la partie</h2>
+    <div class="pv-cartouches">
+      ${cartouche(totalPts, 'points marqués en tout')}
+      ${cartouche(cartes ? (totalPts / cartes).toFixed(2) : '0', 'points par carte posée')}
+      ${cartouche(ecart, cl.length > 1 ? 'points d’écart, première à dernière' : 'points d’écart')}
+      ${cartouche(cl.reduce((s, c) => s + c.cartesRaccord, 0), 'Cartes Raccord posées')}
+      ${cartouche(cl.reduce((s, c) => s + c.sequences, 0), 'séquences au total')}
+      ${duree ? cartouche(`${Math.floor(duree / 60)}′${String(duree % 60).padStart(2, '0')}`, 'de partie') : ''}
+    </div>
+
+    <div class="grid2" style="margin-top:16px">
+      <div>
+        <h3>D’où viennent les points</h3>
+        <table class="tbl tbl-pouvoirs">
+          <thead><tr><th>Source</th><th class="num">Points</th><th>Part</th></tr></thead>
+          <tbody>${sources.map(([k, v]) => `<tr>
+            <td>${SOURCES_LABEL[k] || k}</td><td class="num"><b>${v}</b></td>
+            <td>${barrePart(totalPts ? v / totalPts : 0)}<span class="pv-part">${(100 * v / (totalPts || 1)).toFixed(1)} %</span></td>
+          </tr>`).join('') || '<tr><td colspan="3" class="aide">Aucun point marqué.</td></tr>'}</tbody>
+        </table>
+      </div>
+      <div>
+        <h3>Les bandeaux qui ont le plus rapporté</h3>
+        <table class="tbl tbl-pouvoirs">
+          <thead><tr><th>Bandeau</th><th>Chez</th><th class="num">Points</th></tr></thead>
+          <tbody>${tous.slice().sort((a, b) => b.pts - a.pts).slice(0, 8).map((l) => {
+            const q = cl.find((c) => c.lignes.includes(l));
+            return `<tr>
+              <td class="pv-visuel">${objHTML(l.obj, 24, st.cfg)}</td>
+              <td>${q ? q.joueur.nom : ''}</td><td class="num"><b>${l.pts}</b></td>
+            </tr>`;
+          }).join('') || '<tr><td colspan="3" class="aide">Aucun bandeau posé.</td></tr>'}</tbody>
+        </table>
+        ${meilleur ? `<p class="aide">Le meilleur bandeau de la partie rapporte
+          <b>${meilleur.pts} point${Math.abs(meilleur.pts) > 1 ? 's' : ''}</b> à lui seul.</p>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
 function vueFin() {
   const st = store.partie;
   const cl = classement(st);
@@ -1243,8 +1324,10 @@ function vueFin() {
         </tr>`).join('')}
       </table>
     </div>
+    ${courbeScores(st, cl)}
+    ${statsPartie(st, cl)}
     <div class="grid2">
-      ${cl.map((c) => `<div class="panneau"><h2>Détail — ${c.joueur.nom}</h2>${tableauScore(c)}</div>`).join('')}
+      ${cl.map((c) => `<div class="panneau"><h2>Détail — ${c.joueur.nom}</h2>${listeObjectifs(c)}</div>`).join('')}
     </div>
     <div class="panneau">
       <h2>Les bancs de montage</h2>
@@ -1290,7 +1373,7 @@ const mat = {
 const VUES = [
   ['CARTES', 'Cartes PM / GP'], ['GP', 'Gros Plans'], ['PM', 'Plans Moyens'],
   ['PL', 'Plans Larges'], ['DEPART', 'Plans de départ'], ['TOUS', 'Tous les plans'],
-  ['TABLE', 'Tableau complet'], ['STATS', 'Statistiques'],
+  ['TABLE', 'Tableau complet'], ['STATS', 'Statistiques'], ['POUVOIRS', 'Statistiques des pouvoirs'],
 ];
 
 const VUES_GALERIE = ['CARTES', 'GP', 'PM', 'PL', 'DEPART', 'TOUS'];
@@ -1466,10 +1549,11 @@ function vueMateriel() {
   let corps;
   if (mat.vue === 'TABLE') corps = tableauMateriel();
   else if (mat.vue === 'STATS') corps = vueStats();
+  else if (mat.vue === 'POUVOIRS') corps = vuePouvoirs();
   else corps = surLeModifie(galerieMateriel);
 
   html(`${topbar('#/materiel')}
-  <div class="materiel-2col wrap large">
+  <div class="materiel-2col wrap large ${VUES_GALERIE.includes(mat.vue) ? '' : 'pleine'}">
     <div class="panneau">
       <h2>Matériel</h2>
       ${alerteDoublons()}
@@ -1479,7 +1563,7 @@ function vueMateriel() {
       </div>
       ${corps}
     </div>
-    <div class="panneau editeur" id="editeur">${panneauEditeur()}</div>
+    ${VUES_GALERIE.includes(mat.vue) ? `<div class="panneau editeur" id="editeur">${panneauEditeur()}</div>` : ''}
   </div>
   ${pied()}`);
 
@@ -2099,6 +2183,147 @@ function vueStats() {
     ...Object.keys(imp.tranches).map((t) =>
       ligne(`de ${String(t).padStart(2, '0')}:00 à ${String(+t + 9).padStart(2, '0')}:00`, imp.tranches[t], mod.tranches[t])),
   ].join(''))}`;
+}
+
+// --- Les statistiques des pouvoirs ------------------------------------------
+// Chaque bandeau du jeu, recensé tel qu'il est imprimé sur la carte : le même
+// dessin qu'en partie, son compte, sa part, et ce qu'il vaut.
+
+/** La signature d'un bandeau : son type et sa cible, sans sa valeur. */
+function signatureObj(o) {
+  if (!o) return '';
+  const c = cibleObj(o);
+  const seuil = o.seuil === undefined ? '' : `${o.sens || ''}${o.seuil}`;
+  return [o.kind, c, seuil, objPortee(o, store.cfg)].filter(Boolean).join('|');
+}
+
+/**
+ * Le recensement des bandeaux d'un jeu de matériel : un par signature, avec
+ * ses valeurs, ses cadrages et le total de points qu'il met sur la table.
+ */
+function pouvoirsDuJeu(modifie) {
+  const etait = store.cfg.materielActif;
+  appliquerMateriel(modifie ? store.cfg.materiel : null, store.cfg.cartesDesactivees);
+  try {
+    const plans = plansDuPaquet().filter(passeStats);
+    const par = new Map();
+    let avec = 0, points = 0;
+    for (const h of plans) {
+      if (!h.obj) continue;
+      avec++; points += h.obj.n;
+      const cle = signatureObj(h.obj);
+      const e = par.get(cle) || { obj: h.obj, n: 0, valeurs: new Map(), cadrages: {}, points: 0 };
+      e.n++; e.points += h.obj.n;
+      e.valeurs.set(h.obj.n, (e.valeurs.get(h.obj.n) || 0) + 1);
+      e.cadrages[h.format] = (e.cadrages[h.format] || 0) + 1;
+      // Le dessin retenu est celui de la valeur la plus fréquente.
+      if (e.valeurs.get(h.obj.n) >= (e.valeurs.get(e.obj.n) || 0)) e.obj = h.obj;
+      par.set(cle, e);
+    }
+    const liste = [...par.values()].sort((a, b) => b.n - a.n || b.points - a.points);
+    return { liste, plans: plans.length, avec, sans: plans.length - avec, points };
+  } finally {
+    store.cfg.materielActif = etait;
+    appliquerJeuActif();
+  }
+}
+
+/** Une barre de proportion, lisible d'un coup d'œil. */
+function barrePart(part) {
+  return `<span class="barre-part" title="${(part * 100).toFixed(1)} %">
+    <i style="width:${Math.max(2, part * 100).toFixed(1)}%"></i></span>`;
+}
+
+function vuePouvoirs() {
+  const imp = pouvoirsDuJeu(false);
+  const mod = pouvoirsDuJeu(true);
+  const actif = store.cfg.materielActif === 'MODIFIE' ? mod : imp;
+  const autre = store.cfg.materielActif === 'MODIFIE' ? imp : mod;
+  const nomActif = store.cfg.materielActif === 'MODIFIE' ? 'Modifié' : 'Origine';
+  const nomAutre = store.cfg.materielActif === 'MODIFIE' ? 'Origine' : 'Modifié';
+  const parCle = new Map(autre.liste.map((e) => [signatureObj(e.obj), e]));
+
+  // Par famille de pouvoir, tous bandeaux confondus.
+  const familles = KINDS.filter(([k]) => k).map(([k, l]) => {
+    const dans = actif.liste.filter((e) => e.obj.kind === k);
+    return {
+      k, l: l.replace('…', ''),
+      n: dans.reduce((s, e) => s + e.n, 0),
+      formes: dans.length,
+      points: dans.reduce((s, e) => s + e.points, 0),
+    };
+  }).filter((f) => f.n).sort((a, b) => b.n - a.n);
+
+  const valeurs = new Map();
+  for (const e of actif.liste) for (const [v, n] of e.valeurs) valeurs.set(v, (valeurs.get(v) || 0) + n);
+  const parValeur = [...valeurs.entries()].sort((a, b) => a[0] - b[0]);
+
+  const ligne = (e) => {
+    const ref = parCle.get(signatureObj(e.obj));
+    const ecart = e.n - (ref ? ref.n : 0);
+    const vals = [...e.valeurs.entries()].sort((a, b) => a[0] - b[0])
+      .map(([v, n]) => `<span class="val-pouvoir">${v}<i>×${n}</i></span>`).join('');
+    const cadrages = ['PL', 'PM', 'GP', 'DEP'].filter((f) => e.cadrages[f])
+      .map((f) => `<span class="cadr-compte">${cadrageIcon(f)}${e.cadrages[f]}</span>`).join('');
+    return `<tr>
+      <td class="pv-visuel">${objHTML(e.obj, 26, store.cfg)}</td>
+      <td class="pv-texte">${objLabel(e.obj, store.cfg)}</td>
+      <td class="num"><b>${e.n}</b></td>
+      <td>${barrePart(actif.avec ? e.n / actif.avec : 0)}<span class="pv-part">${(100 * e.n / (actif.avec || 1)).toFixed(1)} %</span></td>
+      <td class="pv-vals">${vals}</td>
+      <td class="pv-cadr">${cadrages}</td>
+      <td class="num">${e.points}</td>
+      <td class="num ecart">${ecart ? (ecart > 0 ? `+${ecart}` : ecart) : '—'}</td>
+    </tr>`;
+  };
+
+  const filtre = Object.values(mat.statsFiltres).some(Boolean);
+  return `<p class="aide" style="margin-top:14px">Tous les bandeaux du jeu <b>${nomActif}</b> —
+  celui qui part en partie —, un par forme distincte, dessinés comme sur la carte. La colonne
+  <b>écart</b> les compare au jeu ${nomAutre}.</p>
+  ${barreStats()}
+  ${filtre ? `<p class="aide filtre-actif">Les filtres ne retiennent que <b>${actif.plans} plans</b>
+    — tout ce qui suit ne compte qu’eux.</p>` : ''}
+
+  <div class="pv-cartouches">
+    <div class="pv-cartouche"><b>${actif.avec}</b><span>plans portent un bandeau</span></div>
+    <div class="pv-cartouche"><b>${actif.sans}</b><span>plans sans bandeau</span></div>
+    <div class="pv-cartouche"><b>${actif.liste.length}</b><span>formes distinctes</span></div>
+    <div class="pv-cartouche"><b>${actif.points}</b><span>points sur la table</span></div>
+    <div class="pv-cartouche"><b>${actif.avec ? (actif.points / actif.avec).toFixed(2) : '0'}</b><span>points par bandeau</span></div>
+  </div>
+
+  <h3>Chaque bandeau</h3>
+  <div class="tbl-defile">
+    <table class="tbl tbl-pouvoirs">
+      <thead><tr>
+        <th>Bandeau</th><th>Ce qu’il compte</th><th class="num">Plans</th><th>Part</th>
+        <th>Valeurs</th><th>Cadrages</th><th class="num">Points</th><th class="num">Écart</th>
+      </tr></thead>
+      <tbody>${actif.liste.map(ligne).join('')
+        || '<tr><td colspan="8" class="aide">Aucun bandeau ne passe les filtres.</td></tr>'}</tbody>
+    </table>
+  </div>
+
+  <h3>Par famille de pouvoir</h3>
+  <table class="tbl tbl-pouvoirs">
+    <thead><tr><th>Famille</th><th class="num">Plans</th><th>Part</th><th class="num">Formes</th><th class="num">Points</th></tr></thead>
+    <tbody>${familles.map((f) => `<tr>
+      <td>${f.l}</td><td class="num"><b>${f.n}</b></td>
+      <td>${barrePart(actif.avec ? f.n / actif.avec : 0)}<span class="pv-part">${(100 * f.n / (actif.avec || 1)).toFixed(1)} %</span></td>
+      <td class="num">${f.formes}</td><td class="num">${f.points}</td>
+    </tr>`).join('')}</tbody>
+  </table>
+
+  <h3>Par valeur</h3>
+  <table class="tbl tbl-pouvoirs">
+    <thead><tr><th>Valeur</th><th class="num">Bandeaux</th><th>Part</th><th class="num">Points</th></tr></thead>
+    <tbody>${parValeur.map(([v, n]) => `<tr>
+      <td>${numIcon(v, 24)}</td><td class="num"><b>${n}</b></td>
+      <td>${barrePart(actif.avec ? n / actif.avec : 0)}<span class="pv-part">${(100 * n / (actif.avec || 1)).toFixed(1)} %</span></td>
+      <td class="num">${v * n}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
 }
 
 // --- Les branchements -------------------------------------------------------
@@ -2820,6 +3045,7 @@ function champ(f) {
   let ctrl;
   if (f.t === 'bool') ctrl = `<input type="checkbox" data-cfg="${f.k}" ${v ? 'checked' : ''}>`;
   else if (f.t === 'choix') ctrl = `<select data-cfg="${f.k}">${f.options.map(([val, lab]) => `<option value="${val}" ${v === val ? 'selected' : ''}>${lab}</option>`).join('')}</select>`;
+  else if (f.t === 'texte') ctrl = `<input type="text" data-cfg="${f.k}" value="${v || ''}" placeholder="aléatoire">`;
   else ctrl = `<input type="number" data-cfg="${f.k}" value="${v}" min="${f.min}" max="${f.max}" step="${f.pas || 1}">`;
   return `<div class="champ"><label>${f.l}${f.aide ? `<small>${f.aide}</small>` : ''}</label>${ctrl}</div>`;
 }

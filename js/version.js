@@ -1,8 +1,21 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.29';
-export const BUILD_DATE = '2026-08-16 21:10';
+export const VERSION = '1.30';
+export const BUILD_DATE = '2026-08-17 11:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.30',
+    date: '17/08/2026',
+    items: [
+      "Nouvel onglet du Matériel : <b>Statistiques des pouvoirs</b>. Chaque bandeau du jeu y est <b>dessiné comme sur la carte</b>, avec le nombre de plans qui le portent, sa part, ses valeurs, les cadrages qui l’accueillent, les points qu’il met sur la table, et son écart avec l’autre jeu de matériel. Deux vues d’ensemble complètent la liste : par famille de pouvoir et par valeur.",
+      "En fin de partie : <b>la courbe des points</b>, coup par coup, une ligne par joueuse dans sa couleur — on y lit qui a mené et où l’écart s’est creusé.",
+      "En fin de partie toujours : des <b>statistiques</b> — points marqués, points par carte, écart, Raccords, séquences, durée —, d’où viennent les points, et les bandeaux qui ont le plus rapporté.",
+      "Le détail par joueuse ne se lit plus en toutes lettres mais <b>en bandeaux</b>, comme la colonne de jeu : chaque pouvoir dessiné, ce qu’il rapporte, et le total.",
+      "En partie, la touche <b>F</b> retourne la carte survolée — dans le chutier comme en main, sans viser le petit bouton.",
+      "La légende de la zone de pioche est retirée : la table se lit sans commentaire.",
+      "L’accueil est allégé : ne restent que les trois options qui changent ce qu’on voit — <b>Illustrations</b>, <b>Points visibles</b>, <b>Mouvement des cartes</b>. Tout le reste — déroulé, pose, décompte, paquet, graine — vit dans <b>Variables</b>, où rien n’a été perdu.",
+    ],
+  },
   {
     v: '1.29',
     date: '16/08/2026',
