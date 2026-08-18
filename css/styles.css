@@ -211,8 +211,10 @@ button { font-family: inherit; }
 .zone-montage .aide { text-align: center; max-width: 520px; min-height: 2.6em; }
 
 /* La zone de phase garde la même hauteur d'un tour à l'autre : rien
-   n'apparaît ni ne disparaît sous le curseur entre deux clics. */
-.zone-phase { min-height: 486px; display: flex; flex-direction: column; justify-content: center; }
+   n'apparaît ni ne disparaît sous le curseur entre deux clics. Elle s'est
+   resserrée depuis que la consigne a disparu — la table se lit sans mode
+   d'emploi. */
+.zone-phase { min-height: 452px; display: flex; flex-direction: column; justify-content: center; }
 
 .moitie {
   position: relative; border-radius: 6px; overflow: hidden;
@@ -500,10 +502,6 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
   display: flex; gap: 0; overflow-x: auto; padding: 12px; border-radius: var(--r-s);
   background: linear-gradient(180deg, #2a2530, #1d1a24); min-height: 176px; align-items: stretch;
 }
-/* Pendant qu'on vise, le banc cesse de défiler : l'aperçu se pose par-dessus
-   les cartes, et une barre de défilement qui apparaîtrait sous le curseur
-   déplacerait tout ce qu'on regarde. */
-.banc.vise { overflow: visible; }
 /* La piste tient sur une ligne tant que tout y entre, puis passe à la ligne.
    Ce qui bascule, ce sont les séquences entières : une séquence est un bloc
    insécable — ses plans se touchent, on ne les sépare pas d'un retour à la
@@ -554,34 +552,28 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    celui-ci s'y montre en transparence, à la place exacte qu'il prendra. Le
    mouvement est celui qu'aura le clic : on voit le voisinage tel qu'il sera,
    sans qu'une carte en couvre une autre. `--ap` est la largeur du plan. */
-/* `static` : l'aperçu ne se positionne pas par rapport à son emplacement mais
-   par rapport au banc, ce qui lui permet d'aller se poser dans la bande du bas
-   plutôt que sur les cartes. */
-.fente-choix { position: static; display: block; min-width: 0; }
-/* L'aperçu ne bouscule rien et ne recouvre rien : le banc réserve une bande
-   sous les cartes dès qu'on vise, et l'aperçu s'y range, aligné sous
-   l'emplacement visé (`--gx`, posée au survol). Écarter les plans déjà posés
-   les faisait tous bouger sous le curseur ; les recouvrir cachait ce qu'on
-   cherchait justement à comparer. */
+.fente-choix { position: relative; display: block; min-width: 0; }
+/* L'aperçu se montre **à la place que la carte va prendre** : il recouvre la
+   flèche de l'emplacement et s'étend du côté où le plan tombera — à gauche
+   d'une séquence pour une pose à gauche, à droite pour une pose à droite. Il
+   ne pousse donc rien et ne se met pas devant la carte voisine : il occupe
+   l'espace resté libre, celui-là même qu'il occupera une fois posé. */
 .apercu-pose {
-  position: absolute; bottom: 12px; left: var(--gx, 50%); z-index: 6; pointer-events: none;
-  transform: translateX(-50%) scale(.94); transform-origin: bottom center;
-  opacity: 0; transition: opacity .14s ease, transform .14s ease;
+  position: absolute; top: 50%; z-index: 6; pointer-events: none;
+  transform: translateY(-50%) scale(.94); opacity: 0;
+  transition: opacity .14s ease, transform .14s ease;
   border-radius: 6px; box-shadow: 0 8px 26px rgba(0,0,0,.6);
   outline: 2px dashed var(--orange); outline-offset: 2px;
 }
-/* La bande réservée apparaît en même temps que les emplacements — une seule
-   fois, quand on choisit sa moitié — et non au survol : les cartes posées ne
-   bougent jamais pendant qu'on vise. */
-.banc.vise { position: relative; padding-bottom: 206px; }
-.banc.vise::after {
-  content: ''; position: absolute; left: 12px; right: 12px; bottom: 8px; height: 190px;
-  border: 2px dashed rgba(255,255,255,.09); border-radius: 10px; pointer-events: none;
-}
+.fente-choix.vers-gauche .apercu-pose { right: 0; transform-origin: right center; }
+.fente-choix.vers-droite .apercu-pose { left: 0; transform-origin: left center; }
+/* Pendant qu'on vise, le banc laisse déborder : l'aperçu s'avance dans la
+   marge du banc, là où la carte ira. */
+.banc.vise { overflow: visible; }
 /* Toute la carte en pointillés se clique, pas seulement son étiquette : c'est
    là que le regard est, et c'est la cible la plus large. */
 .fente-choix.ouverte .apercu-pose {
-  opacity: 1; transform: translateX(-50%) scale(1); pointer-events: auto; cursor: pointer;
+  opacity: 1; transform: translateY(-50%) scale(1); pointer-events: auto; cursor: pointer;
 }
 /* L'étiquette de l'emplacement passe au-dessus de l'aperçu : elle dit ce que
    le clic va faire, il ne faut pas que la carte la noie. */
@@ -689,10 +681,13 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 /* Les points qui ne viennent d'aucun bandeau : pose, jonctions, chronologie. */
 .tableau-score td.hors-bandeau { color: var(--encre-doux); font-style: italic; }
 
+/* Le bandeau de tour est la première ligne de la colonne de jeu, calé à
+   gauche avec elle : centré sur toute la page, il s'ouvrait une rangée à lui
+   seul et repoussait la table vers le bas. */
 .bandeau-tour {
-  display: flex; align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap;
-  background: #fff; border-radius: 999px; padding: 10px 20px; box-shadow: var(--ombre);
-  margin: 0 auto 16px; width: fit-content; max-width: 100%; font-weight: 600; color: var(--encre-doux);
+  display: flex; align-items: center; gap: 10px; justify-content: flex-start; flex-wrap: wrap;
+  background: #fff; border-radius: 999px; padding: 9px 18px; box-shadow: var(--ombre);
+  margin: 0 0 10px; width: fit-content; max-width: 100%; font-weight: 600; color: var(--encre-doux);
 }
 .bandeau-tour b { color: var(--encre); }
 

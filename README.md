@@ -346,8 +346,11 @@ directement dans un tableur français.
 
 ## La table de jeu
 
-Colonne de gauche : la zone de pioche, puis les bancs de montage. Colonne de droite : joueuses,
-score, recensement des icônes et bandeaux du banc.
+Colonne de gauche : le **bandeau du tour**, la zone de pioche, puis les bancs de montage. Colonne de
+droite : joueuses, score, recensement des icônes et bandeaux du banc. Le bandeau — le numéro du plan,
+la joueuse, le jeu de matériel, les deux bascules d'affichage — est calé à gauche en tête de la
+colonne de jeu : centré sur toute la page, il s'ouvrait une rangée à lui seul et repoussait la table
+vers le bas. Les deux colonnes démarrent maintenant à la même hauteur.
 
 Les **emplacements de pose se dressent en bandes verticales** entre les cartes. Couchés, un
 « ＋ séquence » ou un « ⛓ raccorder » coûtait près de cent pixels, et trois d'entre eux suffisaient à
@@ -413,7 +416,9 @@ plus**. On reste devant la rivière du début à la fin du tour :
    (`jouerTour()`).
 
 Il n'y a donc plus de fenêtre intermédiaire où la carte attendait seule au centre de la table, ni de
-changement d'écran entre les deux temps. La zone de jeu garde exactement la même hauteur qu'on vise
+changement d'écran entre les deux temps. **Aucune consigne n'accompagne le geste** : la table se lit
+d'elle-même — les cartes s'offrent, le banc ouvre ses emplacements, l'aperçu montre la place. Un mot
+ne s'affiche que dans l'impasse, quand la moitié visée ne se pose nulle part (`aidePose()`). La zone de jeu garde exactement la même hauteur qu'on vise
 ou non, et reste affichée pendant les tours d'IA : rien n'apparaît ni ne disparaît sous le curseur.
 Viser ne repeint que les cartes de la rivière et le banc de qui joue (`rafraichirVisee()`).
 
@@ -422,18 +427,21 @@ cachée**, dont on ne peut pas viser une moitié qu'on ne voit pas, et l'**ordre
 (`tourComplet: false`), où la main passe entre le dérushage et le montage. Une carte qui ne se pose
 nulle part se prend quand même — dérusher n'est pas facultatif.
 
-**L'emplacement se pré-visualise** : survoler un emplacement montre le plan tel qu'il s'y posera.
-L'aperçu ne bouscule rien et ne recouvre rien — le banc **réserve une bande sous les cartes** dès
-qu'on vise, une seule fois et non au survol, et l'aperçu s'y range, aligné sous l'emplacement visé
-(`--gx`, posée au survol par `suivreFente()`). Écarter les plans déjà posés les faisait tous bouger
-sous le curseur — et, depuis que le banc passe à la ligne, pouvait le faire basculer d'une ligne à
-l'autre puis revenir : le banc sautait et clignotait. Les recouvrir cachait ce qu'on cherchait
-justement à comparer. **Le banc ne bouge donc qu'au clic**, quand la carte est vraiment posée.
+**L'emplacement se pré-visualise** : survoler un emplacement montre le plan tel qu'il s'y posera,
+**à la place exacte qu'il prendra**. L'aperçu recouvre la flèche de l'emplacement et s'étend du côté
+où le plan tombera — à gauche d'une séquence pour une pose à gauche, à droite pour une pose à droite
+(`versOu()` donne le côté, `.vers-gauche` / `.vers-droite` le placent). Il occupe donc l'espace resté
+libre, celui-là même qu'il occupera une fois posé : il ne pousse aucune carte et ne se met devant
+aucune.
 
-L'aperçu se clique aussi — c'est la cible la plus large. Sa visibilité ne peut pas tenir au seul
-`:hover` : il s'affiche loin de son emplacement, et le curseur qui va vers lui quitte l'emplacement
-avant de l'atteindre ; l'aperçu s'effacerait juste avant d'être cliquable. C'est donc le banc qui
-retient lequel est ouvert (`.fente-choix.ouverte`), jusqu'à ce qu'on sorte du banc.
+Écarter les plans déjà posés pour lui faire de la place les faisait tous bouger sous le curseur — et,
+depuis que le banc passe à la ligne, pouvait le faire basculer d'une ligne à l'autre puis revenir : le
+banc sautait et clignotait. **Le banc ne bouge donc qu'au clic**, quand la carte est vraiment posée.
+
+L'aperçu se clique aussi — c'est la cible la plus large. Sa visibilité ne tient pas au seul `:hover` :
+il déborde de son emplacement, et le curseur qui le longe passe par des zones qui n'appartiennent ni
+à l'un ni à l'autre ; il clignoterait sous la main qui le vise. C'est donc le banc qui retient lequel
+est ouvert (`.fente-choix.ouverte`), jusqu'à ce qu'on sorte du banc.
 L'aperçu passe par `planPose()` et `faceJouee()`, donc il montre la
 **face que le côté donne** : un Gros Plan accroché à gauche est celui du verso, à droite celui du
 recto. Sur le matériel imprimé les deux faces partagent le même minutage et l'aperçu se ressemble ;

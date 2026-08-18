@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.37';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.38';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
-} from './data.js?v=1.37';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.37';
-import { elIcon, numIcon } from './icons.js?v=1.37';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.37';
+} from './data.js?v=1.38';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.38';
+import { elIcon, numIcon } from './icons.js?v=1.38';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.38';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.37';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.37';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.37';
-import { releve, voler, stopperVols } from './anim.js?v=1.37';
-import { campagne } from './lab.js?v=1.37';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.37';
+} from './engine.js?v=1.38';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.38';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.38';
+import { releve, voler, stopperVols } from './anim.js?v=1.38';
+import { campagne } from './lab.js?v=1.38';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.38';
 
 const app = document.getElementById('app');
 
@@ -407,7 +407,9 @@ function vuePartie(enchainer = true) {
 
   html(`${topbar('#/partie')}
   <div class="wrap large">
-    <div class="bandeau-tour">
+    <div class="table-jeu">
+      <div class="zone-gauche">
+        <div class="bandeau-tour">
       <span>${st.phase === 'DEPART' ? 'Plan de départ'
         : `Plan <b>${Math.min(sc[p].plans + 1, st.cfg.tours)} / ${st.cfg.tours}</b>`}</span><span>·</span>
       ${st.finDeclenchee == null ? '' : '<span class="jeton-dernier">dernier tour</span><span>·</span>'}
@@ -423,10 +425,8 @@ function vuePartie(enchainer = true) {
         title="Afficher ou masquer ce que chaque plan rapporte, au coin des cartes">
         ${store.cfg.pointsSurCartes === false ? 'Points masqués' : 'Points visibles'}
       </button>
-    </div>
+        </div>
 
-    <div class="table-jeu">
-      <div class="zone-gauche">
         <div class="panneau zone-phase">${zone}</div>
         ${st.joueurs.map((jj, i) => bancBloc(st, i, `Banc de ${jj.nom}`,
           i === p && humaine && (st.phase === 'MONTAGE' || st.phase === 'DERUSHAGE'))).join('')}
@@ -505,6 +505,15 @@ function bancBloc(st, i, titre, interactif) {
   // posée. Les emplacements ne doivent pas décider de la mise en page — sinon
   // le banc se réorganise pendant qu'on vise, puis se réorganise encore une
   // fois la carte posée, et l'on s'y perd.
+  // De quel côté de l'emplacement la carte va tomber : c'est là que l'aperçu
+  // se montre, en recouvrant la flèche et en s'étendant vers la place qu'elle
+  // prendra — jamais par-dessus la carte voisine.
+  const versOu = (c) => {
+    if (c.cote) return c.cote;
+    if (c.action === 'GENERIQUE') return c.role === 'OUVERTURE' ? 'gauche' : 'droite';
+    if (c.action === 'NOUVELLE_SEQUENCE') return c.pos === 0 ? 'gauche' : 'droite';
+    return 'droite';
+  };
   const fenteChoix = (c) => {
     const coup = encodeURIComponent(JSON.stringify(sansCarte(c)));
     const lg = etiquetteCoup(c);
@@ -513,7 +522,7 @@ function bancBloc(st, i, titre, interactif) {
     const plan = planPose(carteEnMain, c.format, c.role, faceJouee(c.format, c.cote, st.cfg));
     // L'aperçu porte lui aussi le coup : c'est toute la carte en pointillés qui
     // se clique, pas seulement son étiquette.
-    return `<span class="fente-choix" style="--ap:${LARGEUR_BANC[plan.format] || 169}px">
+    return `<span class="fente-choix vers-${versOu(c)}" style="--ap:${LARGEUR_BANC[plan.format] || 169}px">
       ${bouton}<span class="apercu-pose" data-coup="${coup}">${renderPlan(plan, { muet: true })}</span></span>`;
   };
 
@@ -626,19 +635,15 @@ function choisirMoitie(st, format) {
  * c'est le survol qui lui donne son abscisse, en coordonnées du banc, bornée
  * pour qu'il ne sorte jamais du cadre.
  */
+/**
+ * Le banc retient quel emplacement est ouvert plutôt que de s'en remettre au
+ * seul `:hover` : l'aperçu déborde de son emplacement, et le curseur qui le
+ * longe passerait par des zones qui n'appartiennent ni à l'un ni à l'autre —
+ * l'aperçu clignoterait sous la main qui le vise.
+ */
 function suivreFente(el) {
   const banc = el.closest('.banc');
-  const ap = el.querySelector('.apercu-pose');
-  if (!banc || !ap) return;
-  const rb = banc.getBoundingClientRect();
-  const re = el.getBoundingClientRect();
-  const demi = (ap.offsetWidth || 170) / 2 + 6;
-  const x = re.left - rb.left + re.width / 2 + banc.scrollLeft;
-  banc.style.setProperty('--gx', `${Math.min(Math.max(x, demi), rb.width - demi)}px`);
-  // L'aperçu ne peut pas dépendre du seul `:hover` : il se montre loin de son
-  // emplacement, et le curseur qui va vers lui quitte l'emplacement avant de
-  // l'atteindre — l'aperçu disparaîtrait juste avant d'être cliquable. C'est
-  // donc le banc qui retient lequel est ouvert, jusqu'à ce qu'on en sorte.
+  if (!banc) return;
   banc.querySelectorAll('.fente-choix.ouverte').forEach((f) => f.classList.remove('ouverte'));
   el.classList.add('ouverte');
 }
@@ -803,9 +808,9 @@ function zoneDerushage(st, humaine = true, apercu = false) {
       ? enPile(`<div class="pioche-fermee">${renderCarte(st.piochePMGP[0], faceVisible(st, st.piochePMGP[0]) === 'V', { small: true })}</div>`, st.piochePMGP.length)
       : '');
 
+  const consigne = apercu ? '' : (humaine ? aidePose(st) : '');
   return `<div class="derushage-lignes">
-    ${apercu ? '' : `<p class="aide" id="aide-derushage">${humaine ? aidePose(st)
-      : `<b>${nom}</b> dérushe : une carte prise dans un chutier, puis montée dans son banc.`}</p>`}
+    ${consigne ? `<p class="aide" id="aide-derushage">${consigne}</p>` : ''}
     ${ligne('Plans Larges', 'PL', dosPL, st.piochePL.length,
       options.filter((o) => o.source === 'CHUTIER_PL').map(carte).join(''))}
     ${ligne('Plans Moyens / Gros Plans', 'PMGP', piochePMGP, st.piochePMGP.length,
@@ -871,21 +876,23 @@ function aideMontage(st, choisi, humaine = true, carteVisee) {
  * n'a rien visé, elle dit quoi faire ; une fois une moitié retenue, elle dit
  * ce qu'on tient et où le poser.
  */
+/**
+ * La table se lit d'elle-même : les cartes de la rivière s'offrent, le banc
+ * ouvre ses emplacements, l'aperçu montre la place. On ne dit donc rien —
+ * sauf dans l'impasse, où il faut bien avertir que cette moitié-là ne se pose
+ * nulle part, et proposer de prendre la carte tout de même : dérusher n'est
+ * pas facultatif.
+ */
 function aidePose(st) {
   const v = store.choixRiviere;
-  if (!v) {
-    return 'Clique la moitié que tu veux garder — ou le Plan Large entier —, puis l’emplacement où la poser dans ton banc.';
-  }
+  if (!v) return '';
   const carte = carteOption(st, v.o);
   if (!carte) return '';
+  const tous = coupsPossibles(st, st.courant, carte);
+  if (tous.some((c) => c.format === v.format)) return '';
   const texte = aideMontage(st, v.format, true, carte);
-  const possibles = coupsPossibles(st, st.courant, carte).filter((c) => c.format === v.format);
-  // Une carte qui ne se pose nulle part doit tout de même pouvoir être prise :
-  // le dérushage n'est pas facultatif.
-  if (!possibles.length && !coupsPossibles(st, st.courant, carte).length) {
-    return `${texte} <button class="pill mini" data-prendre="1">Prendre la carte quand même</button>`;
-  }
-  return texte;
+  return tous.length ? texte
+    : `${texte} <button class="pill mini" data-prendre="1">Prendre la carte quand même</button>`;
 }
 
 function zoneMontage(st, p, humaine = true) {

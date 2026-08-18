@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.37';
-export const BUILD_DATE = '2026-08-17 22:15';
+export const VERSION = '1.38';
+export const BUILD_DATE = '2026-08-17 23:10';
 
 export const CHANGELOG = [
+  {
+    v: '1.38',
+    date: '17/08/2026',
+    items: [
+      "<b>L’aperçu revient à côté de l’emplacement</b>, du côté où la carte va tomber : à gauche d’une séquence pour une pose à gauche, à droite pour une pose à droite. Il recouvre la flèche de l’emplacement et occupe la place que le plan prendra — sans pousser les cartes posées, et sans se mettre devant la carte voisine.",
+      "<b>La consigne disparaît de la table.</b> Elle se lit d’elle-même : les cartes s’offrent, le banc ouvre ses emplacements, l’aperçu montre la place. Il ne reste un mot que dans l’impasse — quand la moitié visée ne se pose nulle part.",
+      "<b>Le bandeau du tour passe dans la colonne de jeu</b>, calé à gauche au-dessus de la table. Centré sur toute la page, il s’ouvrait une rangée à lui seul : l’interface remonte d’autant, et démarre à la même hauteur que la colonne des joueuses.",
+    ],
+  },
   {
     v: '1.37',
     date: '17/08/2026',
