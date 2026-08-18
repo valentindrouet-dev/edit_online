@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.38';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.39';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
-} from './data.js?v=1.38';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.38';
-import { elIcon, numIcon } from './icons.js?v=1.38';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.38';
+} from './data.js?v=1.39';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.39';
+import { elIcon, numIcon } from './icons.js?v=1.39';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.39';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
-  coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
+  coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose, appliquer,
   faceVisible, retourner,
-} from './engine.js?v=1.38';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.38';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.38';
-import { releve, voler, stopperVols } from './anim.js?v=1.38';
-import { campagne } from './lab.js?v=1.38';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.38';
+} from './engine.js?v=1.39';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.39';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.39';
+import { releve, voler, stopperVols } from './anim.js?v=1.39';
+import { campagne } from './lab.js?v=1.39';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.39';
 
 const app = document.getElementById('app');
 
@@ -410,21 +410,9 @@ function vuePartie(enchainer = true) {
     <div class="table-jeu">
       <div class="zone-gauche">
         <div class="bandeau-tour">
-      <span>${st.phase === 'DEPART' ? 'Plan de départ'
-        : `Plan <b>${Math.min(sc[p].plans + 1, st.cfg.tours)} / ${st.cfg.tours}</b>`}</span><span>·</span>
-      ${st.finDeclenchee == null ? '' : '<span class="jeton-dernier">dernier tour</span><span>·</span>'}
-      <span><b>${PHASES[st.phase]}</b></span><span>·</span>
-      <span style="color:${encreDe(j.couleur)}"><b>${j.nom}</b></span>
-      <span class="jeton-materiel ${st.cfg.materielActif === 'MODIFIE' ? 'modifie' : ''}"
-        title="Le jeu de matériel avec lequel cette partie a été lancée">
-        ${st.cfg.materielActif === 'MODIFIE' ? 'Matériel modifié' : 'Matériel imprimé'}</span>
-      <button class="pill mini" id="bascule-illus" title="Afficher ou masquer les illustrations">
-        ${store.cfg.illustrations ? 'Images visibles' : 'Images masquées'}
-      </button>
-      <button class="pill mini" id="bascule-points"
-        title="Afficher ou masquer ce que chaque plan rapporte, au coin des cartes">
-        ${store.cfg.pointsSurCartes === false ? 'Points masqués' : 'Points visibles'}
-      </button>
+          ${st.finDeclenchee == null ? '' : '<span class="jeton-dernier">dernier tour</span><span>·</span>'}
+          <span><b>${PHASES[st.phase]}</b></span><span>·</span>
+          <span style="color:${encreDe(j.couleur)}"><b>${j.nom}</b></span>
         </div>
 
         <div class="panneau zone-phase">${zone}</div>
@@ -453,6 +441,19 @@ function vuePartie(enchainer = true) {
         <div class="barre-outils">
           <button class="pill" id="undo" ${store.undo ? '' : 'disabled'}>↩ Annuler</button>
           <button class="pill" id="quitter">Quitter</button>
+        </div>
+
+        <div class="reglages-partie">
+          <button class="pill mini" id="bascule-illus" title="Afficher ou masquer les illustrations">
+            ${store.cfg.illustrations ? 'Images visibles' : 'Images masquées'}
+          </button>
+          <button class="pill mini" id="bascule-points"
+            title="Afficher ou masquer ce que chaque plan rapporte, au coin des cartes">
+            ${store.cfg.pointsSurCartes === false ? 'Points masqués' : 'Points visibles'}
+          </button>
+          <span class="jeton-materiel ${st.cfg.materielActif === 'MODIFIE' ? 'modifie' : ''}"
+            title="Le jeu de matériel avec lequel cette partie a été lancée">
+            ${st.cfg.materielActif === 'MODIFIE' ? 'Matériel modifié' : 'Matériel imprimé'}</span>
         </div>
       </div>
     </div>
@@ -514,16 +515,35 @@ function bancBloc(st, i, titre, interactif) {
     if (c.action === 'NOUVELLE_SEQUENCE') return c.pos === 0 ? 'gauche' : 'droite';
     return 'droite';
   };
+  // Ce que la pose rapporterait, tout compris : la carte posée peut aussi
+  // faire marquer les bandeaux déjà en place — c'est donc l'écart du total du
+  // banc que l'on montre, et non les points de la seule carte.
+  const total = compter(banc, st.cfg).total;
+  const gainDe = (c) => {
+    const copie = JSON.parse(JSON.stringify(banc));
+    appliquer(copie, c, st.cfg);
+    return compter(copie, st.cfg).total - total;
+  };
+  const jetonGain = (g) => `<span class="fente-gain ${g > 0 ? 'plus' : g < 0 ? 'moins' : 'nul'}"
+    title="Ce que cette pose rapporte, bandeaux déjà posés compris">${g > 0 ? '+' : ''}${g}</span>`;
+
   const fenteChoix = (c) => {
     const coup = encodeURIComponent(JSON.stringify(sansCarte(c)));
     const lg = etiquetteCoup(c);
+    if (!carteEnMain) {
+      return `<span class="fente-choix"><button class="fente-btn ${lg.length > 3 ? 'debout' : ''}" data-coup="${coup}">${lg}</button></span>`;
+    }
+    const g = gainDe(c);
     const bouton = `<button class="fente-btn ${lg.length > 3 ? 'debout' : ''}" data-coup="${coup}">${lg}</button>`;
-    if (!carteEnMain) return `<span class="fente-choix">${bouton}</span>`;
     const plan = planPose(carteEnMain, c.format, c.role, faceJouee(c.format, c.cote, st.cfg));
     // L'aperçu porte lui aussi le coup : c'est toute la carte en pointillés qui
-    // se clique, pas seulement son étiquette.
+    // se clique, pas seulement son étiquette. Le gain se lit sur chaque
+    // emplacement sans avoir à les survoler un par un : on compare d'un coup
+    // d'œil, puis on choisit.
     return `<span class="fente-choix vers-${versOu(c)}" style="--ap:${LARGEUR_BANC[plan.format] || 169}px">
-      ${bouton}<span class="apercu-pose" data-coup="${coup}">${renderPlan(plan, { muet: true })}</span></span>`;
+      ${bouton}${jetonGain(g)}
+      <span class="apercu-pose" data-coup="${coup}">${renderPlan(plan, { muet: true })}</span>
+    </span>`;
   };
 
   const fente = (liste) => {
@@ -554,8 +574,11 @@ function bancBloc(st, i, titre, interactif) {
   morceaux.push(fente(coups.filter((c) => (c.action === 'NOUVELLE_SEQUENCE' && c.pos === n)
     || (c.action === 'GENERIQUE' && c.role === 'CREDITS'))));
 
+  // Le compte de plans se lit au-dessus du banc qu'il décrit, plutôt que dans
+  // un bandeau commun où il fallait se souvenir de qui il parlait.
+  const faits = Math.min(compter(banc, st.cfg).plans, st.cfg.tours);
   return `<div class="panneau">
-    <h2>${titre}</h2>
+    <h2>${titre}${titre ? `<span class="banc-compte">Plan <b>${faits} / ${st.cfg.tours}</b></span>` : ''}</h2>
     <div class="banc ${coups.length ? 'vise' : ''}" data-banc="${i}"><div class="banc-piste">${morceaux.join('')}</div></div>
   </div>`;
 }

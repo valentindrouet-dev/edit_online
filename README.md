@@ -347,10 +347,14 @@ directement dans un tableur français.
 ## La table de jeu
 
 Colonne de gauche : le **bandeau du tour**, la zone de pioche, puis les bancs de montage. Colonne de
-droite : joueuses, score, recensement des icônes et bandeaux du banc. Le bandeau — le numéro du plan,
-la joueuse, le jeu de matériel, les deux bascules d'affichage — est calé à gauche en tête de la
-colonne de jeu : centré sur toute la page, il s'ouvrait une rangée à lui seul et repoussait la table
-vers le bas. Les deux colonnes démarrent maintenant à la même hauteur.
+droite : joueuses, score, recensement des icônes et bandeaux du banc, puis les **réglages
+d'affichage** au pied — Images visibles, Points visibles, et le rappel du jeu de matériel.
+
+Le bandeau est calé à gauche en tête de la colonne de jeu : centré sur toute la page, il s'ouvrait
+une rangée à lui seul et repoussait la table vers le bas ; les deux colonnes démarrent maintenant à
+la même hauteur. Il ne garde que ce qui change d'un instant à l'autre — la phase et qui joue. Le
+**compte de plans est passé au-dessus du banc qu'il décrit** (« Banc de Val · Plan 4 / 10 »), chaque
+joueuse ayant le sien, plutôt que dans un bandeau commun où il fallait se rappeler de qui il parlait.
 
 Les **emplacements de pose se dressent en bandes verticales** entre les cartes. Couchés, un
 « ＋ séquence » ou un « ⛓ raccorder » coûtait près de cent pixels, et trois d'entre eux suffisaient à
@@ -437,6 +441,13 @@ aucune.
 Écarter les plans déjà posés pour lui faire de la place les faisait tous bouger sous le curseur — et,
 depuis que le banc passe à la ligne, pouvait le faire basculer d'une ligne à l'autre puis revenir : le
 banc sautait et clignotait. **Le banc ne bouge donc qu'au clic**, quand la carte est vraiment posée.
+
+**Chaque emplacement annonce ce qu'il rapporterait** — « +5 », « −2 » — sans qu'on ait à le survoler :
+on compare toutes les poses d'un coup d'œil, puis on choisit. Le nombre n'est pas ce que la carte
+vaut à elle seule mais l'**écart du total du banc** : on simule la pose sur une copie
+(`appliquer()`), on recompte, et l'on montre la différence — une carte qui fait marquer ses voisines
+le dit donc. Au survol, l'étiquette de l'emplacement passe **sous** l'aperçu au lieu de lui passer
+devant : elle disait où poser, la carte le montre mieux qu'elle.
 
 L'aperçu se clique aussi — c'est la cible la plus large. Sa visibilité ne tient pas au seul `:hover` :
 il déborde de son emplacement, et le curseur qui le longe passe par des zones qui n'appartiennent ni

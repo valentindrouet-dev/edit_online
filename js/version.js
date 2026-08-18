@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.38';
-export const BUILD_DATE = '2026-08-17 23:10';
+export const VERSION = '1.39';
+export const BUILD_DATE = '2026-08-18 00:05';
 
 export const CHANGELOG = [
+  {
+    v: '1.39',
+    date: '18/08/2026',
+    items: [
+      "<b>Chaque emplacement annonce ce qu’il rapporterait</b> — « +5 », « −2 » — sans qu’on ait à le survoler : on compare toutes les poses d’un coup d’œil, puis on choisit. Le compte est l’écart du total du banc, bandeaux déjà posés compris : une carte qui fait marquer ses voisines le montre.",
+      "Au survol, <b>l’étiquette de l’emplacement passe sous l’aperçu</b> au lieu de lui passer devant : elle disait où poser, la carte le montre mieux qu’elle.",
+      "<b>Le compte de plans monte au-dessus du banc qu’il décrit</b> — « Banc de Val · Plan 4 / 10 » —, chacune ayant le sien, plutôt que dans un bandeau commun où il fallait se rappeler de qui il parlait.",
+      "Les réglages d’affichage — <b>Images visibles</b>, <b>Points visibles</b>, et le rappel du jeu de matériel — descendent au pied de la colonne de droite, sous Annuler et Quitter. Le bandeau du tour ne garde que ce qui change d’un instant à l’autre.",
+    ],
+  },
   {
     v: '1.38',
     date: '17/08/2026',
