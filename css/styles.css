@@ -585,21 +585,6 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    barrer ce qu'on est venu regarder. */
 .fente-choix.ouverte .fente-btn { position: relative; z-index: 1; }
 
-/* Ce que la pose rapporterait. Sur l'emplacement, il se lit sans survol — on
-   compare tous les emplacements d'un coup d'œil ; sur l'aperçu, il accompagne
-   la carte que l'on est en train de viser. */
-.fente-gain {
-  position: absolute; top: -15px; left: 50%; transform: translateX(-50%); z-index: 8;
-  min-width: 1.7em; padding: 1px 6px; border-radius: 999px; pointer-events: none;
-  font-size: .74rem; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums;
-  background: #22c55e; color: #06280f; border: 1px solid rgba(255,255,255,.75);
-  box-shadow: 0 2px 6px rgba(0,0,0,.4);
-}
-.fente-gain.moins { background: #dc2626; color: #fff; }
-.fente-gain.nul { background: rgba(255,255,255,.28); color: #efeaf6; }
-/* Le gain grossit quand son emplacement s'ouvre : c'est celui-là qu'on est en
-   train de peser. Il reste au-dessus de l'aperçu, pas caché derrière. */
-.fente-choix.ouverte .fente-gain { font-size: .84rem; padding: 2px 9px; top: -17px; }
 .apercu-pose .moitie { height: 182px; border-radius: 5px; font-size: 12.7px; display: flex; }
 .apercu-pose .moitie.f-GP { width: 85px; }
 .apercu-pose .moitie.f-PM { width: 169px; }

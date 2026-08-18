@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.39';
-export const BUILD_DATE = '2026-08-18 00:05';
+export const VERSION = '1.40';
+export const BUILD_DATE = '2026-08-18 01:00';
 
 export const CHANGELOG = [
+  {
+    v: '1.40',
+    date: '18/08/2026',
+    items: [
+      "<b>La carte ne se déforme plus en volant vers le banc.</b> C'est la carte entière qui partait — deux moitiés, 254 pixels de large — pour se comprimer jusqu'à la largeur de la moitié posée : on la voyait rétrécir puis se réduire à la seule partie gardée. C'est désormais la <b>moitié retenue</b> qui vole, à sa taille et dans ses proportions, du chutier jusqu'à sa place. Vrai pour les tours d'IA comme pour les vôtres.",
+      "L'annonce des points sur les emplacements avant la pose est retirée. Les points restent sur les cartes du banc, au coin de chaque plan.",
+    ],
+  },
   {
     v: '1.39',
     date: '18/08/2026',

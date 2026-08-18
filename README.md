@@ -442,12 +442,8 @@ aucune.
 depuis que le banc passe à la ligne, pouvait le faire basculer d'une ligne à l'autre puis revenir : le
 banc sautait et clignotait. **Le banc ne bouge donc qu'au clic**, quand la carte est vraiment posée.
 
-**Chaque emplacement annonce ce qu'il rapporterait** — « +5 », « −2 » — sans qu'on ait à le survoler :
-on compare toutes les poses d'un coup d'œil, puis on choisit. Le nombre n'est pas ce que la carte
-vaut à elle seule mais l'**écart du total du banc** : on simule la pose sur une copie
-(`appliquer()`), on recompte, et l'on montre la différence — une carte qui fait marquer ses voisines
-le dit donc. Au survol, l'étiquette de l'emplacement passe **sous** l'aperçu au lieu de lui passer
-devant : elle disait où poser, la carte le montre mieux qu'elle.
+Au survol, l'étiquette de l'emplacement passe **sous** l'aperçu au lieu de lui passer devant : elle
+disait où poser, la carte le montre mieux qu'elle.
 
 L'aperçu se clique aussi — c'est la cible la plus large. Sa visibilité ne tient pas au seul `:hover` :
 il déborde de son emplacement, et le curseur qui le longe passe par des zones qui n'appartiennent ni
@@ -490,12 +486,18 @@ Trois vols, un par coup :
 | Coup | D'où | Vers |
 |---|---|---|
 | Plan de départ | la face choisie | le plan qui ouvre le banc |
-| Dérushage | la carte du chutier, ou la pioche | le centre de la table — elle passe en main |
+| Dérushage | la **moitié retenue** de la carte du chutier | sa place exacte dans le banc |
 | — en même temps | la pioche | la place laissée vide dans le chutier |
 | Montage | la moitié retenue | l'emplacement exact dans le banc |
 
 Les vols d'un même coup partent **ensemble** : la carte prise s'en va pendant que la pioche la
 remplace, ce qui se lit comme un seul mouvement.
+
+Ce qui vole est la **moitié**, jamais la carte entière. `ancresDerushage()` relève chaque moitié à
+part et le coup dit laquelle prendre : faire partir la carte entière la faisait se comprimer en vol
+jusqu'à la largeur d'une moitié — de 254 pixels et d'un rapport de 1,4 à 85 pixels et 0,47 pour un
+Gros Plan —, si bien qu'on la voyait rétrécir puis se réduire à la seule partie gardée. C'est bien
+une moitié que l'on pose : c'est elle qui doit voler.
 
 Le dérushage **d'une joueuse humaine** se rend en deux temps, et le premier reste dans le chutier :
 la carte prise en sort pendant que la pioche le recharge, et ce n'est qu'ensuite que la zone passe au

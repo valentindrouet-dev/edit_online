@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.39';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.40';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
-} from './data.js?v=1.39';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.39';
-import { elIcon, numIcon } from './icons.js?v=1.39';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.39';
+} from './data.js?v=1.40';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.40';
+import { elIcon, numIcon } from './icons.js?v=1.40';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.40';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
-  coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose, appliquer,
+  coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.39';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.39';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.39';
-import { releve, voler, stopperVols } from './anim.js?v=1.39';
-import { campagne } from './lab.js?v=1.39';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.39';
+} from './engine.js?v=1.40';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.40';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.40';
+import { releve, voler, stopperVols } from './anim.js?v=1.40';
+import { campagne } from './lab.js?v=1.40';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.40';
 
 const app = document.getElementById('app');
 
@@ -515,34 +515,16 @@ function bancBloc(st, i, titre, interactif) {
     if (c.action === 'NOUVELLE_SEQUENCE') return c.pos === 0 ? 'gauche' : 'droite';
     return 'droite';
   };
-  // Ce que la pose rapporterait, tout compris : la carte posée peut aussi
-  // faire marquer les bandeaux déjà en place — c'est donc l'écart du total du
-  // banc que l'on montre, et non les points de la seule carte.
-  const total = compter(banc, st.cfg).total;
-  const gainDe = (c) => {
-    const copie = JSON.parse(JSON.stringify(banc));
-    appliquer(copie, c, st.cfg);
-    return compter(copie, st.cfg).total - total;
-  };
-  const jetonGain = (g) => `<span class="fente-gain ${g > 0 ? 'plus' : g < 0 ? 'moins' : 'nul'}"
-    title="Ce que cette pose rapporte, bandeaux déjà posés compris">${g > 0 ? '+' : ''}${g}</span>`;
-
   const fenteChoix = (c) => {
     const coup = encodeURIComponent(JSON.stringify(sansCarte(c)));
     const lg = etiquetteCoup(c);
-    if (!carteEnMain) {
-      return `<span class="fente-choix"><button class="fente-btn ${lg.length > 3 ? 'debout' : ''}" data-coup="${coup}">${lg}</button></span>`;
-    }
-    const g = gainDe(c);
     const bouton = `<button class="fente-btn ${lg.length > 3 ? 'debout' : ''}" data-coup="${coup}">${lg}</button>`;
+    if (!carteEnMain) return `<span class="fente-choix">${bouton}</span>`;
     const plan = planPose(carteEnMain, c.format, c.role, faceJouee(c.format, c.cote, st.cfg));
     // L'aperçu porte lui aussi le coup : c'est toute la carte en pointillés qui
-    // se clique, pas seulement son étiquette. Le gain se lit sur chaque
-    // emplacement sans avoir à les survoler un par un : on compare d'un coup
-    // d'œil, puis on choisit.
+    // se clique, pas seulement son étiquette.
     return `<span class="fente-choix vers-${versOu(c)}" style="--ap:${LARGEUR_BANC[plan.format] || 169}px">
-      ${bouton}${jetonGain(g)}
-      <span class="apercu-pose" data-coup="${coup}">${renderPlan(plan, { muet: true })}</span>
+      ${bouton}<span class="apercu-pose" data-coup="${coup}">${renderPlan(plan, { muet: true })}</span>
     </span>`;
   };
 
@@ -1340,8 +1322,16 @@ function ancresDerushage(st, o) {
   const pile = fam === 'PL' ? st.piochePL : st.piochePMGP;
   const chutier = fam === 'PL' ? st.chutierPL : st.chutierPMGP;
   const duChutier = o.source.startsWith('CHUTIER');
+  const sel = `[data-derush="${enc(o)}"]`;
+  // Chaque moitié est relevée à part : c'est celle que l'on garde qui vole
+  // jusqu'au banc. Faire partir la carte entière la faisait se comprimer en
+  // vol jusqu'à la largeur d'une moitié — une déformation que rien ne
+  // justifie, puisque c'est bien une moitié que l'on pose.
+  const moities = {};
+  for (const f of ['GP', 'PM', 'PL', 'DEP']) moities[f] = preleve(`${sel} .moitie[data-format="${f}"]`);
   return {
-    carte: preleve(`[data-derush="${enc(o)}"]`),
+    carte: preleve(sel),
+    moities,
     pioche: duChutier && pile.length ? preleve(`#pioche-${fam}`) : null,
     place: `[data-chutier="${fam}"][data-i="${chutier.length - (duChutier ? 1 : 0)}"]`,
   };
@@ -1403,7 +1393,8 @@ async function jouerTour(st, p, o, partiel) {
     fini = avancer(st);
   }
 
-  programmerVol(a.carte, pose ? `[data-banc="${p}"] .moitie.neuf` : `[data-banc="${p}"]`,
+  programmerVol(pose ? (a.moities[partiel.format] || a.carte) : a.carte,
+    pose ? `[data-banc="${p}"] .moitie.neuf` : `[data-banc="${p}"]`,
     pose ? {} : { taille: false, fondu: true });
   programmerVol(a.pioche, a.place);
   vuePartie(false);
@@ -1429,15 +1420,19 @@ function tourIA(st, p, o) {
   // Le montage de la même joueuse, dans la foulée — sauf en ordre imprimé, où
   // la main est déjà passée.
   let pose = false;
+  let format = null;
   if (!fini && st.phase === 'MONTAGE' && st.courant === p) {
     const coups = coupsPossibles(st, p);
-    if (coups.length) { poser(st, p, choisirCoup(st, p) || coups[0]); pose = true; }
-    else st.mains[p] = [];
+    if (coups.length) {
+      const coup = choisirCoup(st, p) || coups[0];
+      poser(st, p, coup); pose = true; format = coup.format;
+    } else st.mains[p] = [];
     store.formatChoisi = null;
     fini = avancer(st);
   }
 
-  programmerVol(a.carte, pose ? `[data-banc="${p}"] .moitie.neuf` : `[data-banc="${p}"]`,
+  programmerVol(pose ? (a.moities[format] || a.carte) : a.carte,
+    pose ? `[data-banc="${p}"] .moitie.neuf` : `[data-banc="${p}"]`,
     pose ? {} : { taille: false, fondu: true });
   programmerVol(a.pioche, a.place);
   return fini;
