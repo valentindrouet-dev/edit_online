@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.40';
+import { ELEMENT_IDS } from './data.js?v=1.41';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -33,6 +33,12 @@ export const DEFAULTS = {
   // un plan ordinaire — variante hors règles.
   raccordConnecte: true,
   generiqueBloque: true,     // rien avant l'Ouverture, rien après les Crédits
+  // Variante « banc en lignes » : chaque séquence occupe sa propre ligne, un
+  // Plan Large ou un Plan de départ tient la sienne à lui seul, et l'on
+  // accroche les Plans Moyens / Gros Plans à gauche ou à droite d'une ligne.
+  // Une nouvelle séquence se pose au-dessus ou en dessous des autres, jamais
+  // entre deux ; les Raccords n'y relient rien.
+  bancEnLignes: false,
 
   // --- Décompte ------------------------------------------------------------
   objectifsActifs: {
@@ -175,6 +181,8 @@ export const SCHEMA = [
     { k: 'raccordConnecte', l: 'Une Carte Raccord relie deux séquences', t: 'bool',
       aide: 'et ne se pose que là ; sinon, c’est un plan ordinaire' },
     { k: 'generiqueBloque', l: 'Le Générique ferme le montage', t: 'bool' },
+    { k: 'bancEnLignes', l: 'Variante — banc en lignes', t: 'bool',
+      aide: 'une séquence par ligne, empilées vers le haut ou vers le bas ; les Raccords n’y relient rien' },
     { k: 'faceSelonPose', l: 'La face jouée suit le sens de pose', t: 'bool',
       aide: 'sinon une carte est toujours jouée sur son recto' },
   ] },

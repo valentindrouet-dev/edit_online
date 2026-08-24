@@ -612,6 +612,29 @@ Un **Plan de départ n'est pas un Plan Large** : il a son propre cadrage, `DEP`.
 un autre pour tout ce qui compte des cartes du montage — couples d'icônes, minutages, positions,
 points par carte de séquence — mais aucun bandeau de cadrage ne le vise, et aucun ne le désigne.
 
+### Variante — le banc en lignes
+
+`bancEnLignes` (Variables › Pose) change la géométrie du montage, pas son décompte. Le film ne se
+lit plus sur une bande unique mais **en pile** :
+
+- **une séquence par ligne**. Le Plan de départ tient la sienne ; un **Plan Large** en ouvre une
+  nouvelle, à lui seul, quel que soit le réglage de `plNouvelleSequence` — une ligne par séquence
+  n'aurait pas de sens si un Plan Large pouvait s'accrocher au bout d'une autre ;
+- les **Plans Moyens et Gros Plans** s'accrochent **à gauche ou à droite** de la ligne de leur
+  choix, comme ils le faisaient au bout d'une séquence ;
+- une **nouvelle séquence** se pose **au-dessus ou en dessous** de la pile — jamais entre deux. Le
+  moteur ne propose donc que les positions `0` et `sequences.length`, au lieu de toutes ;
+- un **Raccord n'y relie rien** : deux séquences ne se touchent pas, elles se succèdent. `SOUDER`
+  n'est plus proposé, et le Raccord se pose comme un plan ordinaire — en attendant le pouvoir qui
+  lui sera donné.
+
+Côté affichage, `.banc-piste` prend la classe `lignes` et devient une colonne ; chaque séquence est
+enveloppée dans une `.ligne` avec ses deux emplacements latéraux, et les nouvelles séquences se
+rendent en **bandes** (`.ecart.bande`) au-dessus et en dessous de la pile. L'aperçu de pose suit le
+même axe : `vers-haut` et `vers-bas` l'écartent du banc dans la direction où la ligne ira, plutôt que
+de recouvrir celles déjà montées. Une bande vide n'est pas rendue du tout — le banc ne doit pas se
+décaler selon qu'on vise ou non.
+
 ## Ce qui reste ouvert dans les règles
 
 Chacun de ces points est une variable réglable dans l'écran **Variables** :

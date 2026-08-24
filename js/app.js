@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.40';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.41';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
-} from './data.js?v=1.40';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.40';
-import { elIcon, numIcon } from './icons.js?v=1.40';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.40';
+} from './data.js?v=1.41';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.41';
+import { elIcon, numIcon } from './icons.js?v=1.41';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.41';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.40';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.40';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.40';
-import { releve, voler, stopperVols } from './anim.js?v=1.40';
-import { campagne } from './lab.js?v=1.40';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.40';
+} from './engine.js?v=1.41';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.41';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.41';
+import { releve, voler, stopperVols } from './anim.js?v=1.41';
+import { campagne } from './lab.js?v=1.41';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.41';
 
 const app = document.getElementById('app');
 
@@ -497,6 +497,13 @@ function bancBloc(st, i, titre, interactif) {
   const coups = vise
     ? coupsPossibles(st, i, vise.carte).filter((c) => c.format === vise.format)
     : [];
+  // Variante « banc en lignes » : une séquence par ligne, empilées de haut en
+  // bas. On ne pose donc plus une séquence *entre* deux autres — on l'ajoute
+  // au-dessus ou en dessous —, et les emplacements changent d'axe : ceux des
+  // séquences restent à gauche et à droite de leur ligne, ceux des nouvelles
+  // séquences deviennent deux bandes, l'une au-dessus du banc, l'autre en
+  // dessous.
+  const lignes = !!st.cfg.bancEnLignes;
 
   // Au survol d'un emplacement, le plan s'y montre en transparence, tel qu'il
   // s'y poserait : la bonne moitié, et la face que le côté de pose lui donne.
@@ -512,13 +519,20 @@ function bancBloc(st, i, titre, interactif) {
   const versOu = (c) => {
     if (c.cote) return c.cote;
     if (c.action === 'GENERIQUE') return c.role === 'OUVERTURE' ? 'gauche' : 'droite';
-    if (c.action === 'NOUVELLE_SEQUENCE') return c.pos === 0 ? 'gauche' : 'droite';
+    if (c.action === 'NOUVELLE_SEQUENCE') {
+      if (lignes) return c.pos === 0 ? 'haut' : 'bas';
+      return c.pos === 0 ? 'gauche' : 'droite';
+    }
     return 'droite';
   };
-  const fenteChoix = (c) => {
+  // `couche` : l'emplacement est dans une bande horizontale, où l'étiquette se
+  // lit normalement. Ailleurs, une étiquette longue se met debout pour ne pas
+  // élargir le banc.
+  const fenteChoix = (c, couche) => {
     const coup = encodeURIComponent(JSON.stringify(sansCarte(c)));
-    const lg = etiquetteCoup(c);
-    const bouton = `<button class="fente-btn ${lg.length > 3 ? 'debout' : ''}" data-coup="${coup}">${lg}</button>`;
+    const lg = etiquetteCoup(c, lignes);
+    const debout = !couche && lg.length > 3;
+    const bouton = `<button class="fente-btn ${debout ? 'debout' : ''}" data-coup="${coup}">${lg}</button>`;
     if (!carteEnMain) return `<span class="fente-choix">${bouton}</span>`;
     const plan = planPose(carteEnMain, c.format, c.role, faceJouee(c.format, c.cote, st.cfg));
     // L'aperçu porte lui aussi le coup : c'est toute la carte en pointillés qui
@@ -530,38 +544,66 @@ function bancBloc(st, i, titre, interactif) {
 
   const fente = (liste) => {
     if (!liste.length) return '<div class="ecart"></div>';
-    return `<div class="ecart actif">${liste.map(fenteChoix).join('')}</div>`;
+    return `<div class="ecart actif">${liste.map((c) => fenteChoix(c)).join('')}</div>`;
   };
+  // Une bande court sur toute la largeur du banc, au-dessus ou en dessous des
+  // lignes : vide, elle ne prend aucune place — le banc ne doit pas se
+  // décaler selon qu'on vise ou non.
+  const bande = (liste) => (liste.length
+    ? `<div class="ecart actif bande">${liste.map((c) => fenteChoix(c, true)).join('')}</div>`
+    : '');
+
+  const carte = (plan, si, k) => renderPlan(plan, {
+    points: objsDe(plan).length ? (points.get(plan) || 0) : 0,
+    detail: detail.get(plan) || [],
+    neuf: !!(neuf && neuf.seq === si && neuf.idx === k),
+  });
 
   const morceaux = [];
-  if (!banc.sequences.length) {
-    morceaux.push('<div class="vide" style="color:#8a8496">Banc vide</div>');
-  }
-  banc.sequences.forEach((seq, si) => {
-    // Écart avant cette séquence : nouvelle séquence, soudure, générique.
-    morceaux.push(fente(coups.filter((c) => (c.action === 'NOUVELLE_SEQUENCE' && c.pos === si)
-      || (c.action === 'SOUDER' && c.pos === si - 1)
-      || (c.action === 'GENERIQUE' && c.role === 'OUVERTURE' && si === 0))));
-    morceaux.push(`<div class="sequence">`);
-    morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche')));
-    seq.forEach((plan, k) => morceaux.push(renderPlan(plan, {
-      points: objsDe(plan).length ? (points.get(plan) || 0) : 0,
-      detail: detail.get(plan) || [],
-      neuf: !!(neuf && neuf.seq === si && neuf.idx === k),
-    })));
-    morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'droite')));
-    morceaux.push('</div>');
-  });
   const n = banc.sequences.length;
-  morceaux.push(fente(coups.filter((c) => (c.action === 'NOUVELLE_SEQUENCE' && c.pos === n)
-    || (c.action === 'GENERIQUE' && c.role === 'CREDITS'))));
+  if (!n) morceaux.push('<div class="vide" style="color:#8a8496">Banc vide</div>');
+
+  if (lignes) {
+    // Au-dessus de tout : ouvrir une séquence en tête du film.
+    morceaux.push(bande(coups.filter((c) => c.action === 'NOUVELLE_SEQUENCE' && c.pos === 0)));
+    banc.sequences.forEach((seq, si) => {
+      morceaux.push('<div class="ligne">');
+      // Le générique d'ouverture est en tête du film, donc au bout gauche de
+      // la première ligne ; les crédits, au bout droit de la dernière.
+      morceaux.push(fente(coups.filter((c) => (c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche')
+        || (c.action === 'GENERIQUE' && c.role === 'OUVERTURE' && si === 0))));
+      morceaux.push('<div class="sequence">');
+      seq.forEach((plan, k) => morceaux.push(carte(plan, si, k)));
+      morceaux.push('</div>');
+      morceaux.push(fente(coups.filter((c) => (c.action === 'ETENDRE' && c.seq === si && c.cote === 'droite')
+        || (c.action === 'GENERIQUE' && c.role === 'CREDITS' && si === n - 1))));
+      morceaux.push('</div>');
+    });
+    // En dessous de tout : ouvrir une séquence en fin de film. Sur un banc
+    // vide, les deux bandes désigneraient le même coup : une seule suffit.
+    if (n) morceaux.push(bande(coups.filter((c) => c.action === 'NOUVELLE_SEQUENCE' && c.pos === n)));
+  } else {
+    banc.sequences.forEach((seq, si) => {
+      // Écart avant cette séquence : nouvelle séquence, soudure, générique.
+      morceaux.push(fente(coups.filter((c) => (c.action === 'NOUVELLE_SEQUENCE' && c.pos === si)
+        || (c.action === 'SOUDER' && c.pos === si - 1)
+        || (c.action === 'GENERIQUE' && c.role === 'OUVERTURE' && si === 0))));
+      morceaux.push('<div class="sequence">');
+      morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche')));
+      seq.forEach((plan, k) => morceaux.push(carte(plan, si, k)));
+      morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'droite')));
+      morceaux.push('</div>');
+    });
+    morceaux.push(fente(coups.filter((c) => (c.action === 'NOUVELLE_SEQUENCE' && c.pos === n)
+      || (c.action === 'GENERIQUE' && c.role === 'CREDITS'))));
+  }
 
   // Le compte de plans se lit au-dessus du banc qu'il décrit, plutôt que dans
   // un bandeau commun où il fallait se souvenir de qui il parlait.
   const faits = Math.min(compter(banc, st.cfg).plans, st.cfg.tours);
   return `<div class="panneau">
     <h2>${titre}${titre ? `<span class="banc-compte">Plan <b>${faits} / ${st.cfg.tours}</b></span>` : ''}</h2>
-    <div class="banc ${coups.length ? 'vise' : ''}" data-banc="${i}"><div class="banc-piste">${morceaux.join('')}</div></div>
+    <div class="banc ${coups.length ? 'vise' : ''}" data-banc="${i}"><div class="banc-piste ${lignes ? 'lignes' : ''}">${morceaux.join('')}</div></div>
   </div>`;
 }
 
@@ -608,6 +650,7 @@ function rafraichirVisee(st) {
   const bloc = document.createElement('div');
   bloc.innerHTML = bancBloc(st, p, '', true);
   piste.innerHTML = bloc.querySelector('.banc-piste').innerHTML;
+  piste.classList.toggle('lignes', !!st.cfg.bancEnLignes);
   banc.classList.toggle('vise', !!bloc.querySelector('.banc').classList.contains('vise'));
   brancherFentes(st, piste);
   brancherApercu(piste);
@@ -630,6 +673,7 @@ function choisirMoitie(st, format) {
     const bloc = document.createElement('div');
     bloc.innerHTML = bancBloc(st, st.courant, '', true);
     piste.innerHTML = bloc.querySelector('.banc-piste').innerHTML;
+    piste.classList.toggle('lignes', !!st.cfg.bancEnLignes);
     brancherFentes(st, piste);
     brancherApercu(piste);
   }
@@ -685,9 +729,13 @@ function sansCarte(c) {
   return reste;
 }
 
-function etiquetteCoup(c) {
+function etiquetteCoup(c, lignes) {
   switch (c.action) {
-    case 'NOUVELLE_SEQUENCE': return '＋ séquence';
+    case 'NOUVELLE_SEQUENCE':
+      // En lignes, une nouvelle séquence ne s'insère pas : elle s'empile.
+      // L'étiquette dit donc de quel côté de la pile elle ira.
+      if (lignes) return c.pos === 0 ? '▲ nouvelle ligne' : '▼ nouvelle ligne';
+      return '＋ séquence';
     case 'SOUDER': return '⛓ raccorder';
     case 'GENERIQUE': return c.role === 'OUVERTURE' ? '▶ ouverture' : '■ fin';
     default: return c.cote === 'gauche' ? '◀' : '▶';

@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.40';
-import { compter, bancVide, plansComptes } from './scoring.js?v=1.40';
+} from './data.js?v=1.41';
+import { compter, bancVide, plansComptes } from './scoring.js?v=1.41';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -275,14 +275,26 @@ export function coupsPossibles(state, p, hypothese) {
   const bloqueGauche = cfg.generiqueBloque && banc.ouverture;
   const bloqueDroite = cfg.generiqueBloque && banc.fermeture;
 
+  // Variante « banc en lignes » : chaque séquence tient sa propre ligne, et
+  // une nouvelle séquence se glisse au-dessus ou en dessous des autres, jamais
+  // entre deux. Il n'y a donc plus d'ordre à négocier au milieu du banc — on
+  // empile, on n'insère pas.
+  const lignes = !!cfg.bancEnLignes;
+
   const variantes = carte.type === 'DOUBLE' ? ['GP', 'PM'] : ['PL'];
 
   for (const format of variantes) {
     const brut = carte.type === 'DOUBLE' ? moitiesDe(carte)[format] : plHalf(carte);
 
-    // Un Plan Large ouvre toujours une nouvelle séquence.
-    if (format === 'PL' && cfg.plNouvelleSequence) {
-      for (let i = 0; i <= banc.sequences.length; i++) {
+    // Un Plan Large ouvre toujours une nouvelle séquence — et occupe donc une
+    // ligne à lui seul quand le banc se lit en lignes. En lignes, la variante
+    // l'impose : une ligne par séquence n'aurait pas de sens si un Plan Large
+    // pouvait s'accrocher au bout d'une autre.
+    if (format === 'PL' && (cfg.plNouvelleSequence || lignes)) {
+      const places = lignes && banc.sequences.length
+        ? [0, banc.sequences.length]   // au-dessus, ou en dessous : jamais entre
+        : Array.from({ length: banc.sequences.length + 1 }, (_, i) => i);
+      for (const i of places) {
         if (i === 0 && bloqueGauche) continue;
         if (i === banc.sequences.length && bloqueDroite) continue;
         out.push({ carte, format, action: 'NOUVELLE_SEQUENCE', pos: i });
@@ -308,7 +320,10 @@ export function coupsPossibles(state, p, hypothese) {
     // forcément — elle ne peut pas s'y poser sans relier. Aux deux bouts du
     // montage, en revanche, elle se pose comme un plan ordinaire.
     // `raccordConnecte: false` en refait un plan ordinaire partout (variante).
-    const raccord = cfg.raccordConnecte && brut.transition === 'RACCORD';
+    // En lignes, un Raccord ne relie plus rien : deux séquences ne se touchent
+    // pas, elles se succèdent. Il se pose donc comme un plan ordinaire, en
+    // attendant le pouvoir qu'il recevra.
+    const raccord = cfg.raccordConnecte && !lignes && brut.transition === 'RACCORD';
     if (raccord) {
       for (let i = 0; i < banc.sequences.length - 1; i++) {
         const g = banc.sequences[i], d = banc.sequences[i + 1];

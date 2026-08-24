@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.40';
-export const BUILD_DATE = '2026-08-18 01:00';
+export const VERSION = '1.41';
+export const BUILD_DATE = '2026-08-24 15:00';
 
 export const CHANGELOG = [
+  {
+    v: '1.41',
+    date: '24/08/2026',
+    items: [
+      "Nouvelle variante — <b>le banc en lignes</b>. Le film ne se monte plus sur une bande unique : <b>chaque séquence tient sa propre ligne</b>. Un Plan Large, comme le Plan de départ, ouvre une ligne à lui seul ; les Plans Moyens et Gros Plans s’accrochent <b>à gauche ou à droite</b> de la ligne de leur choix. Une nouvelle séquence se pose <b>au-dessus ou en dessous</b> de la pile — jamais entre deux —, et l’aperçu s’écarte du banc dans la direction où elle ira, sans recouvrir les lignes déjà montées.",
+      "Dans cette variante, <b>un Raccord ne relie plus rien</b> : deux séquences ne se touchent pas, elles se succèdent. Il se pose donc comme un plan ordinaire, en attendant le pouvoir qui lui sera donné.",
+      "La variante se règle dans <b>Variables › Pose</b> — « Variante — banc en lignes ». Décochée, le banc se lit comme avant, sur une bande qui passe à la ligne quand elle déborde.",
+    ],
+  },
   {
     v: '1.40',
     date: '18/08/2026',

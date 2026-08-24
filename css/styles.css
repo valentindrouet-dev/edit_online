@@ -514,6 +514,23 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 }
 .banc .sequence { flex-wrap: nowrap; }
 
+/* Variante « banc en lignes » : le film ne se lit plus sur une bande unique
+   mais en pile — une séquence par ligne, les Plans Moyens et Gros Plans à
+   gauche et à droite de leur ligne, les nouvelles séquences au-dessus ou en
+   dessous de la pile. La piste devient donc une colonne, et le retour à la
+   ligne automatique n'a plus lieu d'être : chaque ligne est déjà la sienne. */
+.banc-piste.lignes {
+  flex-direction: column; flex-wrap: nowrap; align-items: center; row-gap: 8px;
+}
+.banc-piste.lignes .ligne {
+  display: flex; align-items: stretch; flex: 0 0 auto; justify-content: center;
+}
+/* Une bande court en travers du banc : elle n'existe que quand un coup s'y
+   offre, et ne réserve donc aucune place le reste du temps. */
+.banc-piste.lignes .ecart.bande {
+  width: auto; align-self: center; padding: 0;
+}
+
 /* Le banc de montage : des séquences séparées par un écart. */
 .banc .sequence {
   display: flex; gap: 2px; align-items: stretch; flex: 0 0 auto;
@@ -567,6 +584,18 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 }
 .fente-choix.vers-gauche .apercu-pose { right: 0; transform-origin: right center; }
 .fente-choix.vers-droite .apercu-pose { left: 0; transform-origin: left center; }
+/* En lignes, une nouvelle séquence se pose au-dessus ou en dessous de la pile :
+   l'aperçu suit le même axe, et s'écarte du banc plutôt que de recouvrir les
+   lignes déjà montées. */
+.fente-choix.vers-haut .apercu-pose,
+.fente-choix.vers-bas .apercu-pose {
+  top: auto; bottom: auto; left: 50%; right: auto;
+  transform: translateX(-50%) scale(.94);
+}
+.fente-choix.vers-haut .apercu-pose { bottom: 0; transform-origin: center bottom; }
+.fente-choix.vers-bas .apercu-pose { top: 0; transform-origin: center top; }
+.fente-choix.ouverte.vers-haut .apercu-pose,
+.fente-choix.ouverte.vers-bas .apercu-pose { transform: translateX(-50%) scale(1); }
 /* Pendant qu'on vise, le banc laisse déborder : l'aperçu s'avance dans la
    marge du banc, là où la carte ira. */
 .banc.vise { overflow: visible; }
