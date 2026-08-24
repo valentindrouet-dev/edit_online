@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.42';
+import { ELEMENT_IDS } from './data.js?v=1.43';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -46,6 +46,8 @@ export const DEFAULTS = {
     RACCORD: true, PLAN: true, FORMAT: true, ELEMENT: true,
     PAIRE: true, MORT: true, NEANT: true, ABSENT: true,
     MINUTAGE: true, CHRONO: true, SANS_TC: true,
+    // Les bandeaux qui comptent des séquences plutôt que des plans.
+    SEQ_TAILLE: true, SEQ_VOISINES: true, SEQ_LONGUE: true, SEQ_AVEC: true,
   },
   // Une carte peut porter deux fois la même icône. Par défaut chacune rapporte
   // ses points ; à false, un objectif d'élément compte les plans porteurs.

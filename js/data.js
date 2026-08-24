@@ -85,6 +85,15 @@ export const CADRAGES_VISABLES = ['PL', 'PM', 'GP'];
 //   SANS_TC   n points si aucun plan du montage n'a le minutage visé : égal au
 //             seuil (00:00 pour les Raccords et Génériques), ou strictement
 //             avant, ou strictement après
+//
+// Quatre bandeaux comptent des SÉQUENCES plutôt que des plans — ils lisent la
+// forme du banc, pas son contenu carte par carte :
+//   SEQ_TAILLE   n points par séquence d'au moins `seuil` plans
+//   SEQ_VOISINES n points par séquence placée au-dessus (`AVANT`) ou en
+//                dessous (`APRES`) de celle qui porte le bandeau
+//   SEQ_LONGUE   n points par plan de la plus longue séquence du banc
+//   SEQ_AVEC     n points par séquence qui porte (`AVEC`) — ou ne porte pas
+//                (`SANS`) — la cible visée : une icône, un cadrage, un Raccord
 
 // --- La portée d'un bandeau ------------------------------------------------
 // Tout bandeau dit où il compte : parmi les cartes placées avant lui, après
@@ -113,7 +122,38 @@ export const OBJ = {
   minutage: (n, sens, seuil, portee) => ({ kind: 'MINUTAGE', n, sens, seuil, portee: portee || 'MONTAGE' }),
   chrono:  (n, portee) => ({ kind: 'CHRONO', n, portee: portee || 'MONTAGE' }),
   sansTc: (n, sens, seuil, portee) => ({ kind: 'SANS_TC', n, sens, seuil, portee: portee || 'MONTAGE' }),
+  // Les bandeaux qui comptent des SÉQUENCES et non des plans. Ils lisent la
+  // forme du banc — combien de séquences, de quelle taille, ce qu'elles
+  // portent —, pas son contenu carte par carte. Leur portée ne se règle donc
+  // pas : c'est le montage entier qu'ils regardent, toujours.
+  seqTaille:   (n, seuil) => ({ kind: 'SEQ_TAILLE', n, seuil }),
+  seqVoisines: (n, sens) => ({ kind: 'SEQ_VOISINES', n, sens }),
+  seqLongue:   (n) => ({ kind: 'SEQ_LONGUE', n }),
+  seqAvec:     (n, sens, cible) => ({ kind: 'SEQ_AVEC', n, sens, cible }),
 };
+
+/** Les bandeaux qui comptent des séquences : leur portée est le montage. */
+export const KINDS_SEQUENCE = ['SEQ_TAILLE', 'SEQ_VOISINES', 'SEQ_LONGUE', 'SEQ_AVEC'];
+
+/**
+ * Ce qu'une séquence peut porter, pour « n × séquence avec / sans … » : une
+ * icône, un cadrage, ou une Carte Raccord. Une seule liste, une seule clé —
+ * `cible` — pour que le CSV n'ait pas de colonne de plus.
+ */
+export function ciblesSequence() {
+  return [
+    ...ELEMENT_IDS.map((e) => ({ id: e, label: ELEMENTS[e].label })),
+    ...CADRAGES_VISABLES.map((f) => ({ id: f, label: FORMATS[f].label })),
+    { id: 'RACCORD', label: 'Carte Raccord' },
+  ];
+}
+
+/** Le libellé d'une cible de séquence — icône, cadrage ou Raccord. */
+export function libelleCible(cible) {
+  if (cible === 'RACCORD') return 'Carte Raccord';
+  if (FORMATS[cible]) return FORMATS[cible].label;
+  return ELEMENTS[cible] ? ELEMENTS[cible].label : cible;
+}
 
 /** « 25:00 », en toutes lettres d'afficheur. */
 export function tcTexte(min) {
@@ -133,6 +173,10 @@ function objQuoi(o) {
     case 'MORT':    return 'Mort';
     case 'NEANT':   return 'Plan sans personnage';
     case 'MINUTAGE': return `Plan ${o.sens === 'APRES' ? 'après' : 'avant'} ${tcTexte(o.seuil)}`;
+    case 'SEQ_TAILLE': return `séquence de ${o.seuil} plan${o.seuil > 1 ? 's' : ''} ou plus`;
+    case 'SEQ_VOISINES': return `séquence ${o.sens === 'APRES' ? 'en dessous' : 'au-dessus'} de celle-ci`;
+    case 'SEQ_LONGUE': return 'Plan de votre plus longue séquence';
+    case 'SEQ_AVEC': return `séquence ${o.sens === 'SANS' ? 'sans' : 'avec'} ${libelleCible(o.cible)}`;
     default: return '';
   }
 }
@@ -160,7 +204,8 @@ export function objLabel(o, cfg) {
 export function objPortee(o, cfg) {
   if (!o) return 'MONTAGE';
   // « Dans l'ordre » ne se règle pas : c'est le film entier que l'on juge.
-  if (o.kind === 'CHRONO') return 'MONTAGE';
+  // Les bandeaux de séquence non plus : ils lisent la forme du banc entier.
+  if (o.kind === 'CHRONO' || KINDS_SEQUENCE.includes(o.kind)) return 'MONTAGE';
   if (PORTEE_IDS.includes(o.portee)) return o.portee;
   return cfg && cfg.porteeParDefaut === 'SEQUENCE' ? 'SEQUENCE' : 'MONTAGE';
 }

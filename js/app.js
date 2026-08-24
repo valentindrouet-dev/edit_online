@@ -2,26 +2,27 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.42';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.43';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
-} from './data.js?v=1.42';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.42';
-import { elIcon, numIcon } from './icons.js?v=1.42';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.42';
+  KINDS_SEQUENCE, ciblesSequence,
+} from './data.js?v=1.43';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.43';
+import { elIcon, numIcon } from './icons.js?v=1.43';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.43';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.42';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.42';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.42';
-import { releve, voler, stopperVols } from './anim.js?v=1.42';
-import { campagne } from './lab.js?v=1.42';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.42';
+} from './engine.js?v=1.43';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.43';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.43';
+import { releve, voler, stopperVols } from './anim.js?v=1.43';
+import { campagne } from './lab.js?v=1.43';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.43';
 
 const app = document.getElementById('app');
 
@@ -636,19 +637,23 @@ function bancBloc(st, i, titre, interactif) {
     // Au-dessus de tout : ouvrir une séquence en tête du film.
     morceaux.push(bande(coups.filter((c) => c.action === 'NOUVELLE_SEQUENCE' && c.pos === 0)));
     banc.sequences.forEach((seq, si) => {
-      // Les deux bords tiennent chacun une colonne souple de largeur égale :
-      // ouvrir un emplacement d'un côté ne déplace donc pas la ligne.
+      // Les deux bords se posent **hors du flux**, contre les flancs de la
+      // séquence : ils ne prennent donc aucune largeur, et ouvrir un
+      // emplacement d'un côté ne déplace ni la ligne ni son ancre. C'est la
+      // marge du corps qui place le Plan Large — ou le Plan de départ — au
+      // centre du banc.
       morceaux.push('<div class="ligne">');
+      morceaux.push(`<div class="ligne-corps" style="${ancrageLigne(seq)}">`);
       // Le générique d'ouverture est en tête du film, donc au bout gauche de
       // la première ligne ; les crédits, au bout droit de la dernière.
       morceaux.push(`<div class="bord gauche">${fente(coups.filter((c) => (c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche')
         || (c.action === 'GENERIQUE' && c.role === 'OUVERTURE' && si === 0)))}</div>`);
-      morceaux.push(`<div class="sequence" style="${ancrageLigne(seq)}">`);
+      morceaux.push('<div class="sequence">');
       seq.forEach((plan, k) => morceaux.push(carte(plan, si, k)));
       morceaux.push('</div>');
       morceaux.push(`<div class="bord droite">${fente(coups.filter((c) => (c.action === 'ETENDRE' && c.seq === si && c.cote === 'droite')
         || (c.action === 'GENERIQUE' && c.role === 'CREDITS' && si === n - 1)))}</div>`);
-      morceaux.push('</div>');
+      morceaux.push('</div></div>');
     });
     // En dessous de tout : ouvrir une séquence en fin de film. Sur un banc
     // vide, les deux bandes désigneraient le même coup : une seule suffit.
@@ -1829,6 +1834,12 @@ const KINDS = [
   ['ABSENT',  'si l’icône est absente…'],
   ['CHRONO',  'si tout se lit dans l’ordre'],
   ['SANS_TC', 'si aucun plan au minutage…'],
+  // Les bandeaux qui comptent des séquences plutôt que des plans : ils lisent
+  // la forme du banc, pas son contenu carte par carte.
+  ['SEQ_TAILLE',   'par séquence d’au moins n plans…'],
+  ['SEQ_VOISINES', 'par séquence au-dessus / en dessous…'],
+  ['SEQ_LONGUE',   'par plan de la plus longue séquence'],
+  ['SEQ_AVEC',     'par séquence avec / sans…'],
 ];
 
 const KIND_LABEL = Object.fromEntries(KINDS.map(([k, l]) => [k, l]));
@@ -2401,6 +2412,21 @@ function blocPouvoir(o, ou, rang = 1) {
       </select>
       <input type="number" class="pts" min="0" max="99" value="${o.seuil}" data-champ-obj="${ou}"${R} data-part="seuil">
       <span class="tc-apercu">${tc(o.seuil)}</span>`;
+  } else if (kind === 'SEQ_TAILLE') {
+    complement = `<input type="number" class="pts" min="1" max="20" value="${o.seuil}"
+        data-champ-obj="${ou}"${R} data-part="seuil">
+      <span class="plus">plan${o.seuil > 1 ? 's' : ''} ou plus</span>`;
+  } else if (kind === 'SEQ_VOISINES') {
+    complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
+        ${opt('AVANT', 'au-dessus de celle-ci', o.sens !== 'APRES')}
+        ${opt('APRES', 'en dessous de celle-ci', o.sens === 'APRES')}
+      </select>`;
+  } else if (kind === 'SEQ_AVEC') {
+    complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
+        ${opt('AVEC', 'avec', o.sens !== 'SANS')}${opt('SANS', 'sans', o.sens === 'SANS')}
+      </select>
+      <select data-champ-obj="${ou}"${R} data-part="cible">
+        ${ciblesSequence().map((c) => opt(c.id, c.label, o.cible === c.id)).join('')}</select>`;
   }
 
   return `<div class="champ-bloc">
@@ -2412,11 +2438,13 @@ function blocPouvoir(o, ou, rang = 1) {
       <select data-champ-obj="${ou}"${R} data-part="kind">${KINDS.map(([k, l]) => opt(k, l, kind === k)).join('')}</select>
       ${complement}
     </div>
-    ${o && o.kind !== 'CHRONO' ? `<div class="portee-choix">
+    ${o && o.kind !== 'CHRONO' && !KINDS_SEQUENCE.includes(o.kind) ? `<div class="portee-choix">
       ${PORTEES.map((x) => `<button class="pp ${objPortee(o, store.cfg) === x.id ? 'on' : ''}"
         data-champ-portee="${ou}"${R} data-portee="${x.id}" title="${x.label}">
         ${x.gauche ? '◀' : ''} ${x.court} ${x.droite ? '▶' : ''}</button>`).join('')}
-    </div>` : (o ? '<div class="aide portee-fixe">« Dans l’ordre » se lit toujours sur le montage entier.</div>' : '')}
+    </div>` : (o ? `<div class="aide portee-fixe">${KINDS_SEQUENCE.includes(o.kind)
+      ? 'Un bandeau de séquence lit la forme du banc entier : sa portée ne se règle pas.'
+      : '« Dans l’ordre » se lit toujours sur le montage entier.'}</div>` : '')}
     <div class="apercu-obj">${o ? `${objHTML(o, 26, store.cfg)}<span class="lit">${objLabel(o, store.cfg)}</span>`
       : '<span class="aide">Bandeau vide</span>'}</div>
   </div>`;
@@ -2704,6 +2732,10 @@ function declencheurs(obj, plans) {
     case 'MINUTAGE': return plans.filter((p) => (obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
     // Les « si » : le pouvoir se déclenche, ou pas — jamais plusieurs fois.
     case 'ABSENT': case 'CHRONO': case 'SANS_TC': return 1;
+    // Les bandeaux de séquence ne se déclenchent pas sur une carte mais sur la
+    // forme du banc : le matériel seul ne peut pas dire combien de fois. On les
+    // compte donc une fois — leur plancher honnête.
+    case 'SEQ_TAILLE': case 'SEQ_VOISINES': case 'SEQ_LONGUE': case 'SEQ_AVEC': return 1;
     default: return 0;
   }
 }
@@ -3267,6 +3299,11 @@ function construireObj(kind, actuel) {
     CHRONO:  () => OBJ.chrono(n),
     SANS_TC: () => OBJ.sansTc(n, actuel && actuel.sens ? actuel.sens : 'EGAL',
       actuel && actuel.seuil !== undefined ? actuel.seuil : 0),
+    SEQ_TAILLE:   () => OBJ.seqTaille(n, actuel && actuel.seuil ? Math.max(1, actuel.seuil) : 3),
+    SEQ_VOISINES: () => OBJ.seqVoisines(n, actuel && actuel.sens === 'APRES' ? 'APRES' : 'AVANT'),
+    SEQ_LONGUE:   () => OBJ.seqLongue(n),
+    SEQ_AVEC:     () => OBJ.seqAvec(n, actuel && actuel.sens === 'SANS' ? 'SANS' : 'AVEC',
+      actuel && actuel.cible ? actuel.cible : e0),
   }[kind]();
   // Changer de type ne déplace pas le bandeau : il garde sa portée.
   if (actuel && PORTEE_IDS.includes(actuel.portee)) neuf.portee = actuel.portee;
@@ -3293,7 +3330,11 @@ function majObjectif(cles, part, valeur, rang = 1) {
   else if (part === 'el0') o.els = [valeur, o.els[1]];
   else if (part === 'el1') o.els = [o.els[0], valeur];
   else if (part === 'sens') o.sens = valeur;
-  else if (part === 'seuil') o.seuil = Math.max(0, Math.min(99, parseInt(valeur, 10) || 0));
+  else if (part === 'cible') o.cible = valeur;
+  // Une séquence d'« au moins zéro plan » ne veut rien dire : le seuil des
+  // bandeaux de séquence part de 1, celui des minutages part de 00:00.
+  else if (part === 'seuil') o.seuil = Math.max(o.kind === 'SEQ_TAILLE' ? 1 : 0,
+    Math.min(99, parseInt(valeur, 10) || 0));
   else if (part === 'portee') o.portee = valeur;
   poserObj(cles, o, rang);
 }
@@ -3325,6 +3366,9 @@ function csvEchappe(v) {
 function cibleObj(o) {
   if (!o) return '';
   if (o.kind === 'PAIRE') return o.els.join('+');
+  // Un bandeau de séquence vise une icône, un cadrage ou un Raccord : tout
+  // tient dans la même colonne que les autres cibles.
+  if (o.cible) return o.cible;
   if (o.format) return o.format;
   return o.el || '';
 }
@@ -3409,6 +3453,11 @@ function objDepuisCSV(r, suf = '') {
     case 'ELEMENT': return ELEMENT_IDS.includes(cible) ? OBJ.element(n, cible, portee) : null;
     case 'ABSENT':  return ELEMENT_IDS.includes(cible) ? OBJ.absent(n, cible, portee) : null;
     case 'MINUTAGE': return OBJ.minutage(n, sens, seuil, portee);
+    case 'SEQ_TAILLE':   return OBJ.seqTaille(n, Math.max(1, seuil || 1));
+    case 'SEQ_VOISINES': return OBJ.seqVoisines(n, sens0 === 'APRES' ? 'APRES' : 'AVANT');
+    case 'SEQ_LONGUE':   return OBJ.seqLongue(n);
+    case 'SEQ_AVEC': return ciblesSequence().some((c) => c.id === cible)
+      ? OBJ.seqAvec(n, sens0 === 'SANS' ? 'SANS' : 'AVEC', cible) : null;
     case 'PAIRE': {
       const [a, b] = cible.split('+');
       return ELEMENT_IDS.includes(a) && ELEMENT_IDS.includes(b) ? OBJ.paire(n, a, b, portee) : null;

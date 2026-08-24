@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, objPortee, objsDe } from './data.js?v=1.42';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, objPortee, objsDe } from './data.js?v=1.43';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -124,9 +124,41 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur) {
           : (p) => p.tc === obj.seuil;
       return portee.some(vise) ? 0 : n;
     }
+    // --- Les bandeaux qui comptent des séquences ---------------------------
+    // Ceux-là ne regardent pas une portée de plans mais la forme du banc :
+    // combien de séquences, de quelle taille, ce qu'elles portent. Ils lisent
+    // donc `banc` directement, et leur portée est toujours le montage.
+    case 'SEQ_TAILLE':
+      return n * banc.sequences.filter((s) => plansDe(s).length >= Math.max(1, obj.seuil || 1)).length;
+    case 'SEQ_LONGUE':
+      return n * banc.sequences.reduce((m, s) => Math.max(m, plansDe(s).length), 0);
+    case 'SEQ_VOISINES': {
+      // « Au-dessus » et « en dessous » se lisent dans l'ordre du banc : en
+      // lignes, c'est la pile ; sur une bande unique, c'est l'ordre de gauche
+      // à droite — avant et après la séquence porteuse.
+      const i = banc.sequences.indexOf(sequence);
+      if (i < 0) return 0;
+      return n * (obj.sens === 'APRES' ? banc.sequences.length - 1 - i : i);
+    }
+    case 'SEQ_AVEC': {
+      const porte = (s) => sequencePorte(s, obj.cible);
+      return n * banc.sequences.filter((s) => (obj.sens === 'SANS' ? !porte(s) : porte(s))).length;
+    }
     default:
       return 0;
   }
+}
+
+/** Les plans d'une séquence — un Raccord relie, il ne raconte pas : il n'en est pas un. */
+function plansDe(seq) {
+  return seq.filter((p) => !estRaccord(p));
+}
+
+/** Une séquence porte-t-elle la cible visée — une icône, un cadrage, un Raccord ? */
+function sequencePorte(seq, cible) {
+  if (cible === 'RACCORD') return seq.some(estRaccord);
+  if (CADRAGES_VISABLES.includes(cible)) return seq.some((p) => p.format === cible);
+  return seq.some((p) => p.el.includes(cible));
 }
 
 /**
@@ -190,6 +222,7 @@ export function compter(banc, cfg) {
   const detail = {
     RACCORD: 0, PLAN: 0, FORMAT: 0, ELEMENT: 0, PAIRE: 0,
     MORT: 0, NEANT: 0, ABSENT: 0, MINUTAGE: 0, CHRONO: 0, SANS_TC: 0,
+    SEQ_TAILLE: 0, SEQ_VOISINES: 0, SEQ_LONGUE: 0, SEQ_AVEC: 0,
     CHRONOLOGIE: 0, POSE: 0, JONCTION: 0,
   };
   const lignes = [];
@@ -277,6 +310,10 @@ export const SOURCES_LABEL = {
   MINUTAGE: 'Objectifs de minutage',
   SANS_TC: 'Objectifs de minutage absent',
   CHRONO: 'Objectifs de montage dans l’ordre',
+  SEQ_TAILLE: 'Objectifs de séquence longue',
+  SEQ_VOISINES: 'Objectifs de séquences voisines',
+  SEQ_LONGUE: 'Objectifs de plus longue séquence',
+  SEQ_AVEC: 'Objectifs de séquence avec / sans',
   CHRONOLOGIE: 'Variante — chronologie',
   POSE: 'Points de pose',
   JONCTION: 'Jonctions raccordées',

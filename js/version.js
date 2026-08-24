@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.42';
-export const BUILD_DATE = '2026-08-24 17:00';
+export const VERSION = '1.43';
+export const BUILD_DATE = '2026-08-24 19:00';
 
 export const CHANGELOG = [
+  {
+    v: '1.43',
+    date: '24/08/2026',
+    items: [
+      "<b>Quatre pouvoirs qui comptent des séquences</b>, et non des plans — ils lisent la forme du banc plutôt que son contenu carte par carte. <b>n × Séquence ≥ k</b> : n points par séquence d’au moins k plans. <b>n × Séquence ▲ / ▼</b> : n points par séquence placée au-dessus, ou en dessous, de celle qui porte le bandeau. <b>n × Plan de la plus longue séquence</b> : réglé sur 1, il vaut exactement le nombre de plans de votre plus longue séquence. <b>n × Séquence avec / sans …</b> : n points par séquence qui porte — ou ne porte pas — l’icône, le cadrage ou la Carte Raccord visée.",
+      "Ces bandeaux portent une <b>pastille violette « Séquence »</b> pour qu’on ne les confonde pas avec la pastille blanche « Plan » : ce n’est pas une carte qu’ils comptent, c’est un bloc du banc. Leur portée ne se règle pas — c’est le montage entier qu’ils regardent, toujours. Un Raccord n’étant pas un plan, il ne compte pas dans la taille d’une séquence.",
+      "<b>La zone de dépôt a la forme du plan qui va s’y poser</b> dans le mode Banc en lignes — la largeur d’un Gros Plan, d’un Plan Moyen, d’un Plan Large, et toute la hauteur d’une carte. On vise la place que la carte prendra, plus une flèche.",
+      "<b>Les emplacements collent aux flancs de leur ligne</b> et n’occupent plus aucune largeur : ils flottent hors du flux. En ouvrir un d’un seul côté ne décale donc plus ni la ligne ni son ancre — les Plans Larges et les Plans de départ de toutes les lignes restent exactement alignés, et rien ne sort du banc.",
+    ],
+  },
   {
     v: '1.42',
     date: '24/08/2026',

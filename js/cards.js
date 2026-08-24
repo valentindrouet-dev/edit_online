@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj } from './data.js?v=1.42';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.42';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj } from './data.js?v=1.43';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.43';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -71,8 +71,30 @@ function objCoeur(obj, taille, compact) {
     case 'SANS_TC': return `<span class="barre"><span class="tc-seuil">${
       obj.sens === 'AVANT' ? '&lt;' : obj.sens === 'APRES' ? '&gt;' : '='
     }&nbsp;${tcTexte(obj.seuil)}</span>${croixNon()}</span>`;
+    // Les bandeaux de séquence : la pastille violette dit qu'on compte des
+    // séquences et non des plans, et ce qui la suit dit lesquelles.
+    case 'SEQ_TAILLE': return `${tagSeq(compact)}
+      <span class="tc-seuil">≥&nbsp;${obj.seuil}</span>`;
+    case 'SEQ_VOISINES': return `${tagSeq(compact)}
+      <span class="fleche-seq">${obj.sens === 'APRES' ? '▼' : '▲'}</span>`;
+    // « La plus longue » : on compte ses plans, d'où la pastille Plan.
+    case 'SEQ_LONGUE': return `<span class="tag tag-blanc">Plan</span>
+      <span class="tag tag-seq">${compact ? 'séq. ⌀' : 'plus longue séq.'}</span>`;
+    case 'SEQ_AVEC': {
+      const quoi = obj.cible === 'RACCORD' ? '<span class="tag tag-gris">Raccord</span>'
+        : FORMATS[obj.cible] ? `<span class="tag tag-fmt" style="--c:${FORMATS[obj.cible].color}">${
+          compact ? FORMATS[obj.cible].short : FORMATS[obj.cible].label}</span>`
+          : elIcon(obj.cible, taille);
+      return `${tagSeq(compact)}${obj.sens === 'SANS'
+        ? `<span class="barre">${quoi}${croixNon()}</span>` : quoi}`;
+    }
     default: return '';
   }
+}
+
+/** La pastille « Séquence » des bandeaux qui comptent des séquences. */
+function tagSeq(compact) {
+  return `<span class="tag tag-seq">${compact ? 'Séq.' : 'Séquence'}</span>`;
 }
 
 /** L'objectif en entier — « 2 × ⛨ » — pour les cartes et les tableaux. */

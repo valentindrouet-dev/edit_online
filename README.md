@@ -223,6 +223,41 @@ type à part ; les cartes déjà réglées ainsi sont converties au chargement.
 Un bandeau imprimé qui ne précise pas sa portée retombe sur `porteeParDefaut` — le réglage de
 Variables, qui ne vaut plus que pour ceux-là.
 
+### Les pouvoirs qui comptent des séquences
+
+Quatre pouvoirs ne comptent pas des plans mais des **séquences** : ils lisent la *forme* du banc —
+combien de séquences, de quelle taille, ce qu'elles portent — et non son contenu carte par carte.
+Ils reçoivent donc `banc` directement plutôt qu'une portée de plans (`KINDS_SEQUENCE` dans
+`js/data.js`, les cas correspondants de `valeurObjectif()` dans `js/scoring.js`).
+
+| Pouvoir | Ce qu'il compte | Réglages |
+|---|---|---|
+| `SEQ_TAILLE` | les séquences d'au moins `seuil` plans | la valeur, le seuil |
+| `SEQ_VOISINES` | les séquences placées **au-dessus** (`AVANT`) ou **en dessous** (`APRES`) de celle qui le porte | la valeur, le sens |
+| `SEQ_LONGUE` | les **plans de la plus longue séquence** du banc — réglé sur 1, il vaut exactement ce nombre | la valeur |
+| `SEQ_AVEC` | les séquences qui portent (`AVEC`) — ou ne portent pas (`SANS`) — la cible visée | la valeur, le sens, la cible |
+
+La **cible** d'un `SEQ_AVEC` tient dans une seule clé, `cible` : une icône, un cadrage (`PL`, `PM`,
+`GP`), ou `RACCORD` pour une Carte Raccord (`ciblesSequence()`). Le CSV n'a donc pas de colonne de
+plus — la cible se range dans la même que celle des autres pouvoirs.
+
+Deux règles s'appliquent à tous les quatre :
+
+- **un Raccord n'est pas un plan** : il ne compte pas dans la taille d'une séquence, ni dans la plus
+  longue. Il reste, lui, une cible possible pour `SEQ_AVEC` ;
+- **leur portée ne se règle pas.** `objPortee()` la force à `MONTAGE`, comme pour `CHRONO` : c'est le
+  banc entier qu'ils regardent, et l'éditeur masque la ligne de portée plutôt que d'offrir un choix
+  sans effet.
+
+Sur le bandeau, ils portent une **pastille violette « Séquence »** (`.tag-seq`) qui les distingue de
+la pastille blanche « Plan » : ce n'est pas une carte qu'ils comptent, c'est un bloc du banc. Le
+`SEQ_VOISINES` y ajoute une flèche `▲` ou `▼`, et le `SEQ_LONGUE` garde la pastille « Plan » puisque
+ce sont bien des plans qu'il compte — ceux d'une séquence désignée.
+
+Dans les statistiques des pouvoirs, ils comptent **un déclencheur** : le matériel seul ne peut pas
+dire combien de fois la forme d'un banc les fera marquer, et un compte à un est leur plancher
+honnête.
+
 Une carte double s'édite avec **ses deux faces affichées** et ses quatre plans côte à côte. Son
 **appariement** est réglable — la répartition imprimée est conservée tant qu'on n'y touche pas.
 
@@ -651,12 +686,19 @@ sur une bande unique mais **en pile** :
   montage à plat : elles ne changent pas.
 
 Côté affichage, `.banc-piste` prend la classe `lignes` et devient une colonne ; chaque séquence est
-enveloppée dans une `.ligne` — une grille `1fr auto 1fr` dont les deux bords souples portent les
-emplacements latéraux, de sorte qu'ouvrir un emplacement d'un seul côté ne décale pas la ligne. Les
-nouvelles séquences se rendent en **bandes** (`.ecart.bande`) au-dessus et en dessous de la pile.
-L'aperçu de pose suit le même axe : `vers-haut` et `vers-bas` l'écartent du banc dans la direction où
-la ligne ira, plutôt que de recouvrir celles déjà montées. Une bande vide n'est pas rendue du tout —
-le banc ne doit pas se décaler selon qu'on vise ou non.
+enveloppée dans une `.ligne` qui la centre, et c'est la marge de `.ligne-corps` — calculée par
+`ancrageLigne()` — qui place l'ancre au centre du banc.
+
+Les deux emplacements latéraux (`.bord`) sont **posés hors du flux**, contre les flancs de la
+séquence : ils n'occupent aucune largeur, donc en ouvrir un d'un seul côté ne décale ni la ligne ni
+son ancre. Chacun a la **forme du plan qui va s'y poser** — la largeur d'un Gros Plan, d'un Plan
+Moyen, d'un Plan Large (`--ap`) et toute la hauteur d'une carte : on vise la place que la carte
+prendra, pas une flèche. Les nouvelles séquences se rendent en **bandes** (`.ecart.bande`) au-dessus
+et en dessous de la pile ; l'aperçu de pose y suit le même axe (`vers-haut`, `vers-bas`), s'écartant
+du banc dans la direction où la ligne ira plutôt que de recouvrir celles déjà montées. Une bande vide
+n'est pas rendue du tout — le banc ne doit pas se décaler selon qu'on vise ou non. Le centrage se
+fait en `safe center` : calé à gauche dès que ça déborde, pour que le début d'une longue ligne reste
+atteignable.
 
 ## Ce qui reste ouvert dans les règles
 

@@ -523,19 +523,32 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
   flex-direction: column; flex-wrap: nowrap; align-items: stretch; row-gap: 8px;
   width: 100%; margin: auto 0;
 }
-/* Trois colonnes : le bord gauche, la séquence, le bord droit. Les deux bords
-   sont souples et de largeur égale — ouvrir un emplacement d'un seul côté ne
-   décale donc pas la ligne —, et la séquence tient la colonne du milieu.
-   C'est sa marge (posée au rendu) qui place le Plan Large, ou le Plan de
-   départ, exactement au centre du banc : lui est l'ancre de sa ligne, ce qui
-   s'accroche à ses côtés pousse vers l'extérieur sans le déplacer. */
-.banc-piste.lignes .ligne {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: stretch;
+/* `safe center` : centré tant que tout tient, calé à gauche dès que ça
+   déborde. Un `center` sec rendrait le début de la ligne inatteignable — il
+   passerait sous le bord gauche du banc, hors de portée du défilement. */
+.banc-piste.lignes .ligne { display: flex; justify-content: safe center; }
+/* Le corps de la ligne, c'est la séquence — et elle seule. Sa marge, posée au
+   rendu, place le Plan Large (ou le Plan de départ) exactement au centre du
+   banc : lui est l'ancre de sa ligne, ce qui s'accroche à ses côtés pousse
+   vers l'extérieur sans jamais le déplacer. */
+.banc-piste.lignes .ligne-corps { position: relative; display: flex; flex: 0 0 auto; }
+/* Les emplacements se posent hors du flux, contre les flancs de la séquence :
+   ils ne prennent aucune largeur, donc en ouvrir un d'un seul côté ne décale
+   ni la ligne ni son ancre. */
+.banc-piste.lignes .bord {
+  position: absolute; top: 0; bottom: 0; display: flex; align-items: stretch;
 }
-.banc-piste.lignes .ligne .bord { display: flex; align-items: stretch; }
-.banc-piste.lignes .ligne .bord.gauche { justify-self: end; }
-.banc-piste.lignes .ligne .bord.droite { justify-self: start; }
+.banc-piste.lignes .bord.gauche { right: 100%; justify-content: flex-end; }
+.banc-piste.lignes .bord.droite { left: 100%; }
+/* La zone de dépôt a la **forme du plan qui va s'y poser** — la largeur d'un
+   Gros Plan, d'un Plan Moyen, d'un Plan Large — et toute la hauteur d'une
+   carte : on vise la place que la carte prendra, pas une flèche. */
+.banc-piste.lignes .bord .ecart.actif { width: auto; padding: 0; gap: 2px; }
+.banc-piste.lignes .bord .fente-choix { width: var(--ap, 169px); }
+.banc-piste.lignes .bord .fente-btn {
+  width: 100%; height: 100%; writing-mode: horizontal-tb; transform: none;
+  padding: 7px 9px; display: flex; align-items: center; justify-content: center;
+}
 /* Une bande court en travers du banc : elle n'existe que quand un coup s'y
    offre, et ne réserve donc aucune place le reste du temps. */
 .banc-piste.lignes .ecart.bande { width: auto; padding: 0; }
@@ -1205,10 +1218,26 @@ table.tbl th.th-tri.num { text-align: right; }
   font-size: .52em; font-weight: 800; padding: .2em .42em; border-radius: .22em;
   letter-spacing: .04em; white-space: nowrap;
 }
+/* Les bandeaux qui comptent des SÉQUENCES et non des plans. La pastille
+   violette le dit : ce n'est plus une carte que l'on compte, c'est un bloc du
+   banc. Elle se distingue ainsi de la pastille blanche « Plan ». */
+.tag.tag-seq {
+  background: #2a2140; color: #cbb6ff; border: 1px solid #5a4a8c;
+  font-size: .52em; font-weight: 800; padding: .2em .42em; border-radius: .22em;
+  letter-spacing: .04em; white-space: nowrap;
+}
+/* La flèche qui dit de quel côté de la pile on compte les séquences. */
+.fleche-seq {
+  color: #cbb6ff; font-size: 1.1em; line-height: 1; font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .55);
+}
 .apercu-obj .tc-seuil, .tbl-materiel .tc-seuil,
 .ap-obj-visuel .tc-seuil { font-size: .74rem; }
 .apercu-obj .tag.tag-chrono, .tbl-materiel .tag.tag-chrono,
 .ap-obj-visuel .tag.tag-chrono { font-size: .7rem; }
+.apercu-obj .tag.tag-seq, .tbl-materiel .tag.tag-seq,
+.ap-obj-visuel .tag.tag-seq { font-size: .7rem; }
+body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 
 /* La portée d'un pouvoir : la flèche pointe le côté compté. Elle se serre
    contre ce qu'elle porte — .obj-noyau — car elle en fait partie. */
