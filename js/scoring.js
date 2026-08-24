@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, objPortee, objsDe } from './data.js?v=1.41';
+import { PERSONNAGES, ELEMENT_IDS, objPortee, objsDe } from './data.js?v=1.42';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -145,10 +145,24 @@ export function chronologique(plans, cfg) {
   return true;
 }
 
+/**
+ * Les suites de plans que l'on lit dans l'ordre. Le film se lit d'ordinaire
+ * **séquence par séquence** : deux séquences ne se touchent pas, et rien ne
+ * relie la fin de l'une au début de la suivante.
+ *
+ * En **banc en lignes**, au contraire, le montage se lit **d'un seul tenant** —
+ * du premier plan en haut à gauche de la première ligne jusqu'au dernier plan
+ * en bas à droite de la dernière —, les lignes s'enchaînant comme les lignes
+ * d'un texte. Il n'y a donc qu'une suite à lire : le film entier.
+ */
+function suitesDeLecture(banc, cfg) {
+  return cfg.bancEnLignes ? [tousLesPlans(banc)] : banc.sequences;
+}
+
 function chrono(banc, cfg) {
   if (!cfg.chronoBonus && !cfg.chronoMalus) return { pts: 0, ordre: 0, contre: 0 };
   let ordre = 0, contre = 0;
-  for (const seq of banc.sequences) {
+  for (const seq of suitesDeLecture(banc, cfg)) {
     for (let i = 0; i < seq.length - 1; i++) {
       const a = seq[i], b = seq[i + 1];
       if (cfg.chronoIgnoreZero && (a.tc === 0 || b.tc === 0)) continue;
@@ -162,7 +176,7 @@ function chrono(banc, cfg) {
 function jonctionsRaccordees(banc, cfg) {
   if (!cfg.raccordElement) return 0;
   let n = 0;
-  for (const seq of banc.sequences) {
+  for (const seq of suitesDeLecture(banc, cfg)) {
     for (let i = 0; i < seq.length - 1; i++) if (raccordeParElement(seq[i], seq[i + 1], cfg)) n++;
   }
   return n;

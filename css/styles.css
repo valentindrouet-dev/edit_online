@@ -520,16 +520,25 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    dessous de la pile. La piste devient donc une colonne, et le retour à la
    ligne automatique n'a plus lieu d'être : chaque ligne est déjà la sienne. */
 .banc-piste.lignes {
-  flex-direction: column; flex-wrap: nowrap; align-items: center; row-gap: 8px;
+  flex-direction: column; flex-wrap: nowrap; align-items: stretch; row-gap: 8px;
+  width: 100%; margin: auto 0;
 }
+/* Trois colonnes : le bord gauche, la séquence, le bord droit. Les deux bords
+   sont souples et de largeur égale — ouvrir un emplacement d'un seul côté ne
+   décale donc pas la ligne —, et la séquence tient la colonne du milieu.
+   C'est sa marge (posée au rendu) qui place le Plan Large, ou le Plan de
+   départ, exactement au centre du banc : lui est l'ancre de sa ligne, ce qui
+   s'accroche à ses côtés pousse vers l'extérieur sans le déplacer. */
 .banc-piste.lignes .ligne {
-  display: flex; align-items: stretch; flex: 0 0 auto; justify-content: center;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
 }
+.banc-piste.lignes .ligne .bord { display: flex; align-items: stretch; }
+.banc-piste.lignes .ligne .bord.gauche { justify-self: end; }
+.banc-piste.lignes .ligne .bord.droite { justify-self: start; }
 /* Une bande court en travers du banc : elle n'existe que quand un coup s'y
    offre, et ne réserve donc aucune place le reste du temps. */
-.banc-piste.lignes .ecart.bande {
-  width: auto; align-self: center; padding: 0;
-}
+.banc-piste.lignes .ecart.bande { width: auto; padding: 0; }
 
 /* Le banc de montage : des séquences séparées par un écart. */
 .banc .sequence {
@@ -630,52 +639,21 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .carte.solo .moitie.f-PM { width: 13.28em; }
 .carte.solo .moitie.f-PL, .carte.solo .moitie.f-DEP { width: 20em; }
 
-.carte.dos { background: #12101a; }
+.carte.dos { background: #111; }
 /* Une pioche à laquelle on ne peut pas puiser reste lisible : elle se retire
    d'un cran, elle ne se délave pas. */
 .pioche-fermee { position: relative; }
 .pioche-fermee .carte { opacity: .82; filter: saturate(.8); cursor: not-allowed; }
-/* Le dos d'une pioche : une amorce de pellicule. Deux bandes de perforations
-   encadrent un bandeau central qui porte la marque — le tout en dégradés, sans
-   la moindre image à charger, et en em pour suivre la taille de la carte. */
-.dos-motif {
-  position: relative; flex: 1 1 auto; border-radius: 6px; overflow: hidden;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: .5em; color: #fff; text-align: center;
-  background:
-    radial-gradient(120% 90% at 50% 0%, rgba(124,58,237,.55), transparent 70%),
-    linear-gradient(160deg, #241d33 0%, #17131f 55%, #221a30 100%);
-  border: 1px solid #3a2f52;
+/* Le dos de la pioche des Plans Larges est un Plan Large vierge : le fond vert
+   du cadrage, la bande des pastilles, le bandeau et le libellé, tous vides — la
+   carte telle qu'elle est avant d'être imprimée. À la place de l'illustration,
+   un point d'interrogation : on ne sait pas ce qui vient, mais on sait que
+   c'est un Plan Large. */
+.dos-vierge .illus { display: flex; align-items: center; justify-content: center; }
+.dos-question {
+  font-size: 4.2em; font-weight: 800; line-height: 1;
+  color: var(--fmt-pl); opacity: .82; text-shadow: 0 .05em 0 rgba(255, 255, 255, .8);
 }
-.dos-perfos {
-  position: absolute; top: 0; bottom: 0; width: 1.05em;
-  background:
-    linear-gradient(#0d0b13, #0d0b13) padding-box,
-    repeating-linear-gradient(#0000 0 .34em, #efeaf8 .34em .92em, #0000 .92em 1.26em);
-  background-blend-mode: normal;
-}
-/* Les perforations : des encoches claires régulières sur une bande sombre. */
-.dos-perfos::before {
-  content: ''; position: absolute; inset: 0 .22em;
-  background: repeating-linear-gradient(#0000 0 .32em, #efeaf8 .32em .9em, #0000 .9em 1.24em);
-  border-radius: .12em;
-}
-.dos-perfos.gauche { left: 0; }
-.dos-perfos.droite { right: 0; }
-.dos-bande {
-  position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center;
-  gap: .42em; padding: .7em 1.1em; border-radius: .5em;
-  background: linear-gradient(180deg, rgba(38,30,56,.94), rgba(22,18,32,.94));
-  border: 1px solid rgba(167,139,250,.35);
-  box-shadow: 0 .3em 1.2em rgba(0,0,0,.5);
-}
-.dos-logo {
-  width: 1.9em; height: 1.9em; border-radius: .5em; overflow: hidden;
-  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
-}
-.dos-logo i { display: block; }
-.dos-marque { font-weight: 800; font-size: 1.08em; letter-spacing: .34em; text-indent: .34em; line-height: 1; }
-.dos-titre { font-size: .62em; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #b9aee0; }
 
 .dos-pioche {
   width: 120px; height: 158px; border-radius: 10px; cursor: pointer; color: #fff;

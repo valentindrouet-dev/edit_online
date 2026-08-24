@@ -612,28 +612,51 @@ Un **Plan de départ n'est pas un Plan Large** : il a son propre cadrage, `DEP`.
 un autre pour tout ce qui compte des cartes du montage — couples d'icônes, minutages, positions,
 points par carte de séquence — mais aucun bandeau de cadrage ne le vise, et aucun ne le désigne.
 
-### Variante — le banc en lignes
+## Les modes de jeu
 
-`bancEnLignes` (Variables › Pose) change la géométrie du montage, pas son décompte. Le film ne se
-lit plus sur une bande unique mais **en pile** :
+Un **mode de jeu** n'est pas un réglage de plus : c'est une manière de monter le film. Il se choisit
+sur l'accueil, sous les options de partie, et pose d'un coup les variables qui le définissent
+(`MODES` et `modeCourant()` dans `config.js`). Celles-ci restent lisibles une à une dans **Variables**
+pour qui veut sortir des sentiers battus, mais on ne règle pas un mode à la case à cocher.
+
+### Classique
+
+Le film se monte sur une seule bande, séquence après séquence. C'est le mode décrit par tout ce qui
+précède.
+
+### Le banc en lignes
+
+`bancEnLignes` change la géométrie du montage et sa lecture, pas son barème. Le film ne se lit plus
+sur une bande unique mais **en pile** :
 
 - **une séquence par ligne**. Le Plan de départ tient la sienne ; un **Plan Large** en ouvre une
   nouvelle, à lui seul, quel que soit le réglage de `plNouvelleSequence` — une ligne par séquence
   n'aurait pas de sens si un Plan Large pouvait s'accrocher au bout d'une autre ;
+- le **Plan Large — ou le Plan de départ — tient le centre de sa ligne**. Il en est l'ancre : ce qui
+  s'accroche à sa gauche pousse vers la gauche, ce qui s'accroche à sa droite pousse vers la droite,
+  et lui ne bouge plus. `ancrageLigne()` calcule la marge qui l'y place, à partir des largeurs de
+  `LARGEUR_BANC` ; sans elle, la ligne se recentrait à chaque pose et tout le film glissait de côté ;
 - les **Plans Moyens et Gros Plans** s'accrochent **à gauche ou à droite** de la ligne de leur
   choix, comme ils le faisaient au bout d'une séquence ;
 - une **nouvelle séquence** se pose **au-dessus ou en dessous** de la pile — jamais entre deux. Le
   moteur ne propose donc que les positions `0` et `sequences.length`, au lieu de toutes ;
 - un **Raccord n'y relie rien** : deux séquences ne se touchent pas, elles se succèdent. `SOUDER`
   n'est plus proposé, et le Raccord se pose comme un plan ordinaire — en attendant le pouvoir qui
-  lui sera donné.
+  lui sera donné ;
+- **le montage se lit d'un seul tenant**, du premier plan en haut à gauche de la première ligne
+  jusqu'au dernier plan en bas à droite de la dernière : les lignes s'enchaînent comme les lignes
+  d'un texte. `suitesDeLecture()` (`scoring.js`) rend donc une seule suite — le film entier — au lieu
+  d'une par séquence, ce qui vaut pour l'ordre chronologique (`chrono()`) comme pour les raccords par
+  élément (`jonctionsRaccordees()`). Les portées `AVANT` / `APRES` / `MONTAGE` lisaient déjà le
+  montage à plat : elles ne changent pas.
 
 Côté affichage, `.banc-piste` prend la classe `lignes` et devient une colonne ; chaque séquence est
-enveloppée dans une `.ligne` avec ses deux emplacements latéraux, et les nouvelles séquences se
-rendent en **bandes** (`.ecart.bande`) au-dessus et en dessous de la pile. L'aperçu de pose suit le
-même axe : `vers-haut` et `vers-bas` l'écartent du banc dans la direction où la ligne ira, plutôt que
-de recouvrir celles déjà montées. Une bande vide n'est pas rendue du tout — le banc ne doit pas se
-décaler selon qu'on vise ou non.
+enveloppée dans une `.ligne` — une grille `1fr auto 1fr` dont les deux bords souples portent les
+emplacements latéraux, de sorte qu'ouvrir un emplacement d'un seul côté ne décale pas la ligne. Les
+nouvelles séquences se rendent en **bandes** (`.ecart.bande`) au-dessus et en dessous de la pile.
+L'aperçu de pose suit le même axe : `vers-haut` et `vers-bas` l'écartent du banc dans la direction où
+la ligne ira, plutôt que de recouvrir celles déjà montées. Une bande vide n'est pas rendue du tout —
+le banc ne doit pas se décaler selon qu'on vise ou non.
 
 ## Ce qui reste ouvert dans les règles
 

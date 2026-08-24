@@ -2,26 +2,26 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.41';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.42';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
-} from './data.js?v=1.41';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js?v=1.41';
-import { elIcon, numIcon } from './icons.js?v=1.41';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.41';
+} from './data.js?v=1.42';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.42';
+import { elIcon, numIcon } from './icons.js?v=1.42';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.42';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.41';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.41';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.41';
-import { releve, voler, stopperVols } from './anim.js?v=1.41';
-import { campagne } from './lab.js?v=1.41';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.41';
+} from './engine.js?v=1.42';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.42';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.42';
+import { releve, voler, stopperVols } from './anim.js?v=1.42';
+import { campagne } from './lab.js?v=1.42';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.42';
 
 const app = document.getElementById('app');
 
@@ -216,6 +216,8 @@ function vueAccueil() {
             ${chip('animerCoups', 'Mouvement des cartes')}
           </div>
         </div>
+
+        ${panneauMode()}
       </div>
     </div>
 
@@ -239,9 +241,36 @@ function vueAccueil() {
 
   brancherJoueurs();
   brancherJeuAccueil(vueAccueil);
+  brancherMode(vueAccueil);
   brancherChips(vueAccueil);
   brancherChamps(vueAccueil);
   app.querySelector('#go').addEventListener('click', lancerPartie);
+}
+
+/**
+ * Le mode de jeu : une manière de monter le film, pas un réglage de plus. Il se
+ * choisit ici, sur l'accueil, et pose d'un coup les variables qui le
+ * définissent — celles-ci restent lisibles une à une dans Variables.
+ */
+function panneauMode() {
+  const actuel = modeCourant(store.cfg);
+  return `<div class="panneau" id="panneau-mode">
+    <h2>Mode de jeu</h2>
+    <div class="segments large" id="seg-mode">
+      ${MODES.map((m) => `<button class="${m.id === actuel.id ? 'on' : ''}" data-mode="${m.id}">${m.label}</button>`).join('')}
+    </div>
+    <p class="aide" id="mode-aide">${actuel.aide}</p>
+  </div>`;
+}
+
+function brancherMode(apres) {
+  app.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => {
+    const m = MODES.find((x) => x.id === b.dataset.mode);
+    if (!m) return;
+    Object.assign(store.cfg, m.cfg);
+    sauverCfg();
+    if (apres) apres();
+  }));
 }
 
 function ligneJoueur(j, i) {
@@ -285,6 +314,27 @@ function brancherJoueurs() {
 function chip(k, label) {
   const on = !!store.cfg[k];
   return `<label class="chip ${on ? 'on' : ''}"><input type="checkbox" data-chip="${k}" ${on ? 'checked' : ''}>${label}</label>`;
+}
+
+/**
+ * Le bouton qui montre ou masque les illustrations. Le réglage est **le même
+ * partout** — accueil, table de jeu, écran Matériel : le basculer ici le
+ * bascule pour tout le monde, il n'y a qu'une seule option. Il n'y a donc plus
+ * à repasser par l'accueil pour regarder le matériel en lecture nue.
+ */
+function boutonIllus(id = '') {
+  return `<button class="pill mini" ${id ? `id="${id}"` : ''} data-bascule-illus="1"
+    title="Afficher ou masquer les illustrations — le même réglage partout">
+    ${store.cfg.illustrations ? 'Images visibles' : 'Images masquées'}
+  </button>`;
+}
+
+function brancherBasculeIllus(apres) {
+  app.querySelectorAll('[data-bascule-illus]').forEach((b) => b.addEventListener('click', () => {
+    store.cfg.illustrations = !store.cfg.illustrations;
+    sauverCfg();
+    if (apres) apres();
+  }));
 }
 
 function brancherChips(apres) {
@@ -444,9 +494,7 @@ function vuePartie(enchainer = true) {
         </div>
 
         <div class="reglages-partie">
-          <button class="pill mini" id="bascule-illus" title="Afficher ou masquer les illustrations">
-            ${store.cfg.illustrations ? 'Images visibles' : 'Images masquées'}
-          </button>
+          ${boutonIllus('bascule-illus')}
           <button class="pill mini" id="bascule-points"
             title="Afficher ou masquer ce que chaque plan rapporte, au coin des cartes">
             ${store.cfg.pointsSurCartes === false ? 'Points masqués' : 'Points visibles'}
@@ -476,6 +524,27 @@ function vuePartie(enchainer = true) {
 // La largeur d'un plan dans un banc, en accord avec la feuille de style : elle
 // sert à faire la place à l'aperçu de pose.
 const LARGEUR_BANC = { GP: 85, PM: 169, PL: 254, DEP: 254 };
+// L'écart entre deux plans d'une même séquence, lui aussi en accord avec la
+// feuille de style (`.banc .sequence { gap }`).
+const ECART_PLANS = 2;
+
+/**
+ * Le décalage qui garde le **Plan Large — ou le Plan de départ — au centre de
+ * sa ligne**, dans la variante en lignes. Sans lui, la ligne entière se
+ * recentre à chaque pose : accrocher un Gros Plan à gauche faisait glisser tout
+ * le reste vers la droite, et le film semblait bouger alors qu'on n'avait rien
+ * déplacé. Le plan d'ouverture de la ligne est son ancre : ce qui s'accroche à
+ * gauche pousse vers la gauche, ce qui s'accroche à droite pousse vers la
+ * droite, et l'ancre ne bouge plus.
+ */
+function ancrageLigne(seq) {
+  const k = seq.findIndex((p) => p.format === 'PL' || p.format === 'DEP');
+  if (k < 0) return '';
+  const bloc = (a, b) => seq.slice(a, b)
+    .reduce((s, p) => s + (LARGEUR_BANC[p.format] || 169) + ECART_PLANS, 0);
+  const avant = bloc(0, k), apres = bloc(k + 1, seq.length);
+  return `margin-left:${Math.max(0, apres - avant)}px;margin-right:${Math.max(0, avant - apres)}px`;
+}
 
 function bancBloc(st, i, titre, interactif) {
   const banc = st.bancs[i];
@@ -567,16 +636,18 @@ function bancBloc(st, i, titre, interactif) {
     // Au-dessus de tout : ouvrir une séquence en tête du film.
     morceaux.push(bande(coups.filter((c) => c.action === 'NOUVELLE_SEQUENCE' && c.pos === 0)));
     banc.sequences.forEach((seq, si) => {
+      // Les deux bords tiennent chacun une colonne souple de largeur égale :
+      // ouvrir un emplacement d'un côté ne déplace donc pas la ligne.
       morceaux.push('<div class="ligne">');
       // Le générique d'ouverture est en tête du film, donc au bout gauche de
       // la première ligne ; les crédits, au bout droit de la dernière.
-      morceaux.push(fente(coups.filter((c) => (c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche')
-        || (c.action === 'GENERIQUE' && c.role === 'OUVERTURE' && si === 0))));
-      morceaux.push('<div class="sequence">');
+      morceaux.push(`<div class="bord gauche">${fente(coups.filter((c) => (c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche')
+        || (c.action === 'GENERIQUE' && c.role === 'OUVERTURE' && si === 0)))}</div>`);
+      morceaux.push(`<div class="sequence" style="${ancrageLigne(seq)}">`);
       seq.forEach((plan, k) => morceaux.push(carte(plan, si, k)));
       morceaux.push('</div>');
-      morceaux.push(fente(coups.filter((c) => (c.action === 'ETENDRE' && c.seq === si && c.cote === 'droite')
-        || (c.action === 'GENERIQUE' && c.role === 'CREDITS' && si === n - 1))));
+      morceaux.push(`<div class="bord droite">${fente(coups.filter((c) => (c.action === 'ETENDRE' && c.seq === si && c.cote === 'droite')
+        || (c.action === 'GENERIQUE' && c.role === 'CREDITS' && si === n - 1)))}</div>`);
       morceaux.push('</div>');
     });
     // En dessous de tout : ouvrir une séquence en fin de film. Sur un banc
@@ -1167,11 +1238,7 @@ function brancherPartie(st, humaine) {
   const bSuivre = q('#suivre-tour');
   if (bSuivre) bSuivre.addEventListener('click', () => { store.joueurVu = null; majColonnes(); });
 
-  const bi = q('#bascule-illus');
-  if (bi) bi.addEventListener('click', () => {
-    store.cfg.illustrations = !store.cfg.illustrations;
-    sauverCfg(); vuePartie();
-  });
+  brancherBasculeIllus(vuePartie);
   const bp = q('#bascule-points');
   if (bp) bp.addEventListener('click', () => {
     store.cfg.pointsSurCartes = store.cfg.pointsSurCartes === false;
@@ -1975,6 +2042,7 @@ function barreJeu() {
       ${off ? ` · <b>${off} carte${off > 1 ? 's' : ''} écartée${off > 1 ? 's' : ''}</b> de la boîte, dans les deux jeux` : ''}
       · la galerie ci-dessous montre et règle toujours le jeu <b>Modifié</b>
     </span>
+    ${boutonIllus()}
     <button class="pill" id="mat-export">⭳ Tableau en PDF</button>
     <button class="pill" id="csv-export">⭳ Cartes en CSV</button>
     <button class="pill" id="csv-import">⭱ Importer un CSV</button>
@@ -2893,6 +2961,8 @@ function brancherMateriel() {
   app.querySelectorAll('[data-jeu]').forEach((b) => b.addEventListener('click', () => {
     store.cfg.materielActif = b.dataset.jeu; sauverCfg(); refaire();
   }));
+
+  brancherBasculeIllus(refaire);
 
   app.querySelectorAll('[data-filtre]').forEach((el) => el.addEventListener('change', () => {
     if (el.dataset.filtre === 'tri') mat.tri = el.value;

@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj } from './data.js?v=1.41';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.41';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj } from './data.js?v=1.42';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.42';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -196,20 +196,18 @@ export function enPile(html, reste) {
 
 export function renderDos(libelle, reste, opts = {}) {
   const cls = ['carte', 'dos', opts.small ? 'small' : '', opts.clickable ? 'clickable' : ''].join(' ');
-  // Le dos est une amorce de pellicule : perforations aux deux bords, bandeau
-  // central, la marque au milieu. Tout en dégradés — aucune image à charger.
-  return `<div class="${cls}">
-    <div class="dos-motif">
-      <span class="dos-perfos gauche"></span>
-      <span class="dos-perfos droite"></span>
-      <span class="dos-bande">
-        <span class="dos-logo">
-          <i style="background:#7c3aed"></i><i style="background:#f97316"></i>
-          <i style="background:#f59e0b"></i><i style="background:#c026d3"></i>
-        </span>
-        <span class="dos-marque">EDIT</span>
-        <span class="dos-titre">${libelle}</span>
-      </span>
+  // Le dos d'une pioche de Plans Larges est un **Plan Large vierge** : le vert
+  // du cadrage, la bande des pastilles, le bandeau, le libellé — la carte telle
+  // qu'elle est, sans rien dessus —, et un point d'interrogation à la place de
+  // l'illustration. On ne sait pas ce qui vient, mais on sait que c'est un
+  // Plan Large.
+  const F = FORMATS.PL;
+  return `<div class="${cls}" title="${libelle}">
+    <div class="moitie f-PL dos-vierge" style="--flex:1 1 100%">
+      <div class="illus"><span class="dos-question">?</span></div>
+      <div class="pastilles"></div>
+      <div class="bandeau"></div>
+      <div class="libelle" style="--c:${F.color}">${F.label}</div>
     </div>
   </div>`;
 }

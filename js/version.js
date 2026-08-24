@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.41';
-export const BUILD_DATE = '2026-08-24 15:00';
+export const VERSION = '1.42';
+export const BUILD_DATE = '2026-08-24 17:00';
 
 export const CHANGELOG = [
+  {
+    v: '1.42',
+    date: '24/08/2026',
+    items: [
+      "<b>Le banc en lignes devient un mode de jeu</b>, choisi sur l’accueil sous les options de partie : <b>Classique</b> ou <b>Banc en lignes</b>. Ce n’était pas une variable de plus mais une autre manière de monter le film — elle a donc son menu, et quitte la liste des Variables.",
+      "Dans ce mode, <b>le Plan Large — ou le Plan de départ — tient le centre de sa ligne</b>. Il est l’ancre : ce qui s’accroche à sa gauche pousse vers la gauche, ce qui s’accroche à sa droite pousse vers la droite, et lui ne bouge plus. La ligne ne se recentrait avant à chaque pose, faisant glisser tout le film de côté alors qu’on n’avait rien déplacé.",
+      "Dans ce mode toujours, <b>le montage se lit d’un seul tenant</b> — du premier plan en haut à gauche de la première ligne jusqu’au dernier plan en bas à droite de la dernière —, les lignes s’enchaînant comme les lignes d’un texte. L’ordre chronologique et les raccords par élément se lisent donc d’une ligne à la suivante, et non plus ligne par ligne.",
+      "<b>Le dos de la pioche des Plans Larges est un Plan Large vierge</b> : le vert du cadrage, ses bandes, son libellé — la carte telle qu’elle est avant d’être imprimée — et un point d’interrogation à la place de l’illustration. On ne sait pas ce qui vient, mais on sait que c’est un Plan Large.",
+      "<b>Un bouton « Images visibles » dans l’écran Matériel</b>, à côté du jeu lancé en partie. C’est le même réglage que sur l’accueil et sur la table de jeu : le basculer là le bascule partout — il n’y a plus à repasser par l’accueil pour regarder le matériel en lecture nue.",
+    ],
+  },
   {
     v: '1.41',
     date: '24/08/2026',

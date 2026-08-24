@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.41';
+import { ELEMENT_IDS } from './data.js?v=1.42';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -33,11 +33,12 @@ export const DEFAULTS = {
   // un plan ordinaire — variante hors règles.
   raccordConnecte: true,
   generiqueBloque: true,     // rien avant l'Ouverture, rien après les Crédits
-  // Variante « banc en lignes » : chaque séquence occupe sa propre ligne, un
-  // Plan Large ou un Plan de départ tient la sienne à lui seul, et l'on
-  // accroche les Plans Moyens / Gros Plans à gauche ou à droite d'une ligne.
-  // Une nouvelle séquence se pose au-dessus ou en dessous des autres, jamais
-  // entre deux ; les Raccords n'y relient rien.
+  // Le mode « banc en lignes » (voir MODES, plus bas — il se choisit sur
+  // l'accueil, pas ici) : chaque séquence occupe sa propre ligne, un Plan Large
+  // ou un Plan de départ tient le centre de la sienne, et l'on accroche les
+  // Plans Moyens / Gros Plans à ses deux côtés. Une nouvelle séquence se pose
+  // au-dessus ou en dessous des autres, jamais entre deux ; les Raccords n'y
+  // relient rien, et le montage se lit d'un seul tenant, ligne après ligne.
   bancEnLignes: false,
 
   // --- Décompte ------------------------------------------------------------
@@ -135,6 +136,36 @@ export function cloneConfig(src = DEFAULTS) {
   return JSON.parse(JSON.stringify(src));
 }
 
+// --- Modes de jeu ----------------------------------------------------------
+
+/**
+ * Un **mode de jeu** n'est pas un réglage de plus : c'est une manière de monter
+ * le film. Il se choisit sur l'accueil, et pose d'un coup les variables qui le
+ * définissent — lesquelles restent lisibles une à une dans les Variables, pour
+ * qui veut sortir des sentiers battus.
+ */
+export const MODES = [
+  {
+    id: 'CLASSIQUE',
+    label: 'Classique',
+    aide: 'le film se monte sur une seule bande, séquence après séquence',
+    cfg: { bancEnLignes: false },
+  },
+  {
+    id: 'LIGNES',
+    label: 'Banc en lignes',
+    aide: 'une séquence par ligne : le Plan Large ou le Plan de départ tient le centre de la sienne, '
+      + 'les Plans Moyens et Gros Plans s’accrochent à ses deux côtés, et une nouvelle ligne se pose '
+      + 'au-dessus ou en dessous de la pile — jamais entre deux. Les Raccords n’y relient rien.',
+    cfg: { bancEnLignes: true },
+  },
+];
+
+/** Le mode dont la configuration courante porte les marques. */
+export function modeCourant(cfg) {
+  return MODES.find((m) => Object.entries(m.cfg).every(([k, v]) => !!cfg[k] === !!v)) || MODES[0];
+}
+
 /**
  * Une configuration enregistrée hier, relue aujourd'hui. Elle écrase les
  * valeurs par défaut : un réglage dont la valeur par défaut a changé depuis
@@ -181,8 +212,6 @@ export const SCHEMA = [
     { k: 'raccordConnecte', l: 'Une Carte Raccord relie deux séquences', t: 'bool',
       aide: 'et ne se pose que là ; sinon, c’est un plan ordinaire' },
     { k: 'generiqueBloque', l: 'Le Générique ferme le montage', t: 'bool' },
-    { k: 'bancEnLignes', l: 'Variante — banc en lignes', t: 'bool',
-      aide: 'une séquence par ligne, empilées vers le haut ou vers le bas ; les Raccords n’y relient rien' },
     { k: 'faceSelonPose', l: 'La face jouée suit le sens de pose', t: 'bool',
       aide: 'sinon une carte est toujours jouée sur son recto' },
   ] },
