@@ -3,23 +3,37 @@
 // ---------------------------------------------------------------------------
 // La version des règles est indépendante de la version du site. Elle part de
 // la v0.13 fournie par l'auteur ; chaque modification de règle demandée
-// l'incrémente (0.13.1, 0.13.2, …).
+// l'incrémente. La v0.14 est une réécriture complète, écrite d'un tenant.
 //
-// Marche à suivre pour une modification :
+// Marche à suivre pour une retouche :
 //   1. incrémenter REGLES_VERSION ;
 //   2. ajouter une entrée en tête de REGLES_HISTORIQUE ;
-//   3. entourer le passage modifié d'un appel à maj('0.13.x', '…') — il
-//      s'affiche alors en violet, avec le numéro de version en pastille.
-// Les versions précédentes du texte restent lisibles dans l'onglet
-// « Versions des règles ».
+//   3. dupliquer le corps en vigueur, y entourer le passage changé d'un appel
+//      à maj('0.14.x', '…') — il s'affiche alors en violet, avec le numéro de
+//      version en pastille.
+// Chaque version garde son propre corps : les précédentes restent lisibles
+// telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.56';
-import { elIcon } from './icons.js?v=1.56';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.57';
+import { elIcon } from './icons.js?v=1.57';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.14',
+    date: '26/08/2026',
+    origine: 'Réécriture demandée par l’auteur',
+    corps: (c) => corps_0_14(c),
+    items: [
+      'Le <b>banc en lignes</b> devient la règle officielle : chaque séquence tient sa propre ligne, un Plan Large — ou le Plan de départ — en ouvre une à lui seul et en tient le centre, les Plans Moyens et Gros Plans s’accrochent à ses deux bouts, et une nouvelle ligne se pose au-dessus ou en dessous de la pile, jamais entre deux.',
+      'Le montage <b>se lit d’un seul tenant</b> — du premier plan en haut à gauche jusqu’au dernier en bas à droite, comme les lignes d’un texte. Tout ce qui se lit dans un ordre s’y lit de ligne en ligne.',
+      'Un Raccord <b>ne relie plus rien</b> : deux séquences ne se touchent pas, elles se succèdent. Il se pose comme un plan ordinaire, au bout d’une ligne.',
+      'Le texte est <b>réécrit d’un bout à l’autre</b> plutôt que rapiécé : les quinze retouches de la série 0.13 y sont fondues, et les bandeaux apparus depuis — deux pouvoirs par plan, valeurs négatives, cadrage double, bandeaux de séquence — rejoignent le tableau de décompte.',
+      'La pose sur une seule bande, qui était la règle, devient le <b>mode Classique</b> — un mode de jeu à part entière, toujours jouable.',
+    ],
+  },
   {
     v: '0.13.15',
     date: '17/08/2026',
@@ -202,6 +216,209 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.14 -----------------------------------------------------------------
+// Réécriture complète. Les quinze versions de la série 0.13 s'étaient écrites
+// en retouches successives — chaque `corps_0_13_x` remplaçait un passage du
+// précédent —, si bien que le texte en vigueur n'existait nulle part en un
+// seul morceau. Celui-ci est écrit d'un tenant : les retouches y sont fondues,
+// et le banc en lignes y est la règle, non plus une variante.
+//
+// Les versions précédentes gardent leur chaîne de remplacements intacte : on
+// les lit toujours telles qu'elles étaient, dans l'onglet « Versions ».
+
+function corps_0_14(c) {
+  const n = (v) => (v ? `${v} carte${v > 1 ? 's' : ''}` : 'autant de cartes que de joueuses');
+  const lignes = c.bancEnLignes !== false;
+  const bouts = c.sensPose === 'droite' ? 'au bout <b>droit</b>' : 'à l’un ou l’autre <b>bout</b>';
+  return `
+  <p>Vous incarnez une monteuse de cinéma. Vous assemblez des Cartes Plan dans votre
+  <b>banc de montage</b> pour raconter le meilleur film — celui qui rapporte le plus de points.
+  De 2 à 4 joueuses.</p>
+
+  <h3>Matériel</h3>
+  <ul>
+    <li>8 cartes <b>Plan de départ</b> — 2 versions, recto-verso, en quatre exemplaires : chaque
+    joueuse a les siennes.</li>
+    <li>14 cartes <b>Plan Large</b></li>
+    <li>50 cartes <b>Plan Moyen / Gros Plan</b></li>
+  </ul>
+  <p>Une carte sans jonction est un <b>Plan Large</b>. Une carte à une jonction se partage en un
+  <b>Plan Moyen</b> (2/3 de la carte) et un <b>Gros Plan</b> (1/3) : on n’en joue qu’une moitié,
+  l’autre se glisse sous les cartes voisines. Chaque plan porte un <b>cadrage</b>, des
+  <b>personnages</b> (Héroïne, Ennemi, Allié), des <b>éléments</b> (Arme, Objet, Véhicule), son
+  <b>minutage</b>, et le plus souvent un <b>bandeau</b> qui dit ce qu’il rapporte.</p>
+  <div class="legende-el">
+    ${ELEMENT_IDS.map((e) => `<div class="e">${elIcon(e, 30)}<span>${ELEMENTS[e].label}</span></div>`).join('')}
+  </div>
+
+  <h3>Mise en place</h3>
+  <ul>
+    <li>Chaque joueuse reçoit ses <b>deux</b> cartes Plan de départ — version A et version B, soit
+    <b>quatre faces</b> au choix. Aucun tirage. Elle en pose une face dans son banc et écarte le
+    reste : c’est la première ligne de son montage.</li>
+    <li>Les Plans Larges forment une <b>pioche face cachée</b> et un <b>chutier</b> de ${n(c.chutierPL)}.</li>
+    <li>Les Plans Moyens / Gros Plans forment une <b>pioche face visible</b> — ces cartes sont
+    recto-verso, une pioche ne peut pas les cacher — et un chutier de ${n(c.chutierPMGP)}.</li>
+    <li>La dernière joueuse à avoir vu un bon film commence. Ici, elle est <b>tirée au sort</b>, ou
+    <b>désignée</b> avant la partie — c’est une option de partie.</li>
+  </ul>
+
+  <h3>Le tour d’une joueuse</h3>
+  <p>Le tour est <b>d’un seul tenant</b> : elle dérushe, elle monte, puis elle passe la main.</p>
+  <ul>
+    <li><b>Le Dérushage.</b> Elle prend <b>une</b> Carte Plan : dans le chutier des Plans Larges,
+    dans celui des Plans Moyens / Gros Plans, ou sur la pioche des Plans Moyens / Gros Plans. La
+    pioche recharge aussitôt la place laissée vide.</li>
+    <li><b>Le Montage.</b> Elle ajoute la carte à son banc. On ne peut pas écarter une carte sans la
+    jouer, ni dissimuler entièrement une carte déjà posée.</li>
+  </ul>
+  <p class="aide">${c.tourComplet === false
+    ? 'Cette partie se joue dans l’ordre imprimé : toutes dérushent, puis toutes montent. Le tour d’un seul tenant se rétablit dans <b>Variables</b> ⚙.'
+    : 'Le texte imprimé décrivait l’autre ordre — toutes dérushent, puis toutes montent. Il se rétablit dans <b>Variables</b> ⚙.'}</p>
+
+  <h3>Le banc de montage</h3>
+  <div class="encart">
+    <b>Une séquence par ligne.</b> Le banc se lit comme une page : chaque <b>séquence</b> occupe sa
+    propre <b>ligne</b>, et les lignes s’empilent de haut en bas.
+    <ul>
+      <li>Un <b>Plan Large</b> est le climax d’une séquence : il <b>ouvre toujours une ligne</b>, à
+      lui seul, et en tient le centre. Le <b>Plan de départ</b> fait de même. Deux Plans Larges ne
+      peuvent donc jamais se toucher.</li>
+      <li>Les <b>Plans Moyens</b> et <b>Gros Plans</b> s’accrochent ${bouts} de la ligne de leur
+      choix : ce qui se pose à gauche pousse vers la gauche, ce qui se pose à droite pousse vers la
+      droite, et le centre ne bouge plus.</li>
+      <li>Une <b>nouvelle ligne</b> se pose <b>au-dessus</b> ou <b>en dessous</b> de la pile —
+      <b>jamais entre deux</b>. On empile, on n’insère pas.</li>
+    </ul>
+  </div>
+  <div class="encart">
+    <b>Le montage se lit d’un seul tenant.</b> Du premier plan en <b>haut à gauche</b> de la première
+    ligne jusqu’au dernier en <b>bas à droite</b> de la dernière, les lignes s’enchaînant comme les
+    lignes d’un texte. Tout ce qui se lit dans un ordre — le minutage dans l’ordre, « avant » et
+    « après cette carte », les icônes qui se répondent d’un plan au suivant — se lit ainsi, de ligne
+    en ligne, et non ligne par ligne.
+  </div>
+  <div class="encart">
+    <b>Carte Plan Moyen / Gros Plan.</b> Elle se glisse <b>sous</b> les cartes déjà posées en
+    recouvrant l’une de ses deux parties : un seul de ses deux plans reste visible, et c’est celui-là
+    qui comptera.<br>
+    <b>Le recto et le verso.</b> Une carte porte son <b>Plan Moyen à gauche et son Gros Plan à
+    droite</b> sur le recto ; le verso, retourné autour de l’axe vertical, les échange. Les quatre
+    plans sont distincts, chacun avec son minutage — on note « 301R » et « 301V ».
+    ${c.faceSelonPose === false
+      ? 'Ici, une carte est toujours jouée sur son recto (réglable dans <b>Variables</b> ⚙).'
+      : `La face jouée se déduit de la pose : la moitié laissée visible se retrouve au bout libre de
+      la carte, donc un Gros Plan accroché à gauche d’une ligne est celui du verso, et à droite celui
+      du recto. Réglable dans <b>Variables</b> ⚙.`}
+  </div>
+  ${lignes ? '' : `<div class="encart attention"><b>Cette partie se joue en mode Classique</b> — le
+  film se monte sur une seule bande, les séquences se suivant de gauche à droite, et une Carte
+  Raccord y relie deux séquences voisines. Le mode se choisit sur l’accueil.</div>`}
+
+  <h3>Les Raccords et les Génériques</h3>
+  <ul>
+    <li><b>Raccord</b> — deux séquences ne se touchent pas : elles se succèdent, ligne après ligne.
+    Un Raccord ne relie donc rien et se pose <b>comme un plan ordinaire</b>, au bout d’une ligne.</li>
+    <li><b>Générique</b> (Ouverture ou Fermeture) — ouvre ou ferme le film.
+    ${c.generiqueBloque === false
+      ? 'Ici, il ne bloque rien (réglable dans <b>Variables</b> ⚙).'
+      : `Rien ne peut plus se poser avant l’Ouverture ni après les Crédits : le <b>tout début</b> du
+      montage — le bout gauche de la première ligne — et sa <b>toute fin</b> — le bout droit de la
+      dernière — sont scellés, et aucune ligne ne s’ouvre plus au-delà.`}</li>
+    <li>Un Raccord, une Ouverture, un Générique <b>ne sont pas des plans</b> : ils relient ou
+    encadrent le film, ils ne le racontent pas. Ils ne comptent donc ni dans le total qui arrête la
+    partie, ni dans la taille d’une séquence.</li>
+  </ul>
+
+  <h3>Le minutage</h3>
+  <p>Le placement des cartes <b>ne dépend pas</b> du minutage : on pose où l’on veut, dans les
+  limites des règles de pose ci-dessus, sans avoir à respecter l’ordre chronologique du film. En
+  revanche, certaines cartes rapportent des points <b>en fonction</b> du minutage des plans du
+  montage.</p>
+
+  <h3>Les icônes</h3>
+  <p>Un plan peut porter <b>plusieurs fois la même icône</b> — deux armes, deux véhicules. Chacune
+  compte pour elle-même : ${c.elementParIcone === false
+    ? 'ici pourtant, un bandeau d’icône compte les <i>plans</i> porteurs (réglable dans <b>Variables</b> ⚙).'
+    : 'un bandeau d’icône rapporte donc deux fois sur une carte à deux armes (réglable dans <b>Variables</b> ⚙).'}</p>
+
+  <h3>Les bandeaux</h3>
+  <p>Un bandeau se lit <b>« n × ce qu’il compte »</b>, ou <b>« n si … »</b> quand il ne se déclenche
+  qu’une fois. Trois choses valent pour tous :</p>
+  <ul>
+    <li><b>La portée</b>, que ses flèches donnent à lire : <b>◀ Héroïne</b> compte parmi les cartes
+    placées <b>avant</b> celle-ci dans le montage, <b>Héroïne ▶</b> parmi celles placées
+    <b>après</b>, <b>◀ Héroïne ▶</b> dans <b>sa séquence</b> — c’est-à-dire sa ligne —, et
+    <b>Héroïne</b> tout court dans le <b>montage entier</b>. « Avant » et « après » se lisent dans
+    l’ordre d’un seul tenant, de ligne en ligne.</li>
+    <li><b>Deux bandeaux</b> peuvent tenir sur un même plan, côte à côte, séparés d’un trait : ils
+    comptent tous les deux, chacun dans sa propre portée.</li>
+    <li><b>Une valeur peut être négative</b> : le bandeau coûte alors des points au lieu d’en
+    rapporter. Sa pastille passe au rouge.</li>
+  </ul>
+  <p>Les bandeaux qui comptent des <b>séquences</b> — pastille violette — n’ont pas de portée à
+  régler : c’est le banc entier qu’ils regardent, toujours.</p>
+
+  <h3>Fin de partie</h3>
+  <p><b>Dès qu’une joueuse pose son ${c.tours}<sup>e</sup> plan</b>, les autres ont droit à un tour
+  chacune, puis la partie s’arrête : elles ne finissent donc pas forcément avec le même nombre de
+  plans. Le Plan de départ compte dans les ${c.tours} — il reste ${c.tours - 1} plans à monter —,
+  mais ni les Raccords ni les Génériques. On inscrit alors les points rapportés par chaque
+  <b>plan visible</b> ; le plus haut total l’emporte.</p>
+
+  <h3>Décompte des bandeaux</h3>
+  <table class="tbl">
+    <tr><th>Bandeau</th><th>Ce qu’il rapporte</th><th>Portée</th></tr>
+    <tr><td><b>n × CADRAGE</b></td>
+      <td>n points par plan de ce cadrage. Un bandeau peut en viser <b>deux</b> — « Plan Large &amp;
+      Plan de départ » — : un plan qui porte l’un ou l’autre compte, et jamais deux fois</td>
+      <td>Sa portée ◀ ▶</td></tr>
+    <tr><td><b>n × ICONE</b></td><td>n points par plan portant cette icône</td><td>Sa portée ◀ ▶</td></tr>
+    <tr><td><b>n × 2 ICONES</b></td>
+      <td>n points par <b>couple</b> d’icônes réunies dans la portée — quatre icônes font deux
+      couples, cinq en font deux aussi ; un couple de deux icônes différentes en demande une de
+      chaque</td><td>Sa portée ◀ ▶</td></tr>
+    <tr><td><b>n × MORT</b></td><td>n points par plan de mort</td><td>Sa portée ◀ ▶</td></tr>
+    <tr><td><b>n × PLAN SANS PERSONNAGE</b></td><td>n points par plan sans personnage</td>
+      <td>Sa portée ◀ ▶</td></tr>
+    <tr><td><b>n × RACCORD</b></td><td>n points par Carte Raccord</td><td>Sa portée ◀ ▶</td></tr>
+    <tr><td><b>n × PLAN</b></td><td>n points par carte</td><td>Sa portée ◀ ▶</td></tr>
+    <tr><td><b>n × MINUTAGE avant / après XX:00</b></td>
+      <td>n points par plan dont le minutage est <b>strictement</b> antérieur — ou postérieur — au
+      seuil</td><td>Sa portée ◀ ▶</td></tr>
+    <tr><td><b>n si ICONE absente</b></td><td>n points si l’icône ne paraît nulle part</td>
+      <td>Sa portée ◀ ▶</td></tr>
+    <tr><td><b>n si AUCUN MINUTAGE à / avant / après XX:00</b></td>
+      <td>n points si <b>aucun</b> plan n’a ce minutage — à 00:00, cela vise les Raccords et les
+      Génériques</td><td>Sa portée ◀ ▶</td></tr>
+    <tr><td><b>n si DANS L’ORDRE</b></td>
+      <td>n points si, lu d’un seul tenant sur <b>tout le montage</b>, ligne après ligne, chaque
+      minutage est supérieur ou égal au précédent${c.chronoIgnoreZero
+        ? ' — les Raccords et Génériques, à 00:00, sont <b>retirés de la lecture</b> : ils ne la coupent pas'
+        : ''}</td><td>Le montage entier</td></tr>
+    <tr><td><b>n × SÉQUENCE ≥ k</b></td>
+      <td>n points par ligne comptant <b>au moins k plans</b> — un Raccord n’étant pas un plan, il
+      n’y compte pas</td><td>Le montage entier</td></tr>
+    <tr><td><b>n × SÉQUENCE ▲ / ▼</b></td>
+      <td>n points par ligne placée <b>au-dessus</b> — ou <b>en dessous</b> — de celle qui porte le
+      bandeau</td><td>Le montage entier</td></tr>
+    <tr><td><b>n × PLAN de la plus longue SÉQUENCE</b></td>
+      <td>n points par plan de la ligne la plus fournie du banc ; réglé sur 1, il vaut exactement sa
+      longueur</td><td>Le montage entier</td></tr>
+    <tr><td><b>n × SÉQUENCE avec / sans …</b></td>
+      <td>n points par ligne qui porte — ou ne porte pas — l’icône, le cadrage ou la Carte Raccord
+      visée</td><td>Le montage entier</td></tr>
+  </table>
+
+  <div class="encart attention">
+    <b>Points laissés ouverts par le texte imprimé.</b> Ce ne sont pas des modifications de règle,
+    mais des interprétations, chacune réglable dans <b>Variables</b> ⚙ : la portée des bandeaux
+    imprimés qui ne précisent pas la leur (${portee(c)} par défaut) ; le sens de pose autorisé — les
+    deux bouts d’une ligne, ou la droite seulement ; ce que représente le symbole ✕ noir de la
+    famille Mort ; le rôle exact du minutage ; l’appariement recto-verso des Plans de départ.
+  </div>`;
 }
 
 // --- v0.13 -----------------------------------------------------------------

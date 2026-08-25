@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.56';
-export const BUILD_DATE = '2026-08-26 14:00';
+export const VERSION = '1.57';
+export const BUILD_DATE = '2026-08-26 15:20';
 
 export const CHANGELOG = [
+  {
+    v: '1.57',
+    date: '26/08/2026',
+    items: [
+      "<b>Règles v0.14 — le banc en lignes devient la règle.</b> Le texte est <b>réécrit d'un bout à l'autre</b> autour de lui : une séquence par ligne, un Plan Large — ou le Plan de départ — qui ouvre la sienne et en tient le centre, les Plans Moyens et Gros Plans accrochés à ses deux bouts, une nouvelle ligne au-dessus ou en dessous de la pile mais jamais entre deux, et un montage qui <b>se lit d'un seul tenant</b>, du premier plan en haut à gauche au dernier en bas à droite. Un Raccord n'y relie plus rien : deux séquences ne se touchent pas, elles se succèdent.",
+      "Les quinze retouches de la série 0.13 étaient des <b>remplacements successifs</b> dans le texte précédent — le texte en vigueur n'existait nulle part en un seul morceau. Il est désormais écrit d'un tenant, et les bandeaux apparus depuis y rejoignent le tableau de décompte : <b>deux pouvoirs sur un même plan</b>, <b>valeurs négatives</b>, <b>cadrage double</b>, et les quatre <b>bandeaux de séquence</b>. Les versions précédentes restent lisibles telles quelles dans l'onglet « Versions des règles ».",
+      "<b>Le mode de jeu par défaut devient Banc en lignes</b>, et la pose sur une seule bande devient le mode <b>Classique</b> — toujours jouable, choisi sur l'accueil. Une configuration déjà enregistrée garde le mode qu'on lui avait donné : le nouveau défaut ne vaut que pour une configuration neuve.",
+    ],
+  },
   {
     v: '1.56',
     date: '26/08/2026',

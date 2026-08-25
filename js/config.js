@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.56';
+import { ELEMENT_IDS } from './data.js?v=1.57';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -39,7 +39,10 @@ export const DEFAULTS = {
   // Plans Moyens / Gros Plans à ses deux côtés. Une nouvelle séquence se pose
   // au-dessus ou en dessous des autres, jamais entre deux ; les Raccords n'y
   // relient rien, et le montage se lit d'un seul tenant, ligne après ligne.
-  bancEnLignes: false,
+  // C'est la règle officielle depuis la v0.14 : la pose sur une seule bande
+  // reste jouable, en mode Classique. Une configuration déjà enregistrée garde
+  // le mode qu'on lui avait donné — ce défaut ne vaut que pour une neuve.
+  bancEnLignes: true,
 
   // --- Décompte ------------------------------------------------------------
   objectifsActifs: {
@@ -152,18 +155,20 @@ export function cloneConfig(src = DEFAULTS) {
  */
 export const MODES = [
   {
-    id: 'CLASSIQUE',
-    label: 'Classique',
-    aide: 'le film se monte sur une seule bande, séquence après séquence',
-    cfg: { bancEnLignes: false },
-  },
-  {
     id: 'LIGNES',
     label: 'Banc en lignes',
-    aide: 'une séquence par ligne : le Plan Large ou le Plan de départ tient le centre de la sienne, '
-      + 'les Plans Moyens et Gros Plans s’accrochent à ses deux côtés, et une nouvelle ligne se pose '
-      + 'au-dessus ou en dessous de la pile — jamais entre deux. Les Raccords n’y relient rien.',
+    aide: 'la règle officielle (v0.14) — une séquence par ligne : le Plan Large ou le Plan de départ '
+      + 'tient le centre de la sienne, les Plans Moyens et Gros Plans s’accrochent à ses deux côtés, '
+      + 'et une nouvelle ligne se pose au-dessus ou en dessous de la pile — jamais entre deux. Les '
+      + 'Raccords n’y relient rien, et le montage se lit d’un seul tenant, ligne après ligne.',
     cfg: { bancEnLignes: true },
+  },
+  {
+    id: 'CLASSIQUE',
+    label: 'Classique',
+    aide: 'la pose d’avant la v0.14 : le film se monte sur une seule bande, séquence après séquence, '
+      + 'et une Carte Raccord relie deux séquences voisines',
+    cfg: { bancEnLignes: false },
   },
 ];
 
