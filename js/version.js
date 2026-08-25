@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.61';
-export const BUILD_DATE = '2026-08-26 19:10';
+export const VERSION = '1.62';
+export const BUILD_DATE = '2026-08-26 20:00';
 
 export const CHANGELOG = [
+  {
+    v: '1.62',
+    date: '26/08/2026',
+    items: [
+      "<b>Le trou dans l'icône Véhicule est bouché.</b> Le nettoyage de la v1.61 suivait l'anneau sombre <b>rayon par rayon</b> — et là où l'anneau porte un reflet clair, la trace s'interrompait : le rognage y creusait une entaille transparente, en bas du pneu. Or un anneau est un <b>cercle</b> : on relève son bord dans 720 directions, on <b>ajuste un cercle</b> sur ce nuage en écartant les points aberrants, et le masque est ce cercle. Un reflet ne peut plus y mordre. Les huit pastilles sont reprises depuis leurs originaux — plus de halo vert, plus d'entaille, et le contour est net.",
+      "<b>Le minutage a de l'air dans sa boîte.</b> Les chiffres ne se posent pas au même endroit de leur ligne d'une fonte à l'autre, et aucune règle CSS ne mesure l'encre pour recentrer dessus. Deux réponses : la boîte reprend la <b>hauteur exacte de la boîte imprimée</b> — 8,67 % de la hauteur de carte au lieu de 7,97 % —, et son <b>liseré gris disparaît</b>. Sans arête nette à quoi comparer, un pixel d'écart ne se voit plus, et le noir du minutage se fond dans celui de sa boîte.",
+    ],
+  },
   {
     v: '1.61',
     date: '26/08/2026',

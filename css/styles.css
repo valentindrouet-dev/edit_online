@@ -307,15 +307,23 @@ body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
    `line-height: 1` n'est pas un détail : sans elle, la hauteur de ligne vaut
    `normal`, c'est-à-dire ce que la fonte déclare — et la fonte n'est pas la
    même d'une machine à l'autre (SF Mono, Consolas, Menlo, ou la monospace du
-   système). Celles qui déclarent plus de 1,242 em faisaient déborder le texte
-   de sa boîte, par le bas. Fixée à 1, la ligne fait exactement la taille du
-   texte, tient dans la boîte, et le centrage du flex la pose au milieu quelle
-   que soit la fonte. */
+   système). Celles qui déclarent plus que la boîte faisaient déborder le texte
+   par le bas. Fixée à 1, la ligne fait exactement la taille du texte et tient
+   dans la boîte quelle que soit la fonte.
+   Reste que les chiffres ne se posent pas au même endroit de leur ligne d'une
+   fonte à l'autre — celle-ci réserve beaucoup de place sous la ligne de base,
+   celle-là monte plus haut : le texte penche donc légèrement vers le haut ou
+   vers le bas, et aucune règle CSS ne mesure l'encre pour recentrer dessus.
+   Deux réponses, toutes deux ici. La boîte reprend la hauteur exacte de la
+   boîte imprimée — 8,67 % de la hauteur de carte, au lieu de 7,97 % : les
+   chiffres y ont de l'air des deux côtés. Et le liseré gris disparaît : sans
+   arête nette à quoi comparer, un écart d'un pixel ne se voit plus, et le noir
+   du minutage se fond dans celui de sa boîte. */
 .moitie .tcode {
-  position: absolute; top: .302em; left: .288em; width: 3.89em; height: 1.242em;
+  position: absolute; top: .302em; left: .288em; width: 3.89em; height: 1.35em;
   display: flex; align-items: center; justify-content: center;
   background: #0d0d10; color: #ff3b30; font-weight: 700; font-size: .92em;
-  line-height: 1; border-radius: .3em; letter-spacing: .04em; border: 1px solid #3a3b44;
+  line-height: 1; border-radius: .3em; letter-spacing: .04em;
   font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
 }
 .moitie .tcode.bleu { color: #38bdf8; }

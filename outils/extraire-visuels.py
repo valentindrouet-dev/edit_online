@@ -247,69 +247,12 @@ def main():
             decouper_disque(im, cx, cy, r) \
                 .resize((128, 128), Image.LANCZOS) \
                 .save(os.path.join(sortie, f'{nom}.webp'), 'WEBP', quality=92, method=6)
-        nettoyer_pastilles(sortie)
+        # Le halo du fond de carte que le découpage emporte : voir
+        # outils/nettoyer-pastilles.py, qui ajuste un cercle sur l'anneau.
+        subprocess.run([sys.executable,
+                        os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                     'nettoyer-pastilles.py'), sortie], check=True)
         print(f'icônes : {len(SOURCES_ICONES)} pastilles extraites')
-
-
-# --- Le halo des pastilles -------------------------------------------------
-
-def nettoyer_pastilles(dossier):
-    """Efface ce qui dépasse de l'anneau sombre d'une pastille.
-
-    Une pastille est découpée à même la carte, où elle se détache sur un fond
-    de cadrage — vert sur un Plan Large. Le disque découpé étant un peu plus
-    large que la pastille, et pas tout à fait centré sur elle, il emportait un
-    croissant de ce fond : un halo vert au-dessus des icônes, invisible à la
-    taille d'une carte à l'écran, criant dès qu'on l'agrandit ou qu'on
-    l'imprime.
-
-    L'anneau sombre qui borde la pastille est son vrai contour. On le suit
-    rayon par rayon, et tout ce qui se trouve au-delà est du fond : on le rend
-    transparent. Le travail se fait sur une image quatre fois plus grande, puis
-    redescendue — le bord reste lisse au lieu de s'escalier.
-    """
-    import math
-    for chemin in sorted(glob.glob(os.path.join(dossier, '*.webp'))):
-        im = Image.open(chemin).convert('RGBA')
-        W, H = im.size
-        F = 4
-        gr = im.resize((W * F, H * F), Image.LANCZOS)
-        px = gr.load()
-        cx = cy = W * F / 2 - 0.5
-        rmax = W * F / 2
-        pas, n = 0.25, int(360 / 0.25)
-
-        # Le rayon du dernier pixel sombre, dans chaque direction.
-        brut = []
-        for i in range(n):
-            a = math.radians(i * pas)
-            ca, sa = math.cos(a), math.sin(a)
-            r = rmax
-            while r > 0:
-                x, y = int(cx + r * ca), int(cy + r * sa)
-                if 0 <= x < W * F and 0 <= y < H * F:
-                    rr, gg, bb, aa = px[x, y]
-                    if aa > 100 and (rr + gg + bb) / 3 < 105:
-                        break
-                r -= 1
-            brut.append(r)
-        # Médiane glissante : un reflet clair sur l'anneau ne doit pas y creuser
-        # une encoche.
-        bord = [sorted(brut[(i + k) % n] for k in range(-6, 7))[6] for i in range(n)]
-
-        for y in range(H * F):
-            dy = y - cy
-            for x in range(W * F):
-                dx = x - cx
-                r = math.hypot(dx, dy)
-                if r < 0.60 * rmax:
-                    continue
-                a = math.degrees(math.atan2(dy, dx)) % 360
-                if r > bord[int(a / pas) % n] + 1.5:
-                    rr, gg, bb, aa = px[x, y]
-                    if aa:
-                        px[x, y] = (rr, gg, bb, 0)
-        gr.resize((W, H), Image.LANCZOS).save(chemin, 'WEBP', quality=92, method=6)
 
 
 if __name__ == '__main__':
