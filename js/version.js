@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.49';
-export const BUILD_DATE = '2026-08-25 22:00';
+export const VERSION = '1.50';
+export const BUILD_DATE = '2026-08-25 23:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.50',
+    date: '25/08/2026',
+    items: [
+      "<b>Les cinq Plans Larges qui manquaient ont leur illustration</b> — 101, 102, 103, 107 et 110 —, extraites du PDF avec la même géométrie que les autres. Les <b>101 et 102</b> n'étaient plus des brouillons pour autant : leurs pastilles imprimées leur sont rendues (Héroïne · Ennemi · Objet · Véhicule pour la 101, Objet · Arme · Véhicule pour la 102). Plus aucun Plan Large n'est à compléter.",
+      "<b>Le cadre noir d'une carte a la même épaisseur sur ses quatre bords.</b> Le libellé du bas se posait sur une bande noire qui doublait le trait à cet endroit seulement : il s'écrit désormais <b>sur la carte</b>, dans l'encre sombre de son cadrage — claire sur un Raccord, dont le fond est presque noir.",
+      "<b>Un plan sans icône n'a plus de languette vide, un plan sans pouvoir n'a plus de bandeau vide.</b> Ces bandes — grises sur un Raccord, blanches ailleurs — n'annonçaient rien. Elles gardent leur place, c'est elle qui aligne le bas des deux moitiés d'une carte, mais laissent voir la carte au lieu de se peindre.",
+    ],
+  },
   {
     v: '1.49',
     date: '25/08/2026',

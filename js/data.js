@@ -31,8 +31,20 @@ export const ENCRES = {
   MORT: '#141418', NEANT: '#26262e',
 };
 
-// Les cadrages, assombris de la même façon.
-const ENCRES_FORMAT = { PL: '#2b6210', PM: '#7d5400', GP: '#8a330d', DEP: '#1e4b62', TR: '#31363c' };
+// Les cadrages, assombris de la même façon. Cette encre sert aussi au libellé
+// du bas d'un plan, qui s'écrit désormais sur la carte et non plus sur une
+// bande noire : la couleur vive du cadrage y manquerait de contraste.
+export const ENCRES_FORMAT = { PL: '#2b6210', PM: '#7d5400', GP: '#8a330d', DEP: '#1e4b62', TR: '#31363c' };
+
+/**
+ * L'encre du libellé de cadrage. Sur une carte claire, l'encre sombre ; sur un
+ * Raccord — fond presque noir —, la couleur vive du cadrage, seule lisible.
+ */
+export function encreLibelle(format, transition) {
+  // Un Raccord a le fond presque noir : il lui faut une encre claire, pas
+  // l'encre sombre des cartes claires.
+  return transition ? '#b4b8c0' : (ENCRES_FORMAT[format] || FORMATS[format]?.color || '#333');
+}
 
 /**
  * La couleur des flèches d'un bandeau : celle de l'icône qu'elles entourent.
@@ -285,13 +297,16 @@ const pmIndex = {}, gpIndex = {};
 for (const s of SCENES) { pmIndex[s.pmNum] = s.idx; gpIndex[s.gpNum] = s.idx; }
 
 // --- Les 14 Plans Larges ---------------------------------------------------
-// brouillon : pastilles et bandeau absents du PDF source, à compléter.
+// `brouillon` marquait les cartes dont le PDF source ne donnait ni illustration
+// ni pastilles — les 101 et 102. Elles ont reçu les leurs : plus aucun Plan
+// Large n'est un brouillon. Le marqueur reste dans le modèle, avec le réglage
+// `retirerBrouillons`, pour la prochaine carte encore à dessiner.
 
 const PL = (num, tc, el, obj, extra = {}) => ({ num, tc, el, obj, ...extra });
 
 export const PLANS_LARGES = [
-  PL(101, 15, [],                                          null, { brouillon: true }),
-  PL(102, 30, [],                                          null, { brouillon: true }),
+  PL(101, 15, ['HEROINE', 'ENNEMI', 'OBJET', 'VEHICULE'],  null),
+  PL(102, 30, ['OBJET', 'ARME', 'VEHICULE'],               null),
   PL(103, 45, ['ENNEMI', 'ALLIE', 'OBJET', 'VEHICULE'],    OBJ.raccord(2)),
   PL(104, 90, ['HEROINE', 'ALLIE', 'VEHICULE'],            null),
   PL(105, 90, ['HEROINE', 'ENNEMI', 'ALLIE', 'ARME'],      null),

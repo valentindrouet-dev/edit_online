@@ -97,7 +97,9 @@ et n'apparaît donc jamais deux fois.
 
 - les **illustrations** sont recadrées à 69 % de la hauteur, au-dessus de la zone d'information,
   et la boîte du minutage imprimé est repeinte en noir — l'application redessine le minutage
-  exactement au même endroit ;
+  exactement au même endroit. Les cinq Plans Larges qui manquaient au PDF d'origine (101, 102, 103,
+  107, 110) ont été extraits d'un PDF complémentaire avec la même géométrie : plus aucun plan n'est
+  un brouillon ;
 - les **huit pastilles** (Héroïne, Ennemi, Allié, Objet, Arme, Véhicule, Mort, Plan sans
   personnage) sont découpées à même les cartes, pour que l'application affiche partout les icônes
   imprimées et non des approximations.
@@ -106,6 +108,15 @@ La géométrie relevée sur les cartes est en tête du script : illustration jus
 des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %, puis le libellé. Le rendu des cartes reprend
 ces mêmes proportions, et sa taille de police est calée sur la hauteur (hauteur = 14,33 em) pour
 que les proportions tiennent à toutes les échelles.
+
+Le **cadre noir** d'une carte a la même épaisseur sur ses quatre bords : c'est le rembourrage de
+`.carte`. Le libellé du bas s'écrit **sur la carte**, dans l'encre sombre de son cadrage
+(`encreLibelle()`) — claire sur un Raccord, dont le fond est presque noir : posé sur une bande noire,
+il doublait le trait en bas de carte, là où les trois autres bords restaient fins.
+
+Un plan **sans icône** n'a pas de languette, un plan **sans pouvoir** n'a pas de bandeau : ces bandes
+gardent leur place — c'est elle qui aligne le bas des deux moitiés d'une carte — mais restent
+transparentes plutôt que de se peindre en gris ou en blanc sur rien.
 
 Le nom du fichier est la seule convention à respecter — remplacer `assets/gp/317.webp` suffit à
 mettre la carte à jour. La case **Illustrations** de l'accueil masque les images sans toucher aux
