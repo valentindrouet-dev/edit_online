@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, objPortee, objsDe } from './data.js?v=1.47';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, objPortee, objsDe } from './data.js?v=1.48';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -96,7 +96,9 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur) {
     case 'PLAN':
       return n * portee.length;
     case 'FORMAT':
-      return n * portee.filter((p) => p.format === obj.format).length;
+      // Un bandeau de cadrage peut en viser deux : un plan compte dès qu'il
+      // porte l'un OU l'autre — il ne compte pas deux fois pour autant.
+      return n * portee.filter((p) => p.format === obj.format || p.format === obj.format2).length;
     case 'ELEMENT':
       // Une carte peut porter deux fois la même icône. Par défaut chacune
       // rapporte ; `elementParIcone: false` revient à compter les plans.

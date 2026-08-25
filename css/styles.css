@@ -397,6 +397,11 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
   border-radius: .3em; text-transform: uppercase; line-height: 1.08; text-align: center;
   max-width: 6.5em; overflow-wrap: anywhere;
 }
+/* Le « & » qui relie deux cadrages visés par un même bandeau. */
+.et-cadrage {
+  color: #fff; font-weight: 800; font-size: .9em; line-height: 1; padding: 0 .08em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+}
 .tag-gris { background: #4a4a52; color: #d8d8de; }
 .tag-blanc { background: #f2f2f4; color: #1b1b20; white-space: nowrap; }
 .tag-fmt { background: #17171b; color: var(--c); }

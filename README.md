@@ -154,8 +154,11 @@ tous deux de cette valeur**, et c'est l'éditeur qui reçoit les vraies valeurs 
   portée **plusieurs fois** : un clic sur la pastille en ajoute une, un clic droit en retire une, et
   le compte s'affiche en badge. Chaque icône compte pour elle-même au décompte
   (`elementParIcone: false` revient à compter les plans porteurs) ;
-- son **pouvoir**, écrit comme sur la carte : `X points × ce que l'on compte`, où « ce que l'on
-  compte » est un cadrage, une icône, un couple d'icônes, une mort, un plan sans personnage, une
+- son **pouvoir**, écrit comme sur la carte : `X points × ce que l'on compte`. Chaque pouvoir se
+  nomme dans la liste par ce qu'il compte, en capitales — « par CADRAGE », « par ICONE »,
+  « par 2 ICONES », « par RACCORD », « par PLAN », « par SÉQUENCE »… « Ce que l'on
+  compte » est un cadrage — **un ou deux**, « n × Plan Large & Plan de départ », un plan comptant dès
+  qu'il porte l'un ou l'autre et jamais deux fois —, une icône, un couple d'icônes, une mort, un plan sans personnage, une
   Carte Raccord, une carte, un plan **avant ou après un seuil de minutage**, l'absence d'une icône,
   ou le fait que **le montage se lise dans l'ordre** — chaque minutage supérieur ou égal à celui de
   son voisin de gauche, les plans à 00:00 restant neutres (`chronoIgnoreZero`) —, ou encore
@@ -699,7 +702,9 @@ Plan de départ compris** (`cfg.tours`) — il en reste donc neuf à monter.
 
 Un **Plan de départ n'est pas un Plan Large** : il a son propre cadrage, `DEP`. C'est un plan comme
 un autre pour tout ce qui compte des cartes du montage — couples d'icônes, minutages, positions,
-points par carte de séquence — mais aucun bandeau de cadrage ne le vise, et aucun ne le désigne.
+points par carte de séquence —, et « n × Plan Large » ne le compte pas. Un bandeau **« n × Cadrage »**
+peut en revanche le **nommer** (`CADRAGES_POUVOIR`) : il le désigne, il ne le confond pas avec un
+Plan Large. C'est ce qui permet d'écrire « n × Plan Large & Plan de départ ».
 
 ## Les modes de jeu
 

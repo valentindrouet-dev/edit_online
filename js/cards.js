@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj } from './data.js?v=1.47';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.47';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj } from './data.js?v=1.48';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.48';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -57,7 +57,8 @@ function objCoeur(obj, taille, compact) {
   switch (obj.kind) {
     case 'RACCORD': return `<span class="tag tag-gris">Raccord</span>`;
     case 'PLAN':    return `<span class="tag tag-blanc">Plan</span>`;
-    case 'FORMAT':  return `<span class="tag tag-fmt" style="--c:${FORMATS[obj.format].color}">${compact ? FORMATS[obj.format].short : FORMATS[obj.format].label}</span>`;
+    case 'FORMAT':  return tagCadrage(obj.format, compact)
+      + (obj.format2 ? `<span class="et-cadrage">&amp;</span>${tagCadrage(obj.format2, compact)}` : '');
     case 'ELEMENT': return elIcon(obj.el, taille);
     case 'PAIRE':   return `<span class="paire">${elIcon(obj.els[0], taille)}<i></i>${elIcon(obj.els[1], taille)}</span>`;
     case 'MORT':    return elIcon('MORT', taille);
@@ -90,6 +91,12 @@ function objCoeur(obj, taille, compact) {
     }
     default: return '';
   }
+}
+
+/** L'étiquette d'un cadrage, dans sa couleur. */
+function tagCadrage(f, compact) {
+  return `<span class="tag tag-fmt" style="--c:${FORMATS[f].color}">${
+    compact ? FORMATS[f].short : FORMATS[f].label}</span>`;
 }
 
 /** La pastille « Séquence » des bandeaux qui comptent des séquences. */

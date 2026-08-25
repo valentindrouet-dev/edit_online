@@ -63,15 +63,21 @@ export const FORMATS = {
 };
 
 // Un Plan de départ est un plan comme un autre pour tout ce qui compte des
-// cartes — mais ce n'est pas un Plan Large : aucun objectif de cadrage ne le
-// vise, et aucun ne le désigne. Les cadrages qu'un bandeau peut viser :
+// cartes — mais ce n'est pas un Plan Large : « n × Plan Large » ne le compte
+// pas. Les cadrages qu'un bandeau de séquence peut viser :
 export const CADRAGES_VISABLES = ['PL', 'PM', 'GP'];
+
+// Le bandeau « n × Cadrage », lui, peut viser le Plan de départ : il le
+// **nomme**, il ne le confond pas avec un Plan Large. C'est ce qui permet
+// d'écrire « n × Plan Large & Plan de départ » — deux cadrages désignés.
+export const CADRAGES_POUVOIR = ['PL', 'PM', 'GP', 'DEP'];
 
 // --- Objectifs (bandeaux) --------------------------------------------------
 // kind :
 //   RACCORD   n points par Carte Raccord du montage entier
 //   PLAN      n points par carte de la séquence porteuse   ( ◀ PLAN ▶ )
-//   FORMAT    n points par plan du cadrage visé
+//   FORMAT    n points par plan du cadrage visé — deux cadrages au plus,
+//             « n × Plan Large & Plan de départ »
 //   ELEMENT   n points par plan portant cet élément
 //   PAIRE     n points par couple d'icônes réunies dans la portée : quatre
 //             icônes font deux couples, cinq en font deux aussi
@@ -113,7 +119,10 @@ export const PORTEE_IDS = PORTEES.map((p) => p.id);
 export const OBJ = {
   raccord: (n, portee) => ({ kind: 'RACCORD', n, portee: portee || 'MONTAGE' }),
   plan:    (n, portee) => ({ kind: 'PLAN', n, portee: portee || 'SEQUENCE' }),
-  format:  (n, f, portee) => ({ kind: 'FORMAT', n, format: f, ...(portee ? { portee } : {}) }),
+  // Un bandeau de cadrage peut en viser **deux** : le second est facultatif,
+  // et un plan compte dès qu'il porte l'un ou l'autre.
+  format:  (n, f, portee, f2) => ({ kind: 'FORMAT', n, format: f,
+    ...(f2 && f2 !== f ? { format2: f2 } : {}), ...(portee ? { portee } : {}) }),
   element: (n, e, portee) => ({ kind: 'ELEMENT', n, el: e, ...(portee ? { portee } : {}) }),
   paire:   (n, a, b, portee) => ({ kind: 'PAIRE', n, els: [a, b], ...(portee ? { portee } : {}) }),
   mort:    (n, portee) => ({ kind: 'MORT', n, ...(portee ? { portee } : {}) }),
@@ -165,7 +174,9 @@ function objQuoi(o) {
   switch (o.kind) {
     case 'RACCORD': return 'Raccord';
     case 'PLAN':    return 'Plan';
-    case 'FORMAT':  return FORMATS[o.format].label;
+    case 'FORMAT':  return o.format2
+      ? `${FORMATS[o.format].label} & ${FORMATS[o.format2].label}`
+      : FORMATS[o.format].label;
     case 'ELEMENT': return ELEMENTS[o.el].label;
     case 'PAIRE':   return o.els[0] === o.els[1]
       ? `couple de ${ELEMENTS[o.els[0]].label}`

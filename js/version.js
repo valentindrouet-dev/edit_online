@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.47';
-export const BUILD_DATE = '2026-08-25 18:00';
+export const VERSION = '1.48';
+export const BUILD_DATE = '2026-08-25 20:00';
 
 export const CHANGELOG = [
+  {
+    v: '1.48',
+    date: '25/08/2026',
+    items: [
+      "<b>Un bandeau de cadrage peut en viser deux</b> — « 2 × Plan Large & Plan de départ » : un plan compte dès qu'il porte l'un ou l'autre, et jamais deux fois. Le second cadrage est facultatif, et le <b>Plan de départ</b> fait désormais partie des cadrages qu'un tel bandeau peut nommer : il le désigne, il ne le confond pas avec un Plan Large — « n × Plan Large » ne le compte toujours pas.",
+      "<b>Les pouvoirs se nomment par ce qu'ils comptent</b>, en capitales : « par CADRAGE », « par ICONE », « par 2 ICONES », « par RACCORD », « par PLAN », « par MORT », « par MINUTAGE », « par SÉQUENCE »… On lit d'un coup d'œil ce que la valeur multiplie, au lieu de parcourir une phrase.",
+    ],
+  },
   {
     v: '1.47',
     date: '25/08/2026',

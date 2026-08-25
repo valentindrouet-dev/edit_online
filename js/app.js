@@ -2,27 +2,27 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.47';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.48';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
-  CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
+  CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.47';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.47';
-import { elIcon, numIcon } from './icons.js?v=1.47';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.47';
+} from './data.js?v=1.48';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.48';
+import { elIcon, numIcon } from './icons.js?v=1.48';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.48';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.47';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.47';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.47';
-import { releve, voler, stopperVols } from './anim.js?v=1.47';
-import { campagne } from './lab.js?v=1.47';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.47';
+} from './engine.js?v=1.48';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.48';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.48';
+import { releve, voler, stopperVols } from './anim.js?v=1.48';
+import { campagne } from './lab.js?v=1.48';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.48';
 
 const app = document.getElementById('app');
 
@@ -1888,25 +1888,28 @@ const VUES_GALERIE = ['CARTES', 'GP', 'PM', 'PL', 'DEPART', 'TOUS'];
 
 // Ce que compte un pouvoir. Les libellés se lisent à la suite du « n × » du
 // bandeau : « 2 × par plan du cadrage — Plan Large ».
+// Chaque pouvoir se nomme par **ce qu'il compte**, en capitales : on lit d'un
+// coup d'œil ce que la valeur multiplie, et la liste se parcourt par ce mot-là
+// plutôt que par une phrase.
 const KINDS = [
   ['',        'aucun pouvoir'],
-  ['FORMAT',  'par plan du cadrage…'],
-  ['ELEMENT', 'par plan portant l’icône…'],
-  ['PAIRE',   'par couple d’icônes réunies…'],
-  ['MORT',    'par plan de mort'],
-  ['NEANT',   'par plan sans personnage'],
-  ['RACCORD', 'par Carte Raccord'],
-  ['PLAN',    'par carte'],
-  ['MINUTAGE', 'par plan avant / après un minutage…'],
-  ['ABSENT',  'si l’icône est absente…'],
-  ['CHRONO',  'si tout se lit dans l’ordre'],
-  ['SANS_TC', 'si aucun plan au minutage…'],
+  ['FORMAT',  'par CADRAGE…'],
+  ['ELEMENT', 'par ICONE…'],
+  ['PAIRE',   'par 2 ICONES…'],
+  ['MORT',    'par MORT'],
+  ['NEANT',   'par PLAN SANS PERSONNAGE'],
+  ['RACCORD', 'par RACCORD'],
+  ['PLAN',    'par PLAN'],
+  ['MINUTAGE', 'par MINUTAGE avant / après…'],
+  ['ABSENT',  'si ICONE absente…'],
+  ['CHRONO',  'si DANS L’ORDRE'],
+  ['SANS_TC', 'si AUCUN MINUTAGE…'],
   // Les bandeaux qui comptent des séquences plutôt que des plans : ils lisent
   // la forme du banc, pas son contenu carte par carte.
-  ['SEQ_TAILLE',   'par séquence d’au moins n plans…'],
-  ['SEQ_VOISINES', 'par séquence au-dessus / en dessous…'],
-  ['SEQ_LONGUE',   'par plan de la plus longue séquence'],
-  ['SEQ_AVEC',     'par séquence avec / sans…'],
+  ['SEQ_TAILLE',   'par SÉQUENCE d’au moins n plans…'],
+  ['SEQ_VOISINES', 'par SÉQUENCE au-dessus / en dessous…'],
+  ['SEQ_LONGUE',   'par PLAN de la plus longue SÉQUENCE'],
+  ['SEQ_AVEC',     'par SÉQUENCE avec / sans…'],
 ];
 
 const KIND_LABEL = Object.fromEntries(KINDS.map(([k, l]) => [k, l]));
@@ -2458,8 +2461,15 @@ function blocPouvoir(o, ou, rang = 1) {
 
   let complement = '';
   if (kind === 'FORMAT') {
+    // Un bandeau de cadrage peut en viser deux : le second est facultatif, et
+    // un plan compte dès qu'il porte l'un ou l'autre.
     complement = `<select data-champ-obj="${ou}"${R} data-part="format">
-      ${['PL', 'PM', 'GP'].map((f) => opt(f, FORMATS[f].label, o.format === f)).join('')}</select>`;
+        ${CADRAGES_POUVOIR.map((f) => opt(f, FORMATS[f].label, o.format === f)).join('')}</select>
+      <span class="plus">&amp;</span>
+      <select data-champ-obj="${ou}"${R} data-part="format2">
+        ${opt('', '— aucun', !o.format2)}
+        ${CADRAGES_POUVOIR.filter((f) => f !== o.format)
+          .map((f) => opt(f, FORMATS[f].label, o.format2 === f)).join('')}</select>`;
   } else if (kind === 'ELEMENT' || kind === 'ABSENT') {
     complement = `<select data-champ-obj="${ou}"${R} data-part="el">${elOpts(o.el)}</select>`;
   } else if (kind === 'PAIRE') {
@@ -2784,7 +2794,7 @@ function declencheurs(obj, plans) {
   switch (obj.kind) {
     case 'RACCORD': return plans.filter(estRaccord).length;
     case 'PLAN':    return plans.length;
-    case 'FORMAT':  return plans.filter((p) => p.format === obj.format).length;
+    case 'FORMAT':  return plans.filter((p) => p.format === obj.format || p.format === obj.format2).length;
     case 'ELEMENT': return store.cfg.elementParIcone === false
       ? plans.filter((p) => p.el.includes(obj.el)).length
       : compteIcone(plans, obj.el);
@@ -3353,7 +3363,8 @@ function construireObj(kind, actuel) {
   const n = actuel ? actuel.n : 1;
   const e0 = actuel && actuel.el ? actuel.el : (actuel && actuel.els ? actuel.els[0] : ELEMENT_IDS[0]);
   const neuf = {
-    FORMAT:  () => OBJ.format(n, actuel && actuel.format ? actuel.format : 'PM'),
+    FORMAT:  () => OBJ.format(n, actuel && actuel.format ? actuel.format : 'PM',
+      undefined, actuel && actuel.format2),
     ELEMENT: () => OBJ.element(n, e0),
     ABSENT:  () => OBJ.absent(n, e0),
     PAIRE:   () => OBJ.paire(n, e0, actuel && actuel.els ? actuel.els[1] : e0),
@@ -3392,7 +3403,8 @@ function majObjectif(cles, part, valeur, rang = 1) {
   const o = JSON.parse(JSON.stringify(actuel));
   // Une valeur peut être négative : un pouvoir qui coûte des points.
   if (part === 'n') o.n = Math.max(-20, Math.min(20, parseInt(valeur, 10) || 0));
-  else if (part === 'format') o.format = valeur;
+  else if (part === 'format') { o.format = valeur; if (o.format2 === valeur) delete o.format2; }
+  else if (part === 'format2') { if (valeur) o.format2 = valeur; else delete o.format2; }
   else if (part === 'el') o.el = valeur;
   else if (part === 'el0') o.els = [valeur, o.els[1]];
   else if (part === 'el1') o.els = [o.els[0], valeur];
@@ -3433,6 +3445,8 @@ function csvEchappe(v) {
 function cibleObj(o) {
   if (!o) return '';
   if (o.kind === 'PAIRE') return o.els.join('+');
+  // Deux cadrages visés tiennent dans la même colonne : « PL+DEP ».
+  if (o.kind === 'FORMAT' && o.format2) return `${o.format}+${o.format2}`;
   // Un bandeau de séquence vise une icône, un cadrage ou un Raccord : tout
   // tient dans la même colonne que les autres cibles.
   if (o.cible) return o.cible;
@@ -3516,7 +3530,11 @@ function objDepuisCSV(r, suf = '') {
     case 'NEANT':   return OBJ.neant(n, portee);
     case 'CHRONO':  return OBJ.chrono(n, portee);
     case 'SANS_TC': return OBJ.sansTc(n, ['AVANT', 'APRES'].includes(sens0) ? sens0 : 'EGAL', seuil, portee);
-    case 'FORMAT':  return CADRAGES_VISABLES.includes(cible) ? OBJ.format(n, cible, portee) : null;
+    case 'FORMAT': {
+      const [f1, f2] = cible.split('+');
+      return CADRAGES_POUVOIR.includes(f1)
+        ? OBJ.format(n, f1, portee, CADRAGES_POUVOIR.includes(f2) ? f2 : undefined) : null;
+    }
     case 'ELEMENT': return ELEMENT_IDS.includes(cible) ? OBJ.element(n, cible, portee) : null;
     case 'ABSENT':  return ELEMENT_IDS.includes(cible) ? OBJ.absent(n, cible, portee) : null;
     case 'MINUTAGE': return OBJ.minutage(n, sens, seuil, portee);
