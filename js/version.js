@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.62';
-export const BUILD_DATE = '2026-08-26 20:00';
+export const VERSION = '1.63';
+export const BUILD_DATE = '2026-08-26 21:00';
 
 export const CHANGELOG = [
+  {
+    v: '1.63',
+    date: '26/08/2026',
+    items: [
+      "<b>Nouvelle variante — « Pas de Plans de départ ».</b> Elle se coche sur l'accueil, sous le mode de jeu, et se retrouve dans les Variables. Les <b>quatre faces de départ rejoignent la pioche des Plans Larges</b>, dont elles prennent la couleur : ce sont des Plans Larges comme les autres — le vert du cadrage, le bandeau vert, le libellé « Plan Large ». Rien d'autre ne change : même minutage, mêmes icônes, même pouvoir. La pioche compte donc <b>18 Plans Larges</b> au lieu de 14.",
+      "<b>La partie commence directement au dérushage</b>, banc vide : plus d'écran de choix du Plan de départ. Tant qu'un banc n'a aucune séquence, <b>seuls des Plans Larges sont proposés</b> — un Plan Moyen ou un Gros Plan s'accroche à une séquence, et il n'y en a pas encore. Chacune ouvre donc son banc d'un Plan Large, puis la partie suit son cours.",
+      "<b>Le minutage remonte dans sa boîte.</b> Les chiffres se posent plus ou moins bas dans leur ligne selon la fonte du système, et là où la ligne de base tombe bas ils sortaient encore par le dessous. Un rembourrage sous le texte raccourcit la boîte de contenu par le bas : le centrage les y ramène, sans rien retirer à celles qui les posaient déjà haut.",
+    ],
+  },
   {
     v: '1.62',
     date: '26/08/2026',

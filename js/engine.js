@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.62';
-import { compter, bancVide, plansComptes } from './scoring.js?v=1.62';
+} from './data.js?v=1.63';
+import { compter, bancVide, plansComptes } from './scoring.js?v=1.63';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -59,14 +59,16 @@ export function construirePaquet(cfg) {
 
   const larges = [];
   for (let k = 0; k < cfg.exemplairesPL; k++) {
-    for (const c of buildPlansLarges()) {
+    for (const c of buildPlansLarges(cfg.sansPlanDepart)) {
       if (!c.actif) continue;
       if (cfg.retirerBrouillons && c.brouillon) continue;
       larges.push({ ...c, id: k ? `${c.id}#${k + 1}` : c.id });
     }
   }
 
-  return { doubles, larges, departs: buildDeparts() };
+  // Variante « pas de Plans de départ » : les faces de départ sont déjà dans
+  // la pioche des Plans Larges, il n'en reste aucune à proposer.
+  return { doubles, larges, departs: cfg.sansPlanDepart ? [] : buildDeparts() };
 }
 
 // --- Plans visibles d'une carte -------------------------------------------
@@ -110,7 +112,9 @@ export function creerPartie(joueurs, cfg, graine) {
     chutierPL: [],
     chutierPMGP: [],
     tour: 1,
-    phase: 'DEPART',                     // DEPART | DERUSHAGE | MONTAGE
+    // Sans Plans de départ, il n'y a rien à choisir : on entre directement
+    // dans le dérushage, banc vide, et l'on ouvre son banc d'un Plan Large.
+    phase: cfg.sansPlanDepart ? 'DERUSHAGE' : 'DEPART',   // DEPART | DERUSHAGE | MONTAGE
     courant: 0,
     finie: false,
     journal: [],
@@ -135,7 +139,7 @@ export function creerPartie(joueurs, cfg, graine) {
   // exemplaires de la version A et quatre de la version B, donc chaque joueuse
   // reçoit une carte de chaque — ses quatre faces sont toujours au choix.
   const versions = [...new Set(departs.map((d) => d.version))];
-  joueurs.forEach((_, i) => {
+  if (!cfg.sansPlanDepart) joueurs.forEach((_, i) => {
     for (const v of versions) {
       const exemplaires = departs.filter((d) => d.version === v);
       const carte = exemplaires[i] || exemplaires[0];
@@ -195,17 +199,26 @@ export function departsFaits(state) {
 export function optionsDerushage(state) {
   const cfg = state.cfg;
   const out = [];
+  // Variante « pas de Plans de départ » : sur un banc vide, seul un Plan Large
+  // peut se poser — un Plan Moyen ou un Gros Plan s'accroche à une séquence, et
+  // il n'y en a aucune. On ne propose donc que des Plans Larges : sans cela on
+  // pourrait prendre une carte impossible à jouer.
+  const banc = state.bancs[state.courant];
+  const quePL = !!cfg.sansPlanDepart && banc && !banc.sequences.length;
   state.chutierPL.forEach((c, i) => out.push({ source: 'CHUTIER_PL', index: i, carte: c }));
-  state.chutierPMGP.forEach((c, i) => out.push({ source: 'CHUTIER_PMGP', index: i, carte: c }));
+  if (!quePL) state.chutierPMGP.forEach((c, i) => out.push({ source: 'CHUTIER_PMGP', index: i, carte: c }));
   // Les cartes Plan Moyen / Gros Plan sont recto-verso : une pioche ne peut
   // pas les cacher, on voit forcément la face du dessus. Les Plans Larges,
   // eux, ont un vrai dos — leur pioche reste aveugle.
-  if (cfg.piocheDirectePMGP && state.piochePMGP.length) {
+  if (!quePL && cfg.piocheDirectePMGP && state.piochePMGP.length) {
     out.push({ source: 'PIOCHE_PMGP', carte: state.piochePMGP[0], sommet: true });
   }
   if (cfg.piocheDirectePL && state.piochePL.length) {
     out.push({ source: 'PIOCHE_PL', carte: null, sommet: true });
   }
+  // Plus un seul Plan Large à prendre alors qu'il en faudrait un : mieux vaut
+  // une carte injouable ce tour-ci qu'une joueuse bloquée sans rien à faire.
+  if (quePL && !out.length) return optionsDerushage({ ...state, cfg: { ...cfg, sansPlanDepart: false } });
   return out;
 }
 
@@ -442,7 +455,11 @@ export function coupsPossibles(state, p, hypothese) {
       }
     });
 
-    // Si le banc est vide (variante sans Plan de départ), on ouvre une séquence.
+    // Si le banc est vide, on ouvre une séquence. Dans la variante « pas de
+    // Plans de départ », c'est un Plan Large qui ouvre le banc — mais la règle
+    // se pose au **dérushage**, où lui seul est proposé tant qu'il n'y a pas de
+    // séquence : inutile de l'imposer une seconde fois ici, et le faire
+    // bloquerait la joueuse qui aurait pris autre chose faute de Plan Large.
     if (!banc.sequences.length) out.push({ carte, format, action: 'NOUVELLE_SEQUENCE', pos: 0 });
   }
 

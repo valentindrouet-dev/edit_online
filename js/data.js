@@ -387,8 +387,24 @@ export function buildCartesDoubles() {
   });
 }
 
-export function buildPlansLarges() {
-  return PLANS_LARGES.map((p) => ({ id: `L${p.num}`, type: 'PL', actif: carteActive(`L${p.num}`), ...p }));
+/**
+ * Les Plans Larges de la boîte. `avecDeparts` — la variante « pas de Plans de
+ * départ » — y verse les quatre faces de départ : elles perdent leur marque
+ * `depart`, et deviennent donc des Plans Larges à part entière, jusqu'à la
+ * couleur de leur bandeau et de leur fond. Rien d'autre ne change : même
+ * minutage, mêmes icônes, même pouvoir.
+ */
+export function buildPlansLarges(avecDeparts) {
+  const out = PLANS_LARGES.map((p) => ({ id: `L${p.num}`, type: 'PL', actif: carteActive(`L${p.num}`), ...p }));
+  if (!avecDeparts) return out;
+  for (const d of DEPARTS) {
+    for (const f of d.faces) {
+      const { depart, ...reste } = f;
+      const id = `S${d.type}f${f.num}`;
+      out.push({ id, type: 'PL', actif: carteActive(id), ...reste });
+    }
+  }
+  return out;
 }
 
 export function buildDeparts() {

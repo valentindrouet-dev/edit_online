@@ -322,6 +322,12 @@ body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
 .moitie .tcode {
   position: absolute; top: .302em; left: .288em; width: 3.89em; height: 1.35em;
   display: flex; align-items: center; justify-content: center;
+  /* Le rembourrage du bas remonte les chiffres : le centrage du flex se fait
+     sur la boîte de contenu, que cette marge raccourcit par le bas. Les fontes
+     qui posent leur ligne de base bas — celles où les chiffres sortaient de la
+     boîte — sont ainsi ramenées dedans, et celles qui la posent haut gardent
+     de l'air au-dessus. */
+  padding-bottom: .2em;
   background: #0d0d10; color: #ff3b30; font-weight: 700; font-size: .92em;
   line-height: 1; border-radius: .3em; letter-spacing: .04em;
   font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;

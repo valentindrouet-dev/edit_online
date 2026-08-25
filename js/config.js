@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.62';
+import { ELEMENT_IDS } from './data.js?v=1.63';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -35,6 +35,12 @@ export const DEFAULTS = {
   // elle redevient un plan ordinaire — variante hors règles.
   raccordConnecte: true,
   generiqueBloque: true,     // rien avant l'Ouverture, rien après les Crédits
+  // Variante — pas de Plans de départ. Les quatre faces de départ rejoignent
+  // la pioche des Plans Larges, dont elles prennent la couleur : ce sont des
+  // Plans Larges comme les autres. Il n'y a alors plus de choix de départ au
+  // début de la partie — chaque joueuse ouvre son banc en dérushant un Plan
+  // Large, seule carte qui puisse s'y poser en premier.
+  sansPlanDepart: false,
   // Le mode « banc en lignes » (voir MODES, plus bas — il se choisit sur
   // l'accueil, pas ici) : chaque séquence occupe sa propre ligne, un Plan Large
   // ou un Plan de départ tient le centre de la sienne, et l'on accroche les
@@ -229,6 +235,9 @@ export const SCHEMA = [
         + 'dans la même ligne. Sur une seule bande, elle se pose entre deux séquences et les '
         + 'raccorde. Sinon, c’est un plan ordinaire' },
     { k: 'generiqueBloque', l: 'Le Générique ferme le montage', t: 'bool' },
+    { k: 'sansPlanDepart', l: 'Variante — pas de Plans de départ', t: 'bool',
+      aide: 'ils rejoignent la pioche des Plans Larges et en prennent la couleur ; '
+        + 'plus de choix de départ, on ouvre son banc en dérushant un Plan Large' },
     { k: 'faceSelonPose', l: 'La face jouée suit le sens de pose', t: 'bool',
       aide: 'sinon une carte est toujours jouée sur son recto' },
   ] },
