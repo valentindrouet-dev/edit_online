@@ -14,8 +14,8 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.60';
-import { elIcon } from './icons.js?v=1.60';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.61';
+import { elIcon } from './icons.js?v=1.61';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement

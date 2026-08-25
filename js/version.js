@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.60';
-export const BUILD_DATE = '2026-08-26 18:20';
+export const VERSION = '1.61';
+export const BUILD_DATE = '2026-08-26 19:10';
 
 export const CHANGELOG = [
+  {
+    v: '1.61',
+    date: '26/08/2026',
+    items: [
+      "<b>Le halo vert au-dessus des pastilles est parti.</b> Il ne venait pas de l'affichage mais des <b>images elles-mêmes</b> : une pastille est découpée à même la carte, où elle se détache sur le fond de son cadrage — vert sur un Plan Large. Le disque découpé étant un peu large et pas tout à fait centré, il emportait un croissant de ce fond. Invisible à la taille d'une carte à l'écran, criant dès qu'on agrandit ou qu'on imprime. Les huit pastilles ont été <b>retaillées sur leur anneau sombre</b>, leur vrai contour, suivi rayon par rayon ; tout ce qui dépassait est devenu transparent. Le rognage se fait maintenant à l'extraction.",
+      "<b>Le minutage retrouve le centre de sa boîte noire.</b> Sa hauteur de ligne valait <code>normal</code>, c'est-à-dire ce que la fonte déclare — et ce n'est pas la même fonte d'une machine à l'autre : SF Mono, Consolas, Menlo, ou la monospace du système. Celles qui déclarent une ligne plus haute que la boîte faisaient <b>déborder les chiffres par le bas</b>. La ligne est désormais fixée à la taille du texte : elle tient dans la boîte, et le centrage la pose au milieu quelle que soit la fonte.",
+    ],
+  },
   {
     v: '1.60',
     date: '26/08/2026',

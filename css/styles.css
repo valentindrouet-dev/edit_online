@@ -303,16 +303,21 @@ body.sans-illus .moitie.f-GP .pastilles { gap: .12em; }
 body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
 .moitie.transition .pastilles { background: rgba(255,255,255,.14); }
 
-/* Le minutage, calé sur la boîte imprimée qu'il remplace. */
+/* Le minutage, calé sur la boîte imprimée qu'il remplace.
+   `line-height: 1` n'est pas un détail : sans elle, la hauteur de ligne vaut
+   `normal`, c'est-à-dire ce que la fonte déclare — et la fonte n'est pas la
+   même d'une machine à l'autre (SF Mono, Consolas, Menlo, ou la monospace du
+   système). Celles qui déclarent plus de 1,242 em faisaient déborder le texte
+   de sa boîte, par le bas. Fixée à 1, la ligne fait exactement la taille du
+   texte, tient dans la boîte, et le centrage du flex la pose au milieu quelle
+   que soit la fonte. */
 .moitie .tcode {
   position: absolute; top: .302em; left: .288em; width: 3.89em; height: 1.242em;
   display: flex; align-items: center; justify-content: center;
-  background: #0d0d10; color: #ff3b30; font-weight: 700; font-size: 1em;
-  border-radius: .3em; letter-spacing: .04em; border: 1px solid #3a3b44;
+  background: #0d0d10; color: #ff3b30; font-weight: 700; font-size: .92em;
+  line-height: 1; border-radius: .3em; letter-spacing: .04em; border: 1px solid #3a3b44;
   font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
 }
-.moitie .tcode::first-line { line-height: 1; }
-.moitie .tcode { font-size: .92em; }
 .moitie .tcode.bleu { color: #38bdf8; }
 
 /* Ce que le plan rapporte, au coin opposé du minutage. Le jeton ne paraît
