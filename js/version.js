@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.59';
-export const BUILD_DATE = '2026-08-26 17:30';
+export const VERSION = '1.60';
+export const BUILD_DATE = '2026-08-26 18:20';
 
 export const CHANGELOG = [
+  {
+    v: '1.60',
+    date: '26/08/2026',
+    items: [
+      "<b>Le bandeau d'un Raccord était poussé hors de la carte.</b> Deux causes, et la première n'avait rien à voir avec les Raccords : la languette d'icônes vide portait la classe <code>vide</code> — celle des blocs d'état vide du site, avec ses 40 px de rembourrage. Ce rembourrage devenait la <b>hauteur minimale</b> de la languette, qui passait de 22 à <b>80 px</b> et repoussait le bandeau <b>50 px sous le bas de la carte</b>, où le débordement le masquait. Tout plan sans icône en souffrait ; les Raccords, qui n'en ont jamais, en souffraient toujours. La même collision de nom que la bulle « pioche épuisée » de la v1.56.",
+      "<b>Et les Raccords ne portaient leur pouvoir que d'un côté.</b> La donnée ne posait l'objectif que sur la moitié <b>Gros Plan</b> de chaque scène — la règle des trente scènes ordinaires, où le Plan Moyen n'en a pas. Appliquée aux trois <b>transitions</b>, elle laissait la moitié Plan Moyen entièrement vide : ni icône, ni minutage, ni pouvoir. Or un Raccord n'a que son pouvoir pour matière, et les règles le disent sans distinguer les cadrages. Le <b>Raccord</b> (290 / 390) porte donc « 1 × ◀ Plan ▶ » des deux côtés, l'<b>Ouverture</b> (291 / 391) et le <b>Générique de fin</b> (292 / 392) « 2 × Raccord ».",
+      "<b>Conséquence sur l'équilibrage</b> : un Raccord joué en Plan Moyen rapportait zéro, il rapporte maintenant autant que joué en Gros Plan. Les scores montent, et l'intérêt de jouer une transition ne dépend plus du bout par lequel on la prend.",
+      "<b>Le bandeau de séquence sait compter à l'envers.</b> « n × SÉQUENCE de k plans <b>ou plus</b> » a désormais son contraire, « k plans <b>ou moins</b> » — un pouvoir qui récompense les séquences courtes. Le bandeau l'écrit <b>≤ k</b> au lieu de <b>≥ k</b>, et l'éditeur ouvre le choix d'une liste à côté du seuil.",
+    ],
+  },
   {
     v: '1.59',
     date: '26/08/2026',

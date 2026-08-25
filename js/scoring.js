@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, objPortee, objsDe } from './data.js?v=1.59';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, objPortee, objsDe } from './data.js?v=1.60';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -130,8 +130,13 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur) {
     // Ceux-là ne regardent pas une portée de plans mais la forme du banc :
     // combien de séquences, de quelle taille, ce qu'elles portent. Ils lisent
     // donc `banc` directement, et leur portée est toujours le montage.
-    case 'SEQ_TAILLE':
-      return n * banc.sequences.filter((s) => plansDe(s).length >= Math.max(1, obj.seuil || 1)).length;
+    case 'SEQ_TAILLE': {
+      // « ou plus », ou son contraire « ou moins » — un bandeau qui récompense
+      // les séquences courtes plutôt que les longues.
+      const k = Math.max(1, obj.seuil || 1);
+      return n * banc.sequences.filter((s) => (obj.sens === 'MAX'
+        ? plansDe(s).length <= k : plansDe(s).length >= k)).length;
+    }
     case 'SEQ_LONGUE':
       return n * banc.sequences.reduce((m, s) => Math.max(m, plansDe(s).length), 0);
     case 'SEQ_VOISINES': {

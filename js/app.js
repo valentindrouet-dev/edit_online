@@ -2,28 +2,28 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.59';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.60';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.59';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.59';
-import { elIcon, numIcon } from './icons.js?v=1.59';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.59';
+} from './data.js?v=1.60';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.60';
+import { elIcon, numIcon } from './icons.js?v=1.60';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.60';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.59';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.59';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.59';
-import { releve, voler, stopperVols } from './anim.js?v=1.59';
-import { campagne } from './lab.js?v=1.59';
-import { archiveCartes } from './export-pdf.js?v=1.59';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.59';
+} from './engine.js?v=1.60';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.60';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.60';
+import { releve, voler, stopperVols } from './anim.js?v=1.60';
+import { campagne } from './lab.js?v=1.60';
+import { archiveCartes } from './export-pdf.js?v=1.60';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.60';
 
 const app = document.getElementById('app');
 
@@ -1950,7 +1950,7 @@ const KINDS = [
   ['SANS_TC', 'si AUCUN MINUTAGE…'],
   // Les bandeaux qui comptent des séquences plutôt que des plans : ils lisent
   // la forme du banc, pas son contenu carte par carte.
-  ['SEQ_TAILLE',   'par SÉQUENCE d’au moins n plans…'],
+  ['SEQ_TAILLE',   'par SÉQUENCE de n plans ou plus / ou moins…'],
   ['SEQ_VOISINES', 'par SÉQUENCE au-dessus / en dessous…'],
   ['SEQ_LONGUE',   'par PLAN de la plus longue SÉQUENCE'],
   ['SEQ_AVEC',     'par SÉQUENCE avec / sans…'],
@@ -2580,7 +2580,10 @@ function blocPouvoir(o, ou, rang = 1) {
   } else if (kind === 'SEQ_TAILLE') {
     complement = `<input type="number" class="pts" min="1" max="20" value="${o.seuil}"
         data-champ-obj="${ou}"${R} data-part="seuil">
-      <span class="plus">plan${o.seuil > 1 ? 's' : ''} ou plus</span>`;
+      <span class="plus">plan${o.seuil > 1 ? 's' : ''}</span>
+      <select data-champ-obj="${ou}"${R} data-part="sens">
+        ${opt('MIN', 'ou plus', o.sens !== 'MAX')}${opt('MAX', 'ou moins', o.sens === 'MAX')}
+      </select>`;
   } else if (kind === 'SEQ_VOISINES') {
     complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
         ${opt('AVANT', 'au-dessus de celle-ci', o.sens !== 'APRES')}
@@ -3467,7 +3470,8 @@ function construireObj(kind, actuel) {
     CHRONO:  () => OBJ.chrono(n),
     SANS_TC: () => OBJ.sansTc(n, actuel && actuel.sens ? actuel.sens : 'EGAL',
       actuel && actuel.seuil !== undefined ? actuel.seuil : 0),
-    SEQ_TAILLE:   () => OBJ.seqTaille(n, actuel && actuel.seuil ? Math.max(1, actuel.seuil) : 3),
+    SEQ_TAILLE:   () => OBJ.seqTaille(n, actuel && actuel.seuil ? Math.max(1, actuel.seuil) : 3,
+      actuel && actuel.sens === 'MAX' ? 'MAX' : undefined),
     SEQ_VOISINES: () => OBJ.seqVoisines(n, actuel && actuel.sens === 'APRES' ? 'APRES' : 'AVANT'),
     SEQ_LONGUE:   () => OBJ.seqLongue(n),
     SEQ_AVEC:     () => OBJ.seqAvec(n, actuel && actuel.sens === 'SANS' ? 'SANS' : 'AVEC',
@@ -3652,7 +3656,7 @@ function objDepuisCSV(r, suf = '') {
     case 'ELEMENT': return ELEMENT_IDS.includes(cible) ? OBJ.element(n, cible, portee) : null;
     case 'ABSENT':  return ELEMENT_IDS.includes(cible) ? OBJ.absent(n, cible, portee) : null;
     case 'MINUTAGE': return OBJ.minutage(n, sens, seuil, portee);
-    case 'SEQ_TAILLE':   return OBJ.seqTaille(n, Math.max(1, seuil || 1));
+    case 'SEQ_TAILLE':   return OBJ.seqTaille(n, Math.max(1, seuil || 1), sens0 === 'MAX' ? 'MAX' : undefined);
     case 'SEQ_VOISINES': return OBJ.seqVoisines(n, sens0 === 'APRES' ? 'APRES' : 'AVANT');
     case 'SEQ_LONGUE':   return OBJ.seqLongue(n);
     case 'SEQ_AVEC': return ciblesSequence().some((c) => c.id === cible)

@@ -400,8 +400,12 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    carte, mais laisse voir la carte au lieu de se peindre.
    Le bandeau de pouvoir, lui, se peint toujours : c'est la place du pouvoir,
    et on doit la voir — vide sur un plan qui n'en a pas, ce qui se lit comme
-   une information et non comme un trou. */
-.moitie .pastilles.vide { background: transparent; }
+   une information et non comme un trou.
+   La classe ne s'appelle plus `vide` : c'est aussi le nom de la classe
+   générique des blocs d'état vide, dont le rembourrage de 40 px devenait la
+   hauteur minimale de la languette — 80 px au lieu de 22 — et poussait le
+   bandeau de pouvoir hors de la carte, où le débordement le masquait. */
+.moitie .pastilles.sans-icone { background: transparent; }
 /* Le ×, le « si » et les flèches de portée se lisent à la taille des icônes :
    ils font partie de la formule, pas de la ponctuation. Un Gros Plan n'a qu'un
    tiers de carte, il les prend un cran plus bas. */

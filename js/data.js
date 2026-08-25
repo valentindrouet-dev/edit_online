@@ -106,7 +106,8 @@ export const CADRAGES_POUVOIR = ['PL', 'PM', 'GP', 'DEP'];
 //
 // Quatre bandeaux comptent des SÉQUENCES plutôt que des plans — ils lisent la
 // forme du banc, pas son contenu carte par carte :
-//   SEQ_TAILLE   n points par séquence d'au moins `seuil` plans
+//   SEQ_TAILLE   n points par séquence d'au moins `seuil` plans — ou d'au
+//                plus `seuil` plans quand `sens` vaut MAX
 //   SEQ_VOISINES n points par séquence placée au-dessus (`AVANT`) ou en
 //                dessous (`APRES`) de celle qui porte le bandeau
 //   SEQ_LONGUE   n points par plan de la plus longue séquence du banc
@@ -147,7 +148,9 @@ export const OBJ = {
   // forme du banc — combien de séquences, de quelle taille, ce qu'elles
   // portent —, pas son contenu carte par carte. Leur portée ne se règle donc
   // pas : c'est le montage entier qu'ils regardent, toujours.
-  seqTaille:   (n, seuil) => ({ kind: 'SEQ_TAILLE', n, seuil }),
+  // `sens` : MIN — au moins `seuil` plans, le défaut ; MAX — au plus.
+  seqTaille:   (n, seuil, sens) => ({ kind: 'SEQ_TAILLE', n, seuil,
+    ...(sens === 'MAX' ? { sens: 'MAX' } : {}) }),
   seqVoisines: (n, sens) => ({ kind: 'SEQ_VOISINES', n, sens }),
   seqLongue:   (n) => ({ kind: 'SEQ_LONGUE', n }),
   seqAvec:     (n, sens, cible) => ({ kind: 'SEQ_AVEC', n, sens, cible }),
@@ -196,7 +199,7 @@ function objQuoi(o) {
     case 'MORT':    return 'Mort';
     case 'NEANT':   return 'Plan sans personnage';
     case 'MINUTAGE': return `Plan ${o.sens === 'APRES' ? 'après' : 'avant'} ${tcTexte(o.seuil)}`;
-    case 'SEQ_TAILLE': return `séquence de ${o.seuil} plan${o.seuil > 1 ? 's' : ''} ou plus`;
+    case 'SEQ_TAILLE': return `séquence de ${o.seuil} plan${o.seuil > 1 ? 's' : ''} ou ${o.sens === 'MAX' ? 'moins' : 'plus'}`;
     case 'SEQ_VOISINES': return `séquence ${o.sens === 'APRES' ? 'en dessous' : 'au-dessus'} de celle-ci`;
     case 'SEQ_LONGUE': return 'Plan de votre plus longue séquence';
     case 'SEQ_AVEC': return `séquence ${o.sens === 'SANS' ? 'sans' : 'avec'} ${libelleCible(o.cible)}`;
@@ -236,10 +239,20 @@ export function objPortee(o, cfg) {
 // --- Les 33 scènes ---------------------------------------------------------
 // Chaque scène existe en deux cadrages : une moitié PLAN MOYEN (2/3 de carte)
 // et une moitié GROS PLAN (1/3). Seule la moitié Gros Plan porte un objectif.
+//
+// Sauf pour les trois scènes de TRANSITION. Un Raccord, une Ouverture, un
+// Générique de fin ne racontent rien : ils n'ont ni icône ni minutage, et leur
+// pouvoir est leur seule matière. Le réserver à la moitié Gros Plan revenait à
+// laisser la moitié Plan Moyen entièrement vide — un Raccord joué en Plan
+// Moyen ne rapportait rien, alors que les règles disent qu'un Raccord rapporte
+// un point par carte de sa séquence, quel que soit le bout par lequel on le
+// joue. Les deux moitiés d'une transition portent donc le même pouvoir.
 
 const S = (idx, tc, famille, pmNum, gpNum, pmEl, gpEl, obj, extra = {}) => ({
   idx, tc, famille, pmNum, gpNum,
-  pm: { el: pmEl },
+  // Une copie, et non la même référence : deux moitiés qui partageraient leur
+  // objectif se retoucheraient l'une l'autre.
+  pm: { el: pmEl, ...(famille === 'TRANSITION' && obj ? { obj: { ...obj } } : {}) },
   gp: { el: gpEl, obj },
   ...extra,
 });

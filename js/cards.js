@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.59';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.59';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.60';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.60';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -78,7 +78,7 @@ function objCoeur(obj, taille, compact) {
     // Les bandeaux de séquence : la pastille violette dit qu'on compte des
     // séquences et non des plans, et ce qui la suit dit lesquelles.
     case 'SEQ_TAILLE': return `${tagSeq(compact)}
-      <span class="tc-seuil">≥&nbsp;${obj.seuil}</span>`;
+      <span class="tc-seuil">${obj.sens === 'MAX' ? '≤' : '≥'}&nbsp;${obj.seuil}</span>`;
     case 'SEQ_VOISINES': return `${tagSeq(compact)}
       <span class="fleche-seq">${obj.sens === 'APRES' ? '▼' : '▲'}</span>`;
     // « La plus longue » : on compte ses plans, d'où la pastille Plan.
@@ -187,7 +187,7 @@ export function renderPlan(h, opts = {}) {
     <div class="illus" style="${fond}">
       <div class="tcode ${h.tc === 0 || h.transition ? 'bleu' : ''}">${tc(h.tc)}</div>
     </div>
-    <div class="pastilles ${icones.length ? '' : 'vide'}" style="--n:${Math.max(1, icones.length)}">${icones.map((e) => elIcon(e)).join('')}</div>
+    <div class="pastilles ${icones.length ? '' : 'sans-icone'}" style="--n:${Math.max(1, icones.length)}">${icones.map((e) => elIcon(e)).join('')}</div>
     ${bandeau(objsDe(h), h.format)}
     <div class="libelle" style="--c:${encreLibelle(h.format, !!h.transition)}">${label}</div>
   </div>`;
