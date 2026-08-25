@@ -2,27 +2,27 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.52';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.53';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.52';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.52';
-import { elIcon, numIcon } from './icons.js?v=1.52';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.52';
+} from './data.js?v=1.53';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.53';
+import { elIcon, numIcon } from './icons.js?v=1.53';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.53';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.52';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.52';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.52';
-import { releve, voler, stopperVols } from './anim.js?v=1.52';
-import { campagne } from './lab.js?v=1.52';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.52';
+} from './engine.js?v=1.53';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.53';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.53';
+import { releve, voler, stopperVols } from './anim.js?v=1.53';
+import { campagne } from './lab.js?v=1.53';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.53';
 
 const app = document.getElementById('app');
 
@@ -52,6 +52,10 @@ const store = {
   undo: null,
   vols: [],             // les cartes à faire voler au prochain rendu
   filIA: 0,             // jeton du fil des coups d'IA : incrémenté, il l'annule
+  // Le banc affiché : un seul à la fois, les autres en onglets. null = suivre
+  // qui joue ; un clic d'onglet épingle, le changement de tour dés-épingle.
+  bancVu: null,
+  dernierTour: null,
 };
 
 // Les parties enregistrées avant la palette pastel gardaient d'anciennes
@@ -455,6 +459,11 @@ function vuePartie(enchainer = true) {
   // Le banc lu dans les colonnes : celui qui joue, ou celui qu'on a épinglé.
   const vu = store.joueurVu !== null && st.joueurs[store.joueurVu] ? store.joueurVu : p;
 
+  // Le banc affiché : celui de qui joue, sauf si un onglet en a épinglé un
+  // autre — et l'épingle tombe au changement de tour.
+  if (st.courant !== store.dernierTour) { store.dernierTour = st.courant; store.bancVu = null; }
+  const vuB = store.bancVu !== null && st.bancs[store.bancVu] ? store.bancVu : p;
+
   // La zone garde toujours la même forme, quel que soit celui qui joue : seuls
   // les clics sont réservés à la joueuse humaine.
   let zone;
@@ -475,8 +484,17 @@ function vuePartie(enchainer = true) {
           </div>`}
 
         <div class="panneau zone-phase">${zone}</div>
-        ${st.joueurs.map((jj, i) => bancBloc(st, i, `Banc de ${jj.nom}`,
-          i === p && humaine && (st.phase === 'MONTAGE' || st.phase === 'DERUSHAGE'))).join('')}
+        ${/* Un seul banc à l'écran, les autres en onglets. Par défaut on suit
+              qui joue — le coup d'une IA se regarde sur SON banc — et l'onglet
+              épingle jusqu'au tour suivant. */''}
+        <div class="panneau">
+          <h2 class="onglets-bancs">
+            ${st.joueurs.map((jj, i) => `<button class="onglet-banc ${i === vuB ? 'on' : ''}"
+              data-onglet-banc="${i}" style="--enc:${encreDe(jj.couleur)}">Banc de ${jj.nom}</button>`).join('')}
+            <span class="banc-compte">Plan <b>${Math.min(compter(st.bancs[vuB], st.cfg).plans, st.cfg.tours)} / ${st.cfg.tours}</b></span>
+          </h2>
+          ${bancBloc(st, vuB, null, vuB === p && humaine && (st.phase === 'MONTAGE' || st.phase === 'DERUSHAGE'))}
+        </div>
       </div>
 
       <div class="colonne-info">
@@ -537,9 +555,6 @@ const LARGEUR_BANC = { GP: 85, PM: 169, PL: 254, DEP: 254 };
 // L'écart entre deux plans d'une même séquence, lui aussi en accord avec la
 // feuille de style (`.banc .sequence { gap }`).
 const ECART_PLANS = 2;
-// La place que prend la pastille de points d'une ligne, marge comprise — même
-// valeur que `.ligne-pts` dans la feuille de style.
-const LARGEUR_PTS_LIGNE = 54;
 
 /** La largeur d'une séquence dans le banc, rembourrage compris. */
 function largeurSeq(seq) {
@@ -573,45 +588,11 @@ function ancreDe(seq) {
  * de tenir dès que le banc manquait de place : le plan central se mettait à
  * dériver par rapport à ceux des autres lignes.
  */
-/**
- * Le calage de centrage, borné à la place que le banc laisse **une fois les
- * plans placés**. Amener la colonne d'ancrage au milieu coûte de la largeur :
- * tant que le banc en a de reste, on la prend et les plans centraux tombent au
- * milieu ; dès qu'un plan déborderait à cause de ce seul calage, on le réduit
- * d'autant. Les plans passent avant leur centrage.
- *
- * Cela se mesure après le rendu : la largeur du banc dépend de la page.
- */
-function centrerAncrages(racine = app) {
-  racine.querySelectorAll('.banc-piste.lignes[data-cal-g]').forEach((piste) => {
-    const voulu = (+piste.dataset.calG || 0) + (+piste.dataset.calD || 0);
-    if (!voulu) return;
-    const banc = piste.closest('.banc');
-    if (!banc) return;
-    // La largeur des lignes sans aucun calage, puis ce que le banc peut encore
-    // absorber. `scrollWidth` la donne avec le calage en place : on le retire.
-    piste.style.setProperty('--cal-g', '0px');
-    piste.style.setProperty('--cal-d', '0px');
-    const nu = piste.scrollWidth;
-    const jeu = Math.max(0, banc.clientWidth - nu);
-    const part = Math.min(1, jeu / voulu);
-    piste.style.setProperty('--cal-g', `${Math.round((+piste.dataset.calG || 0) * part)}px`);
-    piste.style.setProperty('--cal-d', `${Math.round((+piste.dataset.calD || 0) * part)}px`);
-  });
-}
-
 function colonneAncrage(sequences) {
-  if (!sequences.length) return { avant: 0, apres: 0, calGauche: 0, calDroite: 0 };
+  if (!sequences.length) return { avant: 0, apres: 0 };
   const avant = Math.max(...sequences.map(ancreDe));
   const apres = Math.max(...sequences.map((s) => largeurSeq(s) - ancreDe(s)));
-  // La piste se rend **symétrique autour de sa colonne d'ancrage** : le côté le
-  // plus court se complète d'un vide. Centrée dans le banc, elle y amène donc
-  // la colonne — les Plans Larges et les Plans de départ tombent au milieu, et
-  // pas seulement les uns sous les autres. Ce vide est du rembourrage, dans le
-  // flux : le banc défile toujours par-dessus s'il le faut. La pastille des
-  // points de ligne compte dans le côté gauche, qu'elle décale d'autant.
-  const g = avant + LARGEUR_PTS_LIGNE;
-  return { avant, apres, calGauche: Math.max(0, apres - g), calDroite: Math.max(0, g - apres) };
+  return { avant, apres };
 }
 
 function bancBloc(st, i, titre, interactif) {
@@ -705,20 +686,13 @@ function bancBloc(st, i, titre, interactif) {
   const n = banc.sequences.length;
   if (!n) morceaux.push('<div class="vide" style="color:#8a8496">Banc vide</div>');
 
-  let calPiste = '';
   if (lignes) {
     // Toutes les lignes alignent leur ancre sur la même verticale : celle qui a
     // le plus de plans à sa gauche fixe la colonne, les autres comblent l'écart
-    // d'un retrait. C'est du calage dans le flux, donc le banc défile plutôt que
-    // de rompre l'alignement quand il déborde.
+    // d'un retrait. Chaque ligne ainsi complétée fait la même largeur :
+    // centrées dans le banc, elles y amènent la colonne au milieu — et défilent
+    // d'un bloc quand cela déborde, sans jamais rompre l'alignement.
     const col = colonneAncrage(banc.sequences);
-    // Le calage qui amène la colonne d'ancrage au milieu de la piste — donc au
-    // milieu du banc, une fois la piste centrée. Il se pose sur les lignes, pas
-    // sur la piste : la pastille des points doit rester à l'extrême bord.
-    // `--cal-g` / `--cal-d` le portent pour que `centrerAncrages()` puisse le
-    // rendre après coup, quand la place vient à manquer.
-    calPiste = ` style="--cal-g:${Math.round(col.calGauche)}px;--cal-d:${Math.round(col.calDroite)}px"`
-      + ` data-cal-g="${Math.round(col.calGauche)}" data-cal-d="${Math.round(col.calDroite)}"`;
     // Au-dessus de tout : ouvrir une séquence en tête du film.
     morceaux.push(bande(coups.filter((c) => c.action === 'NOUVELLE_SEQUENCE' && c.pos === 0)));
     banc.sequences.forEach((seq, si) => {
@@ -764,7 +738,7 @@ function bancBloc(st, i, titre, interactif) {
       || (c.action === 'GENERIQUE' && c.role === 'CREDITS'))));
   }
 
-  const banche = `<div class="banc ${coups.length ? 'vise' : ''}" data-banc="${i}"><div class="banc-piste ${lignes ? 'lignes' : ''}"${calPiste}>${morceaux.join('')}</div></div>`;
+  const banche = `<div class="banc ${coups.length ? 'vise' : ''}" data-banc="${i}"><div class="banc-piste ${lignes ? 'lignes' : ''}">${morceaux.join('')}</div></div>`;
   // Sans titre, on ne veut que le banc : c'est ce que demande le compte rendu
   // de fin de partie, qui donne le nom de la joueuse à sa façon.
   if (titre === null) return banche;
@@ -791,6 +765,9 @@ function bancBloc(st, i, titre, interactif) {
 function viser(st, o, format) {
   const c = store.choixRiviere;
   store.choixRiviere = (c && memeOption(c.o, o) && c.format === format) ? null : { o, format };
+  // Viser, c'est préparer une pose : si un onglet montrait un autre banc, on
+  // revient sur le sien — c'est là que les emplacements vont s'ouvrir.
+  if (store.bancVu !== null && store.bancVu !== st.courant) store.bancVu = null;
   rafraichirVisee(st);
 }
 
@@ -825,7 +802,6 @@ function rafraichirVisee(st) {
   banc.classList.toggle('vise', !!bloc.querySelector('.banc').classList.contains('vise'));
   brancherFentes(st, piste);
   brancherApercu(piste);
-  centrerAncrages(banc);
 }
 
 function choisirMoitie(st, format) {
@@ -848,7 +824,6 @@ function choisirMoitie(st, format) {
     piste.classList.toggle('lignes', !!st.cfg.bancEnLignes);
     brancherFentes(st, piste);
     brancherApercu(piste);
-    centrerAncrages(piste.closest('.banc') || app);
   }
 }
 
@@ -1232,6 +1207,12 @@ function blocRecensement(s) {
 function brancherPartie(st, humaine) {
   const q = (s) => app.querySelector(s);
 
+  // Les onglets de banc : un clic épingle le banc choisi jusqu'au tour suivant.
+  app.querySelectorAll('[data-onglet-banc]').forEach((b) => b.addEventListener('click', () => {
+    store.bancVu = +b.dataset.ongletBanc;
+    vuePartie(false);
+  }));
+
   // La zone garde la même forme pendant les tours d'IA : les clics, eux, sont
   // réservés à la joueuse humaine.
   if (humaine) {
@@ -1320,7 +1301,6 @@ function brancherPartie(st, humaine) {
 
     brancherFentes(st);
   }
-  centrerAncrages();
 
   // Épingler un banc ne touche pas à la partie : on repeint la seule colonne.
   const majColonnes = () => {
@@ -1898,7 +1878,6 @@ function vueFin() {
   </div>
   ${pied()}`);
   brancherApercu();
-  centrerAncrages();
   app.querySelector('#rejouer').addEventListener('click', lancerPartie);
 }
 
@@ -2434,7 +2413,9 @@ function blocLot(plans) {
       </div>
     </div>
 
-    ${blocPouvoir(objCommunDe(plans), 'lot')}
+    ${objCommunDe(plans) || !plans.some((p) => p.obj)
+      ? blocPouvoir(objCommunDe(plans), 'lot')
+      : blocPouvoirMixte(plans, 'lot')}
     <div class="rangee-mini">
       <button class="pill mini" data-vider="obj" data-rang="1" data-cles="${cles}"
         ${plans.some((p) => p.obj) ? '' : 'disabled'}>Enlever le pouvoir des ${plans.length} plans</button>
@@ -2442,7 +2423,9 @@ function blocLot(plans) {
         ? `<button class="pill mini" data-second="${cles}">+ second pouvoir</button>` : ''}
     </div>
 
-    ${plans.some((p) => p.obj2) ? `${blocPouvoir(objCommunDe(plans, 2), 'lot', 2)}
+    ${plans.some((p) => p.obj2) ? `${objCommunDe(plans, 2)
+      ? blocPouvoir(objCommunDe(plans, 2), 'lot', 2)
+      : blocPouvoirMixte(plans, 'lot', 2)}
     <div class="rangee-mini">
       <button class="pill mini" data-vider="obj" data-rang="2" data-cles="${cles}">Enlever le second pouvoir des ${plans.length} plans</button>
     </div>` : ''}
@@ -2451,6 +2434,45 @@ function blocLot(plans) {
       ${plans.map((p) => `<span class="jeton ${retoucheDe(p.cle) ? 'mod' : ''}" data-oter="${p.cle}"
         title="Retirer de la sélection">${p.num}${p.face || ''} ✕</span>`).join('')}
     </div>
+  </div>`;
+}
+
+/**
+ * Les pouvoirs d'une sélection quand ils **diffèrent** : la valeur et la
+ * portée se règlent quand même, d'un coup — ce sont des pièces que tous les
+ * bandeaux partagent, chaque plan gardant son propre effet. Régler dix cartes
+ * « 2 × quelque chose » en « 3 × quelque chose » ne demande plus dix passages.
+ * Choisir un type dans la liste, en revanche, remplace tous les pouvoirs par
+ * ce type-là, comme sur une sélection vierge.
+ */
+function blocPouvoirMixte(plans, ou, rang = 1) {
+  const champ = rang === 2 ? 'obj2' : 'obj';
+  const objs = plans.map((p) => p[champ]).filter(Boolean);
+  const R = ` data-rang="${rang}"`;
+  const opt = (v, l, on) => `<option value="${v}" ${on ? 'selected' : ''}>${l}</option>`;
+  const memeN = objs.every((o) => o.n === objs[0].n) ? objs[0].n : '';
+  const portees = [...new Set(objs.map((o) => objPortee(o, store.cfg)))];
+  const figes = objs.filter((o) => o.kind === 'CHRONO' || KINDS_SEQUENCE.includes(o.kind)).length;
+  return `<div class="champ-bloc">
+    <span class="ch-lg">${rang === 2 ? 'Second pouvoir' : 'Pouvoir'} — ${objs.length} bandeaux différents</span>
+    <p class="aide">Les pouvoirs diffèrent : la <b>valeur</b> et la <b>portée</b> se règlent quand
+      même d'un coup, chaque plan gardant son propre effet.</p>
+    <div class="editeur-obj">
+      <input type="number" class="pts" min="-20" max="20" value="${memeN}" placeholder="—"
+        data-champ-obj="${ou}"${R} data-part="n">
+      <span class="x">×</span>
+      <select data-champ-obj="${ou}"${R} data-part="kind">
+        <option value="" disabled selected hidden>— pouvoirs différents —</option>
+        ${KINDS.filter(([k]) => k).map(([k, l]) => opt(k, l, false)).join('')}
+      </select>
+    </div>
+    <div class="portee-choix">
+      ${PORTEES.map((x) => `<button class="pp ${portees.length === 1 && portees[0] === x.id ? 'on' : ''}"
+        data-champ-portee="${ou}"${R} data-portee="${x.id}" title="${x.label}">
+        ${x.gauche ? '◀' : ''} ${x.court} ${x.droite ? '▶' : ''}</button>`).join('')}
+    </div>
+    ${figes ? `<div class="aide portee-fixe">${figes} bandeau${figes > 1 ? 'x' : ''} de séquence ou
+      « dans l'ordre » garderont leur portée : elle ne se règle pas.</div>` : ''}
   </div>`;
 }
 
@@ -3451,7 +3473,31 @@ function majObjectif(cles, part, valeur, rang = 1) {
   const actuel = objCommunDe(plans, rang);
 
   if (part === 'kind') return poserObj(cles, construireObj(valeur, actuel), rang);
-  if (!actuel) return;
+  if (!actuel) {
+    // Les pouvoirs de la sélection diffèrent. La **valeur** et la **portée**
+    // sont des pièces que tous partagent : on les règle quand même, chaque
+    // plan gardant son propre effet. Le reste — cible, seuil, sens — n'a de
+    // sens que sur un pouvoir précis, et ne se règle donc qu'au commun.
+    if (part !== 'n' && part !== 'portee') return;
+    const champ = rang === 2 ? 'obj2' : 'obj';
+    surLeModifie(() => {
+      for (const c of cles) {
+        const p = planDeCle(c);
+        const o0 = p && p[champ];
+        if (!o0) continue;
+        const o = JSON.parse(JSON.stringify(o0));
+        if (part === 'n') o.n = Math.max(-20, Math.min(20, parseInt(valeur, 10) || 0));
+        else {
+          // « dans l'ordre » et les bandeaux de séquence n'ont pas de portée
+          // à régler : ils lisent toujours le banc entier.
+          if (o.kind === 'CHRONO' || KINDS_SEQUENCE.includes(o.kind)) continue;
+          o.portee = valeur;
+        }
+        poserObj([c], o, rang);
+      }
+    });
+    return;
+  }
   const o = JSON.parse(JSON.stringify(actuel));
   // Une valeur peut être négative : un pouvoir qui coûte des points.
   if (part === 'n') o.n = Math.max(-20, Math.min(20, parseInt(valeur, 10) || 0));
@@ -4086,10 +4132,6 @@ function route() {
 
 window.addEventListener('hashchange', route);
 route();
-
-// La place qu'un banc offre change avec la fenêtre : le centrage des colonnes
-// d'ancrage se reprend à chaque redimensionnement.
-window.addEventListener('resize', () => centrerAncrages());
 
 
 // ===========================================================================

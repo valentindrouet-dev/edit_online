@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.52';
-export const BUILD_DATE = '2026-08-26 02:30';
+export const VERSION = '1.53';
+export const BUILD_DATE = '2026-08-26 11:00';
 
 export const CHANGELOG = [
+  {
+    v: '1.53',
+    date: '26/08/2026',
+    items: [
+      "<b>Un seul banc à l'écran, les autres en onglets.</b> Le panneau du banc porte un onglet par joueuse — « Banc de Val », « Banc de Justine » — et l'on bascule d'un clic. Par défaut il suit <b>qui joue</b> : le coup d'une IA se regarde sur son banc. Un clic d'onglet épingle un banc jusqu'au tour suivant, et viser une carte de la rivière ramène sur le sien — c'est là que les emplacements s'ouvrent.",
+      "<b>La pastille de points d'une ligne revient à l'extrême gauche du banc</b>, comme avant, et y reste collée pendant qu'on fait défiler. Le centrage des lignes ne passe plus par elle : chaque ligne se complète d'un fantôme de la largeur de la pastille à son bout droit, et le fil se centre entre les deux — la colonne d'ancrage tombe au milieu du banc sans plus aucun calcul après rendu.",
+      "<b>L'éditeur règle la valeur et la portée d'un lot même quand les pouvoirs diffèrent.</b> « 2 × Héroïne » sur une carte, « 2 × Arme » sur l'autre : la valeur en points et le avant / après / séquence / montage se changent quand même d'un coup — chaque plan garde son propre effet. Les bandeaux de séquence et « dans l'ordre » gardent leur portée, qui ne se règle pas. Choisir un type dans la liste remplace, lui, tous les pouvoirs par ce type-là.",
+    ],
+  },
   {
     v: '1.52',
     date: '26/08/2026',

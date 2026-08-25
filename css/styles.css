@@ -564,29 +564,31 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    du banc. Un décalage en marges, lui, cessait de tenir dès que la place
    manquait : le plan central se mettait à dériver. */
 .banc-piste.lignes {
-  flex-direction: column; flex-wrap: nowrap; align-items: flex-start; row-gap: 8px;
-  width: max-content; margin: auto;
+  flex-direction: column; flex-wrap: nowrap; align-items: stretch; row-gap: 8px;
+  flex: 1 0 auto; margin: auto 0;
 }
-/* Le calage qui centre la colonne d'ancrage se pose sur la ligne entière, donc
-   avant la pastille de points : celle-ci reste au départ du contenu plutôt que
-   seule au bout d'un vide, et son `sticky` la colle au bord du banc dès qu'on
-   fait défiler. */
-.banc-piste.lignes .ligne {
-  display: flex; align-items: stretch;
-  padding-left: var(--cal-g, 0px); padding-right: var(--cal-d, 0px);
-}
-/* Le retrait de la ligne suffit à la placer : rien ne doit venir répartir en
-   plus l'espace qui reste, sinon le calage ne vaudrait plus. */
-.banc-piste.lignes .ligne-fil { display: flex; flex: 0 0 auto; }
+/* Une ligne : la pastille de points à l'extrême gauche, puis le fil qui centre
+   la séquence, puis un fantôme de la largeur de la pastille — sans lui, le
+   centrage du fil serait décalé d'une demi-pastille vers la droite. */
+.banc-piste.lignes .ligne { display: flex; align-items: stretch; }
+.banc-piste.lignes .ligne::after { content: ''; flex: 0 0 54px; }
+/* `safe center` : centré tant que tout tient, calé à gauche dès que ça déborde
+   — un `center` sec rendrait le début de la ligne inatteignable. */
+.banc-piste.lignes .ligne-fil { display: flex; flex: 1 1 auto; justify-content: safe center; }
 .banc-piste.lignes .ligne-corps { position: relative; display: flex; flex: 0 0 auto; }
-/* Ce que la ligne rapporte, à son bout gauche. La pastille **colle au bord du
-   banc** pendant qu'on fait défiler : le compte doit rester lisible même quand
-   la ligne qu'il décrit est partie sur la droite. Sa largeur est la même sur
-   toutes les lignes — sinon elle décalerait la colonne d'ancrage. */
-/* La pastille ne se clique pas : c'est un compte, pas un bouton. Collée au bord
-   du banc, elle passe devant l'emplacement de pose du bout gauche — sans cela,
-   elle en interceptait le clic et la ligne la plus à gauche devenait
-   impossible à étendre. */
+/* Les emplacements se posent hors du flux, contre les flancs de la séquence :
+   ils ne prennent aucune largeur, donc en ouvrir un d'un seul côté ne décale
+   ni la ligne ni son ancre. */
+.banc-piste.lignes .bord {
+  position: absolute; top: 0; bottom: 0; display: flex; align-items: stretch;
+}
+.banc-piste.lignes .bord.gauche { right: 100%; justify-content: flex-end; }
+.banc-piste.lignes .bord.droite { left: 100%; }
+/* Ce que la ligne rapporte, à l'extrême gauche du banc. La pastille **colle au
+   bord** pendant qu'on fait défiler : le compte reste lisible quand la ligne
+   est partie sur la droite. Largeur fixe — le fantôme du bout de ligne fait la
+   même — et transparente aux clics : c'est un compte, pas un bouton, et collée
+   au bord elle passerait devant l'emplacement de pose du bout gauche. */
 .banc-piste.lignes .ligne-pts {
   position: sticky; left: 0; z-index: 4; flex: 0 0 auto; pointer-events: none;
   width: 46px; margin-right: 8px; align-self: center;
@@ -597,14 +599,6 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 }
 .banc-piste.lignes .ligne-pts.nul { background: rgba(255, 255, 255, .1); color: #b9b2c8; }
 .banc-piste.lignes .ligne-pts.negatif { background: rgba(143, 29, 29, .92); border-color: #d78a8a; }
-/* Les emplacements se posent hors du flux, contre les flancs de la séquence :
-   ils ne prennent aucune largeur, donc en ouvrir un d'un seul côté ne décale
-   ni la ligne ni son ancre. */
-.banc-piste.lignes .bord {
-  position: absolute; top: 0; bottom: 0; display: flex; align-items: stretch;
-}
-.banc-piste.lignes .bord.gauche { right: 100%; justify-content: flex-end; }
-.banc-piste.lignes .bord.droite { left: 100%; }
 /* La zone de dépôt a la **forme du plan qui va s'y poser** — la largeur d'un
    Gros Plan, d'un Plan Moyen, d'un Plan Large — et toute la hauteur d'une
    carte : on vise la place que la carte prendra, pas une flèche. */
@@ -784,6 +778,22 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .bandeau-tour b { color: var(--encre); }
 
 /* Le compte de plans, au-dessus du banc dont il parle. */
+/* Les bancs des autres joueuses en onglets, sur le panneau du banc : un seul
+   banc à l'écran, on bascule d'un clic. L'onglet actif porte la couleur de sa
+   joueuse. */
+.panneau h2.onglets-bancs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.onglet-banc {
+  border: 1px solid var(--gris-clair); background: transparent; color: var(--gris);
+  font: inherit; font-size: .74rem; font-weight: 800; letter-spacing: .06em;
+  text-transform: uppercase; padding: 4px 12px; border-radius: 999px; cursor: pointer;
+  transition: .12s;
+}
+.onglet-banc:hover { color: var(--encre); border-color: var(--gris); }
+.onglet-banc.on {
+  color: var(--enc, var(--encre)); border-color: currentColor;
+  background: #fff; box-shadow: 0 1px 4px rgba(60, 40, 100, .12);
+}
+
 .panneau h2 .banc-compte {
   float: right; font-size: .8rem; font-weight: 600; color: var(--encre-doux);
   letter-spacing: 0; text-transform: none;

@@ -226,6 +226,13 @@ ouvre le second emplacement d'un bouton **+ second pouvoir** et le règle exacte
 Un plan qui en porte deux produit **deux lignes de décompte** : la colonne de score les montre
 séparément, et le jeton du coin en donne la somme.
 
+Sur une sélection dont les **pouvoirs diffèrent**, la **valeur** et la **portée** se règlent quand
+même d'un coup (`blocPouvoirMixte()`) : ce sont des pièces que tous les bandeaux partagent — chaque
+plan garde son propre effet. « 2 × Héroïne » ici et « 2 × Arme » là passent ensemble à 3 points, ou
+en « avant cette carte ». Les bandeaux de séquence et « dans l'ordre » gardent leur portée, qui ne se
+règle pas ; le reste — cible, seuil, sens — n'a de sens que sur un pouvoir précis et ne se règle
+qu'au commun. Choisir un **type** dans la liste remplace, lui, tous les pouvoirs par ce type-là.
+
 Sur le bandeau, deux pouvoirs se lisent en version compacte — celle du Gros Plan — pour tenir dans la
 même hauteur.
 
@@ -534,6 +541,14 @@ pas cliquer (`body.ia-joue`, `body.coup-en-vol`).
 Deux réglages dans **Variables › Rythme** : `vitesseIA` (la pause avant le coup d'une IA) et
 `dureeVol` (le trajet d'une carte). `animerCoups: false` rend le jeu instantané.
 
+### Un banc à l'écran, les autres en onglets
+
+Le panneau du banc porte **un onglet par joueuse** — « Banc de Val », « Banc de Justine » — et l'on
+bascule d'un clic. Par défaut il **suit qui joue** : le coup d'une IA se regarde sur son banc. Un clic
+d'onglet épingle un banc jusqu'au tour suivant (`store.bancVu`), et **viser une carte de la rivière
+ramène sur le sien** — c'est là que les emplacements s'ouvrent. Le compte « Plan x / 10 » du banc
+affiché se lit au bout de la barre d'onglets.
+
 ### La colonne de droite
 
 Une **case par joueuse** : sa couleur, son nom, « À son tour » juste à droite quand c'est le sien, son
@@ -638,6 +653,14 @@ L'écran de décompte ouvre sur le **podium**, puis :
 
 Le palmarès regroupe **joueuse par joueuse** : deux joueuses qui posent le même bandeau gardent
 chacune leur ligne, c'est bien ce qu'elles en ont tiré séparément que l'on compare.
+
+### Un banc à l'écran, les autres en onglets
+
+Le panneau du banc porte **un onglet par joueuse** — « Banc de Val », « Banc de Justine » — et l'on
+bascule d'un clic. Par défaut il **suit qui joue** : le coup d'une IA se regarde sur son banc. Un clic
+d'onglet épingle un banc jusqu'au tour suivant (`store.bancVu`), et **viser une carte de la rivière
+ramène sur le sien** — c'est là que les emplacements s'ouvrent. Le compte « Plan x / 10 » du banc
+affiché se lit au bout de la barre d'onglets.
 
 ### La colonne de droite
 
@@ -811,20 +834,18 @@ autour de cette colonne** — le côté le plus court se complète d'un vide (`c
 et la piste se centre : la colonne tombe donc au milieu du banc, et pas seulement les ancres les unes
 sous les autres.
 
-Ce centrage coûte de la largeur, et **les plans passent avant lui** : `centrerAncrages()` le mesure
-après le rendu et ne l'applique qu'à hauteur de ce que le banc a de reste, le réduisant d'autant dès
-qu'un plan sortirait du cadre à cause de lui seul. Tout cela étant du rembourrage dans le flux, la
-piste a la largeur de ce qu'elle contient et le banc **défile de gauche à droite** quand cela déborde,
-sans jamais rompre l'alignement. Les bandes « ▲ / ▼ nouvelle ligne » se centrent sur la même colonne :
-c'est là que la ligne s'ouvrira. Un décalage posé en marges, lui, cessait de tenir
+Chaque ligne ainsi complétée fait la même largeur : centrées, elles amènent la colonne au milieu du
+banc, et **défilent d'un bloc** quand cela déborde (`justify-content: safe center` — calé à gauche
+dès que ça dépasse, pour que le début reste atteignable), sans jamais rompre l'alignement. Les bandes
+« ▲ / ▼ nouvelle ligne » se centrent sur la même colonne : c'est là que la ligne s'ouvrira. Un décalage posé en marges, lui, cessait de tenir
 dès que la place manquait : le plan central se mettait à dériver d'une ligne à l'autre.
 
-Chaque ligne porte à son bout gauche une pastille `.ligne-pts` : **ce que les cartes de cette ligne
-rapportent**. Elle est `position: sticky` — elle colle au bord du banc pendant qu'on fait défiler,
-pour que le compte reste lisible quand la ligne est partie sur la droite —, de largeur fixe, sinon
-elle décalerait la colonne d'ancrage, et `pointer-events: none`, sinon elle intercepterait le clic de
-l'emplacement de pose qu'elle recouvre. Le calage de centrage se pose **avant** elle, si bien qu'elle
-reste au départ du contenu de sa ligne.
+Chaque ligne porte à son **extrême gauche** une pastille `.ligne-pts` : **ce que les cartes de cette
+ligne rapportent**. Elle est `position: sticky` — elle colle au bord du banc pendant qu'on fait
+défiler —, de largeur fixe, et `pointer-events: none`, sinon elle intercepterait le clic de
+l'emplacement de pose qu'elle recouvre. Un **fantôme de la même largeur** ferme chaque ligne à
+droite (`.ligne::after`) : le fil se centre entre les deux, et la colonne d'ancrage tombe au milieu
+du banc sans aucun calcul après rendu.
 
 Les deux emplacements latéraux (`.bord`) sont **posés hors du flux**, contre les flancs de la
 séquence : ils n'occupent aucune largeur, donc en ouvrir un d'un seul côté ne décale ni la ligne ni
