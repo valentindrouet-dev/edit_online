@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.58';
-export const BUILD_DATE = '2026-08-26 16:10';
+export const VERSION = '1.59';
+export const BUILD_DATE = '2026-08-26 17:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.59',
+    date: '26/08/2026',
+    items: [
+      "<b>⭳ Cartes en PDF</b>, dans l'écran Matériel : <b>un PDF par face</b> de carte activée — le recto et le verso de chacune des cartes Plan Moyen / Gros Plan, chaque Plan Large, les deux faces de chaque Plan de départ. De quoi les donner à imprimer une par une. Les fichiers partent réunis dans une <b>archive ZIP</b> : aucun navigateur ne laisse passer cent vingt téléchargements de suite. Page à <b>88 × 63 mm</b>, la carte occupant toute la page, à 300 points par pouce.",
+      "L'export sort le matériel <b>tel que la galerie le montre</b> — le jeu Modifié, avec ses minutages, ses icônes, ses pouvoirs, ses appariements et ses numéros —, et n'exporte que les cartes <b>restées dans la boîte</b>. Les Plans de départ existent en quatre exemplaires identiques : un seul fichier en sort, à tirer autant de fois qu'il en faut. Sur les 50 cartes doubles, les 14 Plans Larges et les 2 versions de Plan de départ, cela fait <b>118 fichiers</b>.",
+      "Toujours sans bibliothèque tierce. La carte est enfermée avec sa feuille de style et ses images dans un <code>&lt;foreignObject&gt;</code> SVG, peinte sur un canvas, puis le JPEG entre <b>tel quel</b> dans le PDF — filtre DCTDecode, ni recompression ni perte. L'archive est écrite en clair, sans compression : des JPEG ne se compressent pas.",
+    ],
+  },
   {
     v: '1.58',
     date: '26/08/2026',

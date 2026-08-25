@@ -2,27 +2,28 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.58';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.59';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.58';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.58';
-import { elIcon, numIcon } from './icons.js?v=1.58';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.58';
+} from './data.js?v=1.59';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.59';
+import { elIcon, numIcon } from './icons.js?v=1.59';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.59';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.58';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.58';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.58';
-import { releve, voler, stopperVols } from './anim.js?v=1.58';
-import { campagne } from './lab.js?v=1.58';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.58';
+} from './engine.js?v=1.59';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.59';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.59';
+import { releve, voler, stopperVols } from './anim.js?v=1.59';
+import { campagne } from './lab.js?v=1.59';
+import { archiveCartes } from './export-pdf.js?v=1.59';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.59';
 
 const app = document.getElementById('app');
 
@@ -2168,6 +2169,7 @@ function barreJeu() {
     </span>
     ${boutonIllus()}
     <button class="pill" id="mat-export">⭳ Tableau en PDF</button>
+    <button class="pill" id="cartes-pdf" title="Un PDF par face de carte activée, à 88 × 63 mm, réunis dans une archive ZIP — le jeu Modifié, celui que la galerie montre">⭳ Cartes en PDF</button>
     <button class="pill" id="csv-export">⭳ Cartes en CSV</button>
     <button class="pill" id="csv-import">⭱ Importer un CSV</button>
   </div>`;
@@ -3220,6 +3222,8 @@ function brancherMateriel() {
 
   const ex = app.querySelector('#mat-export');
   if (ex) ex.addEventListener('click', exporterMateriel);
+  const cp = app.querySelector('#cartes-pdf');
+  if (cp) cp.addEventListener('click', () => exporterCartesPDF(cp));
   const cx = app.querySelector('#csv-export');
   if (cx) cx.addEventListener('click', exporterCSV);
   const ci = app.querySelector('#csv-import');
@@ -3778,6 +3782,83 @@ function exporterMateriel() {
   window.print();
   // Certains navigateurs n'émettent pas afterprint : filet de sécurité.
   setTimeout(fin, 1500);
+}
+
+// --- L'export des cartes en PDF ---------------------------------------------
+// Un fichier par face — c'est ce qu'il faut pour donner les cartes à imprimer
+// une par une. Cent vingt téléchargements de suite, aucun navigateur ne les
+// laisse passer : ils partent donc réunis dans une archive ZIP.
+
+const nomFichier = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+
+/**
+ * Les faces à exporter : les deux d'une carte Plan Moyen / Gros Plan, l'unique
+ * d'un Plan Large, et les deux de chaque version de Plan de départ. Les cartes
+ * écartées de la boîte n'en sont pas — on exporte ce qu'on joue.
+ *
+ * Les Plans de départ existent en quatre exemplaires chacun dans la boîte,
+ * mais les quatre sont identiques : on n'en sort qu'un, à tirer autant de fois
+ * qu'il en faut.
+ */
+function facesCartes() {
+  return surLeModifie(() => {
+    const faces = [];
+    buildCartesDoubles().forEach((c, i) => {
+      if (!c.actif) return;
+      const rang = String(i + 1).padStart(2, '0');
+      const r = moitiesDe(c, 'R'), v = moitiesDe(c, 'V');
+      faces.push({ nom: nomFichier(`carte-${rang}-recto-pm${r.PM.num}-gp${r.GP.num}`),
+        html: renderCarte(c, false) });
+      faces.push({ nom: nomFichier(`carte-${rang}-verso-gp${v.GP.num}-pm${v.PM.num}`),
+        html: renderCarte(c, true) });
+    });
+    buildPlansLarges().forEach((c) => {
+      if (!c.actif) return;
+      faces.push({ nom: nomFichier(`plan-large-${plHalf(c).num}`), html: renderCarte(c, false) });
+    });
+    DEPARTS.forEach((d) => d.faces.forEach((f, k) => {
+      const id = `S${d.type}f${f.num}`;
+      if (estDesactivee(id)) return;
+      const carte = { ...f, depart: true, type: 'DEPART', id };
+      faces.push({ nom: nomFichier(`plan-de-depart-${d.type}-face${k + 1}-${plHalf(carte).num}`),
+        html: renderCarte(carte, false) });
+    }));
+    return faces;
+  });
+}
+
+async function exporterCartesPDF(bouton) {
+  const faces = facesCartes();
+  if (!faces.length) { alert('Aucune carte activée : il n’y a rien à exporter.'); return; }
+  const libelle = bouton.textContent;
+  bouton.disabled = true;
+  try {
+    const zip = await archiveCartes(faces, {
+      version: VERSION,
+      avance: (fait, total) => { bouton.textContent = `⏳ ${fait} / ${total}`; },
+    });
+    const d = new Date();
+    const quand = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+    // Le jeu exporté est celui que la galerie montre — le Modifié —, et non
+    // celui qui part en partie : on imprime ce que l'on voit.
+    telecharger(new Blob([zip], { type: 'application/zip' }), `edit-cartes-${quand}.zip`);
+  } catch (e) {
+    alert(`L’export a échoué : ${e && e.message ? e.message : e}`);
+  } finally {
+    bouton.disabled = false;
+    bouton.textContent = libelle;
+  }
+}
+
+function telecharger(blob, nom) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nom;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
 // ===========================================================================
