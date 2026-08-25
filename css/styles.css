@@ -328,9 +328,8 @@ body.sans-points .jeton-pts { display: none; }
 body.ia-joue .table-jeu .zone-phase,
 body.coup-en-vol .table-jeu { pointer-events: none; }
 /* La place de la pioche : un repère stable pour la carte qui en sort, même
-   quand la pioche est vide. Son compte est dessous — c'est une donnée de jeu. */
-/* La pile déborde de la carte du dessus — les couches décalées descendent de
-   15 px : la place les réserve, sinon elles couvriraient le compte. */
+   quand la pioche est vide. La pile déborde de la carte du dessus — les
+   couches décalées descendent de 15 px, et la place les réserve. */
 .pioche-place { display: flex; align-items: flex-start; padding-bottom: 18px; }
 .pioche-colonne { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .pioche-reste {
@@ -453,7 +452,12 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 /* Les groupes de dérushage se rangent côte à côte tant que la place le permet. */
 /* Une ligne par famille : sa pioche d'abord, puis son chutier. */
 .derushage-lignes { display: flex; flex-direction: column; gap: 18px; }
-.derushage-ligne h3 { margin: 0 0 10px; font-size: .95rem; }
+/* Le titre d'une famille et le compte de sa pioche tiennent sur la même
+   ligne : sous la pioche, ce compte s'ouvrait une rangée à lui seul. */
+.derushage-ligne h3 {
+  margin: 0 0 10px; font-size: .95rem;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
 .derushage-cartes { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-start; }
 
 /* La rivière pendant le choix du Plan de départ : elle se lit, elle ne se

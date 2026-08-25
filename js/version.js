@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.43';
-export const BUILD_DATE = '2026-08-24 19:00';
+export const VERSION = '1.44';
+export const BUILD_DATE = '2026-08-25 10:00';
 
 export const CHANGELOG = [
+  {
+    v: '1.44',
+    date: '25/08/2026',
+    items: [
+      "<b>Deux fenêtres, un seul matériel.</b> On règle les cartes dans une fenêtre, on joue dans l’autre — souvent sur deux écrans : la retouche se voit désormais <b>aussitôt sur la table</b>, sans rien relancer. Les cartes de la rivière, celles en main et <b>les plans déjà posés</b> reprennent le minutage, les icônes, les pouvoirs et le numéro que l’éditeur vient de leur donner ; l’appariement des cartes doubles suit lui aussi. La partie, elle, ne franchit pas la frontière : chaque fenêtre garde la sienne.",
+      "Le compte de la pioche — « 12 cartes en pioche » — remonte <b>à côté du titre de sa famille</b>, sur la même ligne. Sous la pioche, il s’ouvrait une rangée à lui seul : la table y gagne une trentaine de pixels de hauteur.",
+    ],
+  },
   {
     v: '1.43',
     date: '24/08/2026',

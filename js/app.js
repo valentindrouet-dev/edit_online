@@ -2,27 +2,27 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.43';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.44';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.43';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.43';
-import { elIcon, numIcon } from './icons.js?v=1.43';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.43';
+} from './data.js?v=1.44';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.44';
+import { elIcon, numIcon } from './icons.js?v=1.44';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.44';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner,
-} from './engine.js?v=1.43';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.43';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.43';
-import { releve, voler, stopperVols } from './anim.js?v=1.43';
-import { campagne } from './lab.js?v=1.43';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.43';
+} from './engine.js?v=1.44';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.44';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.44';
+import { releve, voler, stopperVols } from './anim.js?v=1.44';
+import { campagne } from './lab.js?v=1.44';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.44';
 
 const app = document.getElementById('app');
 
@@ -905,15 +905,16 @@ function zoneDerushage(st, humaine = true, apercu = false) {
   };
 
   // Une ligne par famille : sa pioche d'abord, puis son chutier. Le compte de
-  // la pioche est sous elle — c'est une donnée de jeu, pas une décoration.
+  // la pioche se lit **à côté du titre**, sur la même ligne : sous la pioche il
+  // s'ouvrait une rangée à lui seul, et la table y perdait une trentaine de
+  // pixels de hauteur pour une donnée de six mots.
   const ligne = (titre, fam, pioche, reste, chutier) => `
     <div class="derushage-ligne" data-famille="${fam}">
-      <h3>${titre}</h3>
+      <h3>${titre}<span class="pioche-reste ${reste ? '' : 'vide'}">${reste
+        ? `${reste} carte${reste > 1 ? 's' : ''} en pioche` : 'pioche épuisée'}</span></h3>
       <div class="derushage-cartes">
         <div class="pioche-colonne">
           <div class="pioche-place" id="pioche-${fam}">${pioche}</div>
-          <span class="pioche-reste ${reste ? '' : 'vide'}">${reste
-            ? `${reste} carte${reste > 1 ? 's' : ''} en pioche` : 'pioche épuisée'}</span>
         </div>
         ${chutier || '<div class="aide" style="align-self:center">Chutier épuisé</div>'}
       </div>
@@ -3949,6 +3950,74 @@ function route() {
 
 window.addEventListener('hashchange', route);
 route();
+
+// ===========================================================================
+// Deux fenêtres, un seul matériel
+// ===========================================================================
+// On règle les cartes dans une fenêtre et l'on joue dans l'autre, souvent sur
+// deux écrans. Le navigateur prévient les autres onglets de la même origine dès
+// qu'une clé de stockage change : on relit donc la configuration, on réapplique
+// le matériel et l'on repeint — la retouche se voit sur la table sans avoir à
+// relancer quoi que ce soit.
+//
+// `storage` ne se déclenche QUE dans les autres fenêtres : celle qui écrit ne
+// s'entend pas elle-même, il n'y a donc pas de boucle. Et la partie en cours ne
+// franchit pas la frontière — elle n'est pas enregistrée : chaque fenêtre garde
+// la sienne.
+
+/**
+ * Ré-applique le matériel courant à une partie déjà commencée. Un plan posé est
+ * une **copie** faite au moment de la pose : il ne suivrait pas une retouche.
+ * On rejoue donc sur lui les seuls champs que l'éditeur règle — minutage,
+ * icônes, pouvoirs, mort, numéro — en gardant ce que la pose lui a donné : son
+ * cadrage, son rôle de transition, sa face, sa carte d'origine.
+ *
+ * Les cartes encore en pioche, en rivière ou en main n'ont besoin de rien :
+ * leurs moitiés se relisent à chaque rendu. Seul leur **appariement** est figé
+ * à la construction du paquet — on le refait, par rang de carte.
+ */
+function resynchroniserMateriel(st, cfg) {
+  if (!st) return;
+  // La partie joue son propre instantané de configuration : c'est lui qu'il
+  // faut mettre à jour, `appliquerJeuActif()` s'en sert pendant une partie.
+  st.cfg.materiel = JSON.parse(JSON.stringify(cfg.materiel));
+  st.cfg.cartesDesactivees = (cfg.cartesDesactivees || []).slice();
+  st.cfg.materielActif = cfg.materielActif;
+  appliquerJeuActif();
+
+  const parRang = new Map(buildCartesDoubles().map((c) => [c.rang, c]));
+  for (const pile of [st.piochePMGP, st.chutierPMGP, ...st.mains]) {
+    for (const c of pile || []) {
+      const n = c && c.type === 'DOUBLE' ? parRang.get(c.rang) : null;
+      if (n) Object.assign(c, { pmScene: n.pmScene, gpScene: n.gpScene, pmNum: n.pmNum, gpNum: n.gpNum });
+    }
+  }
+
+  for (const banc of st.bancs) {
+    for (const seq of banc.sequences) {
+      seq.forEach((plan, i) => {
+        const a = plan.cle ? planDeCle(plan.cle) : null;
+        if (!a) return;
+        seq[i] = { ...plan, tc: a.tc, el: a.el.slice(), obj: a.obj, obj2: a.obj2, mort: a.mort, num: a.num };
+      });
+    }
+  }
+}
+
+window.addEventListener('storage', (e) => {
+  if (e.key !== 'edit.cfg') return;
+  const lu = LS.get('cfg', null);
+  if (!lu) return;
+  store.cfg = Object.assign(cloneConfig(DEFAULTS), migrerCfg(lu));
+  normaliserMateriel();
+  appliquerJeuActif();
+  resynchroniserMateriel(store.partie, store.cfg);
+  // Les plans posés ont changé de valeur : la courbe des scores, elle, garde
+  // les totaux d'alors — c'est l'histoire de la partie, pas son état. On
+  // repeint l'écran affiché, sans le ramener en haut : on regardait quelque
+  // chose, une retouche faite ailleurs ne doit pas le faire perdre de vue.
+  (ROUTES[location.hash || '#/'] || vueAccueil)();
+});
 
 // ===========================================================================
 // Veille de version
