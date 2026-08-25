@@ -109,11 +109,17 @@ des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %, puis le libellé. Le ren
 ces mêmes proportions, et sa taille de police est calée sur la hauteur (hauteur = 14,33 em) pour
 que les proportions tiennent à toutes les échelles.
 
-Chaque illustration est **rognée de son cadre imprimé** (`rogner_cadre()`) : la carte des PDF porte
-son propre trait noir, qui s'ajoutait à celui que l'application dessine — le noir se retrouvait deux
-fois plus épais autour de l'image qu'autour des bandeaux, qui n'ont que celui de l'application. La
-coupe est détectée par côté et **plafonnée à dix pixels**, pour ne pas entamer une illustration
-sombre au bord.
+Chaque illustration est **rognée de son cadre imprimé** (`rogner_lot()`) : la carte des PDF porte son
+propre trait noir, qui s'ajoutait à celui que l'application dessine — le noir se retrouvait deux fois
+plus épais autour de l'image qu'autour des bandeaux, qui n'ont que celui de l'application.
+
+La coupe se décide **par planche, pas par image** : le cadre est au même endroit sur toutes les pages
+d'un même PDF, et c'est sa détection qui varie — la compression éclaircit le noir, les coins arrondis
+trouent les lignes de bord des images étroites, un dessin sombre collé au bord cache sa fin. On mesure
+donc la profondeur là où le cadre se referme nettement (échantillonnage au centre du bord, coins
+exclus, débord d'impression toléré), on prend la **médiane de la planche plus une ligne
+d'anticrénelage**, et l'on coupe toutes les pages de cette même profondeur. Toutes les images d'une
+famille ont ainsi la même taille — et les cartes rendues, exactement la même bordure.
 
 Le **cadre noir** d'une carte a donc une seule épaisseur, fine, sur ses quatre bords : c'est le
 rembourrage de `.carte`. Le libellé du bas s'écrit **sur la carte**, dans l'encre sombre de son cadrage

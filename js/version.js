@@ -1,8 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.51';
-export const BUILD_DATE = '2026-08-26 01:00';
+export const VERSION = '1.52';
+export const BUILD_DATE = '2026-08-26 02:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.52',
+    date: '26/08/2026',
+    items: [
+      "<b>Les bordures sont enfin identiques sur toutes les cartes.</b> Le rognage de la v1.51 décidait image par image, et se trompait d'un côté à l'autre : la compression éclaircit le noir du cadre sur certaines cartes, les coins arrondis faisaient rater les images étroites, et un dessin sombre collé au bord cachait la fin du cadre — chaque carte gardait donc un morceau de cadre différent. Or le cadre imprimé est <b>au même endroit sur toutes les pages d'une même planche</b> : sa profondeur s'y mesure là où elle est nette, et la même coupe — la médiane de la planche, plus une ligne d'anticrénelage — s'applique désormais à <b>toutes les pages</b>. Les 84 illustrations, reprises depuis leurs originaux, ont maintenant exactement la même taille par famille, et les cartes rendues exactement la même bordure.",
+    ],
+  },
   {
     v: '1.51',
     date: '26/08/2026',

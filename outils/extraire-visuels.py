@@ -93,26 +93,59 @@ def effacer_minutage(im):
 # résolution. Le laisser dans l'image le faisait s'ajouter au cadre que
 # l'application dessine : le noir était deux fois plus épais autour de
 # l'illustration qu'autour des bandeaux, qui n'ont que celui de l'application.
-# On le rogne donc à l'extraction. La coupe est plafonnée : sur une carte dont
-# l'image est elle-même sombre au bord, on ne veut pas manger le dessin.
-CADRE_MAX = 10        # pixels, à DPI_CARTES
-CADRE_SEUIL = 70      # au-delà, ce n'est plus du noir
-CADRE_PART = 0.92     # proportion de la ligne qui doit être noire
+# On le rogne donc à l'extraction.
+#
+# La détection a trois pièges, tous rencontrés :
+#   — la compression WebP éclaircit le noir du cadre (jusqu'à ~85 de moyenne) :
+#     un seuil trop strict laissait le cadre entier sur certaines cartes ;
+#   — les coins arrondis de la carte laissent du blanc aux extrémités d'une
+#     ligne de bord, ce qui faisait rater les images étroites (Gros Plans) :
+#     on échantillonne le centre du bord, coins exclus ;
+#   — une colonne de débord d'impression, blanche, peut précéder le cadre :
+#     on la tolère et on la coupe avec lui.
+# Enfin le cadre doit SE REFERMER : une image sombre au-delà du plafond n'est
+# pas un cadre, c'est le dessin (le Raccord BBG, un chapeau noir au bord) — on
+# n'y touche pas.
+CADRE_MAX = 12        # profondeur maximale d'un cadre, en pixels à DPI_CARTES
+CADRE_SEUIL = 85      # au-delà de cette moyenne par canal, ce n'est plus du noir
+CADRE_PART = 0.85     # proportion du bord (coins exclus) qui doit être noire
+CADRE_COINS = 0.10    # part du bord écartée à chaque extrémité
+
+
+def _sombre(im, cote, i):
+    """Part de pixels noirs de la i-ième ligne du bord, coins exclus."""
+    px = im.load()
+    W, H = im.size
+    longueur = W if cote in 'hb' else H
+    a = int(longueur * CADRE_COINS)
+    b = max(a + 1, int(longueur * (1 - CADRE_COINS)))
+    if cote == 'h':   pts = [px[x, i] for x in range(a, b, 2)]
+    elif cote == 'b': pts = [px[x, H - 1 - i] for x in range(a, b, 2)]
+    elif cote == 'g': pts = [px[i, y] for y in range(a, b, 2)]
+    else:             pts = [px[W - 1 - i, y] for y in range(a, b, 2)]
+    return sum(1 for c in pts if sum(c[:3]) < CADRE_SEUIL * 3) / len(pts)
 
 
 def _course_noire(im, cote):
-    px = im.load()
-    W, H = im.size
-    n = 0
-    limite = min(CADRE_MAX, (H if cote in 'hb' else W) // 4)
-    while n < limite:
-        if cote == 'h':   ligne = [px[x, n] for x in range(0, W, 3)]
-        elif cote == 'b': ligne = [px[x, H - 1 - n] for x in range(0, W, 3)]
-        elif cote == 'g': ligne = [px[n, y] for y in range(0, H, 3)]
-        else:             ligne = [px[W - 1 - n, y] for y in range(0, H, 3)]
-        noirs = sum(1 for c in ligne if sum(c[:3]) < CADRE_SEUIL * 3)
-        if noirs / len(ligne) < CADRE_PART:
+    prof_max = min(CADRE_MAX, (im.height if cote in 'hb' else im.width) // 4)
+    sombre = lambda i: _sombre(im, cote, i)
+
+    # Le cadre peut commencer une ou deux lignes plus loin (débord blanc).
+    depart = -1
+    for k in range(0, 3):
+        if k + 1 < prof_max and sombre(k) >= CADRE_PART and sombre(k + 1) >= CADRE_PART:
+            depart = k
             break
+    if depart < 0:
+        return 0
+    n = depart
+    while n < prof_max and sombre(n) >= CADRE_PART:
+        n += 1
+    # Pas de refermeture dans le plafond : c'est du dessin, pas un cadre.
+    if n >= prof_max and sombre(prof_max) >= CADRE_PART:
+        return 0
+    # La ligne de transition, à moitié teintée par l'anticrénelage, part avec.
+    if n < prof_max and sombre(n) >= 0.30:
         n += 1
     return n
 
@@ -126,14 +159,30 @@ def rogner_cadre(im):
     return im.crop((g, h, im.width - d, im.height - b))
 
 
-def decouper_disque(im, cx, cy, r):
-    """Découpe un disque et rend le pourtour transparent."""
-    boite = (int(cx - r), int(cy - r), int(cx + r), int(cy + r))
-    vignette = im.crop(boite).convert('RGBA')
-    masque = Image.new('L', vignette.size, 0)
-    ImageDraw.Draw(masque).ellipse((0, 0, vignette.width - 1, vignette.height - 1), fill=255)
-    vignette.putalpha(masque)
-    return vignette
+def rogner_lot(images, cotes='hgd'):
+    """Rogne toute une planche d'un coup, à profondeur unique.
+
+    Le cadre imprimé est au même endroit sur toutes les pages d'un même PDF :
+    sa profondeur ne varie pas, seule sa détection varie — un dessin sombre
+    collé au bord l'empêche de « se refermer », l'anticrénelage la fait fermer
+    une ligne trop tôt. On la mesure donc là où elle est nette, on prend la
+    médiane de la planche, plus une ligne d'anticrénelage, et l'on coupe
+    TOUTES les pages de cette même profondeur. Toutes les images d'une famille
+    reçoivent ainsi exactement le même traitement — et les cartes rendues,
+    exactement la même bordure.
+
+    Le bas n'est pas rogné par défaut : nos images sont coupées en pleine
+    carte, au-dessus de la zone d'information — il n'y a pas de cadre là.
+    """
+    import statistics
+    courses = [{c: _course_noire(im, c) for c in cotes} for im in images]
+    coupe = {c: 0 for c in 'hbgd'}
+    for c in cotes:
+        vals = [x[c] for x in courses if x[c] > 0]
+        if vals:
+            coupe[c] = round(statistics.median(vals)) + 1
+    return [im.crop((coupe['g'], coupe['h'], im.width - coupe['d'], im.height - coupe['b']))
+            for im in images]
 
 
 def main():
@@ -160,6 +209,7 @@ def main():
             sortie = os.path.join(racine, 'assets', fmt)
             os.makedirs(sortie, exist_ok=True)
             n = 0
+            planche = []
             for f in sorted(glob.glob(base + '-*.png')):
                 page = numero_de_page(f)
                 num = mapping[fmt].get(page)
@@ -168,8 +218,12 @@ def main():
                     continue
                 im = Image.open(f).convert('RGB')
                 effacer_minutage(im)
-                rogner_cadre(im.crop((0, 0, im.width, int(im.height * HAUT_INFO)))) \
-                  .save(os.path.join(sortie, f'{num}.webp'), 'WEBP', quality=82, method=6)
+                planche.append((num, im.crop((0, 0, im.width, int(im.height * HAUT_INFO)))))
+            # Le cadre imprimé se rogne planche par planche : les pages où il se
+            # referme donnent sa profondeur aux pages noyées dans un dessin sombre.
+            rognees = rogner_lot([im for _, im in planche])
+            for (num, _), im in zip(planche, rognees):
+                im.save(os.path.join(sortie, f'{num}.webp'), 'WEBP', quality=82, method=6)
                 n += 1
             print(f'{fmt} : {n} illustrations recadrées')
 
