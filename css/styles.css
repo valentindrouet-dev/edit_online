@@ -330,7 +330,7 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 /* La place de la pioche : un repère stable pour la carte qui en sort, même
    quand la pioche est vide. La pile déborde de la carte du dessus — les
    couches décalées descendent de 15 px, et la place les réserve. */
-.pioche-place { display: flex; align-items: flex-start; padding-bottom: 18px; }
+.pioche-place { display: flex; align-items: flex-start; padding-bottom: 10px; }
 .pioche-colonne { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .pioche-reste {
   font-size: .72rem; font-weight: 700; letter-spacing: .02em; color: var(--encre-doux);
@@ -466,14 +466,14 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 
 /* Les groupes de dérushage se rangent côte à côte tant que la place le permet. */
 /* Une ligne par famille : sa pioche d'abord, puis son chutier. */
-.derushage-lignes { display: flex; flex-direction: column; gap: 18px; }
+.derushage-lignes { display: flex; flex-direction: column; gap: 12px; }
 /* Le titre d'une famille et le compte de sa pioche tiennent sur la même
    ligne : sous la pioche, ce compte s'ouvrait une rangée à lui seul. */
 .derushage-ligne h3 {
-  margin: 0 0 10px; font-size: .95rem;
+  margin: 0 0 6px; font-size: .95rem;
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
-.derushage-cartes { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-start; }
+.derushage-cartes { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: flex-start; }
 
 /* La rivière pendant le choix du Plan de départ : elle se lit, elle ne se
    prend pas encore. */
@@ -485,7 +485,7 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 
 /* Une carte du chutier et, dessous, son bouton de rotation : une carte double
    ne tombe pas toujours du côté de son recto. */
-.carte-retournable { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.carte-retournable { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .carte-retournable .carte { transition: transform .3s cubic-bezier(.3,.7,.4,1); }
 .carte-retournable.tourne .carte { animation: retourne .32s ease; }
 @keyframes retourne {
@@ -552,7 +552,14 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
   flex-direction: column; flex-wrap: nowrap; align-items: flex-start; row-gap: 8px;
   width: max-content; margin: auto;
 }
-.banc-piste.lignes .ligne { display: flex; align-items: stretch; }
+/* Le calage qui centre la colonne d'ancrage se pose sur la ligne entière, donc
+   avant la pastille de points : celle-ci reste au départ du contenu plutôt que
+   seule au bout d'un vide, et son `sticky` la colle au bord du banc dès qu'on
+   fait défiler. */
+.banc-piste.lignes .ligne {
+  display: flex; align-items: stretch;
+  padding-left: var(--cal-g, 0px); padding-right: var(--cal-d, 0px);
+}
 /* Le retrait de la ligne suffit à la placer : rien ne doit venir répartir en
    plus l'espace qui reste, sinon le calage ne vaudrait plus. */
 .banc-piste.lignes .ligne-fil { display: flex; flex: 0 0 auto; }
@@ -593,8 +600,10 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
   padding: 7px 9px; display: flex; align-items: center; justify-content: center;
 }
 /* Une bande court en travers du banc : elle n'existe que quand un coup s'y
-   offre, et ne réserve donc aucune place le reste du temps. */
-.banc-piste.lignes .ecart.bande { width: auto; padding: 0; }
+   offre, et ne réserve donc aucune place le reste du temps. Elle se centre sur
+   la colonne d'ancrage — le milieu de la piste, puisque celle-ci est rendue
+   symétrique autour d'elle : c'est là que la nouvelle ligne s'ouvrira. */
+.banc-piste.lignes .ecart.bande { width: auto; padding: 0; align-self: center; }
 
 /* Le banc de montage : des séquences séparées par un écart. */
 .banc .sequence {
@@ -950,6 +959,9 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .ap-vide { font-size: .82rem; color: var(--gris); margin-top: 8px; }
 
 .pill.mini { padding: 5px 12px; font-size: .82rem; }
+/* Un réglage d'affichage éteint : le bouton reste lisible, mais on voit qu'il
+   ne fait rien pour l'instant. */
+.pill.mini.eteint { opacity: .5; text-decoration: line-through; }
 
 /* --- Éditeur de matériel --------------------------------------------------- */
 /* La galerie reste sous les yeux à gauche, la carte en cours d'édition tient

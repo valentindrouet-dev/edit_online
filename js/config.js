@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.48';
+import { ELEMENT_IDS } from './data.js?v=1.49';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -100,6 +100,10 @@ export const DEFAULTS = {
   // --- Affichage -----------------------------------------------------------
   illustrations: true,    // les visuels imprimés sur les cartes
   pointsSurCartes: true,  // le jeton de points au coin des plans du montage
+  // La fiche qui s'ouvre au survol d'une carte. Décochée par défaut : elle
+  // s'ouvrait sur toutes les cartes de la table, pioches comprises, où elle ne
+  // disait rien que la carte ne montrait déjà.
+  apercuSurvol: false,
   // Les joueuses jouent l'une après l'autre et cela se voit : chaque coup est
   // rendu, et la carte vole de sa pioche jusqu'au banc.
   animerCoups: true,

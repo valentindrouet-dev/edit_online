@@ -1,8 +1,20 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.48';
-export const BUILD_DATE = '2026-08-25 20:00';
+export const VERSION = '1.49';
+export const BUILD_DATE = '2026-08-25 22:00';
 
 export const CHANGELOG = [
+  {
+    v: '1.49',
+    date: '25/08/2026',
+    items: [
+      "<b>Le pop-up au survol est désormais une option, décochée par défaut.</b> Il s'ouvrait sur toutes les cartes de la table, pioches comprises, où il ne disait rien que la carte ne montrait déjà. Le bouton <b>Pop-up au survol</b> le rallume — sur l'accueil comme au pied de la colonne de droite.",
+      "<b>La table remonte.</b> Le bandeau « Dérushage et montage · joueur » disparaît : la phase et le nom de qui joue se lisent déjà dans la colonne de droite. Ne subsiste que le jeton <b>dernier tour</b>, que rien d'autre ne dit. La place perdue sous les pioches est reprise elle aussi.",
+      "Dans la case d'une joueuse, <b>« À son tour » se lit juste à droite de son nom</b>, et le compte « x plans · x séquences · x raccords » disparaît — il se lit sur le banc.",
+      "<b>Le score se range du plus gros au plus petit</b> : on voit d'abord ce qui rapporte.",
+      "<b>Les icônes du banc ne montrent que ce qui est là.</b> Une icône absente ne se grise plus, elle n'apparaît pas : la colonne dit ce qu'il y a, pas ce qu'il n'y a pas.",
+      "Banc en lignes : les emplacements <b>▲ / ▼ nouvelle ligne</b> se recentrent sur la colonne d'ancrage, et la <b>pastille de points revient à l'extrême bord de sa ligne</b>. Le centrage de la colonne ne se paie plus en débordement : il ne s'applique que tant que le banc a la place, et se réduit d'autant dès qu'un plan sortirait du cadre — les plans passent avant leur centrage.",
+    ],
+  },
   {
     v: '1.48',
     date: '25/08/2026',

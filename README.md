@@ -511,6 +511,24 @@ pas cliquer (`body.ia-joue`, `body.coup-en-vol`).
 Deux réglages dans **Variables › Rythme** : `vitesseIA` (la pause avant le coup d'une IA) et
 `dureeVol` (le trajet d'une carte). `animerCoups: false` rend le jeu instantané.
 
+### La colonne de droite
+
+Une **case par joueuse** : sa couleur, son nom, « À son tour » juste à droite quand c'est le sien, son
+profil d'IA le cas échéant, et son total. Rien d'autre — le compte de plans et de séquences se lit sur
+le banc, il n'a pas à être répété.
+
+Dessous, les deux colonnes de lecture du banc épinglé : les **icônes du banc**, qui ne montrent que
+**ce qui est là** — une icône absente ne se grise pas, elle n'apparaît pas —, puis le **score**, rangé
+du plus gros au plus petit pour qu'on voie d'abord ce qui rapporte.
+
+La table n'a plus de bandeau de tour : la phase et le nom de qui joue s'y lisaient une seconde fois.
+Ne subsiste que le jeton **dernier tour**, que rien d'autre ne dit.
+
+La fiche qui s'ouvre au **survol d'une carte** est une option, `apercuSurvol`, **décochée par
+défaut** : elle s'ouvrait sur toutes les cartes de la table, pioches comprises, où elle ne disait rien
+que la carte ne montrait déjà. Le bouton « Pop-up au survol » la rallume, sur l'accueil comme au pied
+de la colonne.
+
 ### Les cartes en mouvement
 
 `js/anim.js` est un FLIP : on relève la boîte de départ **avant** que l'état ne change, celle
@@ -597,6 +615,24 @@ L'écran de décompte ouvre sur le **podium**, puis :
 
 Le palmarès regroupe **joueuse par joueuse** : deux joueuses qui posent le même bandeau gardent
 chacune leur ligne, c'est bien ce qu'elles en ont tiré séparément que l'on compare.
+
+### La colonne de droite
+
+Une **case par joueuse** : sa couleur, son nom, « À son tour » juste à droite quand c'est le sien, son
+profil d'IA le cas échéant, et son total. Rien d'autre — le compte de plans et de séquences se lit sur
+le banc, il n'a pas à être répété.
+
+Dessous, les deux colonnes de lecture du banc épinglé : les **icônes du banc**, qui ne montrent que
+**ce qui est là** — une icône absente ne se grise pas, elle n'apparaît pas —, puis le **score**, rangé
+du plus gros au plus petit pour qu'on voie d'abord ce qui rapporte.
+
+La table n'a plus de bandeau de tour : la phase et le nom de qui joue s'y lisaient une seconde fois.
+Ne subsiste que le jeton **dernier tour**, que rien d'autre ne dit.
+
+La fiche qui s'ouvre au **survol d'une carte** est une option, `apercuSurvol`, **décochée par
+défaut** : elle s'ouvrait sur toutes les cartes de la table, pioches comprises, où elle ne disait rien
+que la carte ne montrait déjà. Le bouton « Pop-up au survol » la rallume, sur l'accueil comme au pied
+de la colonne.
 
 ### Les cartes en mouvement
 
@@ -747,17 +783,25 @@ sur une bande unique mais **en pile** :
 Côté affichage, `.banc-piste` prend la classe `lignes` et devient une colonne. Toutes les lignes
 alignent le centre de leur ancre sur **la même verticale** : `colonneAncrage()` prend, sur l'ensemble
 des séquences, la plus grande distance du bord gauche au centre de l'ancre (`ancreDe()`), et chaque
-ligne comble l'écart d'un **retrait posé dans le flux**. La piste se rend ensuite **symétrique autour
-de cette colonne** — le côté le plus court se complète d'un vide (`calGauche` / `calDroite`) — puis se
-centre : la colonne tombe donc au milieu du banc, et pas seulement les ancres les unes sous les
-autres. Tout cela étant du rembourrage dans le flux, la piste a la largeur de ce qu'elle contient et
-le banc **défile de gauche à droite** dès que cela déborde, sans jamais rompre l'alignement. Un décalage posé en marges, lui, cessait de tenir
+ligne comble l'écart d'un **retrait posé dans le flux**. Les lignes se rendent ensuite **symétriques
+autour de cette colonne** — le côté le plus court se complète d'un vide (`calGauche` / `calDroite`) —
+et la piste se centre : la colonne tombe donc au milieu du banc, et pas seulement les ancres les unes
+sous les autres.
+
+Ce centrage coûte de la largeur, et **les plans passent avant lui** : `centrerAncrages()` le mesure
+après le rendu et ne l'applique qu'à hauteur de ce que le banc a de reste, le réduisant d'autant dès
+qu'un plan sortirait du cadre à cause de lui seul. Tout cela étant du rembourrage dans le flux, la
+piste a la largeur de ce qu'elle contient et le banc **défile de gauche à droite** quand cela déborde,
+sans jamais rompre l'alignement. Les bandes « ▲ / ▼ nouvelle ligne » se centrent sur la même colonne :
+c'est là que la ligne s'ouvrira. Un décalage posé en marges, lui, cessait de tenir
 dès que la place manquait : le plan central se mettait à dériver d'une ligne à l'autre.
 
 Chaque ligne porte à son bout gauche une pastille `.ligne-pts` : **ce que les cartes de cette ligne
 rapportent**. Elle est `position: sticky` — elle colle au bord du banc pendant qu'on fait défiler,
-pour que le compte reste lisible quand la ligne est partie sur la droite — et de largeur fixe, sinon
-elle décalerait la colonne d'ancrage.
+pour que le compte reste lisible quand la ligne est partie sur la droite —, de largeur fixe, sinon
+elle décalerait la colonne d'ancrage, et `pointer-events: none`, sinon elle intercepterait le clic de
+l'emplacement de pose qu'elle recouvre. Le calage de centrage se pose **avant** elle, si bien qu'elle
+reste au départ du contenu de sa ligne.
 
 Les deux emplacements latéraux (`.bord`) sont **posés hors du flux**, contre les flancs de la
 séquence : ils n'occupent aucune largeur, donc en ouvrir un d'un seul côté ne décale ni la ligne ni
