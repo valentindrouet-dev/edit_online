@@ -14,13 +14,25 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.57';
-import { elIcon } from './icons.js?v=1.57';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.58';
+import { elIcon } from './icons.js?v=1.58';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.14.1',
+    date: '26/08/2026',
+    origine: 'Règle rétablie par l’auteur',
+    corps: (c) => corps_0_14_1(c),
+    items: [
+      'Une Carte Raccord <b>relie de nouveau</b>, à la manière du banc en lignes : posée au bout d’une ligne, elle y fait <b>charnière</b>. Un Plan Large peut alors se poser <b>de l’autre côté d’elle</b>, dans cette même ligne — avant le Raccord s’il a été joué à gauche, après s’il a été joué à droite.',
+      'Une ligne porte donc <b>deux Plans Larges, ou plus</b>. Deux Plans Larges ne se touchent toujours pas : c’est le Raccord qui les sépare, et qui les réunit.',
+      'Les points du Plan Large ajouté <b>s’additionnent à la ligne</b>, et ses icônes comptent pour toute la ligne — les cartes qui s’y trouvaient déjà comprises, et réciproquement : la ligne reste <b>une seule séquence</b>.',
+      'La ligne garde le <b>centre qu’elle avait</b> : c’est le plan qui l’a ouverte qui l’ancre, et il le reste. Un Plan Large posé à gauche ne fait donc pas glisser tout ce qui était déjà là.',
+    ],
+  },
   {
     v: '0.14',
     date: '26/08/2026',
@@ -216,6 +228,37 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.14.1 ---------------------------------------------------------------
+// La Carte Raccord retrouve son office, transposé au banc en lignes : elle ne
+// soude plus deux séquences bout à bout sur une bande, elle fait charnière au
+// bout d'une ligne et y laisse entrer un second Plan Large.
+
+function corps_0_14_1(c) {
+  const charniere = c.raccordConnecte === false
+    ? `Ici, un Raccord est un plan ordinaire et ne relie rien (réglable dans <b>Variables</b> ⚙).`
+    : `<b>Posé au bout d’une ligne, un Raccord y fait charnière</b> : un <b>Plan Large</b> peut
+      alors se poser <b>de l’autre côté de lui</b>, dans cette même ligne — avant le Raccord s’il a
+      été joué à gauche, après s’il a été joué à droite. Une ligne porte donc <b>deux Plans Larges,
+      ou plus</b>, et deux Plans Larges ne se touchent toujours pas : c’est le Raccord qui les
+      sépare, et qui les réunit.`;
+  return corps_0_14(c)
+    .replace(
+      /<li>Un <b>Plan Large<\/b> est le climax d’une séquence :[\s\S]*?jamais se toucher\.<\/li>/,
+      `<li>Un <b>Plan Large</b> est le climax d’une séquence : il <b>ouvre toujours une ligne</b>, à
+      lui seul, et en tient le centre. Le <b>Plan de départ</b> fait de même. Deux Plans Larges ne
+      peuvent jamais se toucher.</li>
+      <li>${maj('0.14.1', `Une ligne peut pourtant en porter <b>plusieurs</b> : c’est ce qu’une
+      <b>Carte Raccord</b> permet, en faisant charnière au bout d’une ligne — voir plus bas. La
+      ligne reste alors <b>une seule séquence</b> : les points de tout ce qui s’y trouve
+      s’additionnent, et les icônes de chaque plan comptent pour les cartes qui y étaient déjà comme
+      pour celles qui viennent. La ligne garde le <b>centre qu’elle avait</b> — c’est le plan qui l’a
+      ouverte qui l’ancre, et il le reste, si bien que rien de ce qui est posé ne bouge.`)}</li>`)
+    .replace(
+      /<li><b>Raccord<\/b> — deux séquences ne se touchent pas :[\s\S]*?au bout d’une ligne\.<\/li>/,
+      `<li>${maj('0.14.1', `<b>Raccord</b> — il se pose comme un plan ordinaire, au bout d’une
+      ligne. ${charniere}`)}</li>`);
 }
 
 // --- v0.14 -----------------------------------------------------------------

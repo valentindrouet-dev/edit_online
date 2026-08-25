@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.57';
+import { ELEMENT_IDS } from './data.js?v=1.58';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -28,17 +28,20 @@ export const DEFAULTS = {
   sensPose: 'bords',         // 'bords' (les deux bouts d'une séquence) | 'droite'
   plNouvelleSequence: true,  // un Plan Large ouvre toujours une nouvelle séquence
   plContigu: false,          // autoriser deux Plans Larges côte à côte
-  // Une Carte Raccord relie : posée entre deux cartes, elle raccorde forcément
-  // leurs séquences, et ne se pose nulle part ailleurs. À false, elle redevient
-  // un plan ordinaire — variante hors règles.
+  // Une Carte Raccord relie. Sur une seule bande, elle se pose entre deux
+  // séquences et les raccorde forcément. En lignes, elle fait **charnière** au
+  // bout d'une ligne : un Plan Large peut alors s'y poser de l'autre côté
+  // d'elle, si bien qu'une ligne porte deux Plans Larges, ou plus. À false,
+  // elle redevient un plan ordinaire — variante hors règles.
   raccordConnecte: true,
   generiqueBloque: true,     // rien avant l'Ouverture, rien après les Crédits
   // Le mode « banc en lignes » (voir MODES, plus bas — il se choisit sur
   // l'accueil, pas ici) : chaque séquence occupe sa propre ligne, un Plan Large
   // ou un Plan de départ tient le centre de la sienne, et l'on accroche les
   // Plans Moyens / Gros Plans à ses deux côtés. Une nouvelle séquence se pose
-  // au-dessus ou en dessous des autres, jamais entre deux ; les Raccords n'y
-  // relient rien, et le montage se lit d'un seul tenant, ligne après ligne.
+  // au-dessus ou en dessous des autres, jamais entre deux ; un Raccord y fait
+  // charnière — un second Plan Large se pose de l'autre côté de lui, dans la
+  // même ligne —, et le montage se lit d'un seul tenant, ligne après ligne.
   // C'est la règle officielle depuis la v0.14 : la pose sur une seule bande
   // reste jouable, en mode Classique. Une configuration déjà enregistrée garde
   // le mode qu'on lui avait donné — ce défaut ne vaut que pour une neuve.
@@ -159,8 +162,9 @@ export const MODES = [
     label: 'Banc en lignes',
     aide: 'la règle officielle (v0.14) — une séquence par ligne : le Plan Large ou le Plan de départ '
       + 'tient le centre de la sienne, les Plans Moyens et Gros Plans s’accrochent à ses deux côtés, '
-      + 'et une nouvelle ligne se pose au-dessus ou en dessous de la pile — jamais entre deux. Les '
-      + 'Raccords n’y relient rien, et le montage se lit d’un seul tenant, ligne après ligne.',
+      + 'et une nouvelle ligne se pose au-dessus ou en dessous de la pile — jamais entre deux. Un '
+      + 'Raccord y fait charnière : un second Plan Large se pose de l’autre côté de lui, dans la '
+      + 'même ligne. Le montage se lit d’un seul tenant, ligne après ligne.',
     cfg: { bancEnLignes: true },
   },
   {
@@ -221,7 +225,9 @@ export const SCHEMA = [
     { k: 'plNouvelleSequence', l: 'Un Plan Large ouvre une séquence', t: 'bool' },
     { k: 'plContigu', l: 'Deux Plans Larges peuvent se toucher', t: 'bool' },
     { k: 'raccordConnecte', l: 'Une Carte Raccord relie deux séquences', t: 'bool',
-      aide: 'et ne se pose que là ; sinon, c’est un plan ordinaire' },
+      aide: 'en lignes, elle fait charnière : un Plan Large se pose de l’autre côté d’elle, '
+        + 'dans la même ligne. Sur une seule bande, elle se pose entre deux séquences et les '
+        + 'raccorde. Sinon, c’est un plan ordinaire' },
     { k: 'generiqueBloque', l: 'Le Générique ferme le montage', t: 'bool' },
     { k: 'faceSelonPose', l: 'La face jouée suit le sens de pose', t: 'bool',
       aide: 'sinon une carte est toujours jouée sur son recto' },

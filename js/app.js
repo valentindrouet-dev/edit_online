@@ -2,27 +2,27 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.57';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.58';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.57';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.57';
-import { elIcon, numIcon } from './icons.js?v=1.57';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.57';
+} from './data.js?v=1.58';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.58';
+import { elIcon, numIcon } from './icons.js?v=1.58';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.58';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.57';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.57';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.57';
-import { releve, voler, stopperVols } from './anim.js?v=1.57';
-import { campagne } from './lab.js?v=1.57';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.57';
+} from './engine.js?v=1.58';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.58';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.58';
+import { releve, voler, stopperVols } from './anim.js?v=1.58';
+import { campagne } from './lab.js?v=1.58';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.58';
 
 const app = document.getElementById('app');
 
@@ -566,12 +566,17 @@ function largeurSeq(seq) {
 }
 
 /**
- * La distance du bord gauche d'une séquence au **centre de son ancre** — son
- * Plan Large, ou son Plan de départ. Une séquence qui n'en porte aucune s'ancre
- * sur son milieu.
+ * La distance du bord gauche d'une séquence au **centre de son ancre** — le
+ * plan qui a ouvert la ligne, marqué à la pose. Une ligne peut porter plusieurs
+ * Plans Larges, un Raccord faisant charnière entre eux : c'est celui qui l'a
+ * ouverte qui la tient, et il ne cède la place à aucun autre — sans quoi un
+ * Plan Large posé à gauche ferait sauter l'ancre et glisser toute la ligne.
+ * À défaut de marque — un banc d'avant la v0.14.1 —, le premier Plan Large ou
+ * Plan de départ ; à défaut de l'un et de l'autre, le milieu de la ligne.
  */
 function ancreDe(seq) {
-  const k = seq.findIndex((p) => p.format === 'PL' || p.format === 'DEP');
+  let k = seq.findIndex((p) => p.ancre);
+  if (k < 0) k = seq.findIndex((p) => p.format === 'PL' || p.format === 'DEP');
   if (k < 0) return largeurSeq(seq) / 2;
   const avant = seq.slice(0, k)
     .reduce((s, p) => s + (LARGEUR_BANC[p.format] || 169) + ECART_PLANS, 0);
@@ -888,7 +893,12 @@ function etiquetteCoup(c, lignes) {
       return '＋ séquence';
     case 'SOUDER': return '⛓ raccorder';
     case 'GENERIQUE': return c.role === 'OUVERTURE' ? '▶ ouverture' : '■ fin';
-    default: return c.cote === 'gauche' ? '◀' : '▶';
+    // Un Plan Large qui s'étend sur une ligne existante passe par le Raccord
+    // qui en fait charnière : l'emplacement le dit, on ne le confond pas avec
+    // l'accroche ordinaire d'un Plan Moyen ou d'un Gros Plan.
+    default: return c.format === 'PL'
+      ? (c.cote === 'gauche' ? '⛓ ◀' : '⛓ ▶')
+      : (c.cote === 'gauche' ? '◀' : '▶');
   }
 }
 

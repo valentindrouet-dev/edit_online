@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.57';
-import { compter, bancVide, plansComptes } from './scoring.js?v=1.57';
+} from './data.js?v=1.58';
+import { compter, bancVide, plansComptes } from './scoring.js?v=1.58';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -176,7 +176,8 @@ export function choixDepart(state, p) {
 }
 
 export function poserDepart(state, p, choix) {
-  const plan = { ...choix.plan, carteId: `${choix.carte.id}f${choix.face}`, depart: true };
+  // Le Plan de départ ouvre la première ligne : il en est l'ancre.
+  const plan = { ...choix.plan, carteId: `${choix.carte.id}f${choix.face}`, depart: true, ancre: true };
   state.bancs[p] = { sequences: [[plan]], ouverture: false, fermeture: false };
   state.dernierPose = { p, seq: 0, idx: 0 };
   noterCourbe(state, p);
@@ -374,6 +375,25 @@ export function coupsPossibles(state, p, hypothese) {
         if (i === banc.sequences.length && bloqueDroite) continue;
         out.push({ carte, format, action: 'NOUVELLE_SEQUENCE', pos: i });
       }
+      // Un Raccord posé au bout d'une ligne y fait **charnière** : un Plan
+      // Large peut alors se poser de l'autre côté de lui, dans cette même
+      // ligne. Une ligne porte donc deux Plans Larges, ou plus — leurs points
+      // et leurs icônes valent pour toute la ligne, celles qui s'y trouvaient
+      // déjà comprises, puisque c'est une seule séquence. C'est la manière
+      // dont un Raccord relie, une fois le banc passé en lignes : deux
+      // séquences ne se touchent plus, il les réunit sur une ligne.
+      if (lignes && cfg.raccordConnecte) {
+        const cotes = cfg.sensPose === 'droite' ? ['droite'] : ['gauche', 'droite'];
+        banc.sequences.forEach((seq, si) => {
+          for (const cote of cotes) {
+            if (cote === 'gauche' && si === 0 && bloqueGauche) continue;
+            if (cote === 'droite' && si === banc.sequences.length - 1 && bloqueDroite) continue;
+            const voisin = cote === 'gauche' ? seq[0] : seq[seq.length - 1];
+            if (!voisin || voisin.transition !== 'RACCORD') continue;
+            out.push({ carte, format, action: 'ETENDRE', seq: si, cote });
+          }
+        });
+      }
       continue;
     }
 
@@ -436,6 +456,12 @@ export function appliquer(banc, coup, cfg) {
   const plan = planPose(coup.carte, coup.format, coup.role, faceJouee(coup.format, coup.cote, cfg));
   switch (coup.action) {
     case 'NOUVELLE_SEQUENCE':
+      // Le plan qui ouvre une ligne en est l'**ancre** : c'est sur lui que la
+      // ligne se centre, et il le reste. Sans cette marque, un second Plan
+      // Large posé à gauche d'un Raccord deviendrait le premier de la ligne,
+      // et l'ancre lui sauterait dessus — toute la ligne se déplacerait alors
+      // sous les yeux, alors qu'aucune carte déjà posée n'a bougé.
+      plan.ancre = true;
       banc.sequences.splice(coup.pos, 0, [plan]);
       break;
     case 'ETENDRE':

@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.57';
-export const BUILD_DATE = '2026-08-26 15:20';
+export const VERSION = '1.58';
+export const BUILD_DATE = '2026-08-26 16:10';
 
 export const CHANGELOG = [
+  {
+    v: '1.58',
+    date: '26/08/2026',
+    items: [
+      "<b>Le Raccord relie de nouveau — règles v0.14.1.</b> Posé au bout d'une ligne, il y fait <b>charnière</b> : un <b>Plan Large</b> peut alors se poser <b>de l'autre côté de lui</b>, dans cette même ligne — avant le Raccord s'il a été joué à gauche, après s'il a été joué à droite. Une ligne porte donc <b>deux Plans Larges, ou plus</b>, et deux Plans Larges ne se touchent toujours pas : c'est le Raccord qui les sépare, et qui les réunit. L'emplacement se signale d'un <b>⛓</b> pour qu'on ne le confonde pas avec l'accroche ordinaire d'un Plan Moyen.",
+      "La ligne reste <b>une seule séquence</b> : les points du Plan Large ajouté s'additionnent à ceux de la ligne, et ses icônes comptent pour les cartes qui s'y trouvaient déjà comme les leurs comptent pour lui. Un bandeau « ◀ Plan ▶ » posé sur cette ligne compte donc tout ce qu'elle porte.",
+      "<b>La ligne garde le centre qu'elle avait.</b> Le plan qui ouvre une ligne en est désormais l'<b>ancre</b>, marqué à la pose, et il le reste. Sans cela, un Plan Large posé à gauche serait devenu le premier plan de la ligne et l'ancre lui aurait sauté dessus : toute la ligne se serait déplacée alors qu'aucune carte posée n'avait bougé.",
+    ],
+  },
   {
     v: '1.57',
     date: '26/08/2026',
