@@ -1,8 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.53';
-export const BUILD_DATE = '2026-08-26 11:00';
+export const VERSION = '1.54';
+export const BUILD_DATE = '2026-08-26 12:20';
 
 export const CHANGELOG = [
+  {
+    v: '1.54',
+    date: '26/08/2026',
+    items: [
+      "<b>Le survol d'une carte ne ralentit plus.</b> La carte se soulevait de quatre pixels et changeait d'ombre portée à chaque entrée de souris : le navigateur repeignait l'illustration entière et son ombre, plusieurs fois par seconde dans une rivière où l'on passe d'une carte à l'autre. Le survol se marque désormais d'un <b>simple liseré orange clair</b> — aucun déplacement, aucune ombre à recalculer. Même chose sur le dos des pioches. La carte déjà visée garde son liseré orange vif : on distingue toujours ce qu'on survole de ce qu'on a choisi.",
+    ],
+  },
   {
     v: '1.53',
     date: '26/08/2026',

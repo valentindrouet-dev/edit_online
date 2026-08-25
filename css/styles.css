@@ -190,12 +190,16 @@ button { font-family: inherit; }
      l'image qu'autour des bandeaux. */
   display: flex; gap: .26em; width: 300px; aspect-ratio: 317 / 227;
   background: #111; border-radius: 9px; padding: .26em; box-shadow: var(--ombre);
-  transition: .14s; position: relative; font-size: 15px;
+  /* Surlignage au survol : un simple liseré, sans transform ni box-shadow.
+     Soulever la carte forçait un repeint complet de l'illustration (grande
+     image + ombre portée) à chaque entrée/sortie de souris, d'où la sensation
+     de ralentissement dans la pioche et la rivière. */
+  transition: outline-color .12s; position: relative; font-size: 15px;
 }
 .carte.small { width: 258px; font-size: 12.9px; }
 .carte.tiny { width: 150px; font-size: 7.5px; }
 .carte.clickable { cursor: pointer; }
-.carte.clickable:hover { transform: translateY(-4px); box-shadow: var(--ombre-forte); }
+.carte.clickable:not(.sel):hover { outline: 3px solid var(--orange-clair); outline-offset: 2px; }
 .carte.sel { outline: 3px solid var(--orange); outline-offset: 2px; }
 
 /* Au montage, on désigne la moitié à laisser visible sur la carte entière. */
@@ -733,10 +737,10 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
   width: 120px; height: 158px; border-radius: 10px; cursor: pointer; color: #fff;
   background: repeating-linear-gradient(45deg, #6d28d9 0 10px, #7c3aed 10px 20px);
   border: 3px solid #4c1d95; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 6px; font-size: .8rem; transition: .14s;
+  justify-content: center; gap: 6px; font-size: .8rem; transition: outline-color .12s;
 }
 .dos-pioche b { font-size: .95rem; }
-.dos-pioche:hover { transform: translateY(-3px); box-shadow: var(--ombre-forte); }
+.dos-pioche:hover { outline: 3px solid var(--orange-clair); outline-offset: 2px; }
 
 .main-cartes { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; padding: 8px 0; }
 .main-cartes .item { text-align: center; }
