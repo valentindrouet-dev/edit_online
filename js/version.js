@@ -1,8 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.50';
-export const BUILD_DATE = '2026-08-25 23:30';
+export const VERSION = '1.51';
+export const BUILD_DATE = '2026-08-26 01:00';
 
 export const CHANGELOG = [
+  {
+    v: '1.51',
+    date: '26/08/2026',
+    items: [
+      "<b>Un seul cadre noir, fin, tout autour de la carte.</b> La seconde épaisseur venait des illustrations elles-mêmes : chacune emportait le <b>cadre imprimé de la carte</b>, six à huit pixels de noir qui s'ajoutaient à celui que l'application dessine. Le noir était donc deux fois plus épais autour de l'image qu'autour des bandeaux, qui n'ont que celui de l'application. Les 84 illustrations en ont été rognées — <code>rogner_cadre()</code> le fait maintenant à l'extraction —, et le cadre de l'application redescend à un trait fin.",
+    ],
+  },
   {
     v: '1.50',
     date: '25/08/2026',

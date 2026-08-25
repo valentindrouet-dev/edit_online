@@ -184,11 +184,12 @@ button { font-family: inherit; }
    calée sur la HAUTEUR : hauteur = 14.33 em. Les proportions reprennent alors
    exactement la carte imprimée, quelle que soit l'échelle d'affichage. */
 .carte {
-  /* Le cadre noir a la même épaisseur sur les quatre bords, et le libellé du
-     bas s'y fond : il ne fait plus une seconde bordure, deux fois plus grosse
-     que les trois autres. */
-  display: flex; gap: .6em; width: 300px; aspect-ratio: 317 / 227;
-  background: #111; border-radius: 9px; padding: .6em; box-shadow: var(--ombre);
+  /* Un seul cadre noir, fin, de la même épaisseur sur les quatre bords. Les
+     illustrations sont rognées de leur propre cadre imprimé — sans quoi il
+     s'ajoutait à celui-ci et le noir était deux fois plus épais autour de
+     l'image qu'autour des bandeaux. */
+  display: flex; gap: .26em; width: 300px; aspect-ratio: 317 / 227;
+  background: #111; border-radius: 9px; padding: .26em; box-shadow: var(--ombre);
   transition: .14s; position: relative; font-size: 15px;
 }
 .carte.small { width: 258px; font-size: 12.9px; }

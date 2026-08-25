@@ -89,6 +89,43 @@ def effacer_minutage(im):
         radius=int(0.012 * H), fill=(10, 10, 13))
 
 
+# La carte imprimée porte son propre cadre noir, de six à huit pixels à cette
+# résolution. Le laisser dans l'image le faisait s'ajouter au cadre que
+# l'application dessine : le noir était deux fois plus épais autour de
+# l'illustration qu'autour des bandeaux, qui n'ont que celui de l'application.
+# On le rogne donc à l'extraction. La coupe est plafonnée : sur une carte dont
+# l'image est elle-même sombre au bord, on ne veut pas manger le dessin.
+CADRE_MAX = 10        # pixels, à DPI_CARTES
+CADRE_SEUIL = 70      # au-delà, ce n'est plus du noir
+CADRE_PART = 0.92     # proportion de la ligne qui doit être noire
+
+
+def _course_noire(im, cote):
+    px = im.load()
+    W, H = im.size
+    n = 0
+    limite = min(CADRE_MAX, (H if cote in 'hb' else W) // 4)
+    while n < limite:
+        if cote == 'h':   ligne = [px[x, n] for x in range(0, W, 3)]
+        elif cote == 'b': ligne = [px[x, H - 1 - n] for x in range(0, W, 3)]
+        elif cote == 'g': ligne = [px[n, y] for y in range(0, H, 3)]
+        else:             ligne = [px[W - 1 - n, y] for y in range(0, H, 3)]
+        noirs = sum(1 for c in ligne if sum(c[:3]) < CADRE_SEUIL * 3)
+        if noirs / len(ligne) < CADRE_PART:
+            break
+        n += 1
+    return n
+
+
+def rogner_cadre(im):
+    """Retire le cadre noir imprimé, sans entamer le dessin."""
+    h, b = _course_noire(im, 'h'), _course_noire(im, 'b')
+    g, d = _course_noire(im, 'g'), _course_noire(im, 'd')
+    if not (h or b or g or d):
+        return im
+    return im.crop((g, h, im.width - d, im.height - b))
+
+
 def decouper_disque(im, cx, cy, r):
     """Découpe un disque et rend le pourtour transparent."""
     boite = (int(cx - r), int(cy - r), int(cx + r), int(cy + r))
@@ -131,7 +168,7 @@ def main():
                     continue
                 im = Image.open(f).convert('RGB')
                 effacer_minutage(im)
-                im.crop((0, 0, im.width, int(im.height * HAUT_INFO))) \
+                rogner_cadre(im.crop((0, 0, im.width, int(im.height * HAUT_INFO)))) \
                   .save(os.path.join(sortie, f'{num}.webp'), 'WEBP', quality=82, method=6)
                 n += 1
             print(f'{fmt} : {n} illustrations recadrées')

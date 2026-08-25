@@ -2,27 +2,27 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.50';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.51';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.50';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.50';
-import { elIcon, numIcon } from './icons.js?v=1.50';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.50';
+} from './data.js?v=1.51';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.51';
+import { elIcon, numIcon } from './icons.js?v=1.51';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.51';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.50';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.50';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.50';
-import { releve, voler, stopperVols } from './anim.js?v=1.50';
-import { campagne } from './lab.js?v=1.50';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.50';
+} from './engine.js?v=1.51';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.51';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.51';
+import { releve, voler, stopperVols } from './anim.js?v=1.51';
+import { campagne } from './lab.js?v=1.51';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.51';
 
 const app = document.getElementById('app');
 

@@ -109,8 +109,14 @@ des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %, puis le libellé. Le ren
 ces mêmes proportions, et sa taille de police est calée sur la hauteur (hauteur = 14,33 em) pour
 que les proportions tiennent à toutes les échelles.
 
-Le **cadre noir** d'une carte a la même épaisseur sur ses quatre bords : c'est le rembourrage de
-`.carte`. Le libellé du bas s'écrit **sur la carte**, dans l'encre sombre de son cadrage
+Chaque illustration est **rognée de son cadre imprimé** (`rogner_cadre()`) : la carte des PDF porte
+son propre trait noir, qui s'ajoutait à celui que l'application dessine — le noir se retrouvait deux
+fois plus épais autour de l'image qu'autour des bandeaux, qui n'ont que celui de l'application. La
+coupe est détectée par côté et **plafonnée à dix pixels**, pour ne pas entamer une illustration
+sombre au bord.
+
+Le **cadre noir** d'une carte a donc une seule épaisseur, fine, sur ses quatre bords : c'est le
+rembourrage de `.carte`. Le libellé du bas s'écrit **sur la carte**, dans l'encre sombre de son cadrage
 (`encreLibelle()`) — claire sur un Raccord, dont le fond est presque noir : posé sur une bande noire,
 il doublait le trait en bas de carte, là où les trois autres bords restaient fins.
 
