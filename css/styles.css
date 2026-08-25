@@ -520,6 +520,15 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
 .derushage-cartes { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: flex-start; }
+/* Une carte que l'on voit sans pouvoir la prendre — la rivière des Plans
+   Moyens / Gros Plans tant qu'un banc n'a pas de séquence, dans la variante
+   sans Plans de départ. Elle s'éteint plutôt que de disparaître : escamoter la
+   rivière le temps d'un tour la ferait lire comme une rivière vide. */
+.carte-retournable.bloquee { opacity: .42; filter: grayscale(.5); pointer-events: none; }
+.derushage-ligne h3 .raison {
+  font-size: .74rem; font-weight: 600; color: var(--gris); letter-spacing: 0;
+  text-transform: none; font-style: italic;
+}
 
 /* La rivière pendant le choix du Plan de départ : elle se lit, elle ne se
    prend pas encore. */

@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.63';
-export const BUILD_DATE = '2026-08-26 21:00';
+export const VERSION = '1.64';
+export const BUILD_DATE = '2026-08-26 21:40';
 
 export const CHANGELOG = [
+  {
+    v: '1.64',
+    date: '26/08/2026',
+    items: [
+      "<b>À deux joueuses humaines, la seconde retrouve son banc à son tour.</b> Depuis la v1.56, le banc affiché par défaut était celui de la <b>première</b> humaine — pensé pour qu'un coup d'IA ne vienne pas imposer son banc à l'écran. Sur un même écran à deux, la seconde ne voyait donc jamais le sien, et <b>aucun emplacement ne s'ouvrait</b> : elle ne pouvait pas poser. Le banc suit désormais <b>qui joue quand c'est une humaine</b>, et ne s'immobilise sur celui de la première que pendant qu'une IA joue. Un onglet cliqué épingle toujours.",
+      "<b>La rivière des Plans Moyens / Gros Plans ne disparaît plus au premier tour.</b> Dans la variante sans Plans de départ, écarter ces cartes du choix les écartait aussi de l'écran : la rivière s'annonçait « chutier épuisé » alors qu'elle était pleine, et la pioche montrait sa carte du dessus sans qu'on sache pourquoi elle ne répondait pas. Elles restent désormais <b>à leur place, éteintes</b>, avec la raison écrite à côté du titre : « à accrocher à une séquence — ouvrez d'abord votre banc d'un Plan Large ». On voit ce qui attend, on comprend pourquoi on ne peut pas encore le prendre.",
+    ],
+  },
   {
     v: '1.63',
     date: '26/08/2026',

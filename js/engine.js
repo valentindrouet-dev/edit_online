@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.63';
-import { compter, bancVide, plansComptes } from './scoring.js?v=1.63';
+} from './data.js?v=1.64';
+import { compter, bancVide, plansComptes } from './scoring.js?v=1.64';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -196,7 +196,13 @@ export function departsFaits(state) {
 
 // --- Phase A : le Dérushage ------------------------------------------------
 
-export function optionsDerushage(state) {
+/**
+ * Ce que la joueuse en cours peut dérusher. `toutes` demande en plus les cartes
+ * qu'elle **voit sans pouvoir les prendre** — la table les montre alors
+ * éteintes plutôt que de les escamoter : une rivière qui disparaît le temps
+ * d'un tour se lit comme une rivière vide, ce qu'elle n'est pas.
+ */
+export function optionsDerushage(state, toutes = false) {
   const cfg = state.cfg;
   const out = [];
   // Variante « pas de Plans de départ » : sur un banc vide, seul un Plan Large
@@ -205,20 +211,25 @@ export function optionsDerushage(state) {
   // pourrait prendre une carte impossible à jouer.
   const banc = state.bancs[state.courant];
   const quePL = !!cfg.sansPlanDepart && banc && !banc.sequences.length;
+  const bloc = quePL ? { bloquee: true } : null;
   state.chutierPL.forEach((c, i) => out.push({ source: 'CHUTIER_PL', index: i, carte: c }));
-  if (!quePL) state.chutierPMGP.forEach((c, i) => out.push({ source: 'CHUTIER_PMGP', index: i, carte: c }));
+  if (!quePL || toutes) {
+    state.chutierPMGP.forEach((c, i) => out.push({ source: 'CHUTIER_PMGP', index: i, carte: c, ...bloc }));
+  }
   // Les cartes Plan Moyen / Gros Plan sont recto-verso : une pioche ne peut
   // pas les cacher, on voit forcément la face du dessus. Les Plans Larges,
   // eux, ont un vrai dos — leur pioche reste aveugle.
-  if (!quePL && cfg.piocheDirectePMGP && state.piochePMGP.length) {
-    out.push({ source: 'PIOCHE_PMGP', carte: state.piochePMGP[0], sommet: true });
+  if ((!quePL || toutes) && cfg.piocheDirectePMGP && state.piochePMGP.length) {
+    out.push({ source: 'PIOCHE_PMGP', carte: state.piochePMGP[0], sommet: true, ...bloc });
   }
   if (cfg.piocheDirectePL && state.piochePL.length) {
     out.push({ source: 'PIOCHE_PL', carte: null, sommet: true });
   }
   // Plus un seul Plan Large à prendre alors qu'il en faudrait un : mieux vaut
   // une carte injouable ce tour-ci qu'une joueuse bloquée sans rien à faire.
-  if (quePL && !out.length) return optionsDerushage({ ...state, cfg: { ...cfg, sansPlanDepart: false } });
+  if (quePL && !out.some((o) => !o.bloquee)) {
+    return optionsDerushage({ ...state, cfg: { ...cfg, sansPlanDepart: false } }, toutes);
+  }
   return out;
 }
 
