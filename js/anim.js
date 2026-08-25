@@ -77,14 +77,36 @@ export function voler(depart, arrivee, duree = 380, opts = {}) {
   const cachee = taille && arrivee.style.visibility !== 'hidden';
   if (cachee) arrivee.style.visibility = 'hidden';
 
+  // La carte ne glisse pas en ligne droite : elle **se soulève** et retombe.
+  // Un trajet plat, à vitesse constante, se manque du coin de l'œil — surtout
+  // celui d'une IA, qui part d'un bord de la table pour aller à l'autre. La
+  // courbe et le grossissement de mi-parcours donnent au mouvement de quoi
+  // attirer le regard, et disent d'où la carte vient.
+  const vol = Math.hypot(dx, dy);
+  const leve = Math.min(90, Math.max(18, vol * 0.16));
+  const gros = 1.09;
+  const trajet = [
+    { transform: 'translate(0px, 0px) scale(1, 1)', offset: 0 },
+    {
+      transform: `translate(${dx / 2}px, ${dy / 2 - leve}px) scale(${((1 + sx) / 2) * gros}, ${((1 + sy) / 2) * gros})`,
+      offset: 0.52,
+    },
+    { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`, offset: 1 },
+  ];
+  if (opts.fondu) { trajet[1].opacity = '.85'; trajet[2].opacity = '0'; }
+
   return new Promise((fini) => {
     requestAnimationFrame(() => {
-      el.style.transition = `transform ${duree}ms cubic-bezier(.25,.7,.35,1), opacity ${duree}ms ease-in`;
-      el.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
-      if (opts.fondu) el.style.opacity = '0';
+      el.animate(trajet, { duration: duree, easing: 'cubic-bezier(.32,.7,.3,1)', fill: 'forwards' });
       setTimeout(() => {
         el.remove();
         if (cachee) arrivee.style.visibility = '';
+        // La carte se pose : un halo bref sur sa place dit qu'elle est arrivée,
+        // et lequel des plans du banc vient de changer.
+        if (cachee) {
+          arrivee.classList.add('pose-fraiche');
+          setTimeout(() => arrivee.classList.remove('pose-fraiche'), 700);
+        }
         fini();
       }, duree + 30);
     });

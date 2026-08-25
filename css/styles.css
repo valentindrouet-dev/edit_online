@@ -346,11 +346,21 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 
 /* La couche des cartes en vol : au-dessus de tout, transparente aux clics. */
 .couche-vol { position: fixed; inset: 0; z-index: 90; pointer-events: none; }
+/* Une carte en vol se voit de loin : elle porte un liseré orange et son ombre
+   la décolle de la table. Sans cela, le trajet d'une IA — d'un bord de l'écran
+   à l'autre, pendant qu'on regarde son propre banc — passait inaperçu. */
 .vol {
   position: fixed; transform-origin: top left; will-change: transform, opacity;
-  filter: drop-shadow(0 10px 22px rgba(40, 20, 80, .35));
+  filter: drop-shadow(0 16px 30px rgba(20, 10, 45, .62)) drop-shadow(0 0 12px rgba(249, 115, 22, .5));
+  outline: 3px solid var(--orange); outline-offset: 2px; border-radius: 7px;
 }
 .vol > * { margin: 0; }
+/* La carte vient de se poser : un halo bref dit où elle a atterri. */
+.pose-fraiche { animation: pose-halo .7s ease-out; }
+@keyframes pose-halo {
+  0%   { box-shadow: 0 0 0 0 rgba(249, 115, 22, .95), 0 0 22px 8px rgba(249, 115, 22, .55); }
+  100% { box-shadow: 0 0 0 6px rgba(249, 115, 22, 0), 0 0 0 0 rgba(249, 115, 22, 0); }
+}
 
 /* Pastilles : taille libre par défaut, ajustée à la bande dans les cartes. */
 .pastille { display: block; width: 1.5em; height: 1.5em; object-fit: contain; flex: 0 0 auto; }
@@ -526,22 +536,34 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    gauche et à droite de leur ligne, les nouvelles séquences au-dessus ou en
    dessous de la pile. La piste devient donc une colonne, et le retour à la
    ligne automatique n'a plus lieu d'être : chaque ligne est déjà la sienne. */
+/* La piste prend la largeur de ce qu'elle contient : centrée dans le banc tant
+   que tout y tient, elle le fait défiler de gauche à droite dès que cela
+   déborde. Chaque ligne cale son ancre dans le flux — un retrait à gauche, un
+   autre à droite —, si bien que les Plans Larges et les Plans de départ de
+   toutes les lignes tombent sur la même verticale, quelle que soit la largeur
+   du banc. Un décalage en marges, lui, cessait de tenir dès que la place
+   manquait : le plan central se mettait à dériver. */
 .banc-piste.lignes {
   flex-direction: column; flex-wrap: nowrap; align-items: stretch; row-gap: 8px;
-  width: 100%; margin: auto 0;
+  width: max-content; min-width: 100%; margin: auto 0;
 }
-/* `safe center` : centré tant que tout tient, calé à gauche dès que ça
-   déborde. Un `center` sec rendrait le début de la ligne inatteignable — il
-   passerait sous le bord gauche du banc, hors de portée du défilement. */
-.banc-piste.lignes .ligne { display: flex; justify-content: safe center; }
-/* Le corps de la ligne, c'est la séquence — et elle seule. Sa marge, posée au
-   rendu, place le Plan Large (ou le Plan de départ) exactement au centre du
-   banc : lui est l'ancre de sa ligne, ce qui s'accroche à ses côtés pousse
-   vers l'extérieur sans jamais le déplacer. */
-.banc-piste.lignes .ligne-corps {
-  position: relative; display: flex; flex: 0 0 auto;
-  margin-left: var(--dx, 0); margin-right: calc(-1 * var(--dx, 0));
+.banc-piste.lignes .ligne { display: flex; align-items: stretch; }
+.banc-piste.lignes .ligne-fil { display: flex; flex: 1 1 auto; justify-content: center; }
+.banc-piste.lignes .ligne-corps { position: relative; display: flex; flex: 0 0 auto; }
+/* Ce que la ligne rapporte, à son bout gauche. La pastille **colle au bord du
+   banc** pendant qu'on fait défiler : le compte doit rester lisible même quand
+   la ligne qu'il décrit est partie sur la droite. Sa largeur est la même sur
+   toutes les lignes — sinon elle décalerait la colonne d'ancrage. */
+.banc-piste.lignes .ligne-pts {
+  position: sticky; left: 0; z-index: 4; flex: 0 0 auto;
+  width: 46px; margin-right: 8px; align-self: center;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .92rem; font-weight: 800; font-variant-numeric: tabular-nums;
+  color: #fff; background: rgba(124, 58, 237, .9); border: 1px solid rgba(196, 181, 253, .5);
+  border-radius: 999px; padding: 5px 0; box-shadow: 0 2px 10px rgba(0, 0, 0, .45);
 }
+.banc-piste.lignes .ligne-pts.nul { background: rgba(255, 255, 255, .1); color: #b9b2c8; }
+.banc-piste.lignes .ligne-pts.negatif { background: rgba(143, 29, 29, .92); border-color: #d78a8a; }
 /* Les emplacements se posent hors du flux, contre les flancs de la séquence :
    ils ne prennent aucune largeur, donc en ouvrir un d'un seul côté ne décale
    ni la ligne ni son ancre. */

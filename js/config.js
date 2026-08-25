@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.45';
+import { ELEMENT_IDS } from './data.js?v=1.46';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -103,7 +103,7 @@ export const DEFAULTS = {
   // Les joueuses jouent l'une après l'autre et cela se voit : chaque coup est
   // rendu, et la carte vole de sa pioche jusqu'au banc.
   animerCoups: true,
-  dureeVol: 360,          // ms — le trajet d'une carte
+  dureeVol: 620,          // ms — le trajet d'une carte, arc compris
 
   // --- Divers --------------------------------------------------------------
   graine: '',

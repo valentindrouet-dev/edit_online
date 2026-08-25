@@ -595,6 +595,22 @@ L'écran de décompte ouvre sur le **podium**, puis :
 Le palmarès regroupe **joueuse par joueuse** : deux joueuses qui posent le même bandeau gardent
 chacune leur ligne, c'est bien ce qu'elles en ont tiré séparément que l'on compare.
 
+### Les cartes en mouvement
+
+Une carte qui change de place ne saute pas d'un rendu à l'autre : elle **vole** (`js/anim.js`, sur le
+principe du FLIP — on relève la boîte de départ avant que l'état ne change, celle d'arrivée après le
+rendu, et l'on interpole un clone posé au-dessus de la page).
+
+Le vol est fait pour **se voir** : la carte se soulève et retombe plutôt que de glisser en ligne
+droite, grossit de 9 % à mi-parcours, porte un liseré orange et son ombre portée, et dure 620 ms.
+À l'arrivée, la place où elle se pose s'illumine brièvement (`.pose-fraiche`) : on voit lequel des
+plans du banc vient de changer. Un trajet plat et bref se manquait du coin de l'œil — surtout celui
+d'une IA, qui traverse la table pendant qu'on regarde son propre banc.
+
+Pour la même raison, `jouerVols()` **amène l'arrivée sous les yeux** quand elle est hors de l'écran,
+puis fait glisser d'autant les départs déjà relevés — ils sont en coordonnées d'écran, et la page
+vient de bouger. Sans cela, le coup d'une IA se terminait sous la ligne de flottaison.
+
 ### Le matériel suit, en pleine partie
 
 On règle les cartes dans une fenêtre et l'on joue dans l'autre, souvent sur deux écrans. Une retouche
@@ -718,9 +734,18 @@ sur une bande unique mais **en pile** :
   élément (`jonctionsRaccordees()`). Les portées `AVANT` / `APRES` / `MONTAGE` lisaient déjà le
   montage à plat : elles ne changent pas.
 
-Côté affichage, `.banc-piste` prend la classe `lignes` et devient une colonne ; chaque séquence est
-enveloppée dans une `.ligne` qui la centre, et c'est la marge de `.ligne-corps` — calculée par
-`ancrageLigne()` — qui place l'ancre au centre du banc.
+Côté affichage, `.banc-piste` prend la classe `lignes` et devient une colonne. Toutes les lignes
+alignent le centre de leur ancre sur **la même verticale** : `colonneAncrage()` prend, sur l'ensemble
+des séquences, la plus grande distance du bord gauche au centre de l'ancre (`ancreDe()`), et chaque
+ligne comble l'écart d'un **retrait posé dans le flux**. La piste a donc la largeur de ce qu'elle
+contient — centrée dans le banc tant que tout y tient, et le banc **défile de gauche à droite** dès
+que cela déborde, sans jamais rompre l'alignement. Un décalage posé en marges, lui, cessait de tenir
+dès que la place manquait : le plan central se mettait à dériver d'une ligne à l'autre.
+
+Chaque ligne porte à son bout gauche une pastille `.ligne-pts` : **ce que les cartes de cette ligne
+rapportent**. Elle est `position: sticky` — elle colle au bord du banc pendant qu'on fait défiler,
+pour que le compte reste lisible quand la ligne est partie sur la droite — et de largeur fixe, sinon
+elle décalerait la colonne d'ancrage.
 
 Les deux emplacements latéraux (`.bord`) sont **posés hors du flux**, contre les flancs de la
 séquence : ils n'occupent aucune largeur, donc en ouvrir un d'un seul côté ne décale ni la ligne ni

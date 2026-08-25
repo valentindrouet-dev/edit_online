@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.45';
-export const BUILD_DATE = '2026-08-25 12:00';
+export const VERSION = '1.46';
+export const BUILD_DATE = '2026-08-25 16:00';
 
 export const CHANGELOG = [
+  {
+    v: '1.46',
+    date: '25/08/2026',
+    items: [
+      "<b>Une carte qui vole se voit.</b> Elle ne glisse plus en ligne droite mais <b>se soulève et retombe</b>, grossit à mi-parcours, et porte un liseré orange avec son ombre portée. Elle prend aussi son temps — 620 ms au lieu de 360. À l’arrivée, la place où elle se pose <b>s’illumine brièvement</b> : on voit lequel des plans du banc vient de changer.",
+      "<b>Le banc qui reçoit la carte est amené sous les yeux</b> s’il est hors de l’écran. Le coup d’une IA se terminait sous la ligne de flottaison : la carte volait vers un banc qu’on ne voyait pas.",
+      "<b>Les Plans Larges et les Plans de départ de toutes les lignes tombent sur la même verticale</b>, quel que soit le nombre de cartes. Le calage se fait désormais <b>dans le flux</b> — la ligne qui a le plus de plans à gauche de son ancre fixe la colonne, les autres comblent l’écart —, si bien que le banc <b>défile de gauche à droite</b> quand cela déborde au lieu de laisser le plan central dériver. Un décalage en marges cessait de tenir dès que la place manquait.",
+      "<b>Chaque ligne porte son compteur de points</b>, en pastille à son bout gauche : ce que les cartes de cette ligne rapportent. La pastille colle au bord du banc pendant qu’on fait défiler — le compte reste lisible quand la ligne est partie sur la droite.",
+    ],
+  },
   {
     v: '1.45',
     date: '25/08/2026',

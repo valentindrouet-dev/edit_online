@@ -2,27 +2,27 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.45';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.46';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.45';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.45';
-import { elIcon, numIcon } from './icons.js?v=1.45';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.45';
+} from './data.js?v=1.46';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.46';
+import { elIcon, numIcon } from './icons.js?v=1.46';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.46';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.45';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.45';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.45';
-import { releve, voler, stopperVols } from './anim.js?v=1.45';
-import { campagne } from './lab.js?v=1.45';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.45';
+} from './engine.js?v=1.46';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.46';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.46';
+import { releve, voler, stopperVols } from './anim.js?v=1.46';
+import { campagne } from './lab.js?v=1.46';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.46';
 
 const app = document.getElementById('app');
 
@@ -534,50 +534,43 @@ const LARGEUR_BANC = { GP: 85, PM: 169, PL: 254, DEP: 254 };
 // feuille de style (`.banc .sequence { gap }`).
 const ECART_PLANS = 2;
 
-/**
- * Le décalage qui garde le **Plan Large — ou le Plan de départ — au centre de
- * sa ligne**, dans la variante en lignes. Sans lui, la ligne entière se
- * recentre à chaque pose : accrocher un Gros Plan à gauche faisait glisser tout
- * le reste vers la droite, et le film semblait bouger alors qu'on n'avait rien
- * déplacé. Le plan d'ouverture de la ligne est son ancre : ce qui s'accroche à
- * gauche pousse vers la gauche, ce qui s'accroche à droite pousse vers la
- * droite, et l'ancre ne bouge plus.
- */
-function ancrageLigne(seq) {
-  const k = seq.findIndex((p) => p.format === 'PL' || p.format === 'DEP');
-  if (k < 0) return '';
-  const bloc = (a, b) => seq.slice(a, b)
-    .reduce((s, p) => s + (LARGEUR_BANC[p.format] || 169) + ECART_PLANS, 0);
-  // Le décalage se pose en **marges opposées** — l'une positive, l'autre
-  // négative de la même valeur : la ligne garde donc exactement la largeur de
-  // sa séquence, et se centre comme si de rien n'était pendant que son ancre
-  // vient au milieu. Deux marges positives l'auraient élargie du décalage, et
-  // une ligne à peine longue serait sortie du banc avant d'être large.
-  const dx = Math.round((bloc(k + 1, seq.length) - bloc(0, k)) / 2);
-  // `--dx` place la ligne tout de suite, `data-dx` garde la valeur voulue :
-  // `ajusterAncrages()` la borne ensuite à la place que le banc offre.
-  return ` style="--dx:${dx}px" data-dx="${dx}"`;
+/** La largeur d'une séquence dans le banc, rembourrage compris. */
+function largeurSeq(seq) {
+  if (!seq.length) return 8;
+  const plans = seq.reduce((s, p) => s + (LARGEUR_BANC[p.format] || 169), 0);
+  return 8 + plans + (seq.length - 1) * ECART_PLANS;
 }
 
 /**
- * Le décalage d'ancrage, borné à la place réellement disponible. Une ligne plus
- * large que le banc n'a aucune marge de manœuvre : la décaler ferait sortir son
- * début ou sa fin du cadre, sans espoir d'y revenir. On ne décale donc que de ce
- * que le banc peut absorber — l'ancre vient au centre tant qu'il y a du jeu, et
- * s'en approche seulement quand la ligne remplit le banc.
- *
- * Cela se mesure après le rendu : la largeur du banc dépend de la page.
+ * La distance du bord gauche d'une séquence au **centre de son ancre** — son
+ * Plan Large, ou son Plan de départ. Une séquence qui n'en porte aucune s'ancre
+ * sur son milieu.
  */
-function ajusterAncrages(racine = app) {
-  racine.querySelectorAll('.banc-piste.lignes').forEach((piste) => {
-    const large = piste.clientWidth;
-    piste.querySelectorAll('.ligne-corps[data-dx]').forEach((corps) => {
-      const voulu = +corps.dataset.dx || 0;
-      const jeu = Math.max(0, (large - corps.offsetWidth) / 2);
-      const dx = Math.round(Math.max(-jeu, Math.min(jeu, voulu)));
-      corps.style.setProperty('--dx', `${dx}px`);
-    });
-  });
+function ancreDe(seq) {
+  const k = seq.findIndex((p) => p.format === 'PL' || p.format === 'DEP');
+  if (k < 0) return largeurSeq(seq) / 2;
+  const avant = seq.slice(0, k)
+    .reduce((s, p) => s + (LARGEUR_BANC[p.format] || 169) + ECART_PLANS, 0);
+  return 4 + avant + (LARGEUR_BANC[seq[k].format] || 169) / 2;
+}
+
+/**
+ * La **colonne d'ancrage** d'un banc en lignes : toutes les lignes alignent le
+ * centre de leur Plan Large — ou de leur Plan de départ — sur la même verticale.
+ * La ligne qui a le plus de plans à gauche de son ancre fixe la colonne ; les
+ * autres comblent l'écart d'un retrait.
+ *
+ * C'est un **calage dans le flux**, pas un décalage : la piste a donc la largeur
+ * de ce qu'elle contient, et le banc défile de gauche à droite dès que cela
+ * déborde — sans jamais rompre l'alignement. Un décalage en marges, lui, cessait
+ * de tenir dès que le banc manquait de place : le plan central se mettait à
+ * dériver par rapport à ceux des autres lignes.
+ */
+function colonneAncrage(sequences) {
+  if (!sequences.length) return { avant: 0, apres: 0 };
+  const avant = Math.max(...sequences.map(ancreDe));
+  const apres = Math.max(...sequences.map((s) => largeurSeq(s) - ancreDe(s)));
+  return { avant, apres };
 }
 
 function bancBloc(st, i, titre, interactif) {
@@ -587,9 +580,14 @@ function bancBloc(st, i, titre, interactif) {
   // — l'infobulle montre alors d'où vient chaque point — et leur somme.
   const points = new Map();
   const detail = new Map();
+  // Ce que chaque séquence rapporte, à part : en lignes, c'est le compte de sa
+  // ligne, affiché à son bout. Les points sont portés par la carte qui les fait
+  // marquer, quelle que soit la ligne où elle est allée les chercher.
+  const ptsLigne = banc.sequences.map(() => 0);
   for (const l of compter(banc, st.cfg).lignes) {
     points.set(l.plan, (points.get(l.plan) || 0) + l.pts);
     const a = detail.get(l.plan) || []; a.push(l.pts); detail.set(l.plan, a);
+    if (ptsLigne[l.sequence] !== undefined) ptsLigne[l.sequence] += l.pts;
   }
   // Le plan qui vient d'être posé : c'est là que la carte en vol atterrit.
   const neuf = st.dernierPose && st.dernierPose.p === i ? st.dernierPose : null;
@@ -667,16 +665,24 @@ function bancBloc(st, i, titre, interactif) {
   if (!n) morceaux.push('<div class="vide" style="color:#8a8496">Banc vide</div>');
 
   if (lignes) {
+    // Toutes les lignes alignent leur ancre sur la même verticale : celle qui a
+    // le plus de plans à sa gauche fixe la colonne, les autres comblent l'écart
+    // d'un retrait. C'est du calage dans le flux, donc le banc défile plutôt que
+    // de rompre l'alignement quand il déborde.
+    const col = colonneAncrage(banc.sequences);
     // Au-dessus de tout : ouvrir une séquence en tête du film.
     morceaux.push(bande(coups.filter((c) => c.action === 'NOUVELLE_SEQUENCE' && c.pos === 0)));
     banc.sequences.forEach((seq, si) => {
+      const gauche = Math.round(col.avant - ancreDe(seq));
+      const droite = Math.round(col.apres - (largeurSeq(seq) - ancreDe(seq)));
       // Les deux bords se posent **hors du flux**, contre les flancs de la
       // séquence : ils ne prennent donc aucune largeur, et ouvrir un
-      // emplacement d'un côté ne déplace ni la ligne ni son ancre. C'est la
-      // marge du corps qui place le Plan Large — ou le Plan de départ — au
-      // centre du banc.
+      // emplacement d'un côté ne déplace ni la ligne ni son ancre.
       morceaux.push('<div class="ligne">');
-      morceaux.push(`<div class="ligne-corps"${ancrageLigne(seq)}>`);
+      morceaux.push(`<span class="ligne-pts ${(ptsLigne[si] || 0) < 0 ? 'negatif' : ((ptsLigne[si] || 0) ? '' : 'nul')}"
+        title="Ce que cette ligne rapporte">${ptsLigne[si] || 0}</span>`);
+      morceaux.push(`<div class="ligne-fil" style="padding-left:${gauche}px;padding-right:${droite}px">`);
+      morceaux.push('<div class="ligne-corps">');
       // Le générique d'ouverture est en tête du film, donc au bout gauche de
       // la première ligne ; les crédits, au bout droit de la dernière.
       morceaux.push(`<div class="bord gauche">${fente(coups.filter((c) => (c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche')
@@ -686,7 +692,7 @@ function bancBloc(st, i, titre, interactif) {
       morceaux.push('</div>');
       morceaux.push(`<div class="bord droite">${fente(coups.filter((c) => (c.action === 'ETENDRE' && c.seq === si && c.cote === 'droite')
         || (c.action === 'GENERIQUE' && c.role === 'CREDITS' && si === n - 1)))}</div>`);
-      morceaux.push('</div></div>');
+      morceaux.push('</div></div></div>');
     });
     // En dessous de tout : ouvrir une séquence en fin de film. Sur un banc
     // vide, les deux bandes désigneraient le même coup : une seule suffit.
@@ -768,7 +774,6 @@ function rafraichirVisee(st) {
   banc.classList.toggle('vise', !!bloc.querySelector('.banc').classList.contains('vise'));
   brancherFentes(st, piste);
   brancherApercu(piste);
-  ajusterAncrages(banc);
 }
 
 function choisirMoitie(st, format) {
@@ -791,7 +796,6 @@ function choisirMoitie(st, format) {
     piste.classList.toggle('lignes', !!st.cfg.bancEnLignes);
     brancherFentes(st, piste);
     brancherApercu(piste);
-    ajusterAncrages(piste.closest('.banc') || app);
   }
 }
 
@@ -1261,7 +1265,6 @@ function brancherPartie(st, humaine) {
 
     brancherFentes(st);
   }
-  ajusterAncrages();
 
   // Épingler un banc ne touche pas à la partie : on repeint la seule colonne.
   const majColonnes = () => {
@@ -1463,11 +1466,33 @@ async function jouerVols() {
   store.vols = [];
   if (!liste.length) return;
   document.body.classList.add('coup-en-vol');
-  await Promise.all(liste.map((v) => {
-    const cible = app.querySelector(v.arrivee);
-    return cible ? voler(v.dep, cible, dureeVol(), v.opts) : Promise.resolve();
-  }));
+  const cibles = liste.map((v) => app.querySelector(v.arrivee));
+  // Un banc hors de l'écran — celui d'une IA, sous la ligne de flottaison —
+  // recevait sa carte sans qu'on voie rien : le vol se terminait en dehors de
+  // la page. On amène donc l'arrivée sous les yeux d'abord.
+  const glisse = await amenerEnVue(cibles);
+  // Les départs ont été relevés en coordonnées d'écran, avant ce défilement :
+  // on les fait glisser d'autant, sans quoi la carte partirait d'ailleurs.
+  if (glisse) for (const v of liste) if (v.dep) v.dep.y -= glisse;
+  await Promise.all(liste.map((v, i) => (cibles[i] ? voler(v.dep, cibles[i], dureeVol(), v.opts) : Promise.resolve())));
   document.body.classList.remove('coup-en-vol');
+}
+
+/**
+ * Amène une arrivée hors de l'écran sous les yeux, et attend que le défilement
+ * se pose : une carte qui vole vers un banc qu'on ne voit pas ne se voit pas
+ * voler. Rend le nombre de pixels dont la page a glissé.
+ */
+function amenerEnVue(cibles) {
+  const dehors = anime() && cibles.find((c) => {
+    if (!c) return false;
+    const r = c.getBoundingClientRect();
+    return r.bottom < 40 || r.top > window.innerHeight - 40;
+  });
+  if (!dehors) return Promise.resolve(0);
+  const avant = window.scrollY;
+  dehors.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  return new Promise((f) => setTimeout(() => f(window.scrollY - avant), 280));
 }
 
 // --- Les trois coups, joués à vue ------------------------------------------
@@ -1824,7 +1849,6 @@ function vueFin() {
   </div>
   ${pied()}`);
   brancherApercu();
-  ajusterAncrages();
   app.querySelector('#rejouer').addEventListener('click', lancerPartie);
 }
 
@@ -3995,10 +4019,6 @@ function route() {
 window.addEventListener('hashchange', route);
 route();
 
-// La place qu'un banc offre change avec la fenêtre : les ancrages se reprennent
-// à chaque redimensionnement, sinon une ligne bornée à l'étroit resterait
-// décentrée une fois la fenêtre élargie.
-window.addEventListener('resize', () => ajusterAncrages());
 
 // ===========================================================================
 // Deux fenêtres, un seul matériel
