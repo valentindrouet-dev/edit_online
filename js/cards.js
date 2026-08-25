@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj } from './data.js?v=1.44';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.44';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj } from './data.js?v=1.45';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.45';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;

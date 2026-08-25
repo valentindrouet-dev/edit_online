@@ -595,6 +595,39 @@ L'écran de décompte ouvre sur le **podium**, puis :
 Le palmarès regroupe **joueuse par joueuse** : deux joueuses qui posent le même bandeau gardent
 chacune leur ligne, c'est bien ce qu'elles en ont tiré séparément que l'on compare.
 
+### Le matériel suit, en pleine partie
+
+On règle les cartes dans une fenêtre et l'on joue dans l'autre, souvent sur deux écrans. Une retouche
+se voit **aussitôt sur la table**, sans rien relancer. Deux chemins y mènent, et ils font la même
+chose :
+
+- un écouteur `storage` — le navigateur prévient les **autres** fenêtres de la même origine dès
+  qu'`edit.cfg` change. Celle qui écrit ne s'entend pas elle-même : pas de boucle ;
+- `sauverCfg()`, pour une retouche faite dans **la même fenêtre** qu'une partie en cours.
+
+`resynchroniserMateriel()` fait le travail, en quatre temps :
+
+1. l'instantané de configuration de la partie (`st.cfg.materiel`, `cartesDesactivees`,
+   `materielActif`), dont `appliquerJeuActif()` se sert tant qu'une partie tourne ;
+2. l'**appariement** des cartes doubles encore en pioche, en rivière ou en main, refait par rang —
+   leurs moitiés, elles, se relisent à chaque rendu et n'ont besoin de rien ;
+3. les **plans déjà posés**, qui sont des copies figées au moment de la pose. On rejoue sur eux les
+   seuls champs que l'éditeur règle — minutage, icônes, pouvoirs, mort, numéro —, retrouvés par leur
+   `cle`, en gardant ce que la pose leur a donné : cadrage, rôle de transition, face, carte
+   d'origine ;
+4. la **composition de la boîte**, par `resynchroniserBoite()` dans le moteur : écarter une carte la
+   retire des pioches **et des rivières**, où elle est aussitôt remplacée depuis la pioche comme si
+   on venait de la prendre ; la réactiver l'y remet, à une place tirée de `hashSeed(seed|retour|id)`
+   pour que deux fenêtres rangent le paquet de la même façon. La rivière retrouve ensuite sa taille.
+
+Ne bougent pas : les **plans déjà posés** (ils font partie du film déjà raconté — les retirer
+réécrirait la partie), la **carte en main** (le tour est engagé), et les cartes déjà jouées, qui ne
+reviennent pas dans la pioche. Une **partie finie** n'est pas resynchronisée du tout : son décompte
+est arrêté, et l'écran de fin doit dire ce qui s'est joué, pas ce que le matériel est devenu depuis.
+
+La partie elle-même ne franchit jamais la frontière : elle n'est pas enregistrée, chaque fenêtre
+garde la sienne.
+
 ## Le modèle de jeu
 
 Un banc de montage est une suite de **séquences**, chaque séquence une suite de **plans visibles**.

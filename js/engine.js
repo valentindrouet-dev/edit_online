@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.44';
-import { compter, bancVide, plansComptes } from './scoring.js?v=1.44';
+} from './data.js?v=1.45';
+import { compter, bancVide, plansComptes } from './scoring.js?v=1.45';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -227,6 +227,71 @@ export function retourner(state, carte) {
   state.faces = state.faces || {};
   state.faces[carte.id] = faceVisible(state, carte) === 'R' ? 'V' : 'R';
   return state.faces[carte.id];
+}
+
+/**
+ * Remet les pioches et les rivières en accord avec **la boîte**. Écarter une
+ * carte dans l'éditeur doit la retirer du paquet — y compris de la rivière, où
+ * elle est aussitôt remplacée, comme si on venait de la prendre ; la réactiver
+ * doit l'y remettre. Sans cela, la composition de la boîte ne valait que pour
+ * les parties lancées après coup.
+ *
+ * Trois choses ne bougent pas :
+ * — **les plans déjà posés**, qui font partie du film déjà raconté : les
+ *   retirer réécrirait la partie ;
+ * — **la carte en main**, qui a été prise : le tour est engagé ;
+ * — **les cartes déjà jouées**, qui ne reviennent pas dans la pioche.
+ *
+ * Une carte qui revient se glisse à une place tirée de la graine de la partie
+ * et de son identité : deux fenêtres qui rejouent la même retouche rangent le
+ * paquet de la même façon.
+ */
+export function resynchroniserBoite(state) {
+  const { doubles, larges } = construirePaquet(state.cfg);
+  let bouge = 0;
+
+  // Ce qui a déjà quitté le paquet : posé sur un banc, ou en main.
+  const sorties = new Set();
+  for (const banc of state.bancs) {
+    for (const seq of banc.sequences) for (const plan of seq) if (plan.carteId) sorties.add(plan.carteId);
+  }
+  for (const main of state.mains) for (const c of main) sorties.add(c.id);
+
+  const famille = (dispo, pioche, chutier, taille) => {
+    const ok = new Map(dispo.map((c) => [c.id, c]));
+
+    // Ce qui n'est plus dans la boîte s'en va — de la pioche comme de la rivière.
+    const garde = (pile) => {
+      const n = pile.length;
+      const reste = pile.filter((c) => ok.has(c.id));
+      bouge += n - reste.length;
+      pile.length = 0; pile.push(...reste);
+    };
+    garde(pioche); garde(chutier);
+
+    // Ce qui y revient se glisse dans la pioche, à une place reproductible.
+    const presentes = new Set([...pioche, ...chutier].map((c) => c.id));
+    for (const c of dispo) {
+      if (presentes.has(c.id) || sorties.has(c.id)) continue;
+      const i = hashSeed(`${state.seed}|retour|${c.id}`) % (pioche.length + 1);
+      pioche.splice(i, 0, c);
+      bouge++;
+    }
+
+    // La rivière retrouve sa taille : elle se recharge sur la pioche, et rend
+    // le trop-plein au sommet — c'est le chemin ordinaire d'une carte.
+    while (chutier.length < taille && pioche.length) chutier.push(pioche.shift());
+    while (chutier.length > taille) pioche.unshift(chutier.pop());
+  };
+
+  const n = state.joueurs.length;
+  famille(larges, state.piochePL, state.chutierPL, state.cfg.chutierPL || n);
+  famille(doubles, state.piochePMGP, state.chutierPMGP, state.cfg.chutierPMGP || n);
+  if (bouge) {
+    journal(state, `La boîte a changé — ${bouge} carte${bouge > 1 ? 's' : ''} ${
+      bouge > 1 ? 'entrent ou sortent' : 'entre ou sort'} des pioches et des rivières`);
+  }
+  return bouge;
 }
 
 export function derusher(state, p, choix) {

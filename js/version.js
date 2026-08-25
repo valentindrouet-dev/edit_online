@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.44';
-export const BUILD_DATE = '2026-08-25 10:00';
+export const VERSION = '1.45';
+export const BUILD_DATE = '2026-08-25 12:00';
 
 export const CHANGELOG = [
+  {
+    v: '1.45',
+    date: '25/08/2026',
+    items: [
+      "<b>La composition de la boîte vaut aussi en pleine partie.</b> Écarter une carte dans l’éditeur la retire désormais des pioches <b>et des rivières</b> — où elle est aussitôt remplacée, comme si on venait de la prendre ; la réactiver l’y remet, à une place tirée de la graine de la partie. Jusqu’ici, activer ou écarter une carte ne valait que pour les parties lancées ensuite : le paquet était constitué au départ et n’en démordait plus.",
+      "Trois choses ne bougent pas pour autant : <b>les plans déjà posés</b> — ils font partie du film déjà raconté, les retirer réécrirait la partie —, <b>la carte en main</b>, dont le tour est engagé, et les cartes déjà jouées, qui ne reviennent pas dans la pioche. Le journal note le mouvement.",
+      "La retouche vaut dans la <b>même fenêtre</b> comme dans une autre : on peut aller régler le matériel puis revenir à la table sans relancer la partie.",
+      "<b>Le compte rendu de fin de partie montre les mêmes bancs qu’en jeu</b>, rendus par la même fonction : en mode Banc en lignes il se lit donc <b>ligne sur ligne</b>, chaque séquence sur la sienne et les ancres alignées, et les points de chaque plan s’y lisent au coin des cartes. Il redessinait jusqu’ici son propre banc, à côté de celui du jeu.",
+      "<b>Le décalage d’ancrage se pose en marges opposées</b> et se borne à la place que le banc offre. Deux marges positives élargissaient la ligne du décalage : une ligne à peine longue sortait du cadre avant même d’être large, et son début devenait inatteignable. L’ancre vient au centre tant qu’il y a du jeu, et s’en approche seulement quand la ligne remplit le banc.",
+    ],
+  },
   {
     v: '1.44',
     date: '25/08/2026',

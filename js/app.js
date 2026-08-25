@@ -2,27 +2,27 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.44';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.45';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.44';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.44';
-import { elIcon, numIcon } from './icons.js?v=1.44';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.44';
+} from './data.js?v=1.45';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.45';
+import { elIcon, numIcon } from './icons.js?v=1.45';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.45';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
-  faceVisible, retourner,
-} from './engine.js?v=1.44';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.44';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.44';
-import { releve, voler, stopperVols } from './anim.js?v=1.44';
-import { campagne } from './lab.js?v=1.44';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.44';
+  faceVisible, retourner, resynchroniserBoite,
+} from './engine.js?v=1.45';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.45';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.45';
+import { releve, voler, stopperVols } from './anim.js?v=1.45';
+import { campagne } from './lab.js?v=1.45';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.45';
 
 const app = document.getElementById('app');
 
@@ -113,6 +113,11 @@ appliquerJeuActif();
 function sauverCfg() {
   LS.set('cfg', store.cfg);
   appliquerJeuActif();
+  // Une retouche faite dans la même fenêtre qu'une partie en cours : l'événement
+  // `storage` ne se déclenche que dans les AUTRES fenêtres, il faut donc faire
+  // ici ce qu'il y ferait. Une partie finie n'y touche pas — son décompte est
+  // arrêté, il ne doit plus bouger.
+  if (store.partie && !store.partie.finie) resynchroniserMateriel(store.partie, store.cfg);
 }
 
 /**
@@ -543,8 +548,36 @@ function ancrageLigne(seq) {
   if (k < 0) return '';
   const bloc = (a, b) => seq.slice(a, b)
     .reduce((s, p) => s + (LARGEUR_BANC[p.format] || 169) + ECART_PLANS, 0);
-  const avant = bloc(0, k), apres = bloc(k + 1, seq.length);
-  return `margin-left:${Math.max(0, apres - avant)}px;margin-right:${Math.max(0, avant - apres)}px`;
+  // Le décalage se pose en **marges opposées** — l'une positive, l'autre
+  // négative de la même valeur : la ligne garde donc exactement la largeur de
+  // sa séquence, et se centre comme si de rien n'était pendant que son ancre
+  // vient au milieu. Deux marges positives l'auraient élargie du décalage, et
+  // une ligne à peine longue serait sortie du banc avant d'être large.
+  const dx = Math.round((bloc(k + 1, seq.length) - bloc(0, k)) / 2);
+  // `--dx` place la ligne tout de suite, `data-dx` garde la valeur voulue :
+  // `ajusterAncrages()` la borne ensuite à la place que le banc offre.
+  return ` style="--dx:${dx}px" data-dx="${dx}"`;
+}
+
+/**
+ * Le décalage d'ancrage, borné à la place réellement disponible. Une ligne plus
+ * large que le banc n'a aucune marge de manœuvre : la décaler ferait sortir son
+ * début ou sa fin du cadre, sans espoir d'y revenir. On ne décale donc que de ce
+ * que le banc peut absorber — l'ancre vient au centre tant qu'il y a du jeu, et
+ * s'en approche seulement quand la ligne remplit le banc.
+ *
+ * Cela se mesure après le rendu : la largeur du banc dépend de la page.
+ */
+function ajusterAncrages(racine = app) {
+  racine.querySelectorAll('.banc-piste.lignes').forEach((piste) => {
+    const large = piste.clientWidth;
+    piste.querySelectorAll('.ligne-corps[data-dx]').forEach((corps) => {
+      const voulu = +corps.dataset.dx || 0;
+      const jeu = Math.max(0, (large - corps.offsetWidth) / 2);
+      const dx = Math.round(Math.max(-jeu, Math.min(jeu, voulu)));
+      corps.style.setProperty('--dx', `${dx}px`);
+    });
+  });
 }
 
 function bancBloc(st, i, titre, interactif) {
@@ -643,7 +676,7 @@ function bancBloc(st, i, titre, interactif) {
       // marge du corps qui place le Plan Large — ou le Plan de départ — au
       // centre du banc.
       morceaux.push('<div class="ligne">');
-      morceaux.push(`<div class="ligne-corps" style="${ancrageLigne(seq)}">`);
+      morceaux.push(`<div class="ligne-corps"${ancrageLigne(seq)}>`);
       // Le générique d'ouverture est en tête du film, donc au bout gauche de
       // la première ligne ; les crédits, au bout droit de la dernière.
       morceaux.push(`<div class="bord gauche">${fente(coups.filter((c) => (c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche')
@@ -674,12 +707,17 @@ function bancBloc(st, i, titre, interactif) {
       || (c.action === 'GENERIQUE' && c.role === 'CREDITS'))));
   }
 
+  const banche = `<div class="banc ${coups.length ? 'vise' : ''}" data-banc="${i}"><div class="banc-piste ${lignes ? 'lignes' : ''}">${morceaux.join('')}</div></div>`;
+  // Sans titre, on ne veut que le banc : c'est ce que demande le compte rendu
+  // de fin de partie, qui donne le nom de la joueuse à sa façon.
+  if (titre === null) return banche;
+
   // Le compte de plans se lit au-dessus du banc qu'il décrit, plutôt que dans
   // un bandeau commun où il fallait se souvenir de qui il parlait.
   const faits = Math.min(compter(banc, st.cfg).plans, st.cfg.tours);
   return `<div class="panneau">
     <h2>${titre}${titre ? `<span class="banc-compte">Plan <b>${faits} / ${st.cfg.tours}</b></span>` : ''}</h2>
-    <div class="banc ${coups.length ? 'vise' : ''}" data-banc="${i}"><div class="banc-piste ${lignes ? 'lignes' : ''}">${morceaux.join('')}</div></div>
+    ${banche}
   </div>`;
 }
 
@@ -730,6 +768,7 @@ function rafraichirVisee(st) {
   banc.classList.toggle('vise', !!bloc.querySelector('.banc').classList.contains('vise'));
   brancherFentes(st, piste);
   brancherApercu(piste);
+  ajusterAncrages(banc);
 }
 
 function choisirMoitie(st, format) {
@@ -752,6 +791,7 @@ function choisirMoitie(st, format) {
     piste.classList.toggle('lignes', !!st.cfg.bancEnLignes);
     brancherFentes(st, piste);
     brancherApercu(piste);
+    ajusterAncrages(piste.closest('.banc') || app);
   }
 }
 
@@ -1221,6 +1261,7 @@ function brancherPartie(st, humaine) {
 
     brancherFentes(st);
   }
+  ajusterAncrages();
 
   // Épingler un banc ne touche pas à la partie : on repeint la seule colonne.
   const majColonnes = () => {
@@ -1768,10 +1809,12 @@ function vueFin() {
     </div>
     <div class="panneau">
       <h2>Les bancs de montage</h2>
-      ${st.joueurs.map((j, i) => `<h3>${j.nom}</h3>
-        <div class="banc" style="margin-bottom:12px"><div class="banc-piste">
-          ${st.bancs[i].sequences.map((seq) => `<div class="sequence">${seq.map((pl) => renderPlan(pl)).join('')}</div>`).join('<div class="ecart"></div>')}
-        </div></div>`).join('')}
+      ${/* Le même banc qu'en jeu, rendu par la même fonction : en mode Banc en
+            lignes, le compte rendu se lit donc ligne sur ligne, chaque séquence
+            sur la sienne et les ancres alignées. Les points de chaque plan y
+            sont aussi, au coin des cartes — c'est le moment de les lire. */
+        st.joueurs.map((j, i) => `<h3>${j.nom}</h3>
+        <div class="banc-fin">${bancBloc(st, i, null, false)}</div>`).join('')}
     </div>
     <div class="rangee-boutons">
       <button class="cta" style="max-width:320px" id="rejouer">Rejouer</button>
@@ -1781,6 +1824,7 @@ function vueFin() {
   </div>
   ${pied()}`);
   brancherApercu();
+  ajusterAncrages();
   app.querySelector('#rejouer').addEventListener('click', lancerPartie);
 }
 
@@ -3951,6 +3995,11 @@ function route() {
 window.addEventListener('hashchange', route);
 route();
 
+// La place qu'un banc offre change avec la fenêtre : les ancrages se reprennent
+// à chaque redimensionnement, sinon une ligne bornée à l'étroit resterait
+// décentrée une fois la fenêtre élargie.
+window.addEventListener('resize', () => ajusterAncrages());
+
 // ===========================================================================
 // Deux fenêtres, un seul matériel
 // ===========================================================================
@@ -3975,9 +4024,15 @@ route();
  * Les cartes encore en pioche, en rivière ou en main n'ont besoin de rien :
  * leurs moitiés se relisent à chaque rendu. Seul leur **appariement** est figé
  * à la construction du paquet — on le refait, par rang de carte.
+ *
+ * La **composition de la boîte**, elle, tient au paquet lui-même : activer ou
+ * écarter une carte doit la faire entrer ou sortir des pioches et des rivières.
+ * C'est `resynchroniserBoite()` qui s'en charge, dans le moteur.
  */
 function resynchroniserMateriel(st, cfg) {
-  if (!st) return;
+  // Une partie finie ne bouge plus : son décompte est arrêté, et l'écran de fin
+  // doit dire ce qui s'est joué, pas ce que le matériel est devenu depuis.
+  if (!st || st.finie) return;
   // La partie joue son propre instantané de configuration : c'est lui qu'il
   // faut mettre à jour, `appliquerJeuActif()` s'en sert pendant une partie.
   st.cfg.materiel = JSON.parse(JSON.stringify(cfg.materiel));
@@ -4002,6 +4057,10 @@ function resynchroniserMateriel(st, cfg) {
       });
     }
   }
+
+  // Enfin la boîte : les cartes écartées quittent les pioches et les rivières,
+  // celles qu'on réactive y reviennent.
+  resynchroniserBoite(st);
 }
 
 window.addEventListener('storage', (e) => {

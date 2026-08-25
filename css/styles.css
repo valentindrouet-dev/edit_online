@@ -506,6 +506,9 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
   display: flex; gap: 0; overflow-x: auto; padding: 12px; border-radius: var(--r-s);
   background: linear-gradient(180deg, #2a2530, #1d1a24); min-height: 176px; align-items: stretch;
 }
+/* Le compte rendu de fin de partie montre les mêmes bancs qu'en jeu, les uns
+   sous les autres : il leur faut juste un peu d'air entre eux. */
+.banc-fin { margin-bottom: 12px; }
 /* La piste tient sur une ligne tant que tout y entre, puis passe à la ligne.
    Ce qui bascule, ce sont les séquences entières : une séquence est un bloc
    insécable — ses plans se touchent, on ne les sépare pas d'un retour à la
@@ -535,7 +538,10 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    rendu, place le Plan Large (ou le Plan de départ) exactement au centre du
    banc : lui est l'ancre de sa ligne, ce qui s'accroche à ses côtés pousse
    vers l'extérieur sans jamais le déplacer. */
-.banc-piste.lignes .ligne-corps { position: relative; display: flex; flex: 0 0 auto; }
+.banc-piste.lignes .ligne-corps {
+  position: relative; display: flex; flex: 0 0 auto;
+  margin-left: var(--dx, 0); margin-right: calc(-1 * var(--dx, 0));
+}
 /* Les emplacements se posent hors du flux, contre les flancs de la séquence :
    ils ne prennent aucune largeur, donc en ouvrir un d'un seul côté ne décale
    ni la ligne ni son ancre. */
