@@ -544,18 +544,24 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    du banc. Un décalage en marges, lui, cessait de tenir dès que la place
    manquait : le plan central se mettait à dériver. */
 .banc-piste.lignes {
-  flex-direction: column; flex-wrap: nowrap; align-items: stretch; row-gap: 8px;
-  width: max-content; min-width: 100%; margin: auto 0;
+  flex-direction: column; flex-wrap: nowrap; align-items: flex-start; row-gap: 8px;
+  width: max-content; margin: auto;
 }
 .banc-piste.lignes .ligne { display: flex; align-items: stretch; }
-.banc-piste.lignes .ligne-fil { display: flex; flex: 1 1 auto; justify-content: center; }
+/* Le retrait de la ligne suffit à la placer : rien ne doit venir répartir en
+   plus l'espace qui reste, sinon le calage ne vaudrait plus. */
+.banc-piste.lignes .ligne-fil { display: flex; flex: 0 0 auto; }
 .banc-piste.lignes .ligne-corps { position: relative; display: flex; flex: 0 0 auto; }
 /* Ce que la ligne rapporte, à son bout gauche. La pastille **colle au bord du
    banc** pendant qu'on fait défiler : le compte doit rester lisible même quand
    la ligne qu'il décrit est partie sur la droite. Sa largeur est la même sur
    toutes les lignes — sinon elle décalerait la colonne d'ancrage. */
+/* La pastille ne se clique pas : c'est un compte, pas un bouton. Collée au bord
+   du banc, elle passe devant l'emplacement de pose du bout gauche — sans cela,
+   elle en interceptait le clic et la ligne la plus à gauche devenait
+   impossible à étendre. */
 .banc-piste.lignes .ligne-pts {
-  position: sticky; left: 0; z-index: 4; flex: 0 0 auto;
+  position: sticky; left: 0; z-index: 4; flex: 0 0 auto; pointer-events: none;
   width: 46px; margin-right: 8px; align-self: center;
   display: flex; align-items: center; justify-content: center;
   font-size: .92rem; font-weight: 800; font-variant-numeric: tabular-nums;

@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.46';
-import { compter, bancVide, plansComptes } from './scoring.js?v=1.46';
+} from './data.js?v=1.47';
+import { compter, bancVide, plansComptes } from './scoring.js?v=1.47';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -294,14 +294,24 @@ export function resynchroniserBoite(state) {
   return bouge;
 }
 
+/**
+ * La carte prise **laisse sa place à celle qui la remplace** : la nouvelle se
+ * pose exactement là où était l'ancienne, et les autres ne bougent pas d'un
+ * pixel. Ajouter la remplaçante au bout décalait tout ce qui suivait la carte
+ * prise — la rivière entière glissait d'un cran à chaque tour, et l'on ne
+ * retrouvait plus rien.
+ */
+function prendreDuChutier(chutier, pioche, i) {
+  const neuve = pioche.length ? pioche.shift() : null;
+  return (neuve ? chutier.splice(i, 1, neuve) : chutier.splice(i, 1))[0];
+}
+
 export function derusher(state, p, choix) {
   let carte = null;
   if (choix.source === 'CHUTIER_PL') {
-    carte = state.chutierPL.splice(choix.index, 1)[0];
-    if (state.piochePL.length) state.chutierPL.push(state.piochePL.shift());
+    carte = prendreDuChutier(state.chutierPL, state.piochePL, choix.index);
   } else if (choix.source === 'CHUTIER_PMGP') {
-    carte = state.chutierPMGP.splice(choix.index, 1)[0];
-    if (state.piochePMGP.length) state.chutierPMGP.push(state.piochePMGP.shift());
+    carte = prendreDuChutier(state.chutierPMGP, state.piochePMGP, choix.index);
   } else if (choix.source === 'PIOCHE_PMGP') {
     carte = state.piochePMGP.shift();
   } else if (choix.source === 'PIOCHE_PL') {

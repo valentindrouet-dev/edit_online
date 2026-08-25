@@ -607,9 +607,14 @@ droite, grossit de 9 % à mi-parcours, porte un liseré orange et son ombre port
 plans du banc vient de changer. Un trajet plat et bref se manquait du coin de l'œil — surtout celui
 d'une IA, qui traverse la table pendant qu'on regarde son propre banc.
 
-Pour la même raison, `jouerVols()` **amène l'arrivée sous les yeux** quand elle est hors de l'écran,
-puis fait glisser d'autant les départs déjà relevés — ils sont en coordonnées d'écran, et la page
-vient de bouger. Sans cela, le coup d'une IA se terminait sous la ligne de flottaison.
+**La page, elle, ne bouge jamais d'elle-même.** On regarde la carte se déplacer, pas l'écran défiler :
+un coup joué sur un banc hors de vue se lit à son résultat, le vol n'a pas à venir chercher le regard
+en déplaçant la table sous lui.
+
+Dans la rivière, la carte prise **laisse sa place à celle qui la remplace** (`prendreDuChutier()`
+dans le moteur) : la nouvelle se pose exactement là où était l'ancienne, et aucune autre ne bouge.
+Ajouter la remplaçante au bout décalait d'un cran tout ce qui suivait la carte prise — la rivière se
+réorganisait à chaque tour, et l'on n'y retrouvait plus rien.
 
 ### Le matériel suit, en pleine partie
 
@@ -737,9 +742,11 @@ sur une bande unique mais **en pile** :
 Côté affichage, `.banc-piste` prend la classe `lignes` et devient une colonne. Toutes les lignes
 alignent le centre de leur ancre sur **la même verticale** : `colonneAncrage()` prend, sur l'ensemble
 des séquences, la plus grande distance du bord gauche au centre de l'ancre (`ancreDe()`), et chaque
-ligne comble l'écart d'un **retrait posé dans le flux**. La piste a donc la largeur de ce qu'elle
-contient — centrée dans le banc tant que tout y tient, et le banc **défile de gauche à droite** dès
-que cela déborde, sans jamais rompre l'alignement. Un décalage posé en marges, lui, cessait de tenir
+ligne comble l'écart d'un **retrait posé dans le flux**. La piste se rend ensuite **symétrique autour
+de cette colonne** — le côté le plus court se complète d'un vide (`calGauche` / `calDroite`) — puis se
+centre : la colonne tombe donc au milieu du banc, et pas seulement les ancres les unes sous les
+autres. Tout cela étant du rembourrage dans le flux, la piste a la largeur de ce qu'elle contient et
+le banc **défile de gauche à droite** dès que cela déborde, sans jamais rompre l'alignement. Un décalage posé en marges, lui, cessait de tenir
 dès que la place manquait : le plan central se mettait à dériver d'une ligne à l'autre.
 
 Chaque ligne porte à son bout gauche une pastille `.ligne-pts` : **ce que les cartes de cette ligne

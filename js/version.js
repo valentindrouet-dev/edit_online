@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.46';
-export const BUILD_DATE = '2026-08-25 16:00';
+export const VERSION = '1.47';
+export const BUILD_DATE = '2026-08-25 18:00';
 
 export const CHANGELOG = [
+  {
+    v: '1.47',
+    date: '25/08/2026',
+    items: [
+      "<b>La rivière ne glisse plus.</b> La carte prise laisse sa place à celle qui la remplace : la nouvelle se pose exactement là où était l’ancienne, et <b>aucune autre ne bouge</b>. La remplaçante arrivait jusqu’ici au bout de la rangée, ce qui décalait d’un cran tout ce qui suivait la carte prise — la rivière se réorganisait à chaque tour et l’on n’y retrouvait plus rien.",
+      "<b>Les Plans Larges et les Plans de départ retrouvent le centre du banc</b>, sans perdre leur alignement. La piste se rend symétrique autour de sa colonne d’ancrage — le côté le plus court se complète d’un vide — puis se centre : la colonne tombe donc au milieu. C’est du rembourrage dans le flux, si bien que le banc défile toujours par-dessus quand il déborde.",
+      "<b>L’écran ne défile plus tout seul.</b> Le coup d’un adversaire se regarde sans que la page vienne chercher le regard : on voit la carte se déplacer, la table ne bouge pas.",
+    ],
+  },
   {
     v: '1.46',
     date: '25/08/2026',

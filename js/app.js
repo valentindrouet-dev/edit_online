@@ -2,27 +2,27 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.46';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.47';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.46';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.46';
-import { elIcon, numIcon } from './icons.js?v=1.46';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.46';
+} from './data.js?v=1.47';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.47';
+import { elIcon, numIcon } from './icons.js?v=1.47';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.47';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.46';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.46';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.46';
-import { releve, voler, stopperVols } from './anim.js?v=1.46';
-import { campagne } from './lab.js?v=1.46';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.46';
+} from './engine.js?v=1.47';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.47';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.47';
+import { releve, voler, stopperVols } from './anim.js?v=1.47';
+import { campagne } from './lab.js?v=1.47';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.47';
 
 const app = document.getElementById('app');
 
@@ -533,6 +533,9 @@ const LARGEUR_BANC = { GP: 85, PM: 169, PL: 254, DEP: 254 };
 // L'écart entre deux plans d'une même séquence, lui aussi en accord avec la
 // feuille de style (`.banc .sequence { gap }`).
 const ECART_PLANS = 2;
+// La place que prend la pastille de points d'une ligne, marge comprise — même
+// valeur que `.ligne-pts` dans la feuille de style.
+const LARGEUR_PTS_LIGNE = 54;
 
 /** La largeur d'une séquence dans le banc, rembourrage compris. */
 function largeurSeq(seq) {
@@ -567,10 +570,17 @@ function ancreDe(seq) {
  * dériver par rapport à ceux des autres lignes.
  */
 function colonneAncrage(sequences) {
-  if (!sequences.length) return { avant: 0, apres: 0 };
+  if (!sequences.length) return { avant: 0, apres: 0, calGauche: 0, calDroite: 0 };
   const avant = Math.max(...sequences.map(ancreDe));
   const apres = Math.max(...sequences.map((s) => largeurSeq(s) - ancreDe(s)));
-  return { avant, apres };
+  // La piste se rend **symétrique autour de sa colonne d'ancrage** : le côté le
+  // plus court se complète d'un vide. Centrée dans le banc, elle y amène donc
+  // la colonne — les Plans Larges et les Plans de départ tombent au milieu, et
+  // pas seulement les uns sous les autres. Ce vide est du rembourrage, dans le
+  // flux : le banc défile toujours par-dessus s'il le faut. La pastille des
+  // points de ligne compte dans le côté gauche, qu'elle décale d'autant.
+  const g = avant + LARGEUR_PTS_LIGNE;
+  return { avant, apres, calGauche: Math.max(0, apres - g), calDroite: Math.max(0, g - apres) };
 }
 
 function bancBloc(st, i, titre, interactif) {
@@ -664,12 +674,17 @@ function bancBloc(st, i, titre, interactif) {
   const n = banc.sequences.length;
   if (!n) morceaux.push('<div class="vide" style="color:#8a8496">Banc vide</div>');
 
+  // Le calage de la piste, en lignes : ce qu'il faut ajouter de part et d'autre
+  // pour que sa colonne d'ancrage tombe en son milieu — donc au milieu du banc,
+  // une fois la piste centrée.
+  let calPiste = '';
   if (lignes) {
     // Toutes les lignes alignent leur ancre sur la même verticale : celle qui a
     // le plus de plans à sa gauche fixe la colonne, les autres comblent l'écart
     // d'un retrait. C'est du calage dans le flux, donc le banc défile plutôt que
     // de rompre l'alignement quand il déborde.
     const col = colonneAncrage(banc.sequences);
+    calPiste = ` style="padding-left:${Math.round(col.calGauche)}px;padding-right:${Math.round(col.calDroite)}px"`;
     // Au-dessus de tout : ouvrir une séquence en tête du film.
     morceaux.push(bande(coups.filter((c) => c.action === 'NOUVELLE_SEQUENCE' && c.pos === 0)));
     banc.sequences.forEach((seq, si) => {
@@ -713,7 +728,7 @@ function bancBloc(st, i, titre, interactif) {
       || (c.action === 'GENERIQUE' && c.role === 'CREDITS'))));
   }
 
-  const banche = `<div class="banc ${coups.length ? 'vise' : ''}" data-banc="${i}"><div class="banc-piste ${lignes ? 'lignes' : ''}">${morceaux.join('')}</div></div>`;
+  const banche = `<div class="banc ${coups.length ? 'vise' : ''}" data-banc="${i}"><div class="banc-piste ${lignes ? 'lignes' : ''}"${calPiste}>${morceaux.join('')}</div></div>`;
   // Sans titre, on ne veut que le banc : c'est ce que demande le compte rendu
   // de fin de partie, qui donne le nom de la joueuse à sa façon.
   if (titre === null) return banche;
@@ -1466,33 +1481,14 @@ async function jouerVols() {
   store.vols = [];
   if (!liste.length) return;
   document.body.classList.add('coup-en-vol');
-  const cibles = liste.map((v) => app.querySelector(v.arrivee));
-  // Un banc hors de l'écran — celui d'une IA, sous la ligne de flottaison —
-  // recevait sa carte sans qu'on voie rien : le vol se terminait en dehors de
-  // la page. On amène donc l'arrivée sous les yeux d'abord.
-  const glisse = await amenerEnVue(cibles);
-  // Les départs ont été relevés en coordonnées d'écran, avant ce défilement :
-  // on les fait glisser d'autant, sans quoi la carte partirait d'ailleurs.
-  if (glisse) for (const v of liste) if (v.dep) v.dep.y -= glisse;
-  await Promise.all(liste.map((v, i) => (cibles[i] ? voler(v.dep, cibles[i], dureeVol(), v.opts) : Promise.resolve())));
+  // La page ne bouge jamais d'elle-même : on regarde la carte se déplacer, pas
+  // l'écran défiler. Un coup joué sur un banc hors de vue se lit à son résultat
+  // — le vol n'a pas à venir chercher le regard en déplaçant la table sous lui.
+  await Promise.all(liste.map((v) => {
+    const cible = app.querySelector(v.arrivee);
+    return cible ? voler(v.dep, cible, dureeVol(), v.opts) : Promise.resolve();
+  }));
   document.body.classList.remove('coup-en-vol');
-}
-
-/**
- * Amène une arrivée hors de l'écran sous les yeux, et attend que le défilement
- * se pose : une carte qui vole vers un banc qu'on ne voit pas ne se voit pas
- * voler. Rend le nombre de pixels dont la page a glissé.
- */
-function amenerEnVue(cibles) {
-  const dehors = anime() && cibles.find((c) => {
-    if (!c) return false;
-    const r = c.getBoundingClientRect();
-    return r.bottom < 40 || r.top > window.innerHeight - 40;
-  });
-  if (!dehors) return Promise.resolve(0);
-  const avant = window.scrollY;
-  dehors.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  return new Promise((f) => setTimeout(() => f(window.scrollY - avant), 280));
 }
 
 // --- Les trois coups, joués à vue ------------------------------------------
@@ -1520,7 +1516,9 @@ function ancresDerushage(st, o) {
     carte: preleve(sel),
     moities,
     pioche: duChutier && pile.length ? preleve(`#pioche-${fam}`) : null,
-    place: `[data-chutier="${fam}"][data-i="${chutier.length - (duChutier ? 1 : 0)}"]`,
+    // La remplaçante se pose là où était la carte prise : c'est ce trou-là que
+    // la pioche vient combler, pas le bout de la rivière.
+    place: `[data-chutier="${fam}"][data-i="${duChutier ? o.index : chutier.length}"]`,
   };
 }
 
