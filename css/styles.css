@@ -391,12 +391,12 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .moitie.f-DEP .bandeau { background: #3f8fbf; }
 .moitie.depart .bandeau { background: #7fc4e8; }
 .moitie.transition .bandeau { background: #3c3c44; }
-/* Un plan sans icône n'a pas de languette, un plan sans pouvoir n'a pas de
-   bandeau : ces bandes vides — grises sur un Raccord, blanches ailleurs —
-   n'annonçaient rien. Elles gardent leur place, c'est elle qui aligne le bas
-   des deux moitiés d'une carte, mais laissent voir la carte au lieu de se
-   peindre. */
-.moitie .bandeau.sans-objectif,
+/* Un plan sans icône n'a pas de languette : cette bande vide n'annonçait rien.
+   Elle garde sa place, c'est elle qui aligne le bas des deux moitiés d'une
+   carte, mais laisse voir la carte au lieu de se peindre.
+   Le bandeau de pouvoir, lui, se peint toujours : c'est la place du pouvoir,
+   et on doit la voir — vide sur un plan qui n'en a pas, ce qui se lit comme
+   une information et non comme un trou. */
 .moitie .pastilles.vide { background: transparent; }
 /* Le ×, le « si » et les flèches de portée se lisent à la taille des icônes :
    ils font partie de la formule, pas de la ponctuation. Un Gros Plan n'a qu'un
@@ -797,11 +797,22 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
   color: var(--enc, var(--encre)); border-color: currentColor;
   background: #fff; box-shadow: 0 1px 4px rgba(60, 40, 100, .12);
 }
+/* L'onglet dit le nom et le score : « Val 24 ». Le score est la seule chose
+   qui bouge d'un tour à l'autre, il se détache donc du nom. */
+.onglet-banc .onglet-pts {
+  margin-left: .5em; font-weight: 900; font-size: .92em; letter-spacing: 0;
+  color: var(--encre);
+}
+.onglet-banc.on .onglet-pts { color: var(--enc, var(--encre)); }
 
 .panneau h2 .banc-compte {
   float: right; font-size: .8rem; font-weight: 600; color: var(--encre-doux);
   letter-spacing: 0; text-transform: none;
 }
+/* Dans un en-tête à onglets, le float ne s'applique pas — les enfants d'un
+   conteneur flex l'ignorent. « Plan 4 / 10 » se pousse donc à l'extrême
+   droite du bandeau par sa marge. */
+.panneau h2.onglets-bancs .banc-compte { float: none; margin-left: auto; }
 .panneau h2 .banc-compte b { color: var(--encre); font-weight: 800; }
 
 /* Les réglages d'affichage, au pied de la colonne de droite. */

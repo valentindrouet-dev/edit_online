@@ -2,27 +2,27 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.54';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.55';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.54';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.54';
-import { elIcon, numIcon } from './icons.js?v=1.54';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.54';
+} from './data.js?v=1.55';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.55';
+import { elIcon, numIcon } from './icons.js?v=1.55';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.55';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.54';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.54';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.54';
-import { releve, voler, stopperVols } from './anim.js?v=1.54';
-import { campagne } from './lab.js?v=1.54';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.54';
+} from './engine.js?v=1.55';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.55';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.55';
+import { releve, voler, stopperVols } from './anim.js?v=1.55';
+import { campagne } from './lab.js?v=1.55';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.55';
 
 const app = document.getElementById('app');
 
@@ -490,7 +490,8 @@ function vuePartie(enchainer = true) {
         <div class="panneau">
           <h2 class="onglets-bancs">
             ${st.joueurs.map((jj, i) => `<button class="onglet-banc ${i === vuB ? 'on' : ''}"
-              data-onglet-banc="${i}" style="--enc:${encreDe(jj.couleur)}">Banc de ${jj.nom}</button>`).join('')}
+              data-onglet-banc="${i}" style="--enc:${encreDe(jj.couleur)}">${jj.nom}
+              <b class="onglet-pts">${sc[i].total}</b></button>`).join('')}
             <span class="banc-compte">Plan <b>${Math.min(compter(st.bancs[vuB], st.cfg).plans, st.cfg.tours)} / ${st.cfg.tours}</b></span>
           </h2>
           ${bancBloc(st, vuB, null, vuB === p && humaine && (st.phase === 'MONTAGE' || st.phase === 'DERUSHAGE'))}

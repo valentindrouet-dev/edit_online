@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.54';
-export const BUILD_DATE = '2026-08-26 12:20';
+export const VERSION = '1.55';
+export const BUILD_DATE = '2026-08-26 13:10';
 
 export const CHANGELOG = [
+  {
+    v: '1.55',
+    date: '26/08/2026',
+    items: [
+      "<b>Le bandeau de pouvoir se peint de nouveau, même vide.</b> La v1.50 l'effaçait avec la languette d'icônes vide, alors que seule celle-ci était de trop : sur un Raccord, dont le bandeau est presque noir comme le cadre de la carte, la place du pouvoir devenait un trou. Elle est de nouveau visible — vide quand le plan n'a pas de pouvoir, ce qui se lit. La <b>languette d'icônes</b>, elle, reste effacée quand le plan ne porte aucune icône.",
+      "<b>Les onglets des bancs disent le nom et le score</b> — « Val <b>24</b> » — au lieu de « Banc de Val ». C'est le score qui change d'un tour à l'autre : on compare les joueuses sans quitter le banc qu'on regarde.",
+      "<b>« Plan 4 / 10 » passe à l'extrême droite</b> du bandeau des onglets. Il y était poussé par un <code>float</code>, que les enfants d'un conteneur flex ignorent : il restait donc collé au dernier onglet.",
+    ],
+  },
   {
     v: '1.54',
     date: '26/08/2026',
