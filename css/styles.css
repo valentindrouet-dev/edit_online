@@ -344,7 +344,11 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
   font-size: .72rem; font-weight: 700; letter-spacing: .02em; color: var(--encre-doux);
   background: var(--violet-pale); padding: 3px 10px; border-radius: 999px; white-space: nowrap;
 }
-.pioche-reste.vide { background: var(--gris-clair); color: var(--gris); }
+/* « pioche épuisée » : une pastille comme le compte qu'elle remplace. Elle
+   portait la classe générique `.vide`, celle des blocs d'état vide — dont le
+   rembourrage de 40 px l'enflait en énorme bulle grise qui poussait toute la
+   table vers le bas. */
+.pioche-reste.pioche-vide { background: var(--gris-clair); color: var(--gris); }
 
 /* Quelqu'un a posé son dernier plan : il reste un tour à chacune des autres. */
 .jeton-dernier {
@@ -414,7 +418,7 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 }
 /* Le « & » qui relie deux cadrages visés par un même bandeau. */
 .et-cadrage {
-  color: #fff; font-weight: 800; font-size: .9em; line-height: 1; padding: 0 .08em;
+  color: #fff; font-weight: 800; font-size: .9em; line-height: 1;
   text-shadow: 0 1px 2px rgba(0, 0, 0, .5);
 }
 .tag-gris { background: #4a4a52; color: #d8d8de; }
@@ -1337,6 +1341,16 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 /* La portée d'un pouvoir : la flèche pointe le côté compté. Elle se serre
    contre ce qu'elle porte — .obj-noyau — car elle en fait partie. */
 .obj-noyau { display: inline-flex; align-items: center; height: 100%; gap: .06em; }
+/* Ce que le bandeau compte, flèches de portée exclues. Ses pièces sont des
+   mots distincts — « Séquence » et sa flèche, « Plan » et son seuil, deux
+   cadrages reliés d'un « & » — et il leur faut de l'air : les espaces écrits
+   dans le HTML ne comptent pas entre deux enfants d'un conteneur flex, si
+   bien que tout se touchait. Un Gros Plan et un bandeau à deux pouvoirs, plus
+   à l'étroit, se contentent d'un peu moins. */
+.obj-coeur { display: inline-flex; align-items: center; height: 100%; gap: .34em; }
+.bandeau.deux .obj-coeur { gap: .2em; }
+.moitie.f-GP .bandeau .obj-coeur { gap: .24em; }
+.moitie.f-GP .bandeau.deux .obj-coeur { gap: .16em; }
 /* La flèche porte la couleur de l'icône qu'elle entoure (`--fl`, posée au
    rendu). Le halo clair la détache aussi bien d'un bandeau vert que du gris
    sombre d'un Raccord : sans lui, une encre foncée disparaîtrait sur l'un ou

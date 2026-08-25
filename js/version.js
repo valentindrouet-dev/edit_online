@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.55';
-export const BUILD_DATE = '2026-08-26 13:10';
+export const VERSION = '1.56';
+export const BUILD_DATE = '2026-08-26 14:00';
 
 export const CHANGELOG = [
+  {
+    v: '1.56',
+    date: '26/08/2026',
+    items: [
+      "<b>Les pièces d'un bandeau respirent.</b> La flèche ▲ ▼ collait au mot « Séquence », l'icône collait au « Séq. avec », le seuil collait au « Plan », le second cadrage collait au premier — tout se touchait. Ce que le bandeau compte forme désormais un groupe à lui, avec son propre écart : les <b>espaces écrits dans le HTML ne comptent pas</b> entre deux enfants d'un conteneur flex, et il n'y avait donc rien entre les mots. Les flèches de portée ◀ ▶, elles, continuent de se serrer contre ce qu'elles portent — elles en font partie. Un Gros Plan et un bandeau à deux pouvoirs, plus à l'étroit, prennent un écart réduit.",
+      "<b>Le banc affiché ne change plus tout seul.</b> Le coup d'un adversaire venait imposer son banc à l'écran ; on voit désormais sa carte partir sans que la vue bouge. C'est <b>toujours l'onglet cliqué</b> qui reste affiché — le sien par défaut —, et viser une carte de la rivière y ramène, puisque c'est là que les emplacements s'ouvrent.",
+      "<b>« pioche épuisée » redevient une pastille.</b> Elle portait la classe générique des blocs d'état vide, dont le rembourrage de 40 px l'enflait en énorme bulle grise qui poussait toute la table vers le bas.",
+    ],
+  },
   {
     v: '1.55',
     date: '26/08/2026',

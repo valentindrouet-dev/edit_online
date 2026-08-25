@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.55';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.55';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.56';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.56';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -32,9 +32,12 @@ export function objContenu(obj, taille, compact, cfg) {
   const teinte = teinteObj(obj);
   const fleche = (cote) => (p[cote]
     ? `<span class="fleche-pos" style="--fl:${teinte}">${cote === 'gauche' ? '◀' : '▶'}</span>` : '');
-  // Les flèches se serrent contre ce qu'elles portent : elles en font partie,
-  // et sur un Gros Plan chaque dixième d'em compte.
-  return `<span class="obj-noyau">${fleche('gauche')}${objCoeur(obj, taille, compact)}${fleche('droite')}</span>`;
+  // Les flèches se serrent contre ce qu'elles portent : elles en font partie.
+  // Les pièces du cœur, elles, sont des mots distincts — « Séquence » et sa
+  // flèche, « Plan » et son seuil, deux cadrages — et respirent : dans un
+  // conteneur flex, les espaces du HTML ne comptent pas, il leur faut un gap.
+  return `<span class="obj-noyau">${fleche('gauche')}<span class="obj-coeur">${
+    objCoeur(obj, taille, compact)}</span>${fleche('droite')}</span>`;
 }
 
 /**

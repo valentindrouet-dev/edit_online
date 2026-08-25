@@ -2,27 +2,27 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.55';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.56';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.55';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.55';
-import { elIcon, numIcon } from './icons.js?v=1.55';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.55';
+} from './data.js?v=1.56';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.56';
+import { elIcon, numIcon } from './icons.js?v=1.56';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.56';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.55';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.55';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.55';
-import { releve, voler, stopperVols } from './anim.js?v=1.55';
-import { campagne } from './lab.js?v=1.55';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.55';
+} from './engine.js?v=1.56';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.56';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.56';
+import { releve, voler, stopperVols } from './anim.js?v=1.56';
+import { campagne } from './lab.js?v=1.56';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.56';
 
 const app = document.getElementById('app');
 
@@ -52,10 +52,9 @@ const store = {
   undo: null,
   vols: [],             // les cartes à faire voler au prochain rendu
   filIA: 0,             // jeton du fil des coups d'IA : incrémenté, il l'annule
-  // Le banc affiché : un seul à la fois, les autres en onglets. null = suivre
-  // qui joue ; un clic d'onglet épingle, le changement de tour dés-épingle.
+  // Le banc affiché : un seul à la fois, les autres en onglets. null = le
+  // sien. Seul un clic d'onglet en change — jamais le tour d'un adversaire.
   bancVu: null,
-  dernierTour: null,
 };
 
 // Les parties enregistrées avant la palette pastel gardaient d'anciennes
@@ -459,10 +458,12 @@ function vuePartie(enchainer = true) {
   // Le banc lu dans les colonnes : celui qui joue, ou celui qu'on a épinglé.
   const vu = store.joueurVu !== null && st.joueurs[store.joueurVu] ? store.joueurVu : p;
 
-  // Le banc affiché : celui de qui joue, sauf si un onglet en a épinglé un
-  // autre — et l'épingle tombe au changement de tour.
-  if (st.courant !== store.dernierTour) { store.dernierTour = st.courant; store.bancVu = null; }
-  const vuB = store.bancVu !== null && st.bancs[store.bancVu] ? store.bancVu : p;
+  // Le banc affiché ne change que sur un clic d'onglet : le coup d'un
+  // adversaire ne vient plus imposer son banc à l'écran — on voit la carte
+  // partir, la vue ne bouge pas. Par défaut, c'est son propre banc.
+  const sien = st.joueurs.findIndex((jj) => jj.type === 'HUMAIN');
+  const vuB = store.bancVu !== null && st.bancs[store.bancVu]
+    ? store.bancVu : (sien >= 0 ? sien : p);
 
   // La zone garde toujours la même forme, quel que soit celui qui joue : seuls
   // les clics sont réservés à la joueuse humaine.
@@ -767,8 +768,8 @@ function viser(st, o, format) {
   const c = store.choixRiviere;
   store.choixRiviere = (c && memeOption(c.o, o) && c.format === format) ? null : { o, format };
   // Viser, c'est préparer une pose : si un onglet montrait un autre banc, on
-  // revient sur le sien — c'est là que les emplacements vont s'ouvrir.
-  if (store.bancVu !== null && store.bancVu !== st.courant) store.bancVu = null;
+  // revient sur celui de qui joue — c'est là que les emplacements vont s'ouvrir.
+  if (store.bancVu !== null && store.bancVu !== st.courant) store.bancVu = st.courant;
   rafraichirVisee(st);
 }
 
@@ -983,7 +984,7 @@ function zoneDerushage(st, humaine = true, apercu = false) {
   // pixels de hauteur pour une donnée de six mots.
   const ligne = (titre, fam, pioche, reste, chutier) => `
     <div class="derushage-ligne" data-famille="${fam}">
-      <h3>${titre}<span class="pioche-reste ${reste ? '' : 'vide'}">${reste
+      <h3>${titre}<span class="pioche-reste ${reste ? '' : 'pioche-vide'}">${reste
         ? `${reste} carte${reste > 1 ? 's' : ''} en pioche` : 'pioche épuisée'}</span></h3>
       <div class="derushage-cartes">
         <div class="pioche-colonne">
