@@ -1,8 +1,20 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.67';
-export const BUILD_DATE = '2026-08-27 00:05';
+export const VERSION = '1.68';
+export const BUILD_DATE = '2026-08-27 02:10';
 
 export const CHANGELOG = [
+  {
+    v: '1.68',
+    date: '27/08/2026',
+    items: [
+      "<b>Le jeu en ligne, chacun sur son appareil.</b> Un bouton sur l'accueil ouvre un <b>hall</b> : on ouvre un salon, les autres le voient apparaître et viennent s'y asseoir, chacun choisit sa couleur, et l'hôte lance. La table est ensuite la même qu'en solo — on ne joue que son tour, un bandeau dit à qui c'est et où en est la liaison.",
+      "<b>On ne synchronise jamais l'état de la partie, seulement des actions numérotées.</b> Le moteur d'EDIT étant déterministe — vérifié : neuf parties rejouées deux fois donnent le même état au bit près —, une partie n'est qu'une graine et une liste d'actions que chaque appareil rejoue de son côté. Une partie complète pèse <b>1,2 Ko</b>. C'est ce qui rend la reconnexion gratuite : on redemande le journal et on rejoue.",
+      "<b>Un rafraîchissement ne fait pas perdre sa place.</b> On se resignale au salon qu'on occupait, l'hôte renvoie le journal, et l'on reprend exactement où l'on en était — même siège, mêmes cartes, et l'on rejoue derrière. Éprouvé : après rechargement en pleine partie, les deux appareils portent le même journal et la même partie.",
+      "<b>Le matériel de l'hôte fait foi</b> — comme la boîte appartient à qui l'apporte. Dans EDIT, les retouches de cartes ne sont pas dans la configuration mais dans une couche à part : deux appareils réglés différemment ne joueraient pas le même paquet, et j'ai mesuré que le mélange et les cartes elles-mêmes en changent. Le matériel voyage donc avec le salon.",
+      "<b>Sans clés, ça marche quand même</b> : les salons circulent alors entre les <b>onglets d'un même navigateur</b>. C'est ce mode qui a servi à tout éprouver — une partie entière jouée à deux onglets, 38 actions, empreintes identiques à chaque coup et aucun désaccord. Il suffira d'une adresse et d'une clé publique dans <code>js/net/config.js</code> pour que les salons franchissent la porte.",
+      "<b>À savoir</b> : rien n'est stocké nulle part. Tout le monde ferme, le salon disparaît. Et ce modèle repose sur la <b>confiance entre participants</b> — les canaux sont devinables et la clé est publique. Parfait entre gens qui se connaissent, à ne pas confondre avec un classement.",
+    ],
+  },
   {
     v: '1.67',
     date: '27/08/2026',

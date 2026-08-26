@@ -2,28 +2,33 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.67';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.68';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.67';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.67';
-import { elIcon, numIcon } from './icons.js?v=1.67';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.67';
+} from './data.js?v=1.68';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.68';
+import { elIcon, numIcon } from './icons.js?v=1.68';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.68';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.67';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.67';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.67';
-import { releve, voler, stopperVols } from './anim.js?v=1.67';
-import { campagne } from './lab.js?v=1.67';
-import { archiveCartes } from './export-pdf.js?v=1.67';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.67';
+} from './engine.js?v=1.68';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.68';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.68';
+import { releve, voler, stopperVols } from './anim.js?v=1.68';
+import { campagne } from './lab.js?v=1.68';
+import { archiveCartes } from './export-pdf.js?v=1.68';
+import { Salon } from './net/salon.js?v=1.68';
+import { TransportLocal } from './net/local.js?v=1.68';
+import { TransportSupabase } from './net/supabase.js?v=1.68';
+import { enLigneDisponible } from './net/config.js?v=1.68';
+import { coupNu } from './net/protocole.js?v=1.68';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.68';
 
 const app = document.getElementById('app');
 
@@ -56,6 +61,10 @@ const store = {
   // Le banc affiché : un seul à la fois, les autres en onglets. null = le
   // sien. Seul un clic d'onglet en change — jamais le tour d'un adversaire.
   bancVu: null,
+  // Le salon en ligne, quand il y en a un. Sa partie remplace alors
+  // `store.partie` : elle n'est pas jouée, elle est **rejouée** depuis le
+  // journal des actions.
+  enLigne: null,
 };
 
 // Les parties enregistrées avant la palette pastel gardaient d'anciennes
@@ -106,7 +115,11 @@ function normaliserMateriel() {
  * jeu dans l'éditeur ne retourne pas les cartes déjà sur la table.
  */
 function appliquerJeuActif() {
-  const src = store.partie && !store.partie.finie ? store.partie.cfg : store.cfg;
+  // En ligne, c'est le matériel de l'HÔTE qui fait foi : il voyage avec le
+  // salon. Deux appareils réglés différemment ne joueraient pas le même
+  // paquet — mesuré, le mélange et les cartes elles-mêmes changent.
+  const enl = store.enLigne && store.enLigne.salon && store.enLigne.salon.cfg;
+  const src = enl || (store.partie && !store.partie.finie ? store.partie.cfg : store.cfg);
   const modifie = src.materielActif === 'MODIFIE';
   appliquerMateriel(modifie ? src.materiel : null, src.cartesDesactivees);
 }
@@ -215,6 +228,7 @@ function vueAccueil() {
 
         ${bandeauMateriel()}
         <button class="cta" id="go">Commencer la partie</button>
+        <button class="pill large" data-go="#/enligne">🌐 Jouer en ligne, chacun sur son appareil</button>
       </div>
 
       <div>
@@ -458,14 +472,20 @@ function colonnesJoueur(st, sc, vu) {
  * déclenche pas deux.
  */
 function vuePartie(enchainer = true) {
-  const st = store.partie;
-  if (!st) { location.hash = '#/'; return; }
+  // Arriver ici sans partie locale, c'est revenir d'un rafraîchissement en
+  // pleine partie en ligne : on réveille le salon, qui redemandera le journal.
+  if (!store.partie && !store.enLigne) salonCourant();
+  const enl = store.enLigne && store.enLigne.partie ? store.enLigne : null;
+  const st = enl ? enl.partie : store.partie;
+  if (!st) { location.hash = enl ? '#/enligne' : '#/'; return; }
   appliquerJeuActif();
   if (st.finie) return vueFin();
 
   const p = st.courant;
   const j = st.joueurs[p];
-  const humaine = j.type === 'HUMAIN';
+  // En ligne, on ne joue que son tour : les autres sièges sont tenus par
+  // d'autres appareils, et la table se regarde en attendant.
+  const humaine = j.type === 'HUMAIN' && (!enl || enl.aMoiDeJouer);
   const sc = scores(st);
   // Le banc lu dans les colonnes : celui qui joue, ou celui qu'on a épinglé.
   const vu = store.joueurVu !== null && st.joueurs[store.joueurVu] ? store.joueurVu : p;
@@ -488,6 +508,7 @@ function vuePartie(enchainer = true) {
 
   html(`${topbar('#/partie')}
   <div class="wrap large">
+    ${enl ? bandeauEnLigne(enl, st) : ''}
     <div class="table-jeu">
       <div class="zone-gauche">
         ${/* Le bandeau du tour a disparu : la phase et le nom de qui joue se
@@ -560,7 +581,8 @@ function vuePartie(enchainer = true) {
   // cela, la main revient à l'humaine le temps d'une image, sous une carte
   // encore en l'air.
   if (store.vols.length) document.body.classList.add('coup-en-vol');
-  if (enchainer) derouler(st).catch(() => { document.body.classList.remove('ia-joue', 'coup-en-vol'); });
+  // Le fil des coups d'IA n'a pas cours en ligne : chaque siège est un appareil.
+  if (enchainer && !enl) derouler(st).catch(() => { document.body.classList.remove('ia-joue', 'coup-en-vol'); });
 }
 
 // --- Le banc ---------------------------------------------------------------
@@ -879,6 +901,15 @@ function brancherFentes(st, racine = app) {
   });
   racine.querySelectorAll('[data-coup]').forEach((el) => el.addEventListener('click', async () => {
     const partiel = JSON.parse(decodeURIComponent(el.dataset.coup));
+    // En ligne, un coup n'est pas joué : il est **noté**. Le journal l'applique
+    // chez soi et l'émet aux autres, qui le rejoueront à l'identique.
+    if (store.enLigne && store.enLigne.partie) {
+      const v = store.choixRiviere;
+      if (st.phase === 'DERUSHAGE' && v) store.enLigne.jouer({ k: 'derush', o: { source: v.o.source, index: v.o.index } });
+      store.choixRiviere = null; store.formatChoisi = null;
+      store.enLigne.jouer({ k: 'poser', c: partiel });
+      return;
+    }
     store.undo = JSON.stringify(st);
     // Depuis la rivière, le tour se joue d'un seul geste : la carte quitte le
     // chutier et se pose dans le banc. Depuis la main — ordre imprimé —, elle
@@ -1242,6 +1273,11 @@ function brancherPartie(st, humaine) {
   const q = (s) => app.querySelector(s);
 
   // Les onglets de banc : un clic épingle le banc choisi jusqu'au tour suivant.
+  const partir = app.querySelector('#ligne-partir');
+  if (partir) partir.addEventListener('click', () => {
+    if (store.enLigne) store.enLigne.quitter();
+    location.hash = '#/enligne';
+  });
   app.querySelectorAll('[data-onglet-banc]').forEach((b) => b.addEventListener('click', () => {
     store.bancVu = +b.dataset.ongletBanc;
     vuePartie(false);
@@ -1252,6 +1288,7 @@ function brancherPartie(st, humaine) {
   if (humaine) {
     app.querySelectorAll('[data-depart]').forEach((el) => el.addEventListener('click', () => {
       const k = +el.dataset.depart;
+      if (store.enLigne && store.enLigne.partie) { store.enLigne.jouer({ k: 'depart', i: k }); return; }
       store.undo = JSON.stringify(st);
       poserDepartAVue(st, st.courant, k, choixDepart(st, st.courant)[k]);
       apresCoup(st, avancer(st));
@@ -1273,6 +1310,10 @@ function brancherPartie(st, humaine) {
     app.querySelectorAll('[data-derush]').forEach((el) => el.addEventListener('click', async () => {
       if (el.querySelector('.moitie[data-format]')) return;
       const choix = JSON.parse(decodeURIComponent(el.dataset.derush));
+      if (store.enLigne && store.enLigne.partie) {
+        store.enLigne.jouer({ k: 'derush', o: { source: choix.source, index: choix.index } });
+        return;
+      }
       store.undo = JSON.stringify(st);
       apresCoup(st, await jouerDerushage(st, st.courant, choix));
     }));
@@ -1283,6 +1324,11 @@ function brancherPartie(st, humaine) {
     if (prendre) prendre.addEventListener('click', async () => {
       const v = store.choixRiviere;
       if (!v) return;
+      if (store.enLigne && store.enLigne.partie) {
+        store.choixRiviere = null;
+        store.enLigne.jouer({ k: 'derush', o: { source: v.o.source, index: v.o.index } });
+        return;
+      }
       store.undo = JSON.stringify(st);
       apresCoup(st, await jouerDerushage(st, st.courant, v.o));
     });
@@ -1295,6 +1341,7 @@ function brancherPartie(st, humaine) {
       const carte = [...st.chutierPL, ...st.chutierPMGP, st.piochePMGP[0], ...st.mains[st.courant]]
         .find((c) => c && c.id === el.dataset.retourner);
       if (!carte) return;
+      if (store.enLigne && store.enLigne.partie) { store.enLigne.jouer({ k: 'retourner', id: carte.id }); return; }
       retourner(st, carte);
       const boite = el.closest('.carte-retournable');
       const enveloppe = boite && boite.querySelector('[data-derush], #choix-carte');
@@ -1870,7 +1917,9 @@ function statsPartie(st, cl) {
 }
 
 function vueFin() {
-  const st = store.partie;
+  // En ligne, la partie qui s'achève est celle du journal, pas la locale.
+  const st = (store.enLigne && store.enLigne.partie) || store.partie;
+  if (!st) { location.hash = store.enLigne ? '#/enligne' : '#/'; return; }
   const cl = classement(st);
   html(`${topbar('#/partie')}
   <div class="wrap large">
@@ -4228,12 +4277,215 @@ function vueVersions() {
 }
 
 // ===========================================================================
+// LE JEU EN LIGNE — le hall, le salon
+// ===========================================================================
+// La partie, elle, se joue dans `vuePartie` : c'est la même table, seulement
+// les coups y passent par le journal au lieu d'être joués sur place.
+
+/**
+ * Le salon, créé à la demande. Le transport hébergé n'est choisi que si les
+ * clés sont là ; sinon on se rabat sur les onglets du même navigateur, ce qui
+ * marche parfaitement pour éprouver le jeu à deux sur un seul poste.
+ */
+function salonCourant() {
+  if (!store.enLigne) {
+    const transport = enLigneDisponible() ? new TransportSupabase() : new TransportLocal();
+    store.enLigne = new Salon(transport, () => {
+      // Une partie lancée quitte le hall pour la table.
+      if (store.enLigne && store.enLigne.partie && location.hash !== '#/partie') {
+        location.hash = '#/partie';
+        return;
+      }
+      if (location.hash === '#/partie') vuePartie(false);
+      else if (location.hash === '#/enligne') vueEnLigne();
+    });
+    store.enLigne.ecouterHall();
+    // Lecture seule, pour l'inspection depuis la console — et pour les essais
+    // à deux onglets, où l'on veut voir ce que chaque appareil croit savoir.
+    window.editSalon = store.enLigne;
+    // Un rafraîchissement ne doit pas faire perdre sa place : on se resignale
+    // au salon qu'on occupait, et l'on rejoue le journal qu'on nous renvoie.
+    store.enLigne.reprendre();
+  }
+  return store.enLigne;
+}
+
+/**
+ * Le bandeau du jeu en ligne : à qui c'est, et où en est la liaison. Une
+ * application temps réel muette *semble* en panne — mieux vaut le dire.
+ */
+function bandeauEnLigne(enl, st) {
+  const [cls, txt] = JETON_LIAISON[enl.liaison] || JETON_LIAISON.ok;
+  const j = st.joueurs[st.courant];
+  const aMoi = enl.aMoiDeJouer;
+  return `<div class="bandeau-ligne">
+    <span class="jeton-liaison ${enLigneDisponible() ? cls : 'liaison-locale'}">${
+      enLigneDisponible() ? txt : 'entre onglets'}</span>
+    <b class="tour-ligne ${aMoi ? 'a-moi' : ''}" style="--enc:${encreDe(j.couleur)}">${
+      aMoi ? 'À vous de jouer' : `Au tour de ${j.nom}`}</b>
+    <span class="aide">${enl.salon.nom} · vous êtes ${enl.moi.nom || 'sans nom'}</span>
+    <button class="pill" id="ligne-partir">Quitter la partie</button>
+  </div>`;
+}
+
+const JETON_LIAISON = {
+  connexion: ['liaison-attente', 'connexion…'],
+  ok: ['liaison-ok', 'en ligne'],
+  erreur: ['liaison-ko', 'liaison interrompue'],
+};
+
+function vueEnLigne() {
+  const s = salonCourant();
+  if (s.partie) { location.hash = '#/partie'; return; }
+  const [cls, txt] = JETON_LIAISON[s.liaison] || JETON_LIAISON.ok;
+  const jeton = enLigneDisponible()
+    ? `<span class="jeton-liaison ${cls}">${txt}</span>`
+    : '<span class="jeton-liaison liaison-locale" title="Aucune clé Supabase : les salons ne sortent pas de ce navigateur">entre onglets</span>';
+
+  html(`${topbar('#/enligne')}
+  <div class="wrap">
+    <div class="entete-ligne">
+      <h1>${s.salon ? s.salon.nom : 'Parties en ligne'}</h1>
+      ${jeton}
+      <button class="pill" id="ligne-retour">${s.salon ? '← Quitter le salon' : '← Retour'}</button>
+    </div>
+    ${s.salon ? vueSalon(s) : vueHall(s)}
+  </div>
+  ${pied()}`);
+
+  app.querySelector('#ligne-retour').addEventListener('click', () => {
+    if (s.salon) { s.quitter(); vueEnLigne(); } else { location.hash = '#/'; }
+  });
+  if (s.salon) brancherSalon(s); else brancherHall(s);
+}
+
+// ------------------------------------------------------------------- le hall
+
+function vueHall(s) {
+  const n = s.liste.length;
+  return `
+  <div class="panneau">
+    <label class="ch-lg" for="ligne-nom">Votre nom</label>
+    <input type="text" id="ligne-nom" maxlength="20" value="${(s.moi.nom || '').replace(/"/g, '&quot;')}"
+      placeholder="Comment les autres vous verront">
+    <div style="margin-top:14px"><button class="cta" id="ligne-ouvrir">Démarrer une partie en ligne</button></div>
+    <p class="aide">Vous ouvrez un salon ; les autres le voient apparaître dans la liste ci-dessous et
+    viennent s’y asseoir.</p>
+  </div>
+
+  <div class="panneau">
+    <h2>Rejoindre un salon (${n})</h2>
+    ${n ? `<div class="liste-salons">${s.liste.map((x) => `
+      <div class="salon-ligne">
+        <b>${x.nom}</b>
+        <span class="aide">${x.joueurs} joueur${x.joueurs > 1 ? 's' : ''}</span>
+        <button class="pill" data-rejoindre="${x.id}">S’asseoir</button>
+      </div>`).join('')}</div>`
+    : `<p class="aide">Aucun salon ouvert pour l’instant. Ouvrez-en un — ou attendez qu’une joueuse s’y colle.</p>`}
+  </div>
+
+  ${enLigneDisponible() ? '' : `<div class="encart attention">
+    <b>Le jeu entre appareils n’est pas encore branché.</b> En attendant, les salons circulent entre les
+    <b>onglets de ce navigateur</b> : ouvrez une seconde fenêtre sur la même page pour jouer à deux et
+    tout essayer. Il suffira d’une adresse et d’une clé publique dans <code>js/net/config.js</code> pour
+    que les salons franchissent la porte.</div>`}`;
+}
+
+function brancherHall(s) {
+  const champ = app.querySelector('#ligne-nom');
+  const nom = () => (champ.value || '').trim() || 'Sans nom';
+  champ.addEventListener('change', () => s.nommer(nom()));
+  app.querySelector('#ligne-ouvrir').addEventListener('click', async () => {
+    s.nommer(nom());
+    await s.ouvrir(cloneConfig(store.cfg));
+    vueEnLigne();
+  });
+  app.querySelectorAll('[data-rejoindre]').forEach((b) => b.addEventListener('click', async () => {
+    s.nommer(nom());
+    const r = s.liste.find((x) => x.id === b.dataset.rejoindre);
+    if (r) { await s.rejoindre(r); vueEnLigne(); }
+  }));
+}
+
+// ------------------------------------------------------------------ le salon
+
+function vueSalon(s) {
+  const sal = s.salon;
+  const hote = s.suisHote;
+  const moi = sal.membres.find((m) => m.id === s.moi.id);
+  const prises = new Set(sal.membres.filter((m) => m.id !== s.moi.id && m.couleur).map((m) => m.couleur));
+  const assis = sal.membres.filter((m) => m.present && m.couleur).length;
+  const mode = sal.cfg ? modeCourant(sal.cfg) : null;
+
+  return `<div class="grid2">
+    <div>
+      <div class="panneau">
+        <h2>Joueuses (${sal.membres.filter((m) => m.present).length})</h2>
+        <div class="liste-membres">${sal.membres.filter((m) => m.present).map((m) => `
+          <div class="membre ${m.id === s.moi.id ? 'moi' : ''}">
+            <i style="background:${m.couleur || '#e7e3f0'}"></i>
+            <b>${m.nom || 'Sans nom'}</b>
+            ${m.id === sal.hote ? '<span class="pill mini">hôte</span>' : ''}
+            ${m.id === s.moi.id ? '<span class="pill mini">vous</span>' : ''}
+            <span class="aide">${m.couleur ? nomCouleur(m.couleur) : 'sans couleur'}</span>
+          </div>`).join('')}</div>
+
+        <div class="ch-lg" style="margin-top:14px">Votre couleur</div>
+        <div class="puces">${PALETTE_JOUEURS.map((c) => `
+          <div class="puce ${moi && moi.couleur === c.clair ? 'on' : ''} ${prises.has(c.clair) ? 'prise' : ''}"
+            style="background:${c.clair}" data-couleur-ligne="${c.clair}" title="${prises.has(c.clair) ? 'déjà prise' : c.nom}"></div>`).join('')}
+        </div>
+
+        ${hote ? `<button class="cta" id="ligne-lancer" ${assis < 2 ? 'disabled' : ''}
+            style="margin-top:16px">Commencer la partie</button>
+          <p class="aide">${assis < 2 ? 'Il faut au moins deux joueuses ayant choisi une couleur.'
+            : `${assis} joueuses prêtes — c’est vous qui lancez.`}</p>`
+        : `<p class="aide" style="margin-top:16px">${moi && moi.couleur
+            ? 'Vous êtes assise. L’hôte lance la partie quand tout le monde est prêt.'
+            : 'Choisissez une couleur pour prendre place.'}</p>`}
+      </div>
+    </div>
+
+    <div>
+      <div class="panneau">
+        <h2>Réglages de la partie</h2>
+        <p class="aide">${hote ? 'Ce sont vos réglages et votre matériel qui partent en partie — comme la boîte appartient à qui l’apporte. Réglez-les avant de lancer, dans Variables et Matériel.'
+          : 'Les réglages et le matériel sont ceux de l’hôte.'}</p>
+        ${sal.cfg ? `<div class="chips">
+          <span class="chip on">${mode ? mode.label : ''}</span>
+          ${sal.cfg.sansPlanDepart ? '<span class="chip on">Pas de Plans de départ</span>' : ''}
+          <span class="chip on">${sal.cfg.tours} plans</span>
+          <span class="chip on">Matériel ${sal.cfg.materielActif === 'MODIFIE' ? 'modifié' : 'imprimé'}</span>
+        </div>` : '<p class="aide">En attente de l’hôte…</p>'}
+      </div>
+    </div>
+  </div>`;
+}
+
+const nomCouleur = (c) => {
+  const p = PALETTE_JOUEURS.find((x) => x.clair === c);
+  return p ? p.nom : '';
+};
+
+function brancherSalon(s) {
+  app.querySelectorAll('[data-couleur-ligne]').forEach((el) => el.addEventListener('click', () => {
+    if (el.classList.contains('prise')) return;
+    const moi = s.salon.membres.find((m) => m.id === s.moi.id);
+    s.choisirCouleur(moi && moi.couleur === el.dataset.couleurLigne ? null : el.dataset.couleurLigne);
+    vueEnLigne();
+  }));
+  const lancer = app.querySelector('#ligne-lancer');
+  if (lancer) lancer.addEventListener('click', () => { s.lancer(); });
+}
+
+// ===========================================================================
 // Routage
 // ===========================================================================
 
 const ROUTES = {
   '#/': vueAccueil,
   '#/partie': vuePartie,
+  '#/enligne': vueEnLigne,
   '#/materiel': vueMateriel,
   '#/regles': vueRegles,
   '#/variables': vueVariables,

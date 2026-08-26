@@ -1470,3 +1470,55 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 }
 .portee-choix .pp:hover { border-color: var(--violet-clair); color: var(--violet); }
 .portee-choix .pp.on { background: var(--violet); border-color: var(--violet); color: #fff; }
+
+/* ---------------------------------------------------------------------------
+   LE JEU EN LIGNE — le hall et le salon
+   --------------------------------------------------------------------------- */
+.pill.large { display: block; width: 100%; margin-top: 10px; padding: 12px; font-size: .95rem; }
+
+.entete-ligne { display: flex; align-items: center; gap: 14px; margin: 10px 0 20px; }
+.entete-ligne h1 { font-size: 1.9rem; margin: 0; flex: 0 0 auto; }
+.entete-ligne .pill { margin-left: auto; }
+
+/* L'état de la liaison : une application temps réel muette *semble* en panne. */
+.jeton-liaison {
+  font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  padding: 4px 11px; border-radius: 999px;
+}
+.liaison-attente { background: var(--violet-pale); color: var(--violet); }
+.liaison-ok { background: #dcf5e3; color: #1f7a3d; }
+.liaison-ko { background: #fde2e0; color: #b3261e; }
+.liaison-locale { background: var(--gris-clair); color: var(--gris); }
+
+#ligne-nom {
+  width: 100%; max-width: 340px; font: inherit; padding: 9px 12px; border-radius: 10px;
+  border: 1px solid var(--gris-clair); background: var(--violet-pale); margin-top: 6px;
+}
+
+.liste-salons { display: flex; flex-direction: column; gap: 8px; }
+.salon-ligne {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  border: 1px solid var(--gris-clair); border-radius: 12px; background: #fff;
+}
+.salon-ligne .pill { margin-left: auto; }
+
+.liste-membres { display: flex; flex-direction: column; gap: 6px; }
+.membre {
+  display: flex; align-items: center; gap: 10px; padding: 9px 13px;
+  border: 1px solid var(--gris-clair); border-radius: 12px; background: #fff;
+}
+.membre.moi { border-color: var(--violet-clair); box-shadow: inset 0 0 0 1px var(--violet-clair); }
+.membre i { width: 13px; height: 13px; border-radius: 999px; flex: 0 0 auto; }
+.membre .aide { margin-left: auto; }
+/* Une couleur déjà prise se voit prise : on ne la propose pas deux fois. */
+.puce.prise { opacity: .3; cursor: not-allowed; }
+
+/* Le bandeau du jeu en ligne : à qui c'est, et où en est la liaison. */
+.bandeau-ligne {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 9px 16px; margin-bottom: 12px; border-radius: 14px;
+  background: #fff; border: 1px solid var(--gris-clair); box-shadow: var(--ombre);
+}
+.bandeau-ligne .tour-ligne { color: var(--enc, var(--encre)); font-size: .95rem; }
+.bandeau-ligne .tour-ligne.a-moi::before { content: '▶ '; }
+.bandeau-ligne .aide { margin-left: auto; }
