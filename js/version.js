@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.64';
-export const BUILD_DATE = '2026-08-26 21:40';
+export const VERSION = '1.65';
+export const BUILD_DATE = '2026-08-26 22:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.65',
+    date: '26/08/2026',
+    items: [
+      "<b>Le minutage est enfin centré, et il le restera.</b> Ce n'était pas une question de quelques pixels à retrancher : une ligne de texte ne se remplit pas de la même façon d'une fonte à l'autre — l'une réserve beaucoup de place sous la ligne de base, l'autre monte plus haut. Le CSS ne sait centrer que la <b>ligne</b>, jamais l'<b>encre</b> : les chiffres penchaient donc vers le haut ou vers le bas selon la fonte du système, et sortaient de leur cadre là où la ligne de base tombe bas. L'application mesure donc elle-même, au démarrage, et sans rien supposer des métriques : <b>où le navigateur pose la ligne de base</b> — une cale vide alignée dessus le dit exactement — et <b>où est l'encre autour d'elle</b>, que le canevas donne sur les glyphes eux-mêmes. L'écart entre le centre de l'encre et le centre de la boîte devient un rembourrage, plus un léger biais vers le haut : des chiffres exactement centrés se lisent un cheveu trop bas, l'œil plaçant leur assise sur la ligne de base. Ils retombent au milieu, quelle que soit la fonte installée.",
+      "<b>Les icônes d'un plan perdent un cinquième de leur taille</b>, centrées dans leur bande : elles pesaient trop lourd à côté du minutage et du bandeau.",
+      "<b>La bande claire s'arrête après la dernière icône.</b> Elle courait jusqu'au bord opposé de la carte, laissant une longue plage vide qui n'annonçait rien. Elle n'entoure plus que les icônes ; la bande, elle, garde sa hauteur — c'est elle qui aligne le bas des deux moitiés d'une carte.",
+      "<b>Les cartouches des bandeaux sont un cinquième plus grands</b> — ORDRE, SÉQUENCE, PLAN LARGE, PLAN DE DÉPART, PLAN, RACCORD. Ils se lisaient bien plus petit que les icônes qu'ils côtoient.",
+    ],
+  },
   {
     v: '1.64',
     date: '26/08/2026',

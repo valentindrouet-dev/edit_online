@@ -59,9 +59,14 @@ export async function rasterCarte(html, large, css) {
   // Le gabarit d'écran fait 300 px de large pour 15 px de corps : on garde le
   // rapport, et tout — icônes, bandeaux, libellés — grandit avec.
   const haut = Math.round(large * 227 / 317);
+  // Le calage du minutage est mesuré sur le document ; la carte, elle, part
+  // dans un SVG isolé où `:root` n'est plus le même : on l'emporte avec elle.
+  const rac = getComputedStyle(document.documentElement);
+  const cale = `--tc-haut:${rac.getPropertyValue('--tc-haut') || '0'};`
+    + `--tc-bas:${rac.getPropertyValue('--tc-bas') || '.2em'};`;
   const hote = document.createElement('div');
   hote.className = 'carte-export';
-  hote.setAttribute('style', `width:${large}px;height:${haut}px;overflow:hidden;`
+  hote.setAttribute('style', `${cale}width:${large}px;height:${haut}px;overflow:hidden;`
     + `font-family:"Inter","Segoe UI",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;`);
   hote.innerHTML = html;
   const carte = hote.firstElementChild;

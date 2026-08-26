@@ -2,28 +2,28 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.64';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.65';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.64';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.64';
-import { elIcon, numIcon } from './icons.js?v=1.64';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.64';
+} from './data.js?v=1.65';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.65';
+import { elIcon, numIcon } from './icons.js?v=1.65';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.65';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.64';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.64';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.64';
-import { releve, voler, stopperVols } from './anim.js?v=1.64';
-import { campagne } from './lab.js?v=1.64';
-import { archiveCartes } from './export-pdf.js?v=1.64';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.64';
+} from './engine.js?v=1.65';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.65';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.65';
+import { releve, voler, stopperVols } from './anim.js?v=1.65';
+import { campagne } from './lab.js?v=1.65';
+import { archiveCartes } from './export-pdf.js?v=1.65';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.65';
 
 const app = document.getElementById('app');
 
@@ -4381,6 +4381,77 @@ async function veilleVersion() {
     }
   } catch { /* hors ligne : on retentera */ }
 }
+
+/**
+ * Centre le minutage sur son **encre**, et non sur sa ligne.
+ *
+ * Une ligne de texte n'est pas remplie de la même façon d'une fonte à l'autre :
+ * l'une réserve beaucoup de place sous la ligne de base, l'autre monte plus
+ * haut. Centrer la ligne — tout ce que le CSS sait faire — laisse donc les
+ * chiffres pencher vers le haut ou vers le bas selon la fonte du système, et
+ * ils sortaient de leur boîte noire par le bas là où la ligne de base tombe
+ * bas. Aucune règle CSS ne mesure l'encre ; on la mesure donc soi-même.
+ *
+ * Deux mesures, aucune supposition sur les métriques de la fonte :
+ *   — **où tombe la ligne de base**, lue dans le document lui-même. Une cale
+ *     vide en display:inline-block s'aligne sur la ligne de base par son bord
+ *     bas : sa position dans la boîte la donne exactement, telle que le
+ *     navigateur l'a posée, centrage compris ;
+ *   — **où est l'encre autour de cette ligne de base**, que le canevas donne
+ *     avec `actualBoundingBox`, mesuré sur les glyphes et non sur la fonte.
+ *
+ * L'écart entre le centre de l'encre et le centre de la boîte devient un
+ * rembourrage — qui décale la boîte de contenu, donc le texte centré dedans.
+ */
+export function calerMinutage() {
+  try {
+    const POLICE = '"SFMono-Regular", "Consolas", "Menlo", monospace';
+    const T = 100;   // on mesure en grand : l'arrondi au pixel pèse cent fois moins
+
+    const boite = document.createElement('div');
+    boite.setAttribute('style', `position:absolute;left:-9999px;top:0;visibility:hidden;`
+      + `display:flex;align-items:center;justify-content:center;`
+      + `font:700 ${T}px/1 ${POLICE};letter-spacing:.04em;height:1.35em;width:4em;padding:0;`);
+    // Le texte ET la cale dans un même enfant : dans un conteneur flex, chaque
+    // élément est un item à part — une cale posée directement dans la boîte
+    // serait centrée pour elle-même au lieu de suivre la ligne de base du
+    // texte, et ne mesurerait plus rien.
+    const ligne = document.createElement('span');
+    const cale = document.createElement('i');
+    cale.setAttribute('style', 'display:inline-block;width:0;height:0');
+    ligne.append('60:00', cale);
+    boite.appendChild(ligne);
+    document.body.appendChild(boite);
+    const rb = boite.getBoundingClientRect();
+    const base = cale.getBoundingClientRect().bottom - rb.top;   // la ligne de base
+    const H = rb.height;
+    boite.remove();
+    if (!(H > 0) || !Number.isFinite(base)) return;
+
+    const ctx = document.createElement('canvas').getContext('2d');
+    if (!ctx) return;
+    ctx.font = `700 ${T}px ${POLICE}`;
+    const m = ctx.measureText('60:00');
+    const a = m.actualBoundingBoxAscent, d = m.actualBoundingBoxDescent;
+    if (!Number.isFinite(a) || !Number.isFinite(d)) return;
+
+    // De combien le centre de l'encre tombe sous le centre de la boîte, en em.
+    // Plus un léger biais vers le haut : des chiffres exactement centrés dans
+    // une boîte se lisent un cheveu trop bas, l'œil plaçant leur assise sur la
+    // ligne de base et non au milieu de leur hauteur.
+    const ecart = ((base + (d - a) / 2) - H / 2) / T + 0.06;
+    // Un rembourrage de p décale le contenu centré de p / 2 : il en faut donc
+    // le double de l'écart à rattraper.
+    const r = document.documentElement.style;
+    r.setProperty('--tc-haut', `${Math.max(0, -ecart * 2).toFixed(4)}em`);
+    r.setProperty('--tc-bas', `${Math.max(0, ecart * 2).toFixed(4)}em`);
+  } catch { /* pas de canevas : on garde le centrage par défaut */ }
+}
+
+calerMinutage();
+// Les fontes du système sont là tout de suite, mais on remesure quand le
+// navigateur déclare les avoir toutes : rien ne coûte à vérifier.
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(calerMinutage);
 
 veilleVersion();
 setInterval(veilleVersion, 60 * 1000);

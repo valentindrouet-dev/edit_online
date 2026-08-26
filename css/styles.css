@@ -243,8 +243,15 @@ button { font-family: inherit; }
    quelle que soit la part laissée à l'information. */
 .illus     { flex: 0 0 62.5%; position: relative; background-size: cover;
              background-position: left top; background-repeat: no-repeat; }
-.pastilles { flex: 0 0 14%;   display: flex; align-items: center; gap: .1em; padding: 0 .2em;
-             background: rgba(255,255,255,.62); overflow: hidden; }
+/* La languette des icônes : la bande garde sa hauteur — c'est elle qui aligne
+   le bas des deux moitiés d'une carte —, mais elle ne se peint plus. Le fond
+   clair est porté par `.pastilles-fond`, qui n'entoure que les icônes : il
+   s'arrête donc après la dernière, au lieu de courir jusqu'au bord opposé. */
+.pastilles { flex: 0 0 14%;   display: flex; align-items: center; overflow: hidden; }
+.pastilles-fond {
+  display: flex; align-items: center; gap: .1em; padding: 0 .2em; height: 100%;
+  max-width: 100%; min-width: 0; background: rgba(255,255,255,.62);
+}
 .bandeau   { flex: 0 0 18%;   display: flex; align-items: center; justify-content: center;
              gap: .24em; overflow: hidden; background: var(--fmt-gp); }
 /* Deux pouvoirs sur un même bandeau : côte à côte, séparés d'un trait, chacun
@@ -279,8 +286,9 @@ body.sans-illus .illus {
   background-image: none !important;
   flex: 0 0 36%; background-color: transparent;
 }
-body.sans-illus .pastilles {
-  flex: 1 1 auto; background: transparent; padding: 0 .3em .25em; gap: .18em;
+body.sans-illus .pastilles { flex: 1 1 auto; justify-content: center; align-items: stretch; }
+body.sans-illus .pastilles-fond {
+  background: transparent; padding: 0 .3em .25em; gap: .18em;
   justify-content: center; align-items: flex-start;
 }
 body.sans-illus .pastilles .pastille { height: auto; width: auto; max-height: 100%;
@@ -298,10 +306,10 @@ body.sans-illus .moitie.f-GP .bandeau .fleche-pos { font-size: 1.35em; }
 body.sans-illus .moitie .tcode { font-size: 1.84em; top: .16em; left: .15em; }
 /* Un Gros Plan n'a qu'un tiers de largeur : il garde des icônes un peu plus
    sages, sinon deux suffisent à saturer la bande. */
-body.sans-illus .moitie.f-GP .pastilles { gap: .12em; }
+body.sans-illus .moitie.f-GP .pastilles-fond { gap: .12em; }
 /* et son minutage doublé déborderait : il se cale sur la largeur disponible. */
 body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
-.moitie.transition .pastilles { background: rgba(255,255,255,.14); }
+.moitie.transition .pastilles-fond { background: rgba(255,255,255,.14); }
 
 /* Le minutage, calé sur la boîte imprimée qu'il remplace.
    `line-height: 1` n'est pas un détail : sans elle, la hauteur de ligne vaut
@@ -322,12 +330,12 @@ body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
 .moitie .tcode {
   position: absolute; top: .302em; left: .288em; width: 3.89em; height: 1.35em;
   display: flex; align-items: center; justify-content: center;
-  /* Le rembourrage du bas remonte les chiffres : le centrage du flex se fait
-     sur la boîte de contenu, que cette marge raccourcit par le bas. Les fontes
-     qui posent leur ligne de base bas — celles où les chiffres sortaient de la
-     boîte — sont ainsi ramenées dedans, et celles qui la posent haut gardent
-     de l'air au-dessus. */
-  padding-bottom: .2em;
+  /* Le rembourrage décale la boîte de contenu, donc le texte centré dedans.
+     Sa valeur est **mesurée** au démarrage — voir calerMinutage() : l'écart
+     entre le centre de la ligne, que le CSS centre, et le centre de l'encre,
+     qu'on veut centrer. Sans mesure, la valeur de repli remonte un peu les
+     chiffres, ce dont la plupart des fontes ont besoin. */
+  padding-top: var(--tc-haut, 0); padding-bottom: var(--tc-bas, .2em);
   background: #0d0d10; color: #ff3b30; font-weight: 700; font-size: .92em;
   line-height: 1; border-radius: .3em; letter-spacing: .04em;
   font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
@@ -398,10 +406,12 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .pastille-num { display: block; width: 1.45em; height: 1.45em; flex: 0 0 auto; }
 /* Les pastilles se partagent la largeur disponible : au-delà de deux ou trois,
    elles rétrécissent au lieu de déborder — décisif sur un Gros Plan. */
+/* Les icônes ne remplissent plus toute la hauteur de la bande : un cinquième
+   de moins, centrées dedans — elles pesaient trop lourd à côté du minutage et
+   du bandeau. Elles se laissent rétrécir plutôt que déborder : au-delà de deux
+   ou trois, décisif sur un Gros Plan. */
 .pastilles .pastille {
-  height: 100%; width: auto; flex: 0 1 auto; min-width: 0;
-  max-width: calc((100% - (var(--n, 1) - 1) * .1em) / var(--n, 1));
-  object-fit: contain;
+  height: 80%; width: auto; flex: 0 1 auto; min-width: 0; object-fit: contain;
 }
 /* Les icônes du bandeau se laissent rétrécir plutôt que déborder : sur un Gros
    Plan, un bandeau de couple demande trois pastilles dans un tiers de carte. */
@@ -420,11 +430,9 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    Le bandeau de pouvoir, lui, se peint toujours : c'est la place du pouvoir,
    et on doit la voir — vide sur un plan qui n'en a pas, ce qui se lit comme
    une information et non comme un trou.
-   La classe ne s'appelle plus `vide` : c'est aussi le nom de la classe
-   générique des blocs d'état vide, dont le rembourrage de 40 px devenait la
-   hauteur minimale de la languette — 80 px au lieu de 22 — et poussait le
-   bandeau de pouvoir hors de la carte, où le débordement le masquait. */
-.moitie .pastilles.sans-icone { background: transparent; }
+   Depuis que le fond clair est porté par `.pastilles-fond`, qui n'existe que
+   s'il y a des icônes, il n'y a plus rien à éteindre : un plan sans icône ne
+   rend tout simplement pas de fond. */
 /* Le ×, le « si » et les flèches de portée se lisent à la taille des icônes :
    ils font partie de la formule, pas de la ponctuation. Un Gros Plan n'a qu'un
    tiers de carte, il les prend un cran plus bas. */
@@ -434,8 +442,11 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .moitie.f-GP .bandeau { gap: .12em; }
 .moitie.f-GP .bandeau .x, .moitie.f-GP .bandeau .si { font-size: 1.15em; }
 .moitie.f-GP .bandeau .fleche-pos { font-size: 1.05em; }
+/* Les cartouches d'un bandeau — ORDRE, SÉQUENCE, PLAN LARGE, PLAN… — se
+   lisaient bien plus petit que les icônes qu'ils côtoient. Un cinquième de
+   plus les met à leur niveau. */
 .bandeau .tag {
-  font-size: .52em; font-weight: 800; letter-spacing: .02em; padding: .25em .45em;
+  font-size: .62em; font-weight: 800; letter-spacing: .02em; padding: .25em .45em;
   border-radius: .3em; text-transform: uppercase; line-height: 1.08; text-align: center;
   max-width: 6.5em; overflow-wrap: anywhere;
 }
@@ -1346,7 +1357,7 @@ table.tbl th.th-tri.num { text-align: right; }
 }
 .tag.tag-chrono {
   background: #1d3a2a; color: #7ee2a8; border: 1px solid #2f6b4a;
-  font-size: .52em; font-weight: 800; padding: .2em .42em; border-radius: .22em;
+  font-size: .62em; font-weight: 800; padding: .2em .42em; border-radius: .22em;
   letter-spacing: .04em; white-space: nowrap;
 }
 /* Les bandeaux qui comptent des SÉQUENCES et non des plans. La pastille
@@ -1354,7 +1365,7 @@ table.tbl th.th-tri.num { text-align: right; }
    banc. Elle se distingue ainsi de la pastille blanche « Plan ». */
 .tag.tag-seq {
   background: #2a2140; color: #cbb6ff; border: 1px solid #5a4a8c;
-  font-size: .52em; font-weight: 800; padding: .2em .42em; border-radius: .22em;
+  font-size: .62em; font-weight: 800; padding: .2em .42em; border-radius: .22em;
   letter-spacing: .04em; white-space: nowrap;
 }
 /* La flèche qui dit de quel côté de la pile on compte les séquences. */
