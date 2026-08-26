@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.68';
-export const BUILD_DATE = '2026-08-27 02:10';
+export const VERSION = '1.69';
+export const BUILD_DATE = '2026-08-27 03:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.69',
+    date: '27/08/2026',
+    items: [
+      "<b>Les salons franchissent la porte.</b> L'adresse du projet et sa clé publique sont en place : le jeu en ligne ne circule plus seulement entre les onglets d'un même navigateur, mais <b>entre appareils</b>. Le hall affiche désormais « en ligne » là où il disait « entre onglets ». Ces deux valeurs sont publiques par conception — elles partent dans le navigateur de chaque joueuse et n'ouvrent que des canaux de diffusion ; le mot de passe de la base et la clé d'administration, eux, ne sont pas dans ce dépôt et n'y entreront pas.",
+      "<b>À vérifier de votre côté</b> : je n'ai pas pu essayer la liaison réelle depuis ici — le réseau de mon environnement refuse la sortie vers <code>supabase.co</code>. Deux appareils, un salon ouvert d'un côté, rejoint de l'autre : c'est le seul essai qui compte.",
+      "<b>L'estampillage des modules descend enfin dans les sous-dossiers.</b> Il ne parcourait que le premier niveau de <code>js/</code> : les six modules de <code>js/net/</code> s'importaient donc entre eux avec le numéro de la version précédente, et un cache pouvait resservir l'un d'eux périmé à côté du reste du site — exactement ce que l'estampillage existe pour empêcher.",
+    ],
+  },
   {
     v: '1.68',
     date: '27/08/2026',

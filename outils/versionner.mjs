@@ -33,9 +33,18 @@ if (!VERSION) throw new Error('VERSION introuvable dans js/version.js');
 // `from './x.js'` et `from './x.js?v=ancienne'` deviennent `from './x.js?v=VERSION'`.
 const RE_IMPORT = /(from\s+['"])(\.{1,2}\/[^'"?]+\.js)(\?v=[^'"]*)?(['"])/g;
 
+// Le parcours descend dans les sous-dossiers (js/net/…) : un module oublié
+// garderait l'estampille de la version précédente, et le cache pourrait le
+// resservir périmé à côté du reste du site — précisément ce qu'on évite ici.
+function* modules(dossier) {
+  for (const e of readdirSync(join(racine, dossier), { withFileTypes: true })) {
+    if (e.isDirectory()) yield* modules(`${dossier}/${e.name}`);
+    else if (e.name.endsWith('.js')) yield `${dossier}/${e.name}`;
+  }
+}
+
 let touches = 0;
-for (const f of readdirSync(join(racine, 'js')).filter((x) => x.endsWith('.js'))) {
-  const chemin = `js/${f}`;
+for (const chemin of modules('js')) {
   const avant = lire(chemin);
   const apres = avant.replace(RE_IMPORT, (_, a, url, __, z) => `${a}${url}?v=${VERSION}${z}`);
   if (apres !== avant) { ecrire(chemin, apres); touches++; }
