@@ -328,7 +328,14 @@ body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
    arête nette à quoi comparer, un écart d'un pixel ne se voit plus, et le noir
    du minutage se fond dans celui de sa boîte. */
 .moitie .tcode {
-  position: absolute; top: .302em; left: .288em; width: 3.89em; height: 1.35em;
+  /* Calé sur la boîte noire de l'illustration, mesurée dans les visuels : elle
+     part du haut de l'image — le rognage du cadre imprimé l'y amène — et
+     descend jusqu'à 44 px sur 642 de large pour un Plan Large, 43 sur 421 et
+     202 pour un Plan Moyen et un Gros Plan. Rapporté à la carte, cela fait
+     dans les trois cas 1,5 em de la police du minutage. La boîte de
+     l'application épouse donc la boîte imprimée, et les chiffres, centrés
+     dedans, tombent au centre du noir qu'on voit. */
+  position: absolute; top: 0; left: .288em; width: 3.89em; height: 1.5em;
   display: flex; align-items: center; justify-content: center;
   /* Le rembourrage décale la boîte de contenu, donc le texte centré dedans.
      Sa valeur est **mesurée** au démarrage — voir calerMinutage() : l'écart

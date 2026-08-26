@@ -1,8 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.66';
-export const BUILD_DATE = '2026-08-26 23:15';
+export const VERSION = '1.67';
+export const BUILD_DATE = '2026-08-27 00:05';
 
 export const CHANGELOG = [
+  {
+    v: '1.67',
+    date: '27/08/2026',
+    items: [
+      "<b>Le minutage tombe au centre du noir qu'on voit.</b> Depuis que l'application ne dessine plus son propre cadre, les chiffres se centraient encore dans une boîte <b>invisible</b> — la sienne — qui ne coïncidait pas avec la boîte noire de l'illustration : plus basse d'un côté, plus courte de l'autre. Le noir imprimé a donc été <b>mesuré dans les 84 visuels</b> : il part du haut de l'image et descend jusqu'à 44 pixels sur 642 de large pour un Plan Large, 43 sur 421 et sur 202 pour un Plan Moyen et un Gros Plan — soit, ramené à la carte, <b>1,5 em</b> de la police du minutage dans les trois cas. La boîte de l'application épouse maintenant cette boîte-là. Contrôlé au pixel : 53 pixels d'air au-dessus des chiffres, 52 en dessous.",
+    ],
+  },
   {
     v: '1.66',
     date: '26/08/2026',
