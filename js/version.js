@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.65';
-export const BUILD_DATE = '2026-08-26 22:30';
+export const VERSION = '1.66';
+export const BUILD_DATE = '2026-08-26 23:15';
 
 export const CHANGELOG = [
+  {
+    v: '1.66',
+    date: '26/08/2026',
+    items: [
+      "<b>Il n'y a plus qu'un seul cadre noir derrière le minutage.</b> Il y en avait deux : celui de l'<b>illustration</b>, où l'extraction repeint en noir la boîte du minutage imprimé, et un <b>second dessiné par l'application</b>, d'une autre taille et d'un autre calage. C'est lui qui semblait déborder — ce n'étaient pas les chiffres qui sortaient de leur cadre, c'était le cadre de trop qui dépassait de l'autre. L'application n'en dessine plus : elle écrit les chiffres sur le noir de l'illustration, avec un halo sombre qui les tient lisibles au cas où ce noir manquerait. Sans illustration, la boîte se redessine — il n'y a alors plus rien derrière.",
+      "<b>Un cartouche n'est plus jamais plus étroit que son mot.</b> « SÉQUENCE » sortait de sa pastille violette par la droite : les cartouches sont bornés à 6,5 em de large — de quoi faire tenir « Plan de départ » sur deux lignes au lieu d'élargir le bandeau —, mais ceux qui <b>ne se coupent pas</b> se retrouvaient bridés plus court que leur propre texte. Ceux-là ne sont plus ni bornés ni comprimés. Vérifié sur les sept sortes de cartouche : plus un pixel de débordement.",
+    ],
+  },
   {
     v: '1.65',
     date: '26/08/2026',

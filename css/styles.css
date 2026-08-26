@@ -336,9 +336,20 @@ body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
      qu'on veut centrer. Sans mesure, la valeur de repli remonte un peu les
      chiffres, ce dont la plupart des fontes ont besoin. */
   padding-top: var(--tc-haut, 0); padding-bottom: var(--tc-bas, .2em);
-  background: #0d0d10; color: #ff3b30; font-weight: 700; font-size: .92em;
-  line-height: 1; border-radius: .3em; letter-spacing: .04em;
+  color: #ff3b30; font-weight: 700; font-size: .92em;
+  line-height: 1; letter-spacing: .04em;
   font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
+  /* Aucun fond : le noir est celui de l'illustration, où l'extraction a
+     repeint la boîte du minutage imprimé. L'application en dessinait un
+     second, d'une autre taille et d'un autre calage — deux rectangles noirs
+     l'un sur l'autre, et le sien qui dépassait. Un halo sombre autour des
+     chiffres suffit à les tenir lisibles si jamais le noir manquait. */
+  background: transparent;
+  text-shadow: 0 0 .28em #05050a, 0 0 .12em #05050a, 0 1px 1px #05050a;
+}
+/* Sans illustration il n'y a plus de noir derrière : la boîte se redessine. */
+body.sans-illus .moitie .tcode {
+  background: #0d0d10; border-radius: .3em; text-shadow: none;
 }
 .moitie .tcode.bleu { color: #38bdf8; }
 
@@ -444,12 +455,21 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .moitie.f-GP .bandeau .fleche-pos { font-size: 1.05em; }
 /* Les cartouches d'un bandeau — ORDRE, SÉQUENCE, PLAN LARGE, PLAN… — se
    lisaient bien plus petit que les icônes qu'ils côtoient. Un cinquième de
-   plus les met à leur niveau. */
+   plus les met à leur niveau.
+   `max-width` borne ceux qui peuvent passer à la ligne — « Plan de départ »
+   tient alors sur deux lignes plutôt que d'élargir le bandeau. */
 .bandeau .tag {
   font-size: .62em; font-weight: 800; letter-spacing: .02em; padding: .25em .45em;
   border-radius: .3em; text-transform: uppercase; line-height: 1.08; text-align: center;
   max-width: 6.5em; overflow-wrap: anywhere;
 }
+/* Ceux qui ne se coupent pas, eux, ne doivent être ni bornés ni comprimés :
+   une largeur maximale les rendait plus étroits que leur propre texte, qui
+   débordait alors du cartouche censé l'encadrer — « SÉQUENCE » sortait de sa
+   pastille violette par la droite. */
+.bandeau .tag.tag-seq,
+.bandeau .tag.tag-chrono,
+.bandeau .tag.tag-blanc { max-width: none; flex: 0 0 auto; }
 /* Le « & » qui relie deux cadrages visés par un même bandeau. */
 .et-cadrage {
   color: #fff; font-weight: 800; font-size: .9em; line-height: 1;
