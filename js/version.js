@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.69';
-export const BUILD_DATE = '2026-08-27 03:30';
+export const VERSION = '1.70';
+export const BUILD_DATE = '2026-08-27 05:10';
 
 export const CHANGELOG = [
+  {
+    v: '1.70',
+    date: '27/08/2026',
+    items: [
+      "<b>Un banc ne porte que cinq séquences — règles v0.14.2.</b> Ce n'est pas le nombre de Plans Larges qui est borné : une ligne peut en porter plusieurs, de part et d'autre d'un Raccord. C'est le nombre de <b>lignes</b>. Une fois les cinq ouvertes, un Plan Large n'entre plus que par la <b>charnière d'un Raccord</b> — et tant qu'il n'y en a aucune, on cesse de vous en proposer au dérushage : les Plans Larges restent visibles, éteints, avec la raison écrite à côté du titre. Le compte se règle dans <b>Variables › Pose</b> ; 0 lève la limite. Éprouvé sur 120 parties à quatre IA, de 2 à 5 lignes et sans limite : le plafond est respecté au plan près, et toutes arrivent à leur fin. <b>Sur l'équilibrage, l'effet est nul</b> — 300 parties à trois IA donnent 88,2 points de moyenne avec la limite comme sans elle : les IA montent déjà 1,3 ligne en moyenne. Ce que la règle change, c'est le <b>plafond</b> : sans elle, un banc montait jusqu'à <b>7 lignes</b>.",
+      "<b>« n × SÉQUENCE avec / sans … » sait demander plusieurs plans</b> — « n points par séquence portant <b>au moins 3</b> plans Arme ». Son contraire compte les séquences qui en portent <b>moins de 3</b>. Ce sont des <b>plans</b> que l'on compte, pas des icônes : un plan à deux armes reste un plan. Le bandeau l'écrit <b>≥ 3</b> ou <b>&lt; 3</b> devant la cible ; à un seul plan — le défaut —, il ne change pas d'un pixel et se lit toujours « avec » et « sans ».",
+      "<b>Un bandeau « ◀ avant » ou « après ▶ » compte la carte qui le porte.</b> Il ne la comptait pas : « 2 × Héroïne ▶ » posé sur une carte à Héroïne ne voyait pas la sienne. Les deux autres portées — sa séquence, le montage — l'ont toujours comptée ; une carte qui annonce une icône sans la compter se lit comme une erreur. Aucune carte imprimée n'est touchée — aucune ne porte de portée « avant » ou « après » —, mais les bandeaux réglés dans l'éditeur, eux, rapportent désormais ce qu'ils annoncent.",
+    ],
+  },
   {
     v: '1.69',
     date: '27/08/2026',

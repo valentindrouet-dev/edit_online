@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.69';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.69';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.70';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.70';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -89,6 +89,15 @@ function objCoeur(obj, taille, compact) {
         : FORMATS[obj.cible] ? `<span class="tag tag-fmt" style="--c:${FORMATS[obj.cible].color}">${
           compact ? FORMATS[obj.cible].short : FORMATS[obj.cible].label}</span>`
           : elIcon(obj.cible, taille);
+      // Sans seuil, la lecture d'origine : la cible seule, barrée d'une croix
+      // pour « sans ». Dès qu'un seuil est demandé, c'est un compte de plans
+      // porteurs qui se lit — « ≥ 3 » ou « < 3 » —, et la croix disparaît :
+      // elle dirait « aucun », ce qui n'est plus ce que le bandeau demande.
+      const k = Math.max(1, obj.seuil || 1);
+      if (k > 1) {
+        return `${tagSeq(compact)}<span class="tc-seuil">${
+          obj.sens === 'SANS' ? '&lt;' : '≥'}&nbsp;${k}</span>${quoi}`;
+      }
       return `${tagSeq(compact)}${obj.sens === 'SANS'
         ? `<span class="barre">${quoi}${croixNon()}</span>` : quoi}`;
     }

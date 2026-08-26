@@ -2,33 +2,33 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.69';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.70';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.69';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.69';
-import { elIcon, numIcon } from './icons.js?v=1.69';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.69';
+} from './data.js?v=1.70';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.70';
+import { elIcon, numIcon } from './icons.js?v=1.70';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.70';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.69';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.69';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.69';
-import { releve, voler, stopperVols } from './anim.js?v=1.69';
-import { campagne } from './lab.js?v=1.69';
-import { archiveCartes } from './export-pdf.js?v=1.69';
-import { Salon } from './net/salon.js?v=1.69';
-import { TransportLocal } from './net/local.js?v=1.69';
-import { TransportSupabase } from './net/supabase.js?v=1.69';
-import { enLigneDisponible } from './net/config.js?v=1.69';
-import { coupNu } from './net/protocole.js?v=1.69';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.69';
+} from './engine.js?v=1.70';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.70';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.70';
+import { releve, voler, stopperVols } from './anim.js?v=1.70';
+import { campagne } from './lab.js?v=1.70';
+import { archiveCartes } from './export-pdf.js?v=1.70';
+import { Salon } from './net/salon.js?v=1.70';
+import { TransportLocal } from './net/local.js?v=1.70';
+import { TransportSupabase } from './net/supabase.js?v=1.70';
+import { enLigneDisponible } from './net/config.js?v=1.70';
+import { coupNu } from './net/protocole.js?v=1.70';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.70';
 
 const app = document.getElementById('app');
 
@@ -1012,7 +1012,11 @@ function zoneDerushage(st, humaine = true, apercu = false) {
   // `true` : on demande aussi ce que la joueuse voit sans pouvoir le prendre.
   // Une rivière escamotée le temps d'un tour se lirait comme une rivière vide.
   const options = optionsDerushage(st, true);
-  const bloques = options.some((o) => o.bloquee);
+  // Chaque famille dit **sa** raison : un Plan Moyen qui n'a pas de séquence où
+  // s'accrocher et un Plan Large qui n'a plus de ligne à ouvrir ne sont pas
+  // écartés pour le même motif, et ne sont pas sur la même rangée.
+  const raisonDe = (...sources) => (options.find(
+    (o) => sources.includes(o.source) && o.raison) || {}).raison || '';
   const nom = st.joueurs[st.courant].nom;
   // Les cartes du chutier portent leur rang : c'est l'ancre de la carte que la
   // pioche y renvoie quand une place se libère.
@@ -1076,12 +1080,15 @@ function zoneDerushage(st, humaine = true, apercu = false) {
   return `<div class="derushage-lignes">
     ${consigne ? `<p class="aide" id="aide-derushage">${consigne}</p>` : ''}
     ${ligne('Plans Larges', 'PL', dosPL, st.piochePL.length,
-      options.filter((o) => o.source === 'CHUTIER_PL').map(carte).join(''))}
+      options.filter((o) => o.source === 'CHUTIER_PL').map(carte).join(''),
+      // Le banc porte déjà toutes ses lignes : ces cartes se voient, mais il
+      // n'y a plus de séquence à ouvrir pour elles.
+      apercu ? '' : raisonDe('CHUTIER_PL', 'PIOCHE_PL'))}
     ${ligne('Plans Moyens / Gros Plans', 'PMGP', piochePMGP, st.piochePMGP.length,
       options.filter((o) => o.source === 'CHUTIER_PMGP').map(carte).join(''),
       // Variante « pas de Plans de départ » : ces cartes se voient mais ne se
       // prennent pas tant que le banc n'a pas de séquence où les accrocher.
-      bloques ? 'à accrocher à une séquence — ouvrez d’abord votre banc d’un Plan Large' : '')}
+      apercu ? '' : raisonDe('CHUTIER_PMGP', 'PIOCHE_PMGP'))}
   </div>`;
 }
 
@@ -2660,9 +2667,15 @@ function blocPouvoir(o, ou, rang = 1) {
         ${opt('APRES', 'en dessous de celle-ci', o.sens === 'APRES')}
       </select>`;
   } else if (kind === 'SEQ_AVEC') {
+    // Le seuil compte les **plans porteurs** d'une séquence : « au moins 3
+    // plans Arme ». Réglé sur 1 — le défaut —, on retrouve « avec » et « sans ».
     complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
-        ${opt('AVEC', 'avec', o.sens !== 'SANS')}${opt('SANS', 'sans', o.sens === 'SANS')}
+        ${opt('AVEC', 'avec au moins', o.sens !== 'SANS')}
+        ${opt('SANS', 'avec moins de', o.sens === 'SANS')}
       </select>
+      <input type="number" class="pts" min="1" max="20" value="${Math.max(1, o.seuil || 1)}"
+        data-champ-obj="${ou}"${R} data-part="seuil">
+      <span class="plus">plan${(o.seuil || 1) > 1 ? 's' : ''}</span>
       <select data-champ-obj="${ou}"${R} data-part="cible">
         ${ciblesSequence().map((c) => opt(c.id, c.label, o.cible === c.id)).join('')}</select>`;
   }
@@ -3545,7 +3558,7 @@ function construireObj(kind, actuel) {
     SEQ_VOISINES: () => OBJ.seqVoisines(n, actuel && actuel.sens === 'APRES' ? 'APRES' : 'AVANT'),
     SEQ_LONGUE:   () => OBJ.seqLongue(n),
     SEQ_AVEC:     () => OBJ.seqAvec(n, actuel && actuel.sens === 'SANS' ? 'SANS' : 'AVEC',
-      actuel && actuel.cible ? actuel.cible : e0),
+      actuel && actuel.cible ? actuel.cible : e0, actuel && actuel.seuil),
   }[kind]();
   // Changer de type ne déplace pas le bandeau : il garde sa portée.
   if (actuel && PORTEE_IDS.includes(actuel.portee)) neuf.portee = actuel.portee;
@@ -3600,8 +3613,13 @@ function majObjectif(cles, part, valeur, rang = 1) {
   else if (part === 'cible') o.cible = valeur;
   // Une séquence d'« au moins zéro plan » ne veut rien dire : le seuil des
   // bandeaux de séquence part de 1, celui des minutages part de 00:00.
-  else if (part === 'seuil') o.seuil = Math.max(o.kind === 'SEQ_TAILLE' ? 1 : 0,
-    Math.min(99, parseInt(valeur, 10) || 0));
+  else if (part === 'seuil') {
+    const plancher = o.kind === 'SEQ_TAILLE' || o.kind === 'SEQ_AVEC' ? 1 : 0;
+    o.seuil = Math.max(plancher, Math.min(99, parseInt(valeur, 10) || 0));
+    // Un « avec / sans » à un seul plan est le cas ordinaire : on n'écrit pas
+    // son seuil, pour qu'il reste identique à ce qui est imprimé.
+    if (o.kind === 'SEQ_AVEC' && o.seuil <= 1) delete o.seuil;
+  }
   else if (part === 'portee') o.portee = valeur;
   poserObj(cles, o, rang);
 }
@@ -3730,7 +3748,7 @@ function objDepuisCSV(r, suf = '') {
     case 'SEQ_VOISINES': return OBJ.seqVoisines(n, sens0 === 'APRES' ? 'APRES' : 'AVANT');
     case 'SEQ_LONGUE':   return OBJ.seqLongue(n);
     case 'SEQ_AVEC': return ciblesSequence().some((c) => c.id === cible)
-      ? OBJ.seqAvec(n, sens0 === 'SANS' ? 'SANS' : 'AVEC', cible) : null;
+      ? OBJ.seqAvec(n, sens0 === 'SANS' ? 'SANS' : 'AVEC', cible, seuil) : null;
     case 'PAIRE': {
       const [a, b] = cible.split('+');
       return ELEMENT_IDS.includes(a) && ELEMENT_IDS.includes(b) ? OBJ.paire(n, a, b, portee) : null;

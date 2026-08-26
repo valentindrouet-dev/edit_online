@@ -14,13 +14,24 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.69';
-import { elIcon } from './icons.js?v=1.69';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.70';
+import { elIcon } from './icons.js?v=1.70';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.14.2',
+    date: '27/08/2026',
+    origine: 'Règles ajoutées par l’auteur',
+    corps: (c) => corps_0_14_2(c),
+    items: [
+      'Un banc ne porte que <b>cinq séquences</b>. Ce n’est pas le nombre de Plans Larges qui est borné — une ligne peut en porter plusieurs, de part et d’autre d’un Raccord — mais le nombre de <b>lignes</b> : passé ce compte, un Plan Large n’entre plus que par la <b>charnière d’un Raccord</b>. Le compte se règle dans <b>Variables</b> ⚙.',
+      'Le bandeau <b>« n × SÉQUENCE avec / sans … »</b> peut demander un <b>nombre de plans</b> : « n points par séquence portant <b>au moins 3</b> plans Arme ». Son contraire compte les séquences qui en portent <b>moins de 3</b> — à un seul plan, on retrouve « avec » et « sans ».',
+      'Un bandeau à portée <b>◀ avant</b> ou <b>après ▶</b> compte désormais <b>la carte qui le porte</b>. Un plan compte toujours ce qu’il porte, comme le font déjà les portées « sa séquence » et « le montage » : une carte qui annonce une icône sans la compter se lisait comme une erreur.',
+    ],
+  },
   {
     v: '0.14.1',
     date: '26/08/2026',
@@ -228,6 +239,47 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.14.2 ---------------------------------------------------------------
+// Trois ajouts : le banc est borné à cinq lignes, le bandeau « séquence avec »
+// sait demander plusieurs plans, et une portée « avant / après » compte la
+// carte qui la porte.
+
+function corps_0_14_2(c) {
+  const max = c.sequencesMax === undefined || c.sequencesMax === null || c.sequencesMax <= 0
+    ? 0 : c.sequencesMax;
+  const borne = max
+    ? `Un banc ne porte que <b>${max} lignes</b>. Ce n’est pas le nombre de Plans Larges qui est
+      borné — une ligne peut en porter plusieurs, de part et d’autre d’un Raccord —, c’est le nombre
+      de <b>séquences</b> : un montage compte bien plus de plans que de lignes. Une fois les
+      ${max} ouvertes, un Plan Large n’entre plus que par la <b>charnière d’un Raccord</b>, et l’on
+      cesse de vous en proposer au dérushage tant qu’il n’y en a aucune. Le compte se règle dans
+      <b>Variables</b> ⚙.`
+    : `Ici, le nombre de lignes n’est <b>pas borné</b> — la règle en fixe cinq (réglable dans
+      <b>Variables</b> ⚙).`;
+  return corps_0_14_1(c)
+    .replace(
+      /<li>Une <b>nouvelle ligne<\/b>[\s\S]*?On empile, on n’insère pas\.<\/li>/,
+      `<li>Une <b>nouvelle ligne</b> se pose <b>au-dessus</b> ou <b>en dessous</b> de la pile —
+      <b>jamais entre deux</b>. On empile, on n’insère pas.</li>
+      <li>${maj('0.14.2', borne)}</li>`)
+    .replace(
+      /<li><b>La portée<\/b>[\s\S]*?de ligne en ligne\.<\/li>/,
+      `<li><b>La portée</b>, que ses flèches donnent à lire : <b>◀ Héroïne</b> compte parmi les cartes
+      placées <b>avant</b> celle-ci dans le montage, <b>Héroïne ▶</b> parmi celles placées
+      <b>après</b>, <b>◀ Héroïne ▶</b> dans <b>sa séquence</b> — c’est-à-dire sa ligne —, et
+      <b>Héroïne</b> tout court dans le <b>montage entier</b>. « Avant » et « après » se lisent dans
+      l’ordre d’un seul tenant, de ligne en ligne. ${maj('0.14.2', `Dans les quatre cas, <b>la carte
+      qui porte le bandeau compte pour elle-même</b> : un plan compte toujours ce qu’il porte.`)}</li>`)
+    .replace(
+      /<tr><td><b>n × SÉQUENCE avec \/ sans …<\/b><\/td>[\s\S]*?<\/tr>/,
+      `<tr><td><b>n × SÉQUENCE avec / sans …</b></td>
+      <td>n points par ligne qui porte — ou ne porte pas — l’icône, le cadrage ou la Carte Raccord
+      visée. ${maj('0.14.2', `Le bandeau peut demander un <b>nombre de plans</b> : « au moins 3 »
+      compte les lignes qui portent la cible sur <b>trois plans ou plus</b>, et son contraire celles
+      qui la portent sur <b>moins de trois</b>. Ce sont des plans que l’on compte, pas des icônes :
+      un plan à deux armes reste un plan.`)}</td><td>Le montage entier</td></tr>`);
 }
 
 // --- v0.14.1 ---------------------------------------------------------------

@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.69';
+import { ELEMENT_IDS } from './data.js?v=1.70';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -28,6 +28,12 @@ export const DEFAULTS = {
   sensPose: 'bords',         // 'bords' (les deux bouts d'une séquence) | 'droite'
   plNouvelleSequence: true,  // un Plan Large ouvre toujours une nouvelle séquence
   plContigu: false,          // autoriser deux Plans Larges côte à côte
+  // Un banc ne porte que cinq séquences. Ce n'est pas le nombre de Plans Larges
+  // qui est borné — une ligne peut en porter plusieurs, de part et d'autre d'un
+  // Raccord —, c'est le nombre de lignes : un montage a plus de plans que de
+  // séquences, et c'est le Raccord qui permet d'étoffer une ligne plutôt que
+  // d'en ouvrir une de plus. 0 = aucune limite (variante).
+  sequencesMax: 5,
   // Une Carte Raccord relie. Sur une seule bande, elle se pose entre deux
   // séquences et les raccorde forcément. En lignes, elle fait **charnière** au
   // bout d'une ligne : un Plan Large peut alors s'y poser de l'autre côté
@@ -229,6 +235,9 @@ export const SCHEMA = [
       ['bords', 'Aux deux bouts d’une séquence'], ['droite', 'À droite seulement'],
     ] },
     { k: 'plNouvelleSequence', l: 'Un Plan Large ouvre une séquence', t: 'bool' },
+    { k: 'sequencesMax', l: 'Séquences maximum dans un banc', t: 'int', min: 0, max: 12,
+      aide: 'cinq par les règles ; passé ce compte, un Plan Large n’entre plus que par la '
+        + 'charnière d’un Raccord. 0 = aucune limite' },
     { k: 'plContigu', l: 'Deux Plans Larges peuvent se toucher', t: 'bool' },
     { k: 'raccordConnecte', l: 'Une Carte Raccord relie deux séquences', t: 'bool',
       aide: 'en lignes, elle fait charnière : un Plan Large se pose de l’autre côté d’elle, '

@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.69';
-import { compter, bancVide, plansComptes } from './scoring.js?v=1.69';
+} from './data.js?v=1.70';
+import { compter, bancVide, plansComptes } from './scoring.js?v=1.70';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -204,31 +204,56 @@ export function departsFaits(state) {
  */
 export function optionsDerushage(state, toutes = false) {
   const cfg = state.cfg;
-  const out = [];
+  const p = state.courant;
+  const banc = state.bancs[p];
+
   // Variante « pas de Plans de départ » : sur un banc vide, seul un Plan Large
   // peut se poser — un Plan Moyen ou un Gros Plan s'accroche à une séquence, et
   // il n'y en a aucune. On ne propose donc que des Plans Larges : sans cela on
   // pourrait prendre une carte impossible à jouer.
-  const banc = state.bancs[state.courant];
-  const quePL = !!cfg.sansPlanDepart && banc && !banc.sequences.length;
-  const bloc = quePL ? { bloquee: true } : null;
-  state.chutierPL.forEach((c, i) => out.push({ source: 'CHUTIER_PL', index: i, carte: c }));
-  if (!quePL || toutes) {
-    state.chutierPMGP.forEach((c, i) => out.push({ source: 'CHUTIER_PMGP', index: i, carte: c, ...bloc }));
-  }
+  const quePL = !!cfg.sansPlanDepart && !!banc && !banc.sequences.length;
+
+  // À l'autre bout de la partie, la limite du banc : ses lignes sont toutes
+  // ouvertes, et un Plan Large n'a plus de séquence à ouvrir. Il ne lui reste
+  // que la charnière d'un Raccord — s'il n'y en a aucune, il n'a nulle part où
+  // aller, et l'on ne propose pas de le prendre. Un Plan Large en vaut un
+  // autre pour cette question : le premier venu suffit à la trancher.
+  const temoinPL = state.chutierPL[0] || state.piochePL[0] || null;
+  const pasDeLigne = !!banc && !!banc.sequences.length && !!temoinPL
+    && !coupsPossibles(state, p, temoinPL).length;
+
+  const nbSeq = banc ? banc.sequences.length : 0;
+  const RAISON_PL = `votre banc porte ${nbSeq > 1 ? `ses ${nbSeq} séquences` : 'sa seule séquence'} — `
+    + 'un Plan Large n’entre plus que par la charnière d’un Raccord';
+  const RAISON_PMGP = 'à accrocher à une séquence — ouvrez d’abord votre banc d’un Plan Large';
+
+  // Une carte que l'on ne pourrait pas poser reste **visible**, éteinte, avec
+  // la raison à côté du titre : une rivière escamotée le temps d'un tour se
+  // lirait comme une rivière vide, ce qu'elle n'est pas.
+  const out = [];
+  const pousse = (o, bloquee, raison) => {
+    if (!bloquee) out.push(o);
+    else if (toutes) out.push({ ...o, bloquee: true, raison });
+  };
+
+  state.chutierPL.forEach((c, i) => pousse({ source: 'CHUTIER_PL', index: i, carte: c }, pasDeLigne, RAISON_PL));
+  state.chutierPMGP.forEach((c, i) => pousse({ source: 'CHUTIER_PMGP', index: i, carte: c }, quePL, RAISON_PMGP));
   // Les cartes Plan Moyen / Gros Plan sont recto-verso : une pioche ne peut
   // pas les cacher, on voit forcément la face du dessus. Les Plans Larges,
   // eux, ont un vrai dos — leur pioche reste aveugle.
-  if ((!quePL || toutes) && cfg.piocheDirectePMGP && state.piochePMGP.length) {
-    out.push({ source: 'PIOCHE_PMGP', carte: state.piochePMGP[0], sommet: true, ...bloc });
+  if (cfg.piocheDirectePMGP && state.piochePMGP.length) {
+    pousse({ source: 'PIOCHE_PMGP', carte: state.piochePMGP[0], sommet: true }, quePL, RAISON_PMGP);
   }
   if (cfg.piocheDirectePL && state.piochePL.length) {
-    out.push({ source: 'PIOCHE_PL', carte: null, sommet: true });
+    pousse({ source: 'PIOCHE_PL', carte: null, sommet: true }, pasDeLigne, RAISON_PL);
   }
-  // Plus un seul Plan Large à prendre alors qu'il en faudrait un : mieux vaut
-  // une carte injouable ce tour-ci qu'une joueuse bloquée sans rien à faire.
-  if (quePL && !out.some((o) => !o.bloquee)) {
-    return optionsDerushage({ ...state, cfg: { ...cfg, sansPlanDepart: false } }, toutes);
+
+  // Tout est écarté et il reste pourtant des cartes : mieux vaut une carte
+  // injouable ce tour-ci qu'une joueuse bloquée sans rien à faire. C'est aussi
+  // ce qui garantit que la liste ne se vide que lorsque la boîte est vide —
+  // ce que `avancer` lit comme la fin de la partie.
+  if (!toutes && !out.length) {
+    return optionsDerushage(state, true).map(({ bloquee, raison, ...o }) => o);
   }
   return out;
 }
@@ -353,6 +378,20 @@ export function derusher(state, p, choix) {
 
 function estPL(plan) { return plan.format === 'PL'; }
 
+/**
+ * Combien de séquences un banc peut porter. La règle en fixe **cinq** : un
+ * montage compte bien plus de plans que de lignes, et c'est la Carte Raccord
+ * qui permet d'étoffer une ligne plutôt que d'en ouvrir une de plus. Ce n'est
+ * pas le nombre de Plans Larges qui est borné — une ligne peut en porter
+ * plusieurs, de part et d'autre d'un Raccord —, c'est le nombre de lignes.
+ *
+ * Zéro ou absent : aucune limite, pour qui veut l'ancienne partie.
+ */
+export function limiteSequences(cfg) {
+  const n = cfg && cfg.sequencesMax;
+  return n === undefined || n === null || n <= 0 ? Infinity : n;
+}
+
 /** Le Plan Large ne peut pas toucher un autre Plan Large. */
 function poseAutorisee(cfg, voisin, plan) {
   if (cfg.plContigu) return true;
@@ -391,9 +430,14 @@ export function coupsPossibles(state, p, hypothese) {
     // l'impose : une ligne par séquence n'aurait pas de sens si un Plan Large
     // pouvait s'accrocher au bout d'une autre.
     if (format === 'PL' && (cfg.plNouvelleSequence || lignes)) {
-      const places = lignes && banc.sequences.length
-        ? [0, banc.sequences.length]   // au-dessus, ou en dessous : jamais entre
-        : Array.from({ length: banc.sequences.length + 1 }, (_, i) => i);
+      // Le banc ne porte qu'un nombre limité de séquences. Une fois ses lignes
+      // ouvertes, un Plan Large n'en ouvre plus : il ne peut plus entrer que
+      // **par la charnière d'un Raccord**, dans une ligne déjà là — ce que la
+      // boucle ETENDRE ci-dessous propose encore.
+      const places = banc.sequences.length >= limiteSequences(cfg) ? []
+        : lignes && banc.sequences.length
+          ? [0, banc.sequences.length]   // au-dessus, ou en dessous : jamais entre
+          : Array.from({ length: banc.sequences.length + 1 }, (_, i) => i);
       for (const i of places) {
         if (i === 0 && bloqueGauche) continue;
         if (i === banc.sequences.length && bloqueDroite) continue;

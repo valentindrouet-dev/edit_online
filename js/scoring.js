@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, objPortee, objsDe } from './data.js?v=1.69';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, objPortee, objsDe } from './data.js?v=1.70';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -77,7 +77,12 @@ export function porteeDe(obj, sequence, banc, cfg, porteur) {
   if (p === 'AVANT' || p === 'APRES') {
     const i = porteur ? montage.indexOf(porteur) : -1;
     if (i < 0) return [];
-    return p === 'AVANT' ? montage.slice(0, i) : montage.slice(i + 1);
+    // **La carte qui porte le bandeau compte pour elle-même.** « ◀ Héroïne »
+    // voit l'Héroïne de sa propre carte comme celles d'avant, « Héroïne ▶ »
+    // comme celles d'après. Un plan compte toujours ce qu'il porte : les deux
+    // autres portées — sa séquence, le montage — l'ont toujours fait, et une
+    // carte qui annonce une icône sans la compter se lit comme une erreur.
+    return p === 'AVANT' ? montage.slice(0, i + 1) : montage.slice(i);
   }
   return montage;
 }
@@ -148,8 +153,13 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur) {
       return n * (obj.sens === 'APRES' ? banc.sequences.length - 1 - i : i);
     }
     case 'SEQ_AVEC': {
-      const porte = (s) => sequencePorte(s, obj.cible);
-      return n * banc.sequences.filter((s) => (obj.sens === 'SANS' ? !porte(s) : porte(s))).length;
+      // « Avec » compte les séquences qui portent la cible **au moins k fois**,
+      // son contraire celles qui la portent moins de k fois — à k = 1, c'est
+      // bien « avec » et « sans ». Ce sont des PLANS que l'on compte, pas des
+      // icônes : un plan à deux armes reste un plan.
+      const k = Math.max(1, obj.seuil || 1);
+      const assez = (s) => comptePorteurs(s, obj.cible) >= k;
+      return n * banc.sequences.filter((s) => (obj.sens === 'SANS' ? !assez(s) : assez(s))).length;
     }
     default:
       return 0;
@@ -161,11 +171,15 @@ function plansDe(seq) {
   return seq.filter((p) => !estRaccord(p));
 }
 
-/** Une séquence porte-t-elle la cible visée — une icône, un cadrage, un Raccord ? */
-function sequencePorte(seq, cible) {
-  if (cible === 'RACCORD') return seq.some(estRaccord);
-  if (CADRAGES_VISABLES.includes(cible)) return seq.some((p) => p.format === cible);
-  return seq.some((p) => p.el.includes(cible));
+/**
+ * Combien de plans d'une séquence portent la cible visée — une icône, un
+ * cadrage, un Raccord. On compte les plans porteurs et non les icônes : un
+ * plan à deux armes est un plan à armes, pas deux.
+ */
+function comptePorteurs(seq, cible) {
+  if (cible === 'RACCORD') return seq.filter(estRaccord).length;
+  if (CADRAGES_VISABLES.includes(cible)) return seq.filter((p) => p.format === cible).length;
+  return seq.filter((p) => p.el.includes(cible)).length;
 }
 
 /**
