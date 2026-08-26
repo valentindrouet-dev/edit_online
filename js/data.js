@@ -272,7 +272,7 @@ const S = (idx, tc, famille, pmNum, gpNum, pmEl, gpEl, obj, extra = {}) => ({
   ...extra,
 });
 
-export const SCENES = [
+const SCENES_IMPRIMEES = [
   // Raccords et génériques --------------------------------------------------
   S(1,  99, 'TRANSITION', 292, 392, [], [], OBJ.raccord(2), { titre: 'Fin',          transition: 'CREDITS' }),
   S(2,   1, 'TRANSITION', 291, 391, [], [], OBJ.raccord(2), { titre: 'BBG présente', transition: 'OUVERTURE' }),
@@ -319,10 +319,36 @@ export const SCENES = [
   S(33, 0, 'PERSONNAGE', 206, 306, ['HEROINE'],           ['HEROINE'], OBJ.element(1, 'HEROINE')),
 ];
 
-export const SCENE_BY_IDX = Object.fromEntries(SCENES.map((s) => [s.idx, s]));
+// Les scènes en vigueur — imprimées, plus celles que l'éditeur a créées, moins
+// celles qu'il a supprimées. `SCENES` était une constante ; c'est désormais une
+// question qu'on pose, puisque la réponse change.
+export function SCENES() {
+  const ajoutees = (SURCHARGES.ajouts.scenes || []).map(hydraterScene);
+  const out = [...SCENES_IMPRIMEES, ...ajoutees];
+  return SURCHARGES.retires.size
+    ? out.filter((s) => !SURCHARGES.retires.has(idScene(s.idx)))
+    : out;
+}
 
-const pmIndex = {}, gpIndex = {};
-for (const s of SCENES) { pmIndex[s.pmNum] = s.idx; gpIndex[s.gpNum] = s.idx; }
+export const idScene = (idx) => `SC${idx}`;
+
+/** Une scène créée : la même forme que les imprimées, valeurs par défaut comprises. */
+function hydraterScene(a) {
+  return S(a.idx, a.tc || 0, a.famille || 'PERSONNAGE', a.pmNum, a.gpNum,
+    (a.pmEl || []).slice(), (a.gpEl || []).slice(), a.obj ? { ...a.obj } : null,
+    { ...(a.titre ? { titre: a.titre } : {}), ...(a.mort ? { mort: true } : {}), ajoutee: true });
+}
+
+export function sceneDe(idx) {
+  return SCENES().find((s) => s.idx === idx) || null;
+}
+
+/** De quel côté d'une scène vient un numéro de plan. */
+function indexScenes() {
+  const pm = {}, gp = {};
+  for (const s of SCENES()) { pm[s.pmNum] = s.idx; gp[s.gpNum] = s.idx; }
+  return { pm, gp };
+}
 
 // --- Les 14 Plans Larges ---------------------------------------------------
 // `brouillon` marquait les cartes dont le PDF source ne donnait ni illustration
@@ -332,7 +358,7 @@ for (const s of SCENES) { pmIndex[s.pmNum] = s.idx; gpIndex[s.gpNum] = s.idx; }
 
 const PL = (num, tc, el, obj, extra = {}) => ({ num, tc, el, obj, ...extra });
 
-export const PLANS_LARGES = [
+const PL_IMPRIMES = [
   PL(101, 15, ['HEROINE', 'ENNEMI', 'OBJET', 'VEHICULE'],  null),
   PL(102, 30, ['OBJET', 'ARME', 'VEHICULE'],               null),
   PL(103, 45, ['ENNEMI', 'ALLIE', 'OBJET', 'VEHICULE'],    OBJ.raccord(2)),
@@ -349,11 +375,19 @@ export const PLANS_LARGES = [
   PL(114, 75, ['HEROINE', 'ENNEMI', 'ARME'],               null),
 ];
 
+/** Les Plans Larges en vigueur — imprimés, plus les créés, moins les supprimés. */
+export function PLANS_LARGES() {
+  const ajoutes = (SURCHARGES.ajouts.larges || []).map((a) => PL(a.num, a.tc || 0,
+    (a.el || []).slice(), a.obj ? { ...a.obj } : null, { ajoute: true }));
+  const out = [...PL_IMPRIMES, ...ajoutes];
+  return SURCHARGES.retires.size ? out.filter((p) => !SURCHARGES.retires.has(`L${p.num}`)) : out;
+}
+
 // --- Les Plans de départ ---------------------------------------------------
 // 8 cartes, en 2 versions recto-verso : 4 faces distinctes dans le PDF.
 // L'appariement recto/verso des deux types est une hypothèse (ordre du PDF).
 
-export const DEPARTS = [
+const DEPARTS_IMPRIMES = [
   { type: 'A', faces: [
     PL(115, 75, ['HEROINE', 'ENNEMI', 'ARME'],            OBJ.format(3, 'PL'), { depart: true }),
     PL(116, 60, ['HEROINE', 'ENNEMI', 'VEHICULE'],        OBJ.format(2, 'PM'), { depart: true }),
@@ -364,13 +398,24 @@ export const DEPARTS = [
   ] },
 ];
 
+/** Les versions de Plan de départ en vigueur. Une version = une carte, deux faces. */
+export function DEPARTS() {
+  const ajoutes = (SURCHARGES.ajouts.departs || []).map((d) => ({
+    type: d.type, ajoutee: true,
+    faces: (d.faces || []).map((f) => PL(f.num, f.tc || 0, (f.el || []).slice(),
+      f.obj ? { ...f.obj } : null, { depart: true, ajoute: true })),
+  }));
+  const out = [...DEPARTS_IMPRIMES, ...ajoutes];
+  return SURCHARGES.retires.size ? out.filter((d) => !SURCHARGES.retires.has(`S${d.type}`)) : out;
+}
+
 // --- Les 50 cartes Plan Moyen / Gros Plan ----------------------------------
 // Répartition v0.13. Au recto le Gros Plan à gauche et le Plan Moyen à droite,
 // au verso l'inverse — mêmes deux moitiés sur les deux faces.
 // `dual` marque la moitié GÉNÉRIQUE à double lecture : Ouverture quand elle
 // est à gauche, Crédits quand elle passe à droite.
 
-const PAIRES = [
+const PAIRES_IMPRIMEES = [
   [201, 317], [201, 319], [201, 325], [202, 308], [202, 314], [202, 324],
   [203, 315], [203, 320], [203, 327], [204, 310], [204, 391], [204, 326],
   [205, 307], [205, 312], [205, 328], [206, 313], [206, 318], [206, 322],
@@ -382,8 +427,21 @@ const PAIRES = [
   [290, 329], [290, 330], [291, 321, { dualPM: true }],
 ];
 
+/**
+ * Les appariements en vigueur. Les cinquante imprimés gardent leurs rangs 0 à
+ * 49 quoi qu'il arrive : c'est par ce rang que les retouches d'appariement sont
+ * rangées, et une carte créée ne doit pas les décaler. Les nouvelles se
+ * mettent donc à la suite, et une carte supprimée laisse son rang vide plutôt
+ * que de faire glisser les autres.
+ */
+function PAIRES() {
+  const ajoutees = (SURCHARGES.ajouts.paires || []).map((p) => [p.pmNum, p.gpNum, { ajoutee: true }]);
+  return [...PAIRES_IMPRIMEES, ...ajoutees];
+}
+
 export function buildCartesDoubles() {
-  return PAIRES.map(([pmImp, gpImp, extra], i) => {
+  const { pm: pmIndex, gp: gpIndex } = indexScenes();
+  return PAIRES().map(([pmImp, gpImp, extra], i) => {
     // L'appariement des deux moitiés est lui aussi réglable : c'est la seule
     // façon de changer la répartition des Plans Moyens et des Gros Plans.
     const [pmNum, gpNum] = paireDe(i, [pmImp, gpImp]);
@@ -399,6 +457,11 @@ export function buildCartesDoubles() {
       actif: carteActive(`D${String(i + 1).padStart(2, '0')}`),
       ...(extra || {}),
     };
+  }).filter((c) => {
+    // Une carte supprimée s'en va ; une carte dont une moitié a disparu avec sa
+    // scène s'en va aussi — elle n'a plus rien à montrer.
+    if (SURCHARGES.retires.has(c.id)) return false;
+    return c.pmScene !== undefined && c.gpScene !== undefined;
   });
 }
 
@@ -410,9 +473,9 @@ export function buildCartesDoubles() {
  * minutage, mêmes icônes, même pouvoir.
  */
 export function buildPlansLarges(avecDeparts) {
-  const out = PLANS_LARGES.map((p) => ({ id: `L${p.num}`, type: 'PL', actif: carteActive(`L${p.num}`), ...p }));
+  const out = PLANS_LARGES().map((p) => ({ id: `L${p.num}`, type: 'PL', actif: carteActive(`L${p.num}`), ...p }));
   if (!avecDeparts) return out;
-  for (const d of DEPARTS) {
+  for (const d of DEPARTS()) {
     for (const f of d.faces) {
       const { depart, ...reste } = f;
       const id = `S${d.type}f${f.num}`;
@@ -425,7 +488,7 @@ export function buildPlansLarges(avecDeparts) {
 export function buildDeparts() {
   // Deux exemplaires de chaque version, soit les 8 cartes de la boîte.
   const out = [];
-  DEPARTS.forEach((d) => {
+  DEPARTS().forEach((d) => {
     const faces = d.faces.filter((f) => carteActive(`S${d.type}f${f.num}`));
     if (!faces.length) return;
     for (let k = 0; k < 4; k++) {
@@ -469,19 +532,36 @@ export function cleplan(num, face) {
   return face ? `${num}${face}` : String(num);
 }
 
-export const SURCHARGES = { plans: {}, paires: {}, desactives: new Set() };
+export const SURCHARGES = {
+  plans: {}, paires: {}, desactives: new Set(),
+  // `ajouts` porte les cartes que l'éditeur a créées, `retires` celles qu'il a
+  // supprimées. Ce ne sont pas des retouches de carte mais la **composition du
+  // matériel** : elles valent donc pour les deux jeux, imprimé compris — une
+  // carte qui n'existe pas dans la boîte n'existe pas non plus dans l'origine.
+  ajouts: { scenes: [], larges: [], departs: [], paires: [] },
+  retires: new Set(),
+};
+
+export const AJOUTS_VIDES = () => ({ scenes: [], larges: [], departs: [], paires: [] });
 
 /**
  * Remplace la couche de surcharge. `table` nul = on joue le matériel imprimé.
  * Les cartes écartées, elles, valent dans les deux jeux : c'est la composition
- * de la boîte, pas une retouche de carte.
+ * de la boîte, pas une retouche de carte. Il en va de même des cartes créées et
+ * supprimées, qui voyagent donc avec `table` mais s'appliquent toujours.
  */
-export function appliquerMateriel(table, desactives) {
+export function appliquerMateriel(table, desactives, composition) {
   for (const k of Object.keys(SURCHARGES.plans)) delete SURCHARGES.plans[k];
   for (const k of Object.keys(SURCHARGES.paires)) delete SURCHARGES.paires[k];
   Object.assign(SURCHARGES.plans, (table && table.plans) || {});
   Object.assign(SURCHARGES.paires, (table && table.paires) || {});
   SURCHARGES.desactives = new Set(desactives || []);
+  // La composition survit au passage de l'un à l'autre jeu : `table` peut être
+  // nulle — c'est alors l'imprimé qu'on lit — sans que les cartes créées
+  // disparaissent de la boîte.
+  const c = composition || table || {};
+  SURCHARGES.ajouts = { ...AJOUTS_VIDES(), ...(c.ajouts || {}) };
+  SURCHARGES.retires = new Set(c.retires || []);
 }
 
 const sur = (cle) => SURCHARGES.plans[cle] || null;
@@ -529,6 +609,17 @@ export function mortDe(cle, defaut) {
 }
 
 /**
+ * L'illustration d'un plan. Par défaut celle que son numéro imprimé désigne —
+ * `assets/gp/317.webp` —, mais n'importe quel visuel de la boîte peut la
+ * remplacer : c'est une retouche comme une autre, et deux plans peuvent très
+ * bien partager la même image.
+ */
+export function imageDe(cle, defaut) {
+  const s = sur(cle);
+  return !s || !s.image ? defaut : s.image;
+}
+
+/**
  * Le numéro affiché d'un plan. Ce n'est qu'une étiquette : l'identité d'un
  * plan reste son numéro imprimé, qui sert de clé et désigne son illustration.
  * Renuméroter ne casse donc aucun appariement — et deux plans peuvent porter
@@ -551,6 +642,21 @@ export function planModifie(cle) {
   return !!s && Object.keys(s).length > 0;
 }
 
+/**
+ * Un plan **créé** n'a pas de visuel imprimé : son numéro ne désigne aucun
+ * fichier d'assets. Sa case d'illustration part donc vide, et se remplit au
+ * sélecteur d'images.
+ */
+const NUMS_IMPRIMES = new Set([
+  ...PL_IMPRIMES.map((p) => p.num),
+  ...DEPARTS_IMPRIMES.flatMap((d) => d.faces.map((f) => f.num)),
+  ...SCENES_IMPRIMEES.flatMap((s) => [s.pmNum, s.gpNum]),
+]);
+
+export function imageImprimee(dossier, origine) {
+  return NUMS_IMPRIMES.has(origine) ? `assets/${dossier}/${origine}.webp` : '';
+}
+
 export function carteActive(id) {
   return !SURCHARGES.desactives.has(id);
 }
@@ -563,7 +669,7 @@ export function carteActive(id) {
  * numéro de scène.
  */
 export function halfInfo(sceneIdx, format, opts = {}) {
-  const s = SCENE_BY_IDX[sceneIdx];
+  const s = sceneDe(sceneIdx);
   if (!s) return null;
   const side = format === 'GP' ? s.gp : s.pm;
   // Le numéro imprimé est l'identité du plan : il fait la clé et désigne son
@@ -587,7 +693,7 @@ export function halfInfo(sceneIdx, format, opts = {}) {
     mort: mortDe(cle, s.mort),
     num: numDe(cle, origine),
     numOrigine: origine,
-    image: `assets/${format === 'GP' ? 'gp' : 'pm'}/${origine}.webp`,
+    image: imageDe(cle, imageImprimee(format === 'GP' ? 'gp' : 'pm', origine)),
   };
 }
 
@@ -622,7 +728,7 @@ export function plHalf(carte) {
     num: numDe(cle, carte.num),
     numOrigine: carte.num,
     depart: !!carte.depart,
-    image: `assets/pl/${carte.num}.webp`,
+    image: imageDe(cle, imageImprimee('pl', carte.num)),
   };
 }
 
@@ -635,6 +741,8 @@ export function catalogue() {
   const pousse = (origine, face, defauts, format, famille, extra = {}) => {
     const cle = cleplan(origine, face);
     const num = numDe(cle, origine);
+    const dossier = format === 'PL' || format === 'DEP' ? 'pl' : format === 'GP' ? 'gp' : 'pm';
+    const imprimee = imageImprimee(dossier, origine);
     out.push({
       cle, num, numOrigine: origine, face, format, famille,
       quoi: `${FORMATS[format].label} ${num}${face ? ` — ${face === 'R' ? 'recto' : 'verso'}` : ''}`,
@@ -643,14 +751,14 @@ export function catalogue() {
       mort: mortDe(cle, defauts.mort), modifie: planModifie(cle),
       imprime: {
         tc: defauts.tc, el: (defauts.el || []).slice(), obj: defauts.obj || null,
-        obj2: defauts.obj2 || null, mort: !!defauts.mort, num: origine,
+        obj2: defauts.obj2 || null, mort: !!defauts.mort, num: origine, image: imprimee,
       },
-      image: `assets/${format === 'PL' || format === 'DEP' ? 'pl' : format === 'GP' ? 'gp' : 'pm'}/${origine}.webp`,
+      image: imageDe(cle, imprimee),
       ...extra,
     });
   };
 
-  for (const s of SCENES) {
+  for (const s of SCENES()) {
     for (const f of FACES) {
       pousse(s.pmNum, f.id, { tc: s.tc, el: s.pm.el, obj: s.pm.obj, obj2: s.pm.obj2, mort: s.mort },
         'PM', s.famille, { scene: s.idx, titre: s.titre || null });
@@ -658,11 +766,11 @@ export function catalogue() {
         'GP', s.famille, { scene: s.idx, titre: s.titre || null });
     }
   }
-  for (const p of PLANS_LARGES) {
+  for (const p of PLANS_LARGES()) {
     pousse(p.num, null, { tc: p.tc, el: p.el, obj: p.obj, obj2: p.obj2, mort: false },
       'PL', 'PLAN LARGE', { brouillon: !!p.brouillon });
   }
-  for (const d of DEPARTS) {
+  for (const d of DEPARTS()) {
     d.faces.forEach((f, k) => pousse(f.num, null, { tc: f.tc, el: f.el, obj: f.obj, obj2: f.obj2, mort: false },
       'DEP', 'DÉPART', { version: d.type, faceDepart: k + 1 }));
   }
@@ -680,7 +788,7 @@ export function planDeCle(cle) {
  * une éventuelle renumérotation.
  */
 export function moitiesDisponibles(format) {
-  return SCENES.map((s) => {
+  return SCENES().map((s) => {
     const origine = format === 'GP' ? s.gpNum : s.pmNum;
     return {
       num: origine,

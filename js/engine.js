@@ -5,9 +5,9 @@
 // carte, puis le MONTAGE, où chacune la pose dans son banc.
 
 import {
-  buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, SCENE_BY_IDX, faceJouee,
-} from './data.js?v=1.70';
-import { compter, bancVide, plansComptes } from './scoring.js?v=1.70';
+  buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, sceneDe, faceJouee,
+} from './data.js?v=1.71';
+import { compter, bancVide, plansComptes } from './scoring.js?v=1.71';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -50,8 +50,8 @@ export function construirePaquet(cfg) {
     for (const c of base) {
       // Les cartes désactivées dans l'éditeur ne sont pas dans la boîte.
       if (!c.actif) continue;
-      const fam1 = SCENE_BY_IDX[c.pmScene]?.famille;
-      const fam2 = SCENE_BY_IDX[c.gpScene]?.famille;
+      const fam1 = sceneDe(c.pmScene)?.famille;
+      const fam2 = sceneDe(c.gpScene)?.famille;
       if (cfg.filtreFamilles && (cfg.filtreFamilles[fam1] === false || cfg.filtreFamilles[fam2] === false)) continue;
       doubles.push({ ...c, id: k ? `${c.id}#${k + 1}` : c.id });
     }

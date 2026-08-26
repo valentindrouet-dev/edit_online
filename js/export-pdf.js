@@ -183,6 +183,161 @@ export function pdfJpeg(jpeg, largePx, hautPx, largeMm, hautMm) {
   return coller(morceaux);
 }
 
+// --- Les planches d'impression ---------------------------------------------
+// Le format que l'auteur imprime : une A4 **paysage**, neuf cartes de
+// 88 × 63 mm en 3 × 3, et des traits de coupe qui traversent la page de part en
+// part. Mesuré sur la planche de référence : marges de 16,5 mm à gauche et à
+// droite, 10,5 mm en haut et en bas, traits noirs d'un point.
+//
+// Une page de rectos, puis la page des versos correspondants. Sur la seconde,
+// les colonnes sont **inversées** : la feuille se retourne autour de son axe
+// vertical, et c'est ainsi que le verso d'une carte retombe derrière son recto.
+
+export const PLANCHE = {
+  pageMm: [297, 210],       // A4 paysage
+  carteMm: [88, 63],        // la carte, telle que l'imprimeur la coupe
+  colonnes: 3,
+  rangees: 3,
+  traitPt: 1,               // l'épaisseur des traits de coupe
+};
+
+const MM = 72 / 25.4;
+const pt2 = (v) => Math.round(v * 100) / 100;
+
+/**
+ * Où tombe la case `i` d'une planche, en points, coin bas-gauche (repère PDF).
+ * Sur une page de versos, la feuille s'est retournée : autour de son axe
+ * vertical — les colonnes s'inversent, c'est le réglage courant — ou autour de
+ * son axe horizontal, et ce sont alors les rangées. Cela dépend de l'imprimeur,
+ * pas du fichier : le sens se règle.
+ */
+function caseDe(i, { pageMm, carteMm, colonnes, rangees, retournement = 'colonnes' }, miroir) {
+  const col0 = i % colonnes;
+  const rang0 = Math.floor(i / colonnes);
+  const col = miroir && retournement === 'colonnes' ? colonnes - 1 - col0 : col0;
+  const rang = miroir && retournement === 'rangees' ? rangees - 1 - rang0 : rang0;
+  const margeX = (pageMm[0] - colonnes * carteMm[0]) / 2;
+  const margeY = (pageMm[1] - rangees * carteMm[1]) / 2;
+  const x = margeX + col * carteMm[0];
+  // Le PDF compte depuis le bas : la première rangée est la plus haute.
+  const y = pageMm[1] - margeY - (rang + 1) * carteMm[1];
+  return [pt2(x * MM), pt2(y * MM), pt2(carteMm[0] * MM), pt2(carteMm[1] * MM)];
+}
+
+/** Les traits de coupe : quatre verticaux, quatre horizontaux, pleine page. */
+function traitsDeCoupe({ pageMm, carteMm, colonnes, rangees, traitPt }) {
+  const margeX = (pageMm[0] - colonnes * carteMm[0]) / 2;
+  const margeY = (pageMm[1] - rangees * carteMm[1]) / 2;
+  const L = pt2(pageMm[0] * MM), H = pt2(pageMm[1] * MM);
+  const traits = [`0 G ${traitPt} w`];
+  for (let c = 0; c <= colonnes; c++) {
+    const x = pt2((margeX + c * carteMm[0]) * MM);
+    traits.push(`${x} 0 m ${x} ${H} l S`);
+  }
+  for (let r = 0; r <= rangees; r++) {
+    const y = pt2((pageMm[1] - margeY - r * carteMm[1]) * MM);
+    traits.push(`0 ${y} m ${L} ${y} l S`);
+  }
+  return traits.join('\n');
+}
+
+/**
+ * Un PDF de plusieurs pages, chacune portant jusqu'à neuf cartes.
+ * `pages` est une liste de pages, chaque page une liste de `{ jpeg, largePx,
+ * hautPx }` — neuf au plus, dans l'ordre de lecture — plus `miroir` quand c'est
+ * une page de versos.
+ */
+export function pdfPlanches(pages, gabarit = PLANCHE) {
+  const L = pt2(gabarit.pageMm[0] * MM), H = pt2(gabarit.pageMm[1] * MM);
+  const coupe = traitsDeCoupe(gabarit);
+
+  // Numérotation : 1 catalogue, 2 arbre des pages, puis pour chaque page son
+  // objet Page et son contenu, et enfin toutes les images.
+  const nPages = pages.length;
+  const idPage = (i) => 3 + i * 2;
+  const idContenu = (i) => 4 + i * 2;
+  let prochaine = 3 + nPages * 2;
+  const images = [];
+  for (const p of pages) {
+    for (const c of p.cartes) { c.id = prochaine++; images.push(c); }
+  }
+
+  const morceaux = [];
+  const offsets = [];
+  let taille = 0;
+  const pousser = (u8) => { morceaux.push(u8); taille += u8.length; };
+  const objet = (i, tete, flux) => {
+    offsets[i] = taille;
+    pousser(octets(`${i} 0 obj\n${tete}\n`));
+    if (flux) { pousser(octets('stream\n')); pousser(flux); pousser(octets('\nendstream\n')); }
+    pousser(octets('endobj\n'));
+  };
+
+  pousser(octets('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'));
+  objet(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  objet(2, `<< /Type /Pages /Kids [${pages.map((_, i) => `${idPage(i)} 0 R`).join(' ')}] /Count ${nPages} >>`);
+
+  pages.forEach((p, i) => {
+    const xo = p.cartes.map((c, k) => `/Im${k} ${c.id} 0 R`).join(' ');
+    // Les traits d'abord, les cartes par-dessus : une carte à fond perdu doit
+    // recouvrir le trait qui passe sous elle, sinon il barre l'illustration.
+    const dessin = p.cartes.map((c, k) => {
+      const [x, y, w, h] = caseDe(c.place, gabarit, p.miroir);
+      return `q ${w} 0 0 ${h} ${x} ${y} cm /Im${k} Do Q`;
+    }).join('\n');
+    const contenu = `${coupe}\n${dessin}`;
+    objet(idPage(i), `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${L} ${H}]`
+      + ` /Resources << /XObject << ${xo} >> >> /Contents ${idContenu(i)} 0 R >>`);
+    objet(idContenu(i), `<< /Length ${contenu.length} >>`, octets(contenu));
+  });
+
+  for (const c of images) {
+    objet(c.id, `<< /Type /XObject /Subtype /Image /Width ${c.largePx} /Height ${c.hautPx}`
+      + ` /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${c.jpeg.length} >>`, c.jpeg);
+  }
+
+  const total = prochaine;
+  const debutXref = taille;
+  let xref = `xref\n0 ${total}\n0000000000 65535 f \n`;
+  for (let i = 1; i < total; i++) xref += `${String(offsets[i] || 0).padStart(10, '0')} 00000 n \n`;
+  xref += `trailer\n<< /Size ${total} /Root 1 0 R >>\nstartxref\n${debutXref}\n%%EOF\n`;
+  pousser(octets(xref));
+  return coller(morceaux);
+}
+
+/**
+ * Le fil complet des planches. `couples` est une liste de `{ recto, verso }`,
+ * chacun un HTML de carte — `verso` peut manquer, la case reste alors vide sur
+ * la page des versos plutôt que de décaler tout le reste.
+ */
+export async function planchesCartes(couples, { largeurPx = 1040, version = '', gabarit = PLANCHE, avance } = {}) {
+  const css = await cssCartes(version);
+  const parPage = gabarit.colonnes * gabarit.rangees;
+  const pages = [];
+  const total = couples.length;
+
+  for (let debut = 0; debut < total; debut += parPage) {
+    const lot = couples.slice(debut, debut + parPage);
+    const rectos = [];
+    const versos = [];
+    for (const [k, c] of lot.entries()) {
+      if (avance) avance(debut + k, total);
+      // eslint-disable-next-line no-await-in-loop -- une carte à la fois : cent
+      // canvas de front feraient tomber l'onglet, et l'avancement doit se voir.
+      const r = await rasterCarte(c.recto, largeurPx, css);
+      rectos.push({ jpeg: r.jpeg, largePx: r.large, hautPx: r.haut, place: k });
+      if (!c.verso) continue;
+      // eslint-disable-next-line no-await-in-loop -- même raison.
+      const v = await rasterCarte(c.verso, largeurPx, css);
+      versos.push({ jpeg: v.jpeg, largePx: v.large, hautPx: v.haut, place: k });
+    }
+    pages.push({ cartes: rectos, miroir: false });
+    if (versos.length) pages.push({ cartes: versos, miroir: true });
+  }
+  if (avance) avance(total, total);
+  return pdfPlanches(pages, gabarit);
+}
+
 // --- L'archive -------------------------------------------------------------
 
 const TABLE_CRC = (() => {

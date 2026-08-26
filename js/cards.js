@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.70';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.70';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.71';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.71';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -193,7 +193,7 @@ export function renderPlan(h, opts = {}) {
   const bulle = opts.muet ? '' : ` data-apercu="${donneesApercu(h, label, opts.points, opts.detail)}"`;
   return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"${bulle}>
     ${jeton}
-    <div class="illus" style="${fond}">
+    <div class="illus"${h.cle ? ` data-illus="${h.cle}"` : ''} style="${fond}">
       <div class="tcode ${h.tc === 0 || h.transition ? 'bleu' : ''}">${tc(h.tc)}</div>
     </div>
     <div class="pastilles" style="--n:${Math.max(1, icones.length)}">${icones.length

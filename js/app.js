@@ -2,33 +2,33 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.70';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.71';
 import {
-  ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, PLANS_LARGES, DEPARTS, OBJ, objLabel,
+  ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.70';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.70';
-import { elIcon, numIcon } from './icons.js?v=1.70';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.70';
+} from './data.js?v=1.71';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.71';
+import { elIcon, numIcon } from './icons.js?v=1.71';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.71';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.70';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.70';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.70';
-import { releve, voler, stopperVols } from './anim.js?v=1.70';
-import { campagne } from './lab.js?v=1.70';
-import { archiveCartes } from './export-pdf.js?v=1.70';
-import { Salon } from './net/salon.js?v=1.70';
-import { TransportLocal } from './net/local.js?v=1.70';
-import { TransportSupabase } from './net/supabase.js?v=1.70';
-import { enLigneDisponible } from './net/config.js?v=1.70';
-import { coupNu } from './net/protocole.js?v=1.70';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.70';
+} from './engine.js?v=1.71';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.71';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.71';
+import { releve, voler, stopperVols } from './anim.js?v=1.71';
+import { campagne } from './lab.js?v=1.71';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.71';
+import { Salon } from './net/salon.js?v=1.71';
+import { TransportLocal } from './net/local.js?v=1.71';
+import { TransportSupabase } from './net/supabase.js?v=1.71';
+import { enLigneDisponible } from './net/config.js?v=1.71';
+import { coupNu } from './net/protocole.js?v=1.71';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.71';
 
 const app = document.getElementById('app');
 
@@ -79,6 +79,13 @@ function normaliserMateriel() {
   const m = store.cfg.materiel && typeof store.cfg.materiel === 'object' ? store.cfg.materiel : {};
   if (!m.plans || typeof m.plans !== 'object') m.plans = {};
   if (!m.paires || typeof m.paires !== 'object') m.paires = {};
+  // La composition — les cartes créées, celles qu'on a supprimées. Absente
+  // d'une configuration enregistrée avant qu'elle existe.
+  if (!m.ajouts || typeof m.ajouts !== 'object') m.ajouts = {};
+  for (const k of ['scenes', 'larges', 'departs', 'paires']) {
+    if (!Array.isArray(m.ajouts[k])) m.ajouts[k] = [];
+  }
+  if (!Array.isArray(m.retires)) m.retires = [];
   // Les réglages d'avant l'éditeur ne portaient que sur le minutage.
   if (store.cfg.minutages && typeof store.cfg.minutages === 'object') {
     for (const [num, tc] of Object.entries(store.cfg.minutages)) {
@@ -121,7 +128,7 @@ function appliquerJeuActif() {
   const enl = store.enLigne && store.enLigne.salon && store.enLigne.salon.cfg;
   const src = enl || (store.partie && !store.partie.finie ? store.partie.cfg : store.cfg);
   const modifie = src.materielActif === 'MODIFIE';
-  appliquerMateriel(modifie ? src.materiel : null, src.cartesDesactivees);
+  appliquerMateriel(modifie ? src.materiel : null, src.cartesDesactivees, src.materiel);
 }
 
 normaliserMateriel();
@@ -146,7 +153,7 @@ function sauverCfg() {
 let profondeurModifie = 0;
 
 function surLeModifie(fn) {
-  if (profondeurModifie++ === 0) appliquerMateriel(store.cfg.materiel, store.cfg.cartesDesactivees);
+  if (profondeurModifie++ === 0) appliquerMateriel(store.cfg.materiel, store.cfg.cartesDesactivees, store.cfg.materiel);
   try { return fn(); } finally { if (--profondeurModifie === 0) appliquerJeuActif(); }
 }
 function sauverJoueurs() { LS.set('joueurs', store.joueurs); }
@@ -2058,6 +2065,184 @@ function estDesactivee(id) {
   return store.cfg.cartesDesactivees.includes(id);
 }
 
+// --- La composition du matériel ---------------------------------------------
+// Retoucher une carte est une chose ; en créer une, ou en retirer une de la
+// boîte pour de bon, en est une autre. C'est la **composition** : elle ne
+// dépend pas du jeu qu'on lance — une carte qui n'existe pas n'existe ni dans
+// l'imprimé ni dans le modifié — et elle voyage avec la configuration, donc
+// avec le salon en ligne.
+
+function composition() {
+  const m = store.cfg.materiel;
+  if (!m.ajouts) m.ajouts = { scenes: [], larges: [], departs: [], paires: [] };
+  for (const k of ['scenes', 'larges', 'departs', 'paires']) if (!m.ajouts[k]) m.ajouts[k] = [];
+  if (!m.retires) m.retires = [];
+  return m;
+}
+
+function nbAjoutees() {
+  const a = composition().ajouts;
+  return a.scenes.length + a.larges.length + a.departs.length + a.paires.length;
+}
+
+/**
+ * Le premier numéro libre d'une famille. Les Plans Larges et les Plans de
+ * départ partagent la centaine 100, les Plans Moyens la 200, les Gros Plans la
+ * 300 : on reste dans sa bande pour que le numéro dise encore le cadrage.
+ */
+function prochainNumero(bande) {
+  const pris = new Set(surLeModifie(() => catalogue().map((p) => p.numOrigine)));
+  let n = bande;
+  while (pris.has(n)) n++;
+  return n;
+}
+
+/** La prochaine lettre de version libre pour un Plan de départ. */
+function prochaineVersion() {
+  const pris = new Set(surLeModifie(() => DEPARTS().map((d) => d.type)));
+  for (let c = 65; c < 91; c++) if (!pris.has(String.fromCharCode(c))) return String.fromCharCode(c);
+  return `V${pris.size + 1}`;
+}
+
+function prochainIdxScene() {
+  return surLeModifie(() => SCENES().reduce((m, s) => Math.max(m, s.idx), 0)) + 1;
+}
+
+/**
+ * Crée une carte dans la famille demandée et rend les clés de plan à
+ * sélectionner ensuite — on ouvre l'éditeur sur ce qu'on vient de faire.
+ *
+ * Une **moitié** ne se crée pas seule : un Plan Moyen et un Gros Plan sont les
+ * deux côtés d'une même scène, et c'est la scène qu'on ajoute. Elle fournit
+ * donc les deux moitiés d'un coup — libre à un appariement de n'en prendre
+ * qu'une, comme le Générique de fin dont la moitié Plan Moyen ne sert à aucune
+ * carte.
+ */
+function creerCarte(famille) {
+  const m = composition();
+  if (famille === 'PL') {
+    const num = prochainNumero(101);
+    m.ajouts.larges.push({ num, tc: 0, el: [], obj: null });
+    sauverCfg();
+    return { cles: [String(num)], cartes: [`L${num}`], quoi: `Plan Large ${num}` };
+  }
+  if (famille === 'DEPART') {
+    const type = prochaineVersion();
+    const a = prochainNumero(101);
+    const b = prochainNumero(a + 1);
+    m.ajouts.departs.push({ type, faces: [{ num: a, tc: 0, el: [], obj: null }, { num: b, tc: 0, el: [], obj: null }] });
+    sauverCfg();
+    return { cles: [String(a), String(b)], cartes: [`S${type}f${a}`, `S${type}f${b}`],
+      quoi: `Plan de départ version ${type} — faces ${a} et ${b}` };
+  }
+  if (famille === 'GP' || famille === 'PM' || famille === 'SCENE') {
+    const idx = prochainIdxScene();
+    const pmNum = prochainNumero(201);
+    const gpNum = prochainNumero(301);
+    m.ajouts.scenes.push({ idx, pmNum, gpNum, tc: 0, famille: 'PERSONNAGE', pmEl: [], gpEl: [], obj: null });
+    sauverCfg();
+    const cles = famille === 'GP' ? [`${gpNum}R`, `${gpNum}V`]
+      : famille === 'PM' ? [`${pmNum}R`, `${pmNum}V`]
+        : [`${pmNum}R`, `${gpNum}R`];
+    return { cles, quoi: `scène ${idx} — Plan Moyen ${pmNum} et Gros Plan ${gpNum}` };
+  }
+  // Une carte Plan Moyen / Gros Plan : un appariement de deux moitiés qui
+  // existent déjà. On part des plus récentes — celles qu'on vient de créer.
+  const dispo = surLeModifie(() => ({
+    pm: moitiesDisponibles('PM'), gp: moitiesDisponibles('GP'),
+  }));
+  if (!dispo.pm.length || !dispo.gp.length) return null;
+  const pmNum = dispo.pm[dispo.pm.length - 1].num;
+  const gpNum = dispo.gp[dispo.gp.length - 1].num;
+  m.ajouts.paires.push({ pmNum, gpNum });
+  sauverCfg();
+  return { carte: true, quoi: `carte Plan Moyen ${pmNum} | Gros Plan ${gpNum}` };
+}
+
+/**
+ * Ce qui partirait avec une carte supprimée. Retirer une **scène** emporte les
+ * appariements qui s'en servent : une carte à qui il manque une moitié n'a plus
+ * rien à montrer. On le dit avant, pas après.
+ */
+function consequencesSuppression(ids) {
+  return surLeModifie(() => {
+    const scenes = ids.filter((id) => id.startsWith('SC')).map((id) => +id.slice(2));
+    if (!scenes.length) return [];
+    const nums = new Set(SCENES().filter((s) => scenes.includes(s.idx)).flatMap((s) => [s.pmNum, s.gpNum]));
+    return buildCartesDoubles()
+      .filter((c) => nums.has(c.pmNum) || nums.has(c.gpNum))
+      .map((c) => c.id);
+  });
+}
+
+/**
+ * Supprime des cartes du matériel. Rien n'est jamais effacé de la liste des
+ * ajouts : un appariement créé tient son identifiant de **sa place** dans la
+ * liste, et en retirer un ferait glisser les suivants — la carte D52 deviendrait
+ * D51, et les retouches rangées par rang suivraient la mauvaise carte. On note
+ * donc la carte comme retirée, et c'est tout : la suppression reste réversible,
+ * ce qui est bien le moins pour un geste qui ne demande pas confirmation deux
+ * fois.
+ */
+function supprimerCartes(ids) {
+  const m = composition();
+  const partants = new Set([...ids, ...consequencesSuppression(ids)]);
+  m.retires = [...new Set([...m.retires, ...partants])];
+  sauverCfg();
+  return partants.size;
+}
+
+function restaurerTout() {
+  composition().retires = [];
+  sauverCfg();
+}
+
+/**
+ * L'identifiant par lequel une carte se supprime. Une carte double et un Plan
+ * Large portent le leur ; les quatre exemplaires d'une version de Plan de
+ * départ n'en font qu'une — c'est la **version** qu'on retire, pas une de ses
+ * faces, puisqu'elles sont les deux côtés d'un même carton.
+ */
+function normaliserSuppression(ids) {
+  return [...new Set(ids.map((id) => {
+    const m = /^S([A-Z]|V\d+)f\d+$/.exec(id);
+    return m ? `S${m[1]}` : id;
+  }))];
+}
+
+/** Les scènes dont relèvent des moitiés sélectionnées, pour les supprimer. */
+function scenesDesPlans(plans) {
+  return surLeModifie(() => {
+    const nums = new Set(plans.map((p) => p.numOrigine));
+    return SCENES().filter((s) => nums.has(s.pmNum) || nums.has(s.gpNum));
+  });
+}
+
+/**
+ * Supprimer depuis les galeries Gros Plans / Plans Moyens. Là, ce ne sont pas
+ * des cartes qui sont affichées mais des **moitiés** : ce qui s'en va est la
+ * scène entière, ses deux moitiés d'un coup, et les cartes qui s'en servaient
+ * avec elle.
+ */
+function blocSupprimerScenes(plans) {
+  const scenes = scenesDesPlans(plans);
+  if (!scenes.length) return '';
+  const ids = scenes.map((s) => `SC${s.idx}`);
+  const emportees = consequencesSuppression(ids);
+  const n = scenes.length;
+  return `<div class="bloc-plan boite">
+    <div class="bp-tete"><b>${n > 1 ? `Ces ${n} scènes` : 'Cette scène'} dans le matériel</b></div>
+    <div class="rangee-mini">
+      <button class="pill mini danger" data-supprimer="${ids.join(' ')}"
+        title="Retirer ces moitiés du matériel">🗑 Supprimer ${n > 1 ? 'ces scènes' : 'cette scène'}</button>
+    </div>
+    <p class="aide">Un Plan Moyen et un Gros Plan sont les deux côtés d’une même scène : ils partent
+    ensemble.${emportees.length ? ` <b>${emportees.length} carte${emportees.length > 1 ? 's' : ''}
+    Plan Moyen / Gros Plan</b> s’en ${emportees.length > 1 ? 'servent' : 'sert'} et partira${
+  emportees.length > 1 ? 'ont' : ''} avec.` : ' Aucune carte ne s’en sert.'}</p>
+  </div>`;
+}
+
 function activerCartes(ids, actif) {
   const d = new Set(store.cfg.cartesDesactivees);
   for (const id of ids) { if (actif) d.delete(id); else d.add(id); }
@@ -2077,7 +2262,7 @@ function cartesDe(vue) {
       }));
     }
     if (vue === 'DEPART') {
-      return DEPARTS.flatMap((d) => d.faces.map((f, k) => ({
+      return DEPARTS().flatMap((d) => d.faces.map((f, k) => ({
         id: `S${d.type}f${f.num}`, type: 'DEPART', carte: { ...f, depart: true },
         plans: [plHalf({ ...f, depart: true })],
         libelle: `Plan de départ ${f.num} · version ${d.type} — face ${k + 1}`,
@@ -2244,12 +2429,56 @@ function barreJeu() {
       ${off ? ` · <b>${off} carte${off > 1 ? 's' : ''} écartée${off > 1 ? 's' : ''}</b> de la boîte, dans les deux jeux` : ''}
       · la galerie ci-dessous montre et règle toujours le jeu <b>Modifié</b>
     </span>
+    ${compositionRetouchee()}
     ${boutonIllus()}
     <button class="pill" id="mat-export">⭳ Tableau en PDF</button>
     <button class="pill" id="cartes-pdf" title="Un PDF par face de carte activée, à 88 × 63 mm, réunis dans une archive ZIP — le jeu Modifié, celui que la galerie montre">⭳ Cartes en PDF</button>
+    <button class="pill" id="planches-pdf" title="Toutes les cartes activées en planches A4 paysage — neuf cartes de 88 × 63 mm par page, traits de coupe, une page de rectos puis la page de ses versos">⭳ Cartes en Tableau PDF</button>
+    <label class="retournement" title="Le sens dans lequel votre imprimante retourne la feuille en recto-verso">
+      <span>verso</span>
+      <select id="planche-sens">${RETOURNEMENTS.map(([v, l]) => `<option value="${v}" ${
+    LS.get('planche.retournement', 'colonnes') === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    </label>
     <button class="pill" id="csv-export">⭳ Cartes en CSV</button>
     <button class="pill" id="csv-import">⭱ Importer un CSV</button>
   </div>`;
+}
+
+/**
+ * Le bouton de création de l'onglet courant. Chaque galerie crée ce qu'elle
+ * montre — un Plan Large dans les Plans Larges, une scène dans les Gros Plans.
+ * La vue « Tous les plans » mélange les familles : elle ne crée rien, on lui
+ * dit où aller.
+ */
+const A_CREER = {
+  CARTES: ['CARTES', '+ Nouvelle carte PM / GP', 'Un nouvel appariement de deux moitiés existantes'],
+  GP: ['GP', '+ Nouveau Gros Plan', 'Une nouvelle scène : elle fournit un Gros Plan et son Plan Moyen'],
+  PM: ['PM', '+ Nouveau Plan Moyen', 'Une nouvelle scène : elle fournit un Plan Moyen et son Gros Plan'],
+  PL: ['PL', '+ Nouveau Plan Large', 'Une carte Plan Large vierge, à régler et à illustrer'],
+  DEPART: ['DEPART', '+ Nouveau Plan de départ', 'Une nouvelle version recto-verso, ses deux faces vierges'],
+};
+
+function boutonCreer() {
+  const e = A_CREER[mat.vue];
+  if (!e) return '';
+  return `<button class="pill mini creer" data-creer="${e[0]}" title="${e[2]}">${e[1]}</button>`;
+}
+
+/**
+ * Ce que la composition du matériel a de changé — les cartes créées, celles
+ * qu'on a supprimées. Cela ne se lit nulle part ailleurs : une carte supprimée
+ * ne s'affiche plus, et il faut bien une porte pour la faire revenir.
+ */
+function compositionRetouchee() {
+  const m = composition();
+  const cree = nbAjoutees();
+  const off = m.retires.length;
+  if (!cree && !off) return '';
+  const bouts = [];
+  if (cree) bouts.push(`<b>${cree} carte${cree > 1 ? 's' : ''} créée${cree > 1 ? 's' : ''}</b>`);
+  if (off) bouts.push(`<b>${off} supprimée${off > 1 ? 's' : ''}</b>`);
+  return `<span class="compo-retouchee">${bouts.join(' · ')}
+    ${off ? '<button class="pill mini" id="compo-restaurer">↺ Restaurer les supprimées</button>' : ''}</span>`;
 }
 
 function galerieMateriel() {
@@ -2305,6 +2534,7 @@ function galerieMateriel() {
         horsVue ? ` <span class="aide">dont ${horsVue} hors de cette vue</span>` : ''}</span>
     <button class="pill mini" id="sel-tout">Tout sélectionner</button>
     <button class="pill mini" id="sel-rien" ${mat.plans.size ? '' : 'disabled'}>Ne rien sélectionner</button>
+    ${boutonCreer()}
     <span class="aide">clic pour choisir · ⌘/Ctrl+clic pour en ajouter une · maj+clic pour toute une série</span>
   </div>
 
@@ -2369,7 +2599,7 @@ function panneauEditeurBrut() {
     : `${plans.length} plans sélectionnés`;
 
   return `<h2>${titre}</h2>
-    ${mat.cartes.size ? blocBoite() : ''}
+    ${mat.cartes.size ? blocBoite() : blocSupprimerScenes(plans)}
     ${carteSeule ? apercuCarte(carteSeule) : ''}
     ${parPlan ? plansOrdonnes(plans, carteSeule).map(blocPlan).join('') : blocLot(plans)}
     ${carteSeule && carteSeule.type === 'DOUBLE' ? appariement(carteSeule.carte) : ''}`;
@@ -2393,9 +2623,9 @@ function blocBoite() {
     <div class="rangee-mini">
       <button class="pill mini" data-boite="1" ${dedans === n ? 'disabled' : ''}>✓ Activer</button>
       <button class="pill mini" data-boite="0" ${dedans === 0 ? 'disabled' : ''}>✕ Écarter de la boîte</button>
+      <button class="pill mini danger" data-supprimer="${normaliserSuppression(ids).join(' ')}"
+        title="Retirer ces cartes du matériel — pas seulement de la boîte">🗑 Supprimer du matériel</button>
     </div>
-    <p class="aide">Une carte écartée reste éditable mais ne part pas dans le paquet — dans l’un
-    comme dans l’autre jeu de matériel.</p>
   </div>`;
 }
 
@@ -2441,6 +2671,8 @@ function blocPlan(h) {
       <span class="tc-apercu">${tc(h.tc)}</span>
       ${h.tc !== imp.tc ? `<span class="imp-rappel">imprimé ${tc(imp.tc)}</span>` : ''}
     </label>
+
+    ${ligneIllustration([h])}
 
     <div class="champ-bloc">
       <span class="ch-lg">Icônes</span>
@@ -2494,6 +2726,8 @@ function blocLot(plans) {
       <input type="number" min="0" max="99" step="1" value="${tcCommun}" data-lot-tc="1" placeholder="—">
       ${tcCommun === '' ? '<span class="aide">minutages différents</span>' : `<span class="tc-apercu">${tc(tcCommun)}</span>`}
     </label>
+
+    ${ligneIllustration(plans)}
 
     <div class="champ-bloc">
       <span class="ch-lg">Icônes</span>
@@ -2610,6 +2844,111 @@ function choixIcones(plans, attrIcone, attrMort) {
   </div>`;
 }
 
+// --- L'illustration d'un plan ----------------------------------------------
+// Rien n'oblige un plan à garder le visuel que son numéro désigne : l'image est
+// une retouche comme le minutage ou le bandeau. C'est ce qui permet d'habiller
+// une carte qu'on vient de créer, ou d'échanger deux illustrations.
+//
+// Un site statique ne sait pas lister un dossier : l'inventaire des visuels est
+// écrit à la publication dans assets/images.json — déposer un fichier dans
+// assets/ suffit donc à le rendre choisissable.
+
+let inventaireImages = null;
+
+async function chargerImages() {
+  if (inventaireImages) return inventaireImages;
+  try {
+    const r = await fetch(`assets/images.json?v=${VERSION}`, { cache: 'no-cache' });
+    inventaireImages = r.ok ? await r.json() : {};
+  } catch { inventaireImages = {}; }
+  return inventaireImages;
+}
+
+const DOSSIERS_IMAGES = [['pl', 'Plans Larges et Plans de départ'], ['pm', 'Plans Moyens'], ['gp', 'Gros Plans']];
+
+/** « gp/317.webp » — de quoi nommer une image sans écrire tout son chemin. */
+const nomImage = (url) => String(url || '').replace(/^assets\//, '').replace(/\.webp$/i, '');
+
+/**
+ * La ligne « Illustration » du formulaire : la vignette du visuel actuel, qui
+ * s'ouvre d'un clic sur le choix de tous les autres. Sur un lot dont les plans
+ * ne portent pas la même image, la vignette reste vide — on peut quand même en
+ * poser une sur tous d'un coup.
+ */
+function ligneIllustration(plans) {
+  const cles = plans.map((p) => p.cle).join(' ');
+  const une = plans.every((p) => p.image === plans[0].image) ? plans[0].image : null;
+  const retouchees = plans.filter((p) => p.imprime && p.image !== p.imprime.image).length;
+  return `<div class="champ-ligne">
+    <span>Illustration</span>
+    <button class="vignette-illus ${une ? '' : 'melangee'}" data-image="${cles}"
+      title="Choisir une autre illustration"
+      style="${une ? `background-image:url('${une}')` : ''}">${une ? '' : '≠'}</button>
+    ${retouchees ? `<span class="imp-rappel">${plans.length > 1
+      ? `${retouchees} remplacée${retouchees > 1 ? 's' : ''}`
+      : `imprimée ${nomImage(plans[0].imprime.image)}`}</span>` : ''}
+    ${retouchees ? `<button class="pill mini" data-image-reset="${cles}">↺ imprimée</button>` : ''}
+  </div>`;
+}
+
+/**
+ * Pose une illustration sur des plans. Choisir exactement celle que le plan
+ * porte à l'impression efface la retouche plutôt que de la réécrire : un plan
+ * remis sur son visuel d'origine redevient « imprimé ».
+ */
+function poserImage(cles, url) {
+  surLeModifie(() => {
+    for (const c of cles) {
+      const p = planDeCle(c);
+      retoucher(c, 'image', !url || (p && p.imprime.image === url) ? undefined : url);
+    }
+  });
+}
+
+/** Le choix d'une illustration : toutes celles de la boîte, en vignettes. */
+async function ouvrirChoixImage(cles) {
+  const inv = await chargerImages();
+  const actuelles = new Set(surLeModifie(() => cles.map((c) => (planDeCle(c) || {}).image).filter(Boolean)));
+  const total = Object.values(inv).reduce((s, l) => s + l.length, 0);
+  const fond = document.createElement('div');
+  fond.className = 'modale-fond';
+  fond.innerHTML = `<div class="modale modale-images">
+    <h2>Illustration${cles.length > 1 ? ` — ${cles.length} plans` : ''}</h2>
+    <p class="aide">Les ${total} visuels de la boîte. Un clic pose l’image
+      ${cles.length > 1 ? 'sur toute la sélection' : 'sur ce plan'} ; rien n’empêche deux plans de
+      partager la même. Le numéro imprimé, lui, ne bouge pas — c’est l’identité du plan.</p>
+    ${DOSSIERS_IMAGES.map(([d, titre]) => (inv[d] && inv[d].length ? `<h3>${titre}</h3>
+      <div class="grille-illus">
+        ${inv[d].map((f) => {
+    const url = `assets/${d}/${f}`;
+    return `<button class="tuile-illus ${actuelles.has(url) ? 'on' : ''}" data-choix-image="${url}"
+            style="background-image:url('${url}')"><span>${f.replace(/\.webp$/i, '')}</span></button>`;
+  }).join('')}
+      </div>` : '')).join('')}
+    ${total ? '' : `<p class="encart attention">Aucune illustration trouvée. Le fichier
+      <code>assets/images.json</code> se réécrit à chaque publication ;
+      lance <code>node outils/versionner.mjs</code> après avoir ajouté des visuels.</p>`}
+    <div class="rangee-mini" style="margin-top:16px">
+      <button class="pill" data-choix-image="">Aucune illustration</button>
+      <button class="pill" data-fermer-modale="1">Fermer</button>
+    </div>
+  </div>`;
+
+  const fermer = () => { fond.remove(); document.removeEventListener('keydown', touche); };
+  const touche = (e) => { if (e.key === 'Escape') fermer(); };
+  document.addEventListener('keydown', touche);
+  fond.addEventListener('click', (e) => {
+    if (e.target === fond || e.target.closest('[data-fermer-modale]')) { fermer(); return; }
+    const b = e.target.closest('[data-choix-image]');
+    if (!b) return;
+    poserImage(cles, b.dataset.choixImage);
+    sauverCfg();
+    fermer();
+    vueMateriel();
+  });
+  document.body.appendChild(fond);
+}
+
 /** Ajoute ou retire une icône, en gardant l'ordre canonique des éléments. */
 function ajusterIcones(liste, e, delta) {
   const compte = Object.fromEntries(ELEMENT_IDS.map((x) => [x, liste.filter((y) => y === x).length]));
@@ -2717,7 +3056,10 @@ function appariement(carte) {
       <select data-paire="${carte.rang}" data-part="gp">${liste('GP', carte.gpNum)}</select></label>
     <label class="champ-ligne"><span>Plan Moyen</span>
       <select data-paire="${carte.rang}" data-part="pm">${liste('PM', carte.pmNum)}</select></label>
-    <p class="aide">La répartition imprimée est conservée tant qu’on n’y touche pas.</p>
+    <p class="aide">Une carte est <b>une feuille</b> : ses deux moitiés valent pour ses deux faces.
+    Changer le Plan Moyen ou le Gros Plan ici change donc le <b>recto et le verso</b> à la fois —
+    chaque face garde en revanche son propre minutage, ses icônes et son pouvoir. La répartition
+    imprimée est conservée tant qu’on n’y touche pas.</p>
   </div>`;
 }
 
@@ -2805,7 +3147,7 @@ function passeStats(h) {
 
 function statsJeu(modifie) {
   const etait = store.cfg.materielActif;
-  appliquerMateriel(modifie ? store.cfg.materiel : null, store.cfg.cartesDesactivees);
+  appliquerMateriel(modifie ? store.cfg.materiel : null, store.cfg.cartesDesactivees, store.cfg.materiel);
   try {
     const tous = plansDuPaquet();
     const plans = tous.filter(passeStats);
@@ -3002,7 +3344,7 @@ function declencheurs(obj, plans) {
  */
 function pouvoirsDuJeu(modifie) {
   const etait = store.cfg.materielActif;
-  appliquerMateriel(modifie ? store.cfg.materiel : null, store.cfg.cartesDesactivees);
+  appliquerMateriel(modifie ? store.cfg.materiel : null, store.cfg.cartesDesactivees, store.cfg.materiel);
   try {
     const plans = plansDuPaquet().filter(passeStats);
     const par = new Map();
@@ -3279,6 +3621,27 @@ function brancherMateriel() {
     refaire();
   }));
 
+  // Créer une carte : elle apparaît dans la galerie, et l'éditeur s'ouvre
+  // dessus — on vient de la faire, c'est là qu'on veut être.
+  app.querySelectorAll('[data-creer]').forEach((b) => b.addEventListener('click', () => {
+    const fait = creerCarte(b.dataset.creer);
+    if (!fait) { alert('Il faut au moins une moitié Plan Moyen et une moitié Gros Plan pour apparier une carte.'); return; }
+    mat.plans.clear(); mat.cartes.clear(); mat.ancre = null;
+    if (fait.carte) {
+      // Le nouvel appariement est le dernier de la liste.
+      const cartes = surLeModifie(buildCartesDoubles);
+      const c = cartes[cartes.length - 1];
+      if (c) ajouterTuile(cartesDe('CARTES').find((x) => x.id === c.id));
+    } else {
+      fait.cles.forEach((c) => mat.plans.add(c));
+      (fait.cartes || []).forEach((c) => mat.cartes.add(c));
+    }
+    refaire();
+  }));
+
+  const restaurer = app.querySelector('#compo-restaurer');
+  if (restaurer) restaurer.addEventListener('click', () => { restaurerTout(); refaire(); });
+
   const tout = app.querySelector('#sel-tout');
   if (tout) tout.addEventListener('click', () => { tuiles.forEach(ajouterTuile); refaire(); });
   const rien = app.querySelector('#sel-rien');
@@ -3310,6 +3673,10 @@ function brancherMateriel() {
   if (ex) ex.addEventListener('click', exporterMateriel);
   const cp = app.querySelector('#cartes-pdf');
   if (cp) cp.addEventListener('click', () => exporterCartesPDF(cp));
+  const pp = app.querySelector('#planches-pdf');
+  if (pp) pp.addEventListener('click', () => exporterPlanchesPDF(pp));
+  const ps = app.querySelector('#planche-sens');
+  if (ps) ps.addEventListener('change', () => LS.set('planche.retournement', ps.value));
   const cx = app.querySelector('#csv-export');
   if (cx) cx.addEventListener('click', exporterCSV);
   const ci = app.querySelector('#csv-import');
@@ -3358,9 +3725,46 @@ function brancherEditeur(refaire) {
     refaire();
   }));
 
+  // Supprimer efface du matériel, pas seulement de la boîte : on prévient de ce
+  // qui part avec, et l'on n'y va qu'une fois d'accord.
+  app.querySelectorAll('[data-supprimer]').forEach((el) => el.addEventListener('click', () => {
+    const ids = el.dataset.supprimer.split(' ').filter(Boolean);
+    if (!ids.length) return;
+    const avec = consequencesSuppression(ids).filter((x) => !ids.includes(x));
+    const quoi = ids.length > 1 ? `ces ${ids.length} cartes` : 'cette carte';
+    const suite = avec.length
+      ? `\n\n${avec.length} carte${avec.length > 1 ? 's' : ''} Plan Moyen / Gros Plan s’en `
+        + `${avec.length > 1 ? 'servent' : 'sert'} et partira${avec.length > 1 ? 'ont' : ''} avec.`
+      : '';
+    // eslint-disable-next-line no-alert -- supprimer du matériel n'est pas un
+    // réglage : mieux vaut une question de trop qu'une carte perdue sans le voir.
+    if (!confirm(`Retirer ${quoi} du matériel ?${suite}\n\nCela reste réversible :`
+      + ' « ↺ Restaurer les supprimées », en haut de l’écran Matériel.')) return;
+    supprimerCartes(ids);
+    mat.plans.clear(); mat.cartes.clear(); mat.ancre = null;
+    vueMateriel();
+  }));
+
   app.querySelectorAll('[data-champ-tc]').forEach((el) => el.addEventListener('change', () => {
     appliquerTc([el.dataset.champTc], el.value); sauverCfg(); refaire();
   }));
+
+  // L'illustration se change en cliquant dessus — sur la vignette du
+  // formulaire comme sur l'aperçu de la carte, qui est l'endroit où le regard
+  // se pose. Un plan sans clé — un aperçu de pose — n'ouvre rien.
+  app.querySelectorAll('[data-image]').forEach((el) => el.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    ouvrirChoixImage(el.dataset.image.split(' ').filter(Boolean));
+  }));
+  app.querySelectorAll('[data-image-reset]').forEach((el) => el.addEventListener('click', () => {
+    poserImage(el.dataset.imageReset.split(' ').filter(Boolean), null);
+    sauverCfg(); vueMateriel();
+  }));
+  app.querySelectorAll('.editeur-faces .illus[data-illus]').forEach((el) => {
+    el.classList.add('illus-cliquable');
+    el.title = 'Choisir une autre illustration';
+    el.addEventListener('click', () => ouvrirChoixImage([el.dataset.illus]));
+  });
 
   // Renuméroter ne touche qu'un plan : appliquer le même numéro à toute une
   // sélection ne ferait que des doublons.
@@ -3640,7 +4044,7 @@ function memeObjectif(a, b) {
 const CSV_COLS = ['objet', 'cle', 'numero', 'minutage', 'icones', 'mort',
   'pouvoir', 'points', 'cible', 'portee', 'sens', 'seuil',
   'pouvoir2', 'points2', 'cible2', 'portee2', 'sens2', 'seuil2',
-  'gros_plan', 'plan_moyen', 'boite'];
+  'illustration', 'gros_plan', 'plan_moyen', 'boite'];
 
 function csvEchappe(v) {
   const t = v === undefined || v === null ? '' : String(v);
@@ -3671,16 +4075,16 @@ function exporterCSV() {
     for (const p of catalogue()) {
       lignes.push([
         'plan', p.cle, p.num, p.tc, p.el.join('|'), p.mort ? 'oui' : 'non',
-        ...colsObj(p.obj), ...colsObj(p.obj2), '', '', '',
+        ...colsObj(p.obj), ...colsObj(p.obj2), p.image, '', '', '',
       ].map(csvEchappe).join(';'));
     }
     for (const c of buildCartesDoubles()) {
-      lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+      lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
         c.gpNum, c.pmNum, estDesactivee(c.id) ? 'non' : 'oui'].map(csvEchappe).join(';'));
     }
     for (const f of ['PL', 'DEPART']) {
       for (const c of cartesDe(f)) {
-        lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+        lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
           '', '', estDesactivee(c.id) ? 'non' : 'oui'].map(csvEchappe).join(';'));
       }
     }
@@ -3812,6 +4216,9 @@ function appliquerCSV(texte) {
         if (JSON.stringify(o || null) !== JSON.stringify(p.imprime.obj || null)) mis.obj = o;
         const o2 = objDepuisCSV(r, '2');
         if (JSON.stringify(o2 || null) !== JSON.stringify(p.imprime.obj2 || null)) mis.obj2 = o2;
+        // L'illustration : un chemin sous assets/, ou vide pour celle du numéro.
+        const img = (r.illustration || '').trim();
+        if (img && img !== p.imprime.image && /^assets\//.test(img)) mis.image = img;
         if (Object.keys(mis).length) plans[p.cle] = mis;
 
       } else if (objet === 'carte') {
@@ -3829,7 +4236,11 @@ function appliquerCSV(texte) {
   });
 
   if (!lus) throw new Error('aucune ligne reconnue');
-  store.cfg.materiel = { plans, paires };
+  // Le tableau décrit les retouches, pas la composition : les cartes créées et
+  // celles qu'on a supprimées lui survivent — un CSV ne sait pas les exprimer,
+  // il ne doit donc pas les effacer.
+  const { ajouts, retires } = store.cfg.materiel;
+  store.cfg.materiel = { plans, paires, ajouts, retires };
   store.cfg.cartesDesactivees = hors;
   sauverCfg();
   const n = Object.keys(plans).length + Object.keys(paires).length;
@@ -3909,7 +4320,7 @@ function facesCartes() {
       if (!c.actif) return;
       faces.push({ nom: nomFichier(`plan-large-${plHalf(c).num}`), html: renderCarte(c, false) });
     });
-    DEPARTS.forEach((d) => d.faces.forEach((f, k) => {
+    DEPARTS().forEach((d) => d.faces.forEach((f, k) => {
       const id = `S${d.type}f${f.num}`;
       if (estDesactivee(id)) return;
       const carte = { ...f, depart: true, type: 'DEPART', id };
@@ -3918,6 +4329,79 @@ function facesCartes() {
     }));
     return faces;
   });
+}
+
+// --- Les planches d'impression ----------------------------------------------
+// L'autre façon de sortir les cartes : non plus un fichier par face, mais des
+// **planches A4** de neuf cartes prêtes à couper, une page de rectos suivie de
+// la page de ses versos.
+
+/**
+ * Les cartes en **couples recto / verso**, telles qu'une imprimerie les veut.
+ * Une carte Plan Moyen / Gros Plan a ses deux faces ; un Plan Large a son dos
+ * de pioche ; un Plan de départ a son autre face — c'est bien une seule carte,
+ * même si l'éditeur en montre les deux faces séparément.
+ */
+function couplesCartes() {
+  return surLeModifie(() => {
+    const out = [];
+    buildCartesDoubles().forEach((c) => {
+      if (!c.actif) return;
+      out.push({ recto: renderCarte(c, false), verso: renderCarte(c, true) });
+    });
+    buildPlansLarges().forEach((c) => {
+      if (!c.actif) return;
+      // Le dos d'une pioche de Plans Larges est un Plan Large vierge : c'est
+      // bien le verso imprimé de la carte.
+      out.push({ recto: renderCarte(c, false), verso: renderDos('Plans Larges', 0, {}) });
+    });
+    DEPARTS().forEach((d) => {
+      const faces = d.faces.filter((f) => !estDesactivee(`S${d.type}f${f.num}`));
+      if (!faces.length) return;
+      const carte = (f) => renderCarte({ ...f, depart: true, type: 'DEPART', id: `S${d.type}f${f.num}` }, false);
+      out.push({ recto: carte(faces[0]), verso: faces[1] ? carte(faces[1]) : null });
+    });
+    return out;
+  });
+}
+
+/**
+ * Le sens dans lequel la feuille se retourne. Un imprimeur bascule soit autour
+ * de l'axe **vertical** — les colonnes s'inversent, c'est le cas courant —,
+ * soit autour de l'axe **horizontal**, et les rangées s'inversent alors. On ne
+ * peut pas le deviner : cela se règle, et se retient.
+ */
+const RETOURNEMENTS = [
+  ['colonnes', 'colonnes inversées (retournement gauche-droite)'],
+  ['rangees', 'rangées inversées (retournement haut-bas)'],
+  ['aucun', 'aucune inversion'],
+];
+
+function gabaritPlanche() {
+  const sens = LS.get('planche.retournement', 'colonnes');
+  return { ...PLANCHE, retournement: sens };
+}
+
+async function exporterPlanchesPDF(bouton) {
+  const couples = couplesCartes();
+  if (!couples.length) { alert('Aucune carte activée : il n’y a rien à exporter.'); return; }
+  const libelle = bouton.textContent;
+  bouton.disabled = true;
+  try {
+    const pdf = await planchesCartes(couples, {
+      version: VERSION,
+      gabarit: gabaritPlanche(),
+      avance: (fait, total) => { bouton.textContent = `⏳ ${fait} / ${total}`; },
+    });
+    const d = new Date();
+    const quand = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+    telecharger(new Blob([pdf], { type: 'application/pdf' }), `edit-planches-${quand}.pdf`);
+  } catch (e) {
+    alert(`L’export a échoué : ${e && e.message ? e.message : e}`);
+  } finally {
+    bouton.disabled = false;
+    bouton.textContent = libelle;
+  }
 }
 
 async function exporterCartesPDF(bouton) {
@@ -4052,7 +4536,7 @@ function vueVariables() {
         <div class="chips">
           ${Object.keys(store.cfg.filtreFamilles).map((k) => {
             const on = store.cfg.filtreFamilles[k];
-            const n = SCENES.filter((s) => s.famille === k).length;
+            const n = surLeModifie(() => SCENES().filter((s) => s.famille === k).length);
             return `<label class="chip ${on ? 'on' : ''}"><input type="checkbox" data-fam="${k}" ${on ? 'checked' : ''}>${k} <b style="opacity:.6">${n}</b></label>`;
           }).join('')}
         </div>

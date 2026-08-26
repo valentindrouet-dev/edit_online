@@ -1,8 +1,21 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.70';
-export const BUILD_DATE = '2026-08-27 05:10';
+export const VERSION = '1.71';
+export const BUILD_DATE = '2026-08-27 07:40';
 
 export const CHANGELOG = [
+  {
+    v: '1.71',
+    date: '27/08/2026',
+    items: [
+      "<b>On crée et on supprime des cartes.</b> Chaque galerie du Matériel a son bouton : <b>+ Nouveau Plan Large</b>, <b>+ Nouveau Plan de départ</b> — une version recto-verso, ses deux faces —, <b>+ Nouveau Gros Plan</b> ou <b>Plan Moyen</b>, <b>+ Nouvelle carte PM / GP</b>. La carte naît vierge, l'éditeur s'ouvre dessus, et il n'y a plus qu'à la régler. Le <b>🗑 Supprimer du matériel</b> fait l'inverse — et ce n'est pas « écarter de la boîte » : la carte quitte le matériel, dans l'imprimé comme dans le modifié. Le nombre de cartes du jeu se change donc enfin pour de bon.",
+      "<b>Une moitié ne se crée pas seule.</b> Un Plan Moyen et un Gros Plan sont les <b>deux côtés d'une même scène</b> : en créer un crée l'autre, et supprimer l'un emporte l'autre — avec les cartes qui s'en servaient, ce qu'on vous dit avant de le faire. Rien n'est effacé sans retour : un <b>↺ Restaurer les supprimées</b> attend en haut de l'écran.",
+      "<b>Ce qui existe ne bouge pas de place.</b> Les cinquante appariements imprimés gardent leurs rangs quoi qu'il arrive — c'est par ce rang que les retouches d'appariement sont rangées. Supprimer la carte 2 ne fait donc pas glisser la 7 : sa retouche reste sur elle. Vérifié.",
+      "<b>L'illustration d'un plan se change en cliquant dessus</b> — sur la vignette du formulaire comme sur la carte de l'aperçu. S'ouvre alors le choix des <b>84 visuels</b> de la boîte, rangés par famille, celui du plan marqué. Deux plans peuvent partager la même image ; le numéro imprimé, lui, ne bouge pas — c'est l'identité du plan. C'est ce qui permet d'habiller une carte qu'on vient de créer. L'inventaire se réécrit à chaque publication : déposer un fichier dans <code>assets/</code> suffit à le rendre choisissable.",
+      "<b>⭳ Cartes en Tableau PDF</b> — les cartes en <b>planches A4 paysage</b>, neuf par page en 3 × 3, au format exact de vos impressions : cartes de 88 × 63 mm, marges de 16,5 et 10,5 mm, traits de coupe d'un point traversant la page. Une page de rectos, puis <b>la page de ses versos</b>, colonnes inversées pour que chaque verso retombe derrière son recto. Le sens de retournement se règle à côté du bouton — les imprimantes ne basculent pas toutes la feuille du même côté. Les 66 cartes tiennent en <b>16 pages</b>, sorties en une quinzaine de secondes.",
+      "<b>Le verso suit l'appariement</b>, et l'éditeur le dit désormais : une carte est une feuille, ses deux moitiés valent pour ses deux faces. Changer son Plan Moyen change le recto <b>et</b> le verso — chaque face gardant son propre minutage, ses icônes et son pouvoir. C'était déjà le cas ; ce n'était écrit nulle part.",
+      "Le texte « une carte écartée reste éditable… » quitte le panneau d'édition.",
+    ],
+  },
   {
     v: '1.70',
     date: '27/08/2026',

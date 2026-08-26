@@ -974,6 +974,46 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .modale { background: #fff; border-radius: var(--r); padding: 26px 28px; max-width: 720px; width: 100%; box-shadow: var(--ombre-forte); max-height: 88vh; overflow: auto; }
 .modale h2 { font-size: 1.2rem; text-transform: none; letter-spacing: 0; color: var(--encre); margin-bottom: 6px; }
 
+/* Créer une carte, en supprimer une : la composition du matériel. */
+.pill.creer { border-color: var(--violet-clair); color: var(--violet); font-weight: 600; }
+.pill.danger { border-color: #e7a6a6; color: #a51f1f; }
+.pill.danger:hover { background: #fdecec; }
+.compo-retouchee { display: inline-flex; align-items: center; gap: 8px; font-size: .74rem; color: var(--violet); }
+
+/* Le sens de retournement des planches, à côté de son bouton d'export. */
+.retournement { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; color: var(--gris); }
+.retournement select { font-size: .74rem; padding: 3px 6px; }
+
+/* --- Le choix d'une illustration ------------------------------------------ */
+
+.modale-images { max-width: 980px; }
+.modale-images h3 { margin: 18px 0 8px; font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: var(--gris); }
+
+.grille-illus { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.tuile-illus {
+  position: relative; aspect-ratio: 317 / 227; border: 2px solid transparent; border-radius: 6px;
+  background: #eee center/cover no-repeat; cursor: pointer; padding: 0; overflow: hidden;
+}
+.tuile-illus:hover { border-color: var(--orange); }
+.tuile-illus.on { border-color: var(--violet); box-shadow: 0 0 0 2px var(--violet-pale); }
+.tuile-illus span {
+  position: absolute; left: 0; right: 0; bottom: 0; font-size: .62rem; padding: 2px 0;
+  background: rgba(0,0,0,.55); color: #fff; letter-spacing: .04em;
+}
+
+/* La vignette du formulaire : l'image actuelle, cliquable. */
+.vignette-illus {
+  width: 62px; height: 44px; border-radius: 5px; border: 1px solid var(--gris-clair);
+  background: #f2f0f6 center/cover no-repeat; cursor: pointer; padding: 0;
+  display: grid; place-items: center; color: var(--gris); font-weight: 700;
+}
+.vignette-illus:hover { border-color: var(--orange); }
+.vignette-illus.melangee { background-image: none; }
+
+/* Sur l'aperçu d'une carte, l'illustration se donne pour cliquable. */
+.illus-cliquable { cursor: pointer; }
+.illus-cliquable:hover { outline: 2px solid var(--orange); outline-offset: -2px; }
+
 .vide { text-align: center; color: var(--gris); padding: 40px 20px; }
 
 /* --- Règles versionnées --------------------------------------------------- */

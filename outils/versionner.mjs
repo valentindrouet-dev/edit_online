@@ -61,4 +61,21 @@ if (swMaj !== sw) ecrire('sw.js', swMaj);
 
 ecrire('version.json', `${JSON.stringify({ version: VERSION, date: DATE }, null, 2)}\n`);
 
-console.log(`v${VERSION} — ${touches} module(s) estampillé(s), sw.js et version.json à jour.`);
+// --- L'inventaire des illustrations ----------------------------------------
+// Un site statique ne sait pas lister un dossier : pour proposer le choix d'une
+// illustration, il faut lui dire ce qu'il y a. Le fichier se refait à chaque
+// publication — déposer un visuel dans assets/ suffit donc à le rendre
+// choisissable, sans toucher au code.
+
+const IMAGES = ['pl', 'pm', 'gp'];
+const inventaire = {};
+for (const d of IMAGES) {
+  inventaire[d] = readdirSync(join(racine, 'assets', d))
+    .filter((f) => /\.(webp|png|jpe?g|avif)$/i.test(f))
+    .sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
+}
+ecrire('assets/images.json', `${JSON.stringify(inventaire, null, 2)}\n`);
+const nbImages = Object.values(inventaire).reduce((s, l) => s + l.length, 0);
+
+console.log(`v${VERSION} — ${touches} module(s) estampillé(s), sw.js, version.json`
+  + ` et assets/images.json (${nbImages} illustrations) à jour.`);

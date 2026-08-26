@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.70';
+import { ELEMENT_IDS } from './data.js?v=1.71';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -103,10 +103,18 @@ export const DEFAULTS = {
   // et le MODIFIÉ, qui porte les retouches de l'éditeur. `materielActif` dit
   // lequel se joue — passer de l'un à l'autre ne détruit rien.
   materielActif: 'MODIFIE',   // 'IMPRIME' (le matériel d'origine) | 'MODIFIE'
-  // `plans` surcharge le minutage, les icônes et le bandeau d'un plan, indexé
-  // par sa clé (numéro + face : « 201R », « 201V », « 101 ») ; `paires` refait
-  // l'appariement Plan Moyen / Gros Plan d'une carte, indexé par son rang.
-  materiel: { plans: {}, paires: {} },
+  // `plans` surcharge le minutage, les icônes, l'illustration et le bandeau
+  // d'un plan, indexé par sa clé (numéro + face : « 201R », « 201V », « 101 ») ;
+  // `paires` refait l'appariement Plan Moyen / Gros Plan d'une carte, indexé par
+  // son rang. `ajouts` porte les cartes créées de toutes pièces et `retires`
+  // celles qu'on a supprimées : ces deux-là ne sont pas des retouches mais la
+  // **composition du matériel**, et valent donc pour l'imprimé comme pour le
+  // modifié — une carte qui n'existe pas n'existe dans aucun des deux jeux.
+  materiel: {
+    plans: {}, paires: {},
+    ajouts: { scenes: [], larges: [], departs: [], paires: [] },
+    retires: [],
+  },
   // Les cartes écartées de la boîte, par identifiant. Vaut pour les deux jeux :
   // c'est la composition du paquet, pas une retouche de carte.
   cartesDesactivees: [],
@@ -208,6 +216,16 @@ export function migrerCfg(lu) {
   if (!lu || typeof lu !== 'object') return {};
   const out = { ...lu };
   for (const k of ['chutierPL', 'chutierPMGP']) if (out[k] === 0) delete out[k];
+  // `materiel` est écrasé en bloc par Object.assign : une table enregistrée
+  // avant la v1.71 n'a ni cartes créées ni cartes supprimées, et il faut lui
+  // donner les cases vides — sans quoi tout ce qui les lit trouve `undefined`.
+  if (out.materiel && typeof out.materiel === 'object') {
+    out.materiel = {
+      plans: {}, paires: {}, retires: [],
+      ...out.materiel,
+      ajouts: { scenes: [], larges: [], departs: [], paires: [], ...(out.materiel.ajouts || {}) },
+    };
+  }
   return out;
 }
 
