@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.71';
-export const BUILD_DATE = '2026-08-27 07:40';
+export const VERSION = '1.72';
+export const BUILD_DATE = '2026-08-27 08:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.72',
+    date: '27/08/2026',
+    items: [
+      "<b>Correction — « avant » et « après » ne quittent plus la ligne du plan. Règles v0.14.3.</b> Un bandeau <b>◀ Véhicule</b> comptait les véhicules de <b>tout le montage</b> placés avant lui, séquences du dessus comprises : sur la table, un Plan Moyen en trouvait <b>six</b> là où sa ligne n'en portait que <b>trois</b>, et rapportait le double de ce qu'il annonçait. Il compte désormais dans <b>sa séquence</b> — du début de la ligne jusqu'à lui —, et <b>Véhicule ▶</b> de lui jusqu'au bout de sa ligne.",
+      "<b>Trois des quatre portées se lisent donc dans la ligne</b> — ◀, ▶ et ◀ ▶ — et une seule en sort : le bandeau <b>sans flèches</b>, qui compte le montage entier. Les flèches disent de quel côté du plan on compte ; le banc en lignes le rend littéral, et c'est ce qui se voit sur la table. Une séquence posée au-dessus n'est pas « avant » : elle est ailleurs.",
+      "Le montage continue de <b>se lire d'un seul tenant</b> pour ce qui s'y lit vraiment d'un bout à l'autre — le minutage dans l'ordre, et les bandeaux sans flèches. Les libellés le disent maintenant en toutes lettres : « 2 × Véhicule <b>avant elle dans sa ligne</b> », dans l'éditeur comme dans les infobulles.",
+      "<b>Aucune carte imprimée n'est touchée</b> : aucune ne porte de portée « avant » ou « après ». Ce sont les bandeaux réglés dans l'éditeur qui rapportent enfin ce qu'ils annoncent.",
+    ],
+  },
   {
     v: '1.71',
     date: '27/08/2026',

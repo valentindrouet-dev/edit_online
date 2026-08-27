@@ -14,13 +14,24 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.71';
-import { elIcon } from './icons.js?v=1.71';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.72';
+import { elIcon } from './icons.js?v=1.72';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.14.3',
+    date: '27/08/2026',
+    origine: 'Correction demandée par l’auteur',
+    corps: (c) => corps_0_14_3(c),
+    items: [
+      '<b>« Avant » et « après » ne quittent pas la ligne du plan.</b> <b>◀ Héroïne</b> compte les Héroïnes de <b>sa séquence</b>, depuis le début de la ligne jusqu’à cette carte comprise ; <b>Héroïne ▶</b> celles de cette carte jusqu’au bout de sa ligne. Une séquence posée au-dessus n’est pas « avant » : elle est ailleurs.',
+      'Trois des quatre portées se lisent donc <b>dans la ligne</b> — ◀, ▶ et ◀ ▶ —, et une seule en sort : <b>Héroïne</b> sans flèche, qui compte le <b>montage entier</b>. Les flèches disent de quel côté du plan on compte, et le banc en lignes le rend littéral.',
+      'Le montage continue de <b>se lire d’un seul tenant</b> pour ce qui s’y lit vraiment d’un bout à l’autre : le minutage dans l’ordre, et les bandeaux qui comptent le montage entier.',
+    ],
+  },
   {
     v: '0.14.2',
     date: '27/08/2026',
@@ -239,6 +250,33 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.14.3 ---------------------------------------------------------------
+// « Avant » et « après » désignaient une place dans le film entier, lu de ligne
+// en ligne. Ils désignent désormais une place **dans la séquence** : les
+// flèches d'un bandeau disent de quel côté du plan on compte, et le banc en
+// lignes le rend littéral. Une ligne posée au-dessus n'est pas « avant ».
+
+function corps_0_14_3(c) {
+  return corps_0_14_2(c)
+    .replace(
+      /<li><b>La portée<\/b>[\s\S]*?un plan compte toujours ce qu’il porte\.<\/span><\/li>/,
+      `<li><b>La portée</b>, que ses flèches donnent à lire. ${maj('0.14.3', `<b>Trois des quatre ne
+      quittent pas la ligne du plan</b> : <b>◀ Héroïne</b> compte parmi les cartes de <b>sa
+      séquence</b> placées <b>avant</b> celle-ci — du début de la ligne jusqu’à elle —,
+      <b>Héroïne ▶</b> parmi celles de sa séquence placées <b>après</b> — d’elle jusqu’au bout de la
+      ligne —, et <b>◀ Héroïne ▶</b> dans <b>sa séquence entière</b>. Une séquence posée au-dessus
+      n’est pas « avant » : elle est ailleurs. Seul <b>Héroïne</b> tout court en sort, et compte le
+      <b>montage entier</b>.`)} ${maj('0.14.2', `Dans les quatre cas, <b>la carte qui porte le
+      bandeau compte pour elle-même</b> : un plan compte toujours ce qu’il porte.`)}</li>`)
+    .replace(
+      /<b>Le montage se lit d’un seul tenant\.<\/b>[\s\S]*?et non ligne par ligne\./,
+      `<b>Le montage se lit d’un seul tenant.</b> Du premier plan en <b>haut à gauche</b> de la
+      première ligne jusqu’au dernier en <b>bas à droite</b> de la dernière, les lignes s’enchaînant
+      comme les lignes d’un texte. ${maj('0.14.3', `C’est ainsi que se lit ce qui regarde le
+      <b>montage entier</b> — le minutage dans l’ordre, et les bandeaux sans flèches. Les bandeaux à
+      flèches, eux, ne regardent que <b>leur propre ligne</b>.`)}`);
 }
 
 // --- v0.14.2 ---------------------------------------------------------------

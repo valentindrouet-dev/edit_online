@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, objPortee, objsDe } from './data.js?v=1.71';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, objPortee, objsDe } from './data.js?v=1.72';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -62,9 +62,18 @@ function couples(plans, els) {
 }
 
 /**
- * Les plans qu'un bandeau regarde. Sa portée le dit : les cartes placées avant
- * lui dans le montage, celles placées après, celles de sa séquence, ou le
- * montage entier — lu de gauche à droite, séquences comprises.
+ * Les plans qu'un bandeau regarde. Sa portée le dit, et **trois des quatre
+ * portées ne quittent pas la ligne du plan** :
+ *
+ *   ◀ Héroïne    sa ligne, de son début jusqu'à cette carte comprise
+ *   Héroïne ▶    sa ligne, de cette carte comprise jusqu'à son bout
+ *   ◀ Héroïne ▶  sa ligne entière
+ *   Héroïne      le montage entier — la seule qui en sorte
+ *
+ * « Avant » et « après » désignent donc une place **dans la séquence**, pas
+ * dans le film : une ligne posée au-dessus n'est pas « avant », elle est
+ * ailleurs. Les flèches disent de quel côté du plan on compte, et le banc en
+ * lignes rend cela littéral — c'est ce qui se voit sur la table.
  */
 export function porteeDe(obj, sequence, banc, cfg, porteur) {
   const montage = tousLesPlans(banc);
@@ -75,14 +84,18 @@ export function porteeDe(obj, sequence, banc, cfg, porteur) {
   const p = objPortee(obj, cfg);
   if (p === 'SEQUENCE') return sequence;
   if (p === 'AVANT' || p === 'APRES') {
-    const i = porteur ? montage.indexOf(porteur) : -1;
+    // La ligne du porteur. `sequence` la donne d'ordinaire ; on la retrouve
+    // dans le banc si l'appelant s'est trompé de séquence.
+    const ligne = sequence && sequence.includes(porteur)
+      ? sequence : banc.sequences.find((s) => s.includes(porteur));
+    const i = ligne ? ligne.indexOf(porteur) : -1;
     if (i < 0) return [];
     // **La carte qui porte le bandeau compte pour elle-même.** « ◀ Héroïne »
     // voit l'Héroïne de sa propre carte comme celles d'avant, « Héroïne ▶ »
     // comme celles d'après. Un plan compte toujours ce qu'il porte : les deux
     // autres portées — sa séquence, le montage — l'ont toujours fait, et une
     // carte qui annonce une icône sans la compter se lit comme une erreur.
-    return p === 'AVANT' ? montage.slice(0, i + 1) : montage.slice(i);
+    return p === 'AVANT' ? ligne.slice(0, i + 1) : ligne.slice(i);
   }
   return montage;
 }

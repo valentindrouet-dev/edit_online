@@ -123,11 +123,14 @@ export const CADRAGES_POUVOIR = ['PL', 'PM', 'GP', 'DEP'];
 // disent d'un coup d'œil — « ◀ Héroïne » avant, « Héroïne ▶ » après,
 // « ◀ Héroïne ▶ » dans la séquence, « Héroïne » tout court dans le montage.
 
+// Trois de ces quatre portées ne quittent pas la LIGNE du plan : « avant » et
+// « après » désignent une place dans la séquence, pas dans le film. Une ligne
+// posée au-dessus n'est pas « avant », elle est ailleurs.
 export const PORTEES = [
-  { id: 'AVANT',    label: 'avant cette carte',  court: 'avant',   gauche: true,  droite: false },
-  { id: 'APRES',    label: 'après cette carte',  court: 'après',   gauche: false, droite: true },
-  { id: 'SEQUENCE', label: 'dans sa séquence',   court: 'séquence', gauche: true,  droite: true },
-  { id: 'MONTAGE',  label: 'dans le montage',    court: 'montage', gauche: false, droite: false },
+  { id: 'AVANT',    label: 'avant elle dans sa ligne', court: 'avant',   gauche: true,  droite: false },
+  { id: 'APRES',    label: 'après elle dans sa ligne', court: 'après',   gauche: false, droite: true },
+  { id: 'SEQUENCE', label: 'dans toute sa ligne',      court: 'séquence', gauche: true,  droite: true },
+  { id: 'MONTAGE',  label: 'dans le montage entier',   court: 'montage', gauche: false, droite: false },
 ];
 
 export const PORTEE_IDS = PORTEES.map((p) => p.id);
