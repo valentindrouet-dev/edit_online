@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.72';
+import { ELEMENT_IDS } from './data.js?v=1.73';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -34,6 +34,24 @@ export const DEFAULTS = {
   // séquences, et c'est le Raccord qui permet d'étoffer une ligne plutôt que
   // d'en ouvrir une de plus. 0 = aucune limite (variante).
   sequencesMax: 5,
+  // Variante — un même plan ne se répète pas. Un film ne montre pas deux fois
+  // le même plan : on peut l'interdire, et choisir jusqu'où porte l'interdit.
+  //   AUCUNE   un plan peut se répéter — la règle officielle
+  //   MONTAGE  jamais deux fois dans tout le banc
+  //   SEQUENCE jamais deux fois dans une même ligne
+  //   VOISIN   jamais deux fois côte à côte
+  // Deux plans sont « le même » quand ils portent le même numéro imprimé — le
+  // recto et le verso d'une moitié en font partie : c'est la même image. Un
+  // Raccord, une Ouverture, un Générique ne sont pas des plans : ils ne
+  // tombent donc pas sous cette règle, comme ils ne comptent ni dans les dix
+  // plans ni dans la taille d'une séquence.
+  planUnique: 'AUCUNE',
+  // Variante — une seule pioche, face cachée, où les Plans Larges sont mêlés
+  // aux cartes Plan Moyen / Gros Plan, et une seule rivière devant elle. On ne
+  // choisit plus sa famille : on prend ce qui vient. Incompatible avec
+  // `sansPlanDepart`, qui a besoin d'une rivière de Plans Larges à part pour
+  // n'offrir qu'eux tant qu'un banc est vide — voir `piochesMelees`.
+  piochesMelangees: false,
   // Une Carte Raccord relie. Sur une seule bande, elle se pose entre deux
   // séquences et les raccorde forcément. En lignes, elle fait **charnière** au
   // bout d'une ligne : un Plan Large peut alors s'y poser de l'autre côté
@@ -257,6 +275,16 @@ export const SCHEMA = [
       aide: 'cinq par les règles ; passé ce compte, un Plan Large n’entre plus que par la '
         + 'charnière d’un Raccord. 0 = aucune limite' },
     { k: 'plContigu', l: 'Deux Plans Larges peuvent se toucher', t: 'bool' },
+    { k: 'planUnique', l: 'Variante — pas deux fois le même plan', t: 'choix', options: [
+      ['AUCUNE', 'autorisé — un plan peut se répéter'],
+      ['MONTAGE', 'jamais deux fois dans le banc'],
+      ['SEQUENCE', 'jamais deux fois dans une même séquence'],
+      ['VOISIN', 'jamais deux fois côte à côte'],
+    ], aide: 'même numéro imprimé = même plan, recto et verso confondus ; un Raccord n’est pas un '
+      + 'plan et ne tombe pas sous la règle' },
+    { k: 'piochesMelangees', l: 'Variante — pioches mélangées', t: 'bool',
+      aide: 'une seule pioche face cachée et une seule rivière, Plans Larges et cartes PM / GP '
+        + 'confondus ; sans effet tant que « pas de Plans de départ » est coché' },
     { k: 'raccordConnecte', l: 'Une Carte Raccord relie deux séquences', t: 'bool',
       aide: 'en lignes, elle fait charnière : un Plan Large se pose de l’autre côté d’elle, '
         + 'dans la même ligne. Sur une seule bande, elle se pose entre deux séquences et les '

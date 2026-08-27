@@ -14,13 +14,24 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.72';
-import { elIcon } from './icons.js?v=1.72';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.73';
+import { elIcon } from './icons.js?v=1.73';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.14.4',
+    date: '27/08/2026',
+    origine: 'Variantes ajoutées par l’auteur',
+    corps: (c) => corps_0_14_4(c),
+    items: [
+      'Deux règles optionnelles rejoignent le texte, et une <b>section Variantes</b> les rassemble enfin — celles qui existaient déjà comprises. Chacune dit si elle est en vigueur dans la partie en cours.',
+      '<b>Pas deux fois le même plan.</b> Un film ne montre pas deux fois le même plan : on peut l’interdire, et choisir jusqu’où porte l’interdit — dans <b>tout le banc</b>, dans <b>une même séquence</b>, ou seulement <b>côte à côte</b>. Deux plans sont « le même » quand ils portent le même numéro imprimé, recto et verso confondus : c’est la même image. Un <b>Raccord n’est pas un plan</b> et échappe à la règle, comme il échappe déjà au compte des dix plans.',
+      '<b>Pioches mélangées.</b> Une seule pioche, <b>face cachée</b>, où les Plans Larges sont mêlés aux cartes Plan Moyen / Gros Plan, et une seule rivière de six cartes devant elle. On ne choisit plus sa famille : on prend ce qui vient. Cette variante et <b>« pas de Plans de départ » ne vont pas ensemble</b> — celle-là a besoin d’une rivière de Plans Larges à part pour n’offrir qu’eux tant qu’un banc est vide.',
+    ],
+  },
   {
     v: '0.14.3',
     date: '27/08/2026',
@@ -250,6 +261,70 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.14.4 ---------------------------------------------------------------
+// Les variantes vivaient dans les Variables et se devinaient à l'usage : le
+// texte n'en disait rien. Elles ont désormais leur section, et chacune y dit si
+// elle est en vigueur dans la partie qu'on est en train de lire.
+
+/** Une variante du texte : son titre, ce qu'elle fait, et si elle joue ici. */
+function variante(titre, active, texte) {
+  return `<li class="${active ? 'variante-on' : ''}"><b>${titre}</b>${
+    active ? ' <span class="etiquette">en vigueur</span>' : ''} — ${texte}</li>`;
+}
+
+function corps_0_14_4(c) {
+  const u = c.planUnique && c.planUnique !== 'AUCUNE' ? c.planUnique : '';
+  const portee = { MONTAGE: 'dans <b>tout le banc</b>', SEQUENCE: 'dans <b>une même séquence</b>',
+    VOISIN: '<b>côte à côte</b>' }[u] || '';
+  const melees = !!c.piochesMelangees && !c.sansPlanDepart;
+
+  const section = `
+  ${majBloc('0.14.4', `<h3>Variantes</h3>
+  <p>Des règles optionnelles, qui se cochent sur l’accueil ou se règlent dans <b>Variables</b> ⚙.
+  Celles qui jouent dans cette partie sont marquées.</p>
+  <ul class="variantes">
+    ${variante('Pas deux fois le même plan', !!u, `un film ne montre pas deux fois le même plan.
+      L’interdit porte au choix sur <b>tout le banc</b>, sur <b>une même séquence</b>, ou seulement
+      sur deux plans <b>côte à côte</b>${u ? ` — ici, ${portee}` : ''}. Deux plans sont « le même »
+      quand ils portent le <b>même numéro imprimé</b>, recto et verso confondus : c’est la même
+      image. Un <b>Raccord n’est pas un plan</b> et échappe à la règle, comme il échappe déjà au
+      compte des ${c.tours} plans et à la taille d’une séquence.`)}
+    ${variante('Pioches mélangées', melees, `une seule pioche, <b>face cachée</b>, où les Plans
+      Larges sont mêlés aux cartes Plan Moyen / Gros Plan, et une seule rivière de
+      ${(c.chutierPL || 3) + (c.chutierPMGP || 3)} cartes devant elle. On ne choisit plus sa
+      famille : on prend ce qui vient, et l’on ne voit plus venir la carte du dessus.`)}
+    ${variante('Pas de Plans de départ', !!c.sansPlanDepart, `les quatre faces de départ rejoignent
+      la pioche des Plans Larges et en prennent la couleur : ce sont des Plans Larges comme les
+      autres. Plus de choix de départ — chacune ouvre son banc en dérushant un Plan Large, seule
+      carte qui puisse s’y poser en premier. <b>Ne va pas avec les pioches mélangées</b> : cette
+      variante-ci a besoin d’une rivière de Plans Larges à part pour n’offrir qu’eux tant qu’un banc
+      est vide.`)}
+    ${variante('Banc sans limite de lignes', !c.sequencesMax || c.sequencesMax <= 0,
+    'le banc ne borne plus le nombre de séquences — la règle en fixe cinq.')}
+    ${variante('Raccord par élément partagé', !!c.raccordElement, `deux plans voisins qui partagent
+      assez d’icônes rapportent des points de jonction. Hors règles officielles.`)}
+    ${variante('Chronologie', !!(c.chronoBonus || c.chronoMalus), `chaque paire de plans voisins
+      rapporte ou coûte selon qu’elle est dans l’ordre ou à contresens.`)}
+  </ul>`)}
+`;
+
+  return corps_0_14_3(c)
+    // La section se glisse juste avant l'encart des points laissés ouverts.
+    .replace(/(\s*<div class="encart attention">\s*<b>Points laissés ouverts)/, `${section}$1`)
+    // Pioches mêlées, la mise en place n'a plus deux piles mais une.
+    .replace(
+      /<li>Les Plans Larges forment une <b>pioche face cachée<\/b>[\s\S]*?recto-verso, une pioche ne peut pas les cacher — et un chutier de [^.]*\.<\/li>/,
+      melees
+        ? `<li>${maj('0.14.4', `Les Plans Larges et les cartes Plan Moyen / Gros Plan sont
+          <b>mélangés en une seule pioche face cachée</b>, avec une rivière de
+          ${(c.chutierPL || 3) + (c.chutierPMGP || 3)} cartes devant elle — variante.`)}</li>`
+        : `<li>Les Plans Larges forment une <b>pioche face cachée</b> et un <b>chutier</b> de ${
+          c.chutierPL ? `${c.chutierPL} carte${c.chutierPL > 1 ? 's' : ''}` : 'autant de cartes que de joueuses'}.</li>
+      <li>Les Plans Moyens / Gros Plans forment une <b>pioche face visible</b> — ces cartes sont
+      recto-verso, une pioche ne peut pas les cacher — et un chutier de ${
+  c.chutierPMGP ? `${c.chutierPMGP} carte${c.chutierPMGP > 1 ? 's' : ''}` : 'autant de cartes que de joueuses'}.</li>`);
 }
 
 // --- v0.14.3 ---------------------------------------------------------------

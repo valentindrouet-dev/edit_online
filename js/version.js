@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.72';
-export const BUILD_DATE = '2026-08-27 08:30';
+export const VERSION = '1.73';
+export const BUILD_DATE = '2026-08-27 09:40';
 
 export const CHANGELOG = [
+  {
+    v: '1.73',
+    date: '27/08/2026',
+    items: [
+      "<b>Variante — pas deux fois le même plan.</b> Un film ne montre pas le même plan deux fois : on peut l'interdire, et choisir jusqu'où porte l'interdit — dans <b>tout le banc</b>, dans <b>une même séquence</b>, ou seulement <b>côte à côte</b>. Le réglage est dans <b>Variables › Pose</b>, et la partie s'y tient : les emplacements interdits ne s'ouvrent plus, et une carte que la règle rendrait injouable <b>cesse d'être proposée au dérushage</b> — elle reste visible, éteinte, avec sa raison. Éprouvé sur 240 bancs : pas un doublon ne passe, aux trois portées.",
+      "<b>Deux plans sont « le même » quand ils portent le même numéro imprimé</b>, recto et verso confondus : c'est la même image, et c'est elle qu'on ne veut pas revoir. Un <b>Raccord n'est pas un plan</b> et échappe à la règle — comme il échappe déjà au compte des dix plans et à la taille d'une séquence. Sans cette exception, les sept cartes qui portent une moitié Raccord n'étant qu'un seul numéro, on n'en aurait jamais joué qu'une.",
+      "<b>Variante — pioches mélangées</b>, sur l'accueil : une seule pioche <b>face cachée</b> où les Plans Larges sont mêlés aux cartes Plan Moyen / Gros Plan, et une seule rivière de <b>six cartes</b> devant elle — autant que les deux réunies. On ne choisit plus sa famille : on prend ce qui vient, et l'on ne voit plus venir la carte du dessus. <b>Elle ne va pas avec « pas de Plans de départ »</b>, qui a besoin d'une rivière de Plans Larges à part : cocher l'une décoche l'autre, et le moteur le tient même sur une configuration bricolée à la main.",
+      "<b>Ce que ces variantes changent, mesuré</b> sur 300 parties à trois IA chacune. Les <b>plans uniques</b> coûtent peu — 88,7 points de moyenne deviennent 86,3 à la portée la plus stricte —, mais resserrent moins les parties. Les <b>pioches mélangées</b>, elles, changent la partie pour de bon : <b>73,4 points</b>, et surtout <b>1,85 séquence par banc au lieu de 1,25</b>. On tire des Plans Larges qu'on n'aurait pas choisis, ils ouvrent des lignes, et le montage s'éparpille — ce qui coûte, puisqu'une longue ligne paie mieux.",
+      "<b>Règles v0.14.4 — une section « Variantes ».</b> Les règles optionnelles vivaient dans les Variables et se devinaient à l'usage : elles ont maintenant leur place dans le texte, les six rassemblées, et <b>chacune dit si elle joue dans la partie en cours</b>. La mise en place suit : pioches mélangées, elle n'annonce plus qu'une seule pile.",
+    ],
+  },
   {
     v: '1.72',
     date: '27/08/2026',

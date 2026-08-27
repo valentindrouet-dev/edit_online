@@ -974,6 +974,15 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .modale { background: #fff; border-radius: var(--r); padding: 26px 28px; max-width: 720px; width: 100%; box-shadow: var(--ombre-forte); max-height: 88vh; overflow: auto; }
 .modale h2 { font-size: 1.2rem; text-transform: none; letter-spacing: 0; color: var(--encre); margin-bottom: 6px; }
 
+/* La liste des variantes, dans les règles : celles qui jouent se détachent. */
+.variantes li { margin-bottom: 10px; }
+.variantes .variante-on { color: var(--encre); }
+.variantes li:not(.variante-on) { opacity: .62; }
+.variantes .etiquette {
+  background: var(--violet-pale); color: var(--violet); border-radius: 999px;
+  padding: 1px 8px; font-size: .68rem; font-weight: 700; letter-spacing: .04em; vertical-align: .1em;
+}
+
 /* Créer une carte, en supprimer une : la composition du matériel. */
 .pill.creer { border-color: var(--violet-clair); color: var(--violet); font-weight: 600; }
 .pill.danger { border-color: #e7a6a6; color: #a51f1f; }

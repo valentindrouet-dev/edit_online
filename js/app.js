@@ -2,33 +2,34 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.72';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.73';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.72';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.72';
-import { elIcon, numIcon } from './icons.js?v=1.72';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.72';
+} from './data.js?v=1.73';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.73';
+import { elIcon, numIcon } from './icons.js?v=1.73';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.73';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
+  piochesMelees,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.72';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.72';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.72';
-import { releve, voler, stopperVols } from './anim.js?v=1.72';
-import { campagne } from './lab.js?v=1.72';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.72';
-import { Salon } from './net/salon.js?v=1.72';
-import { TransportLocal } from './net/local.js?v=1.72';
-import { TransportSupabase } from './net/supabase.js?v=1.72';
-import { enLigneDisponible } from './net/config.js?v=1.72';
-import { coupNu } from './net/protocole.js?v=1.72';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.72';
+} from './engine.js?v=1.73';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.73';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.73';
+import { releve, voler, stopperVols } from './anim.js?v=1.73';
+import { campagne } from './lab.js?v=1.73';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.73';
+import { Salon } from './net/salon.js?v=1.73';
+import { TransportLocal } from './net/local.js?v=1.73';
+import { TransportSupabase } from './net/supabase.js?v=1.73';
+import { enLigneDisponible } from './net/config.js?v=1.73';
+import { coupNu } from './net/protocole.js?v=1.73';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.73';
 
 const app = document.getElementById('app');
 
@@ -255,11 +256,20 @@ function vueAccueil() {
           <h2>Variantes</h2>
           <div class="chips">
             ${chip('sansPlanDepart', 'Pas de Plans de départ')}
+            ${chip('piochesMelangees', 'Pioches mélangées')}
           </div>
-          <p class="aide">Les quatre faces de départ rejoignent la pioche des Plans Larges, dont
-          elles prennent la couleur : ce sont des Plans Larges comme les autres. Plus de choix de
-          départ — chacune ouvre son banc en dérushant un Plan Large, seule carte qui puisse s’y
-          poser en premier.</p>
+          <p class="aide"><b>Pas de Plans de départ</b> — les quatre faces de départ rejoignent la
+          pioche des Plans Larges, dont elles prennent la couleur : ce sont des Plans Larges comme
+          les autres. Plus de choix de départ — chacune ouvre son banc en dérushant un Plan Large,
+          seule carte qui puisse s’y poser en premier.</p>
+          <p class="aide"><b>Pioches mélangées</b> — une seule pioche, face cachée, où les Plans
+          Larges sont mêlés aux cartes Plan Moyen / Gros Plan, et une seule rivière de six cartes
+          devant elle. On ne choisit plus sa famille : on prend ce qui vient. Les deux variantes
+          <b>ne vont pas ensemble</b> — la première a besoin d’une rivière de Plans Larges à part,
+          que la seconde supprime : cocher l’une décoche l’autre.</p>
+          ${store.cfg.planUnique && store.cfg.planUnique !== 'AUCUNE'
+    ? `<p class="aide"><b>Pas deux fois le même plan</b> — ${LIBELLE_UNIQUE[store.cfg.planUnique]}.
+            Réglé dans <b>Variables › Pose</b>.</p>` : ''}
         </div>
       </div>
     </div>
@@ -359,6 +369,21 @@ function chip(k, label) {
   return `<label class="chip ${on ? 'on' : ''}"><input type="checkbox" data-chip="${k}" ${on ? 'checked' : ''}>${label}</label>`;
 }
 
+/** Ce que dit la variante des plans uniques, en une ligne. */
+const LIBELLE_UNIQUE = {
+  MONTAGE: 'un plan ne paraît jamais deux fois dans un banc',
+  SEQUENCE: 'un plan ne paraît jamais deux fois dans une même séquence',
+  VOISIN: 'deux fois le même plan ne se posent jamais côte à côte',
+};
+
+/**
+ * Les options qui ne peuvent pas tenir ensemble : cocher l'une décoche
+ * l'autre. « Pas de Plans de départ » a besoin d'une rivière de Plans Larges à
+ * part pour n'offrir qu'eux tant qu'un banc est vide ; « pioches mélangées »
+ * la supprime.
+ */
+const EXCLUSIFS = [['sansPlanDepart', 'piochesMelangees']];
+
 /**
  * Le bouton qui montre ou masque les illustrations. Le réglage est **le même
  * partout** — accueil, table de jeu, écran Matériel : le basculer ici le
@@ -382,8 +407,22 @@ function brancherBasculeIllus(apres) {
 
 function brancherChips(apres) {
   app.querySelectorAll('[data-chip]').forEach((el) => el.addEventListener('change', () => {
-    store.cfg[el.dataset.chip] = el.checked; sauverCfg();
+    const k = el.dataset.chip;
+    store.cfg[k] = el.checked;
+    // Deux variantes qui ne vont pas ensemble : cocher l'une décoche l'autre,
+    // plutôt que de laisser une partie se lancer sur un réglage impossible.
+    let exclue = false;
+    if (el.checked) {
+      for (const paire of EXCLUSIFS) {
+        if (!paire.includes(k)) continue;
+        for (const autre of paire) if (autre !== k && store.cfg[autre]) { store.cfg[autre] = false; exclue = true; }
+      }
+    }
+    sauverCfg();
     el.closest('.chip').classList.toggle('on', el.checked);
+    // Une case décochée dans notre dos doit se voir : `apres` repeint l'écran,
+    // et l'autre case s'y montre décochée.
+    if (exclue && !apres) return;
     if (apres) apres();
   }));
 }
@@ -1076,26 +1115,41 @@ function zoneDerushage(st, humaine = true, apercu = false) {
 
   // Celle des Plans Moyens / Gros Plans montre sa face du dessus : ces cartes
   // étant recto-verso, une pioche ne peut pas les cacher.
+  //
+  // Pioches mêlées, il en va autrement : la pile porte les deux familles, donc
+  // elle porte des Plans Larges, qui ont un vrai dos. Elle redevient **aveugle**
+  // — on ne montre plus sa face du dessus, et le dos est celui d'un Plan Large.
+  const melees = piochesMelees(st.cfg);
   const sommetPMGP = options.find((o) => o.source === 'PIOCHE_PMGP');
-  const piochePMGP = sommetPMGP && !apercu
-    ? enPile(carte(sommetPMGP), st.piochePMGP.length)
-    : (st.piochePMGP.length
-      ? enPile(`<div class="pioche-fermee">${renderCarte(st.piochePMGP[0], faceVisible(st, st.piochePMGP[0]) === 'V', { small: true })}</div>`, st.piochePMGP.length)
-      : '');
+  const piochePMGP = melees
+    ? (st.piochePMGP.length
+      ? enPile(sommetPMGP && !apercu
+        ? `<div data-derush="${enc(sommetPMGP)}">${renderDos('Pioche mélangée', st.piochePMGP.length, { small: true, clickable: true })}</div>`
+        : `<div class="pioche-fermee" title="Cette pioche n’est pas accessible : on ne pioche que dans la rivière.">${renderDos('Pioche mélangée', st.piochePMGP.length, { small: true })}</div>`,
+      st.piochePMGP.length)
+      : '')
+    : (sommetPMGP && !apercu
+      ? enPile(carte(sommetPMGP), st.piochePMGP.length)
+      : (st.piochePMGP.length
+        ? enPile(`<div class="pioche-fermee">${renderCarte(st.piochePMGP[0], faceVisible(st, st.piochePMGP[0]) === 'V', { small: true })}</div>`, st.piochePMGP.length)
+        : ''));
 
   const consigne = apercu ? '' : (humaine ? aidePose(st) : '');
+  // Mêlées, il n'y a plus qu'une rangée : la pioche des Plans Larges est vide,
+  // et sa rangée n'annoncerait qu'un vide qui n'existe pas.
   return `<div class="derushage-lignes">
     ${consigne ? `<p class="aide" id="aide-derushage">${consigne}</p>` : ''}
-    ${ligne('Plans Larges', 'PL', dosPL, st.piochePL.length,
+    ${melees ? '' : ligne('Plans Larges', 'PL', dosPL, st.piochePL.length,
       options.filter((o) => o.source === 'CHUTIER_PL').map(carte).join(''),
       // Le banc porte déjà toutes ses lignes : ces cartes se voient, mais il
       // n'y a plus de séquence à ouvrir pour elles.
       apercu ? '' : raisonDe('CHUTIER_PL', 'PIOCHE_PL'))}
-    ${ligne('Plans Moyens / Gros Plans', 'PMGP', piochePMGP, st.piochePMGP.length,
-      options.filter((o) => o.source === 'CHUTIER_PMGP').map(carte).join(''),
-      // Variante « pas de Plans de départ » : ces cartes se voient mais ne se
-      // prennent pas tant que le banc n'a pas de séquence où les accrocher.
-      apercu ? '' : raisonDe('CHUTIER_PMGP', 'PIOCHE_PMGP'))}
+    ${ligne(melees ? 'Pioche mélangée — Plans Larges, Plans Moyens et Gros Plans'
+      : 'Plans Moyens / Gros Plans', 'PMGP', piochePMGP, st.piochePMGP.length,
+    options.filter((o) => o.source === 'CHUTIER_PMGP').map(carte).join(''),
+    // Variante « pas de Plans de départ » : ces cartes se voient mais ne se
+    // prennent pas tant que le banc n'a pas de séquence où les accrocher.
+    apercu ? '' : raisonDe('CHUTIER_PMGP', 'PIOCHE_PMGP'))}
   </div>`;
 }
 

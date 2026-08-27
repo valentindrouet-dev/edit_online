@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, sceneDe, faceJouee,
-} from './data.js?v=1.72';
-import { compter, bancVide, plansComptes } from './scoring.js?v=1.72';
+} from './data.js?v=1.73';
+import { compter, bancVide, plansComptes } from './scoring.js?v=1.73';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -71,6 +71,29 @@ export function construirePaquet(cfg) {
   return { doubles, larges, departs: cfg.sansPlanDepart ? [] : buildDeparts() };
 }
 
+/**
+ * Les pioches sont-elles mêlées ? La variante ne s'applique pas quand les Plans
+ * de départ sont écartés : celle-là a besoin d'une **rivière de Plans Larges à
+ * part** pour n'offrir qu'eux tant qu'un banc est vide, et une pioche unique
+ * n'en a plus. Les deux ne peuvent donc pas tenir ensemble — l'accueil les
+ * rend exclusives, et cette lecture le garantit même sur une configuration
+ * bricolée à la main.
+ */
+export function piochesMelees(cfg) {
+  return !!cfg.piochesMelangees && !cfg.sansPlanDepart;
+}
+
+/**
+ * La taille de chaque rivière. Mêlées, la rangée unique montre **autant de
+ * cartes que les deux réunies** — six par les réglages ordinaires : on ne perd
+ * pas la moitié de ce qu'on voyait en perdant le choix de la famille.
+ */
+export function taillesRiviere(cfg, n) {
+  const pl = cfg.chutierPL || n;
+  const pmgp = cfg.chutierPMGP || n;
+  return piochesMelees(cfg) ? { pl: 0, pmgp: pl + pmgp } : { pl, pmgp };
+}
+
 // --- Plans visibles d'une carte -------------------------------------------
 
 /** Les plans qu'une carte peut laisser visibles — deux par face. */
@@ -98,6 +121,7 @@ export function creerPartie(joueurs, cfg, graine) {
   const rand = rng(seed);
   const { doubles, larges, departs } = construirePaquet(cfg);
   const n = joueurs.length;
+  const melees = piochesMelees(cfg);
 
   const state = {
     seed,
@@ -107,8 +131,11 @@ export function creerPartie(joueurs, cfg, graine) {
     posees: joueurs.map(() => 0),
     mains: joueurs.map(() => []),        // la carte dérushée du tour
     departsProposes: joueurs.map(() => []),
-    piochePL: melanger(larges, rand),
-    piochePMGP: melanger(doubles, rand),
+    // Pioches mêlées : une seule pile, un seul mélange, et la pile des Plans
+    // Larges reste vide — tout ce qui la lisait n'y trouve donc rien, et la
+    // table n'ouvre qu'une rangée.
+    piochePL: melees ? [] : melanger(larges, rand),
+    piochePMGP: melees ? melanger([...doubles, ...larges], rand) : melanger(doubles, rand),
     chutierPL: [],
     chutierPMGP: [],
     tour: 1,
@@ -124,8 +151,8 @@ export function creerPartie(joueurs, cfg, graine) {
     debut: Date.now(),
   };
 
-  const tPL = cfg.chutierPL || n;
-  const tPM = cfg.chutierPMGP || n;
+  const tPL = taillesRiviere(cfg, n).pl;
+  const tPM = taillesRiviere(cfg, n).pmgp;
   for (let i = 0; i < tPL && state.piochePL.length; i++) state.chutierPL.push(state.piochePL.shift());
   for (let i = 0; i < tPM && state.piochePMGP.length; i++) state.chutierPMGP.push(state.piochePMGP.shift());
 
@@ -226,6 +253,17 @@ export function optionsDerushage(state, toutes = false) {
   const RAISON_PL = `votre banc porte ${nbSeq > 1 ? `ses ${nbSeq} séquences` : 'sa seule séquence'} — `
     + 'un Plan Large n’entre plus que par la charnière d’un Raccord';
   const RAISON_PMGP = 'à accrocher à une séquence — ouvrez d’abord votre banc d’un Plan Large';
+  const RAISON_AUCUNE = 'aucun emplacement de votre banc ne l’accepte';
+
+  /**
+   * Cette carte-là a-t-elle où se poser ? La question ne se pose que sur un
+   * banc déjà ouvert : sur un banc vide, tout ouvre une ligne, et c'est
+   * `quePL` qui tranche. C'est ce test qui écarte au dérushage les cartes que
+   * la variante des plans uniques rendrait injouables — plutôt que de les
+   * laisser prendre pour les jeter ensuite.
+   */
+  const sansPose = (c) => !!banc && !!banc.sequences.length && !!c
+    && !coupsPossibles(state, p, c).length;
 
   // Une carte que l'on ne pourrait pas poser reste **visible**, éteinte, avec
   // la raison à côté du titre : une rivière escamotée le temps d'un tour se
@@ -236,15 +274,24 @@ export function optionsDerushage(state, toutes = false) {
     else if (toutes) out.push({ ...o, bloquee: true, raison });
   };
 
-  state.chutierPL.forEach((c, i) => pousse({ source: 'CHUTIER_PL', index: i, carte: c }, pasDeLigne, RAISON_PL));
-  state.chutierPMGP.forEach((c, i) => pousse({ source: 'CHUTIER_PMGP', index: i, carte: c }, quePL, RAISON_PMGP));
+  state.chutierPL.forEach((c, i) => pousse({ source: 'CHUTIER_PL', index: i, carte: c },
+    pasDeLigne || sansPose(c), pasDeLigne ? RAISON_PL : RAISON_AUCUNE));
+  state.chutierPMGP.forEach((c, i) => pousse({ source: 'CHUTIER_PMGP', index: i, carte: c },
+    quePL || sansPose(c), quePL ? RAISON_PMGP : RAISON_AUCUNE));
   // Les cartes Plan Moyen / Gros Plan sont recto-verso : une pioche ne peut
   // pas les cacher, on voit forcément la face du dessus. Les Plans Larges,
-  // eux, ont un vrai dos — leur pioche reste aveugle.
-  if (cfg.piocheDirectePMGP && state.piochePMGP.length) {
-    pousse({ source: 'PIOCHE_PMGP', carte: state.piochePMGP[0], sommet: true }, quePL, RAISON_PMGP);
+  // eux, ont un vrai dos — leur pioche reste aveugle. Pioches mêlées, la pile
+  // porte les deux familles : elle redevient aveugle, et se prend au pari.
+  const melees = piochesMelees(cfg);
+  if (!melees && cfg.piocheDirectePMGP && state.piochePMGP.length) {
+    const sommet = state.piochePMGP[0];
+    pousse({ source: 'PIOCHE_PMGP', carte: sommet, sommet: true },
+      quePL || sansPose(sommet), quePL ? RAISON_PMGP : RAISON_AUCUNE);
   }
-  if (cfg.piocheDirectePL && state.piochePL.length) {
+  if (melees && cfg.piocheDirectePL && state.piochePMGP.length) {
+    pousse({ source: 'PIOCHE_PMGP', carte: null, sommet: true, aveugle: true }, false, '');
+  }
+  if (!melees && cfg.piocheDirectePL && state.piochePL.length) {
     pousse({ source: 'PIOCHE_PL', carte: null, sommet: true }, pasDeLigne, RAISON_PL);
   }
 
@@ -335,8 +382,12 @@ export function resynchroniserBoite(state) {
   };
 
   const n = state.joueurs.length;
-  famille(larges, state.piochePL, state.chutierPL, state.cfg.chutierPL || n);
-  famille(doubles, state.piochePMGP, state.chutierPMGP, state.cfg.chutierPMGP || n);
+  const t = taillesRiviere(state.cfg, n);
+  // Pioches mêlées : une seule pile porte tout, et celle des Plans Larges doit
+  // rester vide — on lui donne donc une boîte vide et une rivière de zéro.
+  const melees = piochesMelees(state.cfg);
+  famille(melees ? [] : larges, state.piochePL, state.chutierPL, t.pl);
+  famille(melees ? [...doubles, ...larges] : doubles, state.piochePMGP, state.chutierPMGP, t.pmgp);
   if (bouge) {
     journal(state, `La boîte a changé — ${bouge} carte${bouge > 1 ? 's' : ''} ${
       bouge > 1 ? 'entrent ou sortent' : 'entre ou sort'} des pioches et des rivières`);
@@ -396,6 +447,61 @@ export function limiteSequences(cfg) {
 function poseAutorisee(cfg, voisin, plan) {
   if (cfg.plContigu) return true;
   return !(voisin && estPL(voisin) && estPL(plan));
+}
+
+// --- Variante : un plan ne se répète pas -----------------------------------
+// Un film ne montre pas deux fois le même plan. La variante l'interdit, et sa
+// portée se règle : tout le banc, une même séquence, ou seulement deux voisins.
+//
+// Deux plans sont « le même » quand ils portent le même **numéro imprimé** —
+// c'est lui l'identité d'un plan, celle qui désigne son illustration. Le recto
+// et le verso d'une même moitié en font donc partie : ce sont deux minutages
+// d'une seule et même image.
+//
+// Un Raccord, une Ouverture, un Générique ne sont pas des plans : ils relient
+// ou encadrent le film. Ils échappent à la règle, comme ils échappent déjà au
+// compte des dix plans et à la taille d'une séquence — sans quoi, les sept
+// cartes qui portent une moitié Raccord n'étant qu'un seul plan aux yeux du
+// numéro, on n'en jouerait jamais qu'une.
+
+const identite = (p) => (p.numOrigine === undefined ? p.num : p.numOrigine);
+
+const memePlan = (a, b) => !!a && !!b && !a.transition && !b.transition
+  && identite(a) === identite(b);
+
+/**
+ * La séquence que le coup vise, et les plans qui toucheront le posé. Un coup
+ * qui ouvre une ligne n'a ni l'une ni les autres : rien ne peut s'y répéter.
+ */
+function voisinageDuCoup(banc, coup) {
+  const seqs = banc.sequences;
+  switch (coup.action) {
+    case 'ETENDRE': {
+      const s = seqs[coup.seq] || [];
+      return { sequence: s, voisins: [coup.cote === 'gauche' ? s[0] : s[s.length - 1]] };
+    }
+    case 'SOUDER': {
+      const g = seqs[coup.pos] || [], d = seqs[coup.pos + 1] || [];
+      return { sequence: [...g, ...d], voisins: [g[g.length - 1], d[0]] };
+    }
+    case 'GENERIQUE': {
+      const s = coup.role === 'OUVERTURE' ? seqs[0] : seqs[seqs.length - 1];
+      if (!s) return { sequence: [], voisins: [] };
+      return { sequence: s, voisins: [coup.role === 'OUVERTURE' ? s[0] : s[s.length - 1]] };
+    }
+    default:   // NOUVELLE_SEQUENCE : le plan est seul sur sa ligne neuve.
+      return { sequence: [], voisins: [] };
+  }
+}
+
+/** Ce coup poserait-il un plan là où le même se trouve déjà ? */
+function repeteUnPlan(banc, coup, plan, cfg) {
+  const ou = cfg.planUnique;
+  if (!ou || ou === 'AUCUNE' || plan.transition) return false;
+  if (ou === 'MONTAGE') return banc.sequences.some((s) => s.some((p) => memePlan(p, plan)));
+  const { sequence, voisins } = voisinageDuCoup(banc, coup);
+  if (ou === 'SEQUENCE') return sequence.some((p) => memePlan(p, plan));
+  return voisins.some((p) => memePlan(p, plan));
 }
 
 /**
@@ -516,6 +622,16 @@ export function coupsPossibles(state, p, hypothese) {
     // séquence : inutile de l'imposer une seconde fois ici, et le faire
     // bloquerait la joueuse qui aurait pris autre chose faute de Plan Large.
     if (!banc.sequences.length) out.push({ carte, format, action: 'NOUVELLE_SEQUENCE', pos: 0 });
+  }
+
+  // Variante des plans uniques : on écarte à la fin les coups qui poseraient un
+  // plan là où le même se trouve déjà. Un seul endroit à lire plutôt qu'un test
+  // répété à chaque façon de poser — et la règle vaut alors pour toutes.
+  if (cfg.planUnique && cfg.planUnique !== 'AUCUNE') {
+    return out.filter((c) => {
+      const plan = c.carte.type === 'DOUBLE' ? moitiesDe(c.carte)[c.format] : plHalf(c.carte);
+      return !repeteUnPlan(banc, c, plan, cfg);
+    });
   }
 
   return out;
