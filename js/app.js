@@ -2,34 +2,34 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.73';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.74';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.73';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.73';
-import { elIcon, numIcon } from './icons.js?v=1.73';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.73';
+} from './data.js?v=1.74';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.74';
+import { elIcon, numIcon } from './icons.js?v=1.74';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.74';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.73';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.73';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.73';
-import { releve, voler, stopperVols } from './anim.js?v=1.73';
-import { campagne } from './lab.js?v=1.73';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.73';
-import { Salon } from './net/salon.js?v=1.73';
-import { TransportLocal } from './net/local.js?v=1.73';
-import { TransportSupabase } from './net/supabase.js?v=1.73';
-import { enLigneDisponible } from './net/config.js?v=1.73';
-import { coupNu } from './net/protocole.js?v=1.73';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.73';
+} from './engine.js?v=1.74';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.74';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.74';
+import { releve, voler, stopperVols } from './anim.js?v=1.74';
+import { campagne } from './lab.js?v=1.74';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.74';
+import { Salon } from './net/salon.js?v=1.74';
+import { TransportLocal } from './net/local.js?v=1.74';
+import { TransportSupabase } from './net/supabase.js?v=1.74';
+import { enLigneDisponible } from './net/config.js?v=1.74';
+import { coupNu } from './net/protocole.js?v=1.74';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.74';
 
 const app = document.getElementById('app');
 

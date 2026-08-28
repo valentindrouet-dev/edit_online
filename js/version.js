@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.73';
-export const BUILD_DATE = '2026-08-27 09:40';
+export const VERSION = '1.74';
+export const BUILD_DATE = '2026-08-27 10:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.74',
+    date: '27/08/2026',
+    items: [
+      "<b>Trois illustrations neuves</b> — la scène de l'échange du sac, sous ses trois cadrages. Le <b>Plan Moyen 201</b> prend la scène entière : la silhouette encapuchonnée et l'homme au sac, dans les néons. Le <b>Gros Plan 303</b> est un zoom sur la silhouette, et le <b>Gros Plan 306</b> sur le visage de l'homme. Elles apparaissent sur <b>neuf cartes</b> — le 201 sur trois, le 303 sur trois, le 306 sur trois.",
+      "<b>Un outil pour poser un visuel livré à part</b>, <code>outils/poser-visuel.py</code>. <code>extraire-visuels.py</code> fabriquait les images depuis les PDF d'impression ; celui-ci fait l'autre moitié du travail — mettre un dessin neuf aux dimensions et aux conventions d'un emplacement : la taille exacte (421 × 316 pour un Plan Moyen, 202 × 316 pour un Gros Plan, 642 × 317 pour un Plan Large), la <b>boîte du minutage repeinte en noir</b> au coin haut-gauche, et le recadrage — la plus grande fenêtre centrée, ou celle qu'on désigne, ce qui sert à tailler un Gros Plan dans un Plan Moyen.",
+      "Les mesures ne sont pas supposées : relevées sur sept visuels du jeu, et l'outil vérifié en aller-retour — repasser un visuel existant par lui le rend <b>à 0,67/255 près</b>, le simple coût du ré-encodage.",
+    ],
+  },
   {
     v: '1.73',
     date: '27/08/2026',
