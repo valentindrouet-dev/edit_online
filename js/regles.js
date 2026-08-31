@@ -14,13 +14,26 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.76';
-import { elIcon } from './icons.js?v=1.76';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.77';
+import { elIcon } from './icons.js?v=1.77';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.14.5',
+    date: '31/08/2026',
+    origine: 'Bandeaux ajoutés par l’auteur',
+    corps: (c) => corps_0_14_5(c),
+    items: [
+      '<b>Neuf bandeaux de plus</b>, et un <b>vocabulaire commun</b> qui les relie : chacun compte une <b>cible</b> — une carte, un plan, un Raccord, un cadrage, une icône, <b>toutes les icônes</b>, les <b>valeurs</b> (les icônes différentes), une séquence — et ne se distingue des autres que par ce qu’il en fait.',
+      '<b>Compter ailleurs.</b> « n × cible dans les <b>autres séquences</b> » — celles du dessus, celles du dessous, ou les deux —, et « n × cible d’un côté du <b>centre</b> de sa ligne », le centre étant l’<b>ancre</b>, le plan qui a ouvert la séquence, qui n’appartient à aucun des deux côtés. Ces deux-là portent leur portée dans leur définition : elle ne se règle pas.',
+      '<b>Compter par paquets, ou d’un coup.</b> « n × <b>lot</b> de k cibles » — un lot incomplet ne rapporte rien, sept armes font deux lots de trois. « n <b>si au moins</b> — ou au plus — k cibles » : tout ou rien, et « aucune » s’écrit « au plus 0 ».',
+      '<b>Lire ce qui manque, et ce qui domine.</b> « n × <b>icône absente</b> » compte les types d’icônes que la portée ne montre nulle part ; « n × icône la <b>plus</b> — ou la <b>moins</b> — présente » compte les exemplaires de celle qui domine, la moins présente se lisant parmi celles qui apparaissent.',
+      '<b>Lire la forme du banc.</b> « n × <b>plan portant k icônes</b> », exactement, au moins ou au plus ; « n si <b>chaque séquence</b> a k plans » ; et « la plus petite — ou la plus grosse — <b>carte compte double</b> », « grosse » se disant en points, en icônes ou en taille de cadrage, au choix.',
+    ],
+  },
   {
     v: '0.14.4',
     date: '27/08/2026',
@@ -261,6 +274,62 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.14.5 ---------------------------------------------------------------
+// Neuf bandeaux de plus, et le vocabulaire de cibles qui les relie. Ils entrent
+// dans le tableau du décompte, à la suite de ceux qui y étaient, et une note
+// explique la cible avant qu'on ne la lise neuf fois de suite.
+
+function corps_0_14_5(c) {
+  // Les lignes neuves se marquent sur la ligne elle-même : un <span> autour de
+  // <tr> n'est pas du HTML, et le navigateur le rejette hors du tableau — la
+  // pastille se retrouvait alors au-dessus, comme si tout était neuf.
+  const lignes = `
+    <tr class="maj-tr"><td class="maj-pastille" data-v="v0.14.5"><b>n × CIBLE dans les AUTRES SÉQUENCES</b></td>
+      <td>n points par cible trouvée dans les lignes <b>au-dessus</b> de la sienne, <b>en dessous</b>,
+      ou les deux à la fois. Sa propre ligne en est toujours exclue</td>
+      <td>Les autres lignes</td></tr>
+    <tr class="maj-tr"><td><b>n × CIBLE à gauche / à droite du CENTRE</b></td>
+      <td>n points par cible d’un côté du <b>centre de sa ligne</b>. Le centre est l’<b>ancre</b> —
+      le plan qui a ouvert la séquence — et il n’appartient à aucun des deux côtés</td>
+      <td>Un côté de sa ligne</td></tr>
+    <tr class="maj-tr"><td><b>n × LOT de k CIBLES</b></td>
+      <td>n points par <b>paquet complet</b> de k cibles. Un lot incomplet ne rapporte rien : sept
+      armes font <b>deux</b> lots de trois</td><td>Sa portée ◀ ▶</td></tr>
+    <tr class="maj-tr"><td><b>n si au moins / au plus k CIBLES</b></td>
+      <td>n points, <b>une seule fois</b>, si la portée franchit le seuil. « Aucune » s’écrit
+      « au plus 0 »</td><td>Sa portée ◀ ▶</td></tr>
+    <tr class="maj-tr"><td><b>n × ICONE absente</b></td>
+      <td>n points par <b>type d’icône</b> que la portée ne montre nulle part — six candidats</td>
+      <td>Sa portée ◀ ▶</td></tr>
+    <tr class="maj-tr"><td><b>n × ICONE la plus / la moins présente</b></td>
+      <td>n points par <b>exemplaire</b> de l’icône qui domine — ou de la plus rare. « La moins
+      présente » se lit parmi celles qui <b>apparaissent</b> : sinon les absentes gagneraient
+      toujours, à zéro</td><td>Sa portée ◀ ▶</td></tr>
+    <tr class="maj-tr"><td><b>n × PLAN portant k ICONES</b></td>
+      <td>n points par plan portant <b>exactement</b> — ou au moins, ou au plus — k icônes. Un
+      Raccord n’est pas un plan : il n’y compte pas</td><td>Sa portée ◀ ▶</td></tr>
+    <tr class="maj-tr"><td><b>n si CHAQUE SÉQUENCE a k plans</b></td>
+      <td>n points si <b>toutes</b> les lignes du banc tiennent la taille demandée. Une seule trop
+      courte fait tout tomber ; un banc sans ligne ne rapporte rien</td>
+      <td>Le montage entier</td></tr>
+    <tr class="maj-tr"><td><b>la plus petite / plus grosse CARTE compte double</b></td>
+      <td>la carte extrême de la portée <b>ajoute sa valeur</b> une fois de plus — deux fois pour
+      compter triple. « Grosse » se dit au choix en <b>points</b>, en <b>icônes</b>, ou en
+      <b>taille de cadrage</b>. À égalité, c’est celle qui rapporte le plus</td>
+      <td>Sa portée ◀ ▶</td></tr>`;
+
+  const note = majBloc('0.14.5', `<b>La cible d’un bandeau.</b> Neuf bandeaux ne disent pas ce
+    qu’ils comptent : ils comptent une <b>cible</b>, et c’est la carte qui la nomme. Une cible est
+    au choix une <b>Carte</b> (Raccords compris), un <b>Plan</b> (hors Raccord), une <b>Carte
+    Raccord</b>, un <b>Plan de mort</b>, un <b>plan sans personnage</b>, un <b>cadrage</b>, une
+    <b>icône</b> précise, <b>toutes les icônes</b> confondues, une <b>valeur</b> — c’est-à-dire le
+    nombre d’icônes <b>différentes</b> : un plan à deux armes porte deux icônes et une seule
+    valeur —, ou une <b>séquence</b> du banc.`);
+
+  return corps_0_14_4(c)
+    .replace(/(<td>Le montage entier<\/td><\/tr>\s*)<\/table>/, `$1${lignes}\n  </table>\n  ${note}`);
 }
 
 // --- v0.14.4 ---------------------------------------------------------------

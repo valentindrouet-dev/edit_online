@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, objPortee, objsDe } from './data.js?v=1.76';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, objPortee, objsDe } from './data.js?v=1.77';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -62,6 +62,37 @@ function couples(plans, els) {
 }
 
 /**
+ * Ce qu'un pouvoir compte dans une liste de plans, selon sa cible. Un seul
+ * vocabulaire pour neuf bandeaux : c'est ce qui leur évite d'exister en neuf
+ * variantes chacun.
+ *
+ * Deux cibles ne comptent pas des cartes mais ce qu'elles portent — `ICONE`,
+ * toutes les icônes confondues, et `VALEUR`, les icônes DIFFÉRENTES : un plan
+ * à deux armes porte deux icônes et une seule valeur. Une dernière ne regarde
+ * pas la portée du tout : `SEQUENCE` compte les séquences du banc.
+ */
+export function compteCible(plans, cible, banc) {
+  switch (cible) {
+    case 'CARTE':    return plans.length;
+    case 'PLAN':     return plans.filter((p) => !estRaccord(p)).length;
+    case 'RACCORD':  return plans.filter(estRaccord).length;
+    case 'MORT':     return plans.filter((p) => p.mort).length;
+    case 'NEANT':    return plans.filter((p) => !p.el.some((e) => PERSONNAGES.includes(e))).length;
+    case 'ICONE':    return plans.reduce((s, p) => s + p.el.length, 0);
+    case 'VALEUR':   return new Set(plans.flatMap((p) => p.el)).size;
+    case 'SEQUENCE': return banc ? banc.sequences.length : 0;
+    default:
+      if (CADRAGES_POUVOIR.includes(cible)) return plans.filter((p) => p.format === cible).length;
+      return compteIcone(plans, cible);
+  }
+}
+
+/** La ligne du banc où se trouve ce plan — sa séquence. */
+function ligneDe(banc, plan) {
+  return banc.sequences.find((s) => s.includes(plan)) || null;
+}
+
+/**
  * Les plans qu'un bandeau regarde. Sa portée le dit, et **trois des quatre
  * portées ne quittent pas la ligne du plan** :
  *
@@ -81,8 +112,39 @@ export function porteeDe(obj, sequence, banc, cfg, porteur) {
   // montage que l'on juge, pas un morceau. Une séquence bien rangée à côté
   // d'une autre qui ne l'est pas ne fait pas un film dans l'ordre.
   if (obj.kind === 'CHRONO') return montage;
+
+  // Deux bandeaux portent leur portée dans leur définition même.
+  //
+  // « Ailleurs » regarde les AUTRES séquences — celles du dessus, celles du
+  // dessous, ou les deux. Sa propre ligne en est exclue, sans quoi il ferait
+  // double emploi avec la portée « séquence ».
+  if (obj.kind === 'AILLEURS') {
+    const i = banc.sequences.indexOf(sequence) >= 0
+      ? banc.sequences.indexOf(sequence)
+      : banc.sequences.findIndex((s) => s.includes(porteur));
+    if (i < 0) return [];
+    if (obj.sens === 'DESSUS') return banc.sequences.slice(0, i).flat();
+    if (obj.sens === 'DESSOUS') return banc.sequences.slice(i + 1).flat();
+    return banc.sequences.filter((_, k) => k !== i).flat();
+  }
+
+  // « D'un côté du centre » : le centre d'une ligne est son **ancre**, le plan
+  // qui l'a ouverte et sur lequel elle est alignée. Il n'appartient à aucun
+  // des deux côtés — c'est le pivot, pas un voisin. Une ligne sans ancre
+  // désignée prend son milieu géométrique, faute de mieux.
+  if (obj.kind === 'CENTRE') {
+    const ligne = sequence && sequence.includes(porteur) ? sequence : ligneDe(banc, porteur);
+    if (!ligne || !ligne.length) return [];
+    const a = ligne.findIndex((p) => p.ancre);
+    const c = a >= 0 ? a : Math.floor((ligne.length - 1) / 2);
+    return obj.sens === 'DROITE' ? ligne.slice(c + 1) : ligne.slice(0, c);
+  }
+
   const p = objPortee(obj, cfg);
-  if (p === 'SEQUENCE') return sequence;
+  // Une portée vide plutôt que rien du tout : un plan qu'on interroge alors
+  // qu'il n'est pas sur ce banc-là — un aperçu, un plan repris en main — ne
+  // doit pas faire tomber le décompte entier.
+  if (p === 'SEQUENCE') return sequence || [];
   if (p === 'AVANT' || p === 'APRES') {
     // La ligne du porteur. `sequence` la donne d'ordinaire ; on la retrouve
     // dans le banc si l'appelant s'est trompé de séquence.
@@ -100,8 +162,15 @@ export function porteeDe(obj, sequence, banc, cfg, porteur) {
   return montage;
 }
 
-/** Valeur d'un bandeau porté par `porteur`, dans la portée qu'il déclare. */
-export function valeurObjectif(obj, sequence, banc, cfg, porteur) {
+/**
+ * Valeur d'un bandeau porté par `porteur`, dans la portée qu'il déclare.
+ *
+ * `profond` marque un calcul fait **pour le compte d'un autre bandeau** — le
+ * pouvoir qui double une carte a besoin de savoir ce que chaque carte rapporte.
+ * Un doublement ne se double pas lui-même : deux cartes qui se désigneraient
+ * l'une l'autre tourneraient en rond.
+ */
+export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = false) {
   if (!obj) return 0;
   if (cfg.objectifsActifs && cfg.objectifsActifs[obj.kind] === false) return 0;
 
@@ -174,9 +243,84 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur) {
       const assez = (s) => comptePorteurs(s, obj.cible) >= k;
       return n * banc.sequences.filter((s) => (obj.sens === 'SANS' ? !assez(s) : assez(s))).length;
     }
+    case 'SEQ_TOUTES': {
+      // « Chaque séquence » ne veut rien dire sur un banc vide : rien à juger,
+      // rien à gagner. Les Raccords ne comptent pas dans la taille d'une
+      // séquence, comme partout ailleurs.
+      if (!banc.sequences.length) return 0;
+      const k = Math.max(1, obj.seuil || 1);
+      const tient = (s) => (obj.sens === 'MAX' ? plansDe(s).length <= k : plansDe(s).length >= k);
+      return banc.sequences.every(tient) ? n : 0;
+    }
+
+    // --- Les pouvoirs du vocabulaire commun --------------------------------
+    // Les deux premiers ont déjà leur portée : `porteeDe` la leur a donnée —
+    // les autres lignes, un côté du centre. Il ne reste qu'à compter.
+    case 'AILLEURS':
+    case 'CENTRE':
+      return n * compteCible(portee, obj.cible, banc);
+    case 'LOT': {
+      // Un lot incomplet ne rapporte rien : sept armes font deux lots de trois.
+      const k = Math.max(2, obj.seuil || 2);
+      return n * Math.floor(compteCible(portee, obj.cible, banc) / k);
+    }
+    case 'SEUIL': {
+      // Tout ou rien : la portée franchit le seuil, ou elle ne le franchit pas.
+      const c = compteCible(portee, obj.cible, banc);
+      const k = Math.max(0, obj.seuil ?? 1);
+      return (obj.sens === 'MAX' ? c <= k : c >= k) ? n : 0;
+    }
+    case 'ABSENTES':
+      // Les six éléments sont les six candidats : on compte ceux que la portée
+      // ne montre nulle part.
+      return n * ELEMENT_IDS.filter((e) => compteIcone(portee, e) === 0).length;
+    case 'EXTREME': {
+      const comptes = ELEMENT_IDS.map((e) => compteIcone(portee, e)).filter((c) => c > 0);
+      if (!comptes.length) return 0;
+      // « La moins présente » se lit **parmi celles qui apparaissent** : sans
+      // cela, les cinq icônes absentes gagneraient toujours, à zéro, et le
+      // bandeau ne rapporterait jamais rien.
+      return n * (obj.sens === 'MOINS' ? Math.min(...comptes) : Math.max(...comptes));
+    }
+    case 'PLAN_ICONES': {
+      const k = Math.max(0, obj.seuil ?? 0);
+      const tient = (p) => (obj.sens === 'MIN' ? p.el.length >= k
+        : obj.sens === 'MAX' ? p.el.length <= k : p.el.length === k);
+      return n * portee.filter((p) => !estRaccord(p) && tient(p)).length;
+    }
+    case 'DOUBLE': {
+      // Une carte de la portée compte une fois de plus. On a donc besoin de ce
+      // que chaque carte rapporte — d'où le calcul en profondeur, qui laisse
+      // de côté les doublements pour ne pas tourner en rond.
+      if (profond || !portee.length) return 0;
+      const valeurs = portee.map((p) => ({ p, v: valeurPlan(p, banc, cfg, true) }));
+      const mesure = (x) => (obj.critere === 'ICONES' ? x.p.el.length
+        : obj.critere === 'CADRAGE' ? TAILLE_CADRAGE[x.p.format] ?? 0 : x.v);
+      const cibles = valeurs.map(mesure);
+      const seuil = obj.sens === 'PLUS' ? Math.max(...cibles) : Math.min(...cibles);
+      // À égalité sur le critère — trois cartes à deux icônes —, on prend celle
+      // qui rapporte le plus : c'est la lecture la plus favorable au joueur,
+      // et surtout la seule qui ne dépende pas de l'ordre de pose.
+      const exaequo = valeurs.filter((x, i) => cibles[i] === seuil);
+      return n * exaequo.reduce((m, x) => Math.max(m, x.v), exaequo[0].v);
+    }
     default:
       return 0;
   }
+}
+
+/** La taille d'un cadrage, pour « la plus grosse carte » : le Gros Plan est le plus petit. */
+const TAILLE_CADRAGE = { GP: 1, PM: 2, PL: 3, DEP: 3 };
+
+/** Ce qu'un plan rapporte à lui seul, tous ses bandeaux réunis. */
+function valeurPlan(plan, banc, cfg, profond) {
+  // Un Plan de départ qui ne marque pas ne marque pas davantage en étant
+  // doublé : la règle du décompte vaut aussi ici.
+  if (plan.depart && !cfg.scorerDepart) return 0;
+  const seq = ligneDe(banc, plan);
+  let s = 0;
+  for (const o of objsDe(plan)) s += valeurObjectif(o, seq, banc, cfg, plan, profond);
+  return s;
 }
 
 /** Les plans d'une séquence — un Raccord relie, il ne raconte pas : il n'en est pas un. */
@@ -256,7 +400,9 @@ export function compter(banc, cfg) {
   const detail = {
     RACCORD: 0, PLAN: 0, FORMAT: 0, ELEMENT: 0, PAIRE: 0,
     MORT: 0, NEANT: 0, ABSENT: 0, MINUTAGE: 0, CHRONO: 0, SANS_TC: 0,
-    SEQ_TAILLE: 0, SEQ_VOISINES: 0, SEQ_LONGUE: 0, SEQ_AVEC: 0,
+    SEQ_TAILLE: 0, SEQ_VOISINES: 0, SEQ_LONGUE: 0, SEQ_AVEC: 0, SEQ_TOUTES: 0,
+    AILLEURS: 0, CENTRE: 0, LOT: 0, SEUIL: 0, ABSENTES: 0,
+    EXTREME: 0, PLAN_ICONES: 0, DOUBLE: 0,
     CHRONOLOGIE: 0, POSE: 0, JONCTION: 0,
   };
   const lignes = [];
@@ -348,6 +494,15 @@ export const SOURCES_LABEL = {
   SEQ_VOISINES: 'Objectifs de séquences voisines',
   SEQ_LONGUE: 'Objectifs de plus longue séquence',
   SEQ_AVEC: 'Objectifs de séquence avec / sans',
+  SEQ_TOUTES: 'Objectifs de séquences toutes égales',
+  AILLEURS: 'Objectifs des autres séquences',
+  CENTRE: 'Objectifs d’un côté du centre',
+  LOT: 'Objectifs par lot',
+  SEUIL: 'Objectifs à seuil',
+  ABSENTES: 'Objectifs d’icônes absentes',
+  EXTREME: 'Objectifs d’icône la plus / la moins présente',
+  PLAN_ICONES: 'Objectifs de plan chargé',
+  DOUBLE: 'Objectifs de carte doublée',
   CHRONOLOGIE: 'Variante — chronologie',
   POSE: 'Points de pose',
   JONCTION: 'Jonctions raccordées',

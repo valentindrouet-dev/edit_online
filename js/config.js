@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.76';
+import { ELEMENT_IDS } from './data.js?v=1.77';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -83,7 +83,11 @@ export const DEFAULTS = {
     PAIRE: true, MORT: true, NEANT: true, ABSENT: true,
     MINUTAGE: true, CHRONO: true, SANS_TC: true,
     // Les bandeaux qui comptent des séquences plutôt que des plans.
-    SEQ_TAILLE: true, SEQ_VOISINES: true, SEQ_LONGUE: true, SEQ_AVEC: true,
+    SEQ_TAILLE: true, SEQ_VOISINES: true, SEQ_LONGUE: true, SEQ_AVEC: true, SEQ_TOUTES: true,
+    // Les bandeaux du vocabulaire commun : ils comptent tous « une cible »
+    // dans une portée, et ne se distinguent que par ce qu'ils en font.
+    AILLEURS: true, CENTRE: true, LOT: true, SEUIL: true, ABSENTES: true,
+    EXTREME: true, PLAN_ICONES: true, DOUBLE: true,
   },
   // Une carte peut porter deux fois la même icône. Par défaut chacune rapporte
   // ses points ; à false, un objectif d'élément compte les plans porteurs.
@@ -237,6 +241,12 @@ export function migrerCfg(lu) {
   // `materiel` est écrasé en bloc par Object.assign : une table enregistrée
   // avant la v1.71 n'a ni cartes créées ni cartes supprimées, et il faut lui
   // donner les cases vides — sans quoi tout ce qui les lit trouve `undefined`.
+  // Même chose pour les bandeaux : une table enregistrée avant l'arrivée d'un
+  // pouvoir ne le connaît pas, et `Object.assign` écraserait la liste entière.
+  // Un pouvoir inconnu de la table est actif — c'est le défaut de tous.
+  if (out.objectifsActifs && typeof out.objectifsActifs === 'object') {
+    out.objectifsActifs = { ...DEFAULTS.objectifsActifs, ...out.objectifsActifs };
+  }
   if (out.materiel && typeof out.materiel === 'object') {
     out.materiel = {
       plans: {}, paires: {}, retires: [],

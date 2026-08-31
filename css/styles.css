@@ -478,6 +478,7 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    pastille violette par la droite. */
 .bandeau .tag.tag-seq,
 .bandeau .tag.tag-chrono,
+.bandeau .tag.tag-lot,
 .bandeau .tag.tag-blanc { max-width: none; flex: 0 0 auto; }
 /* Le « & » qui relie deux cadrages visés par un même bandeau. */
 .et-cadrage {
@@ -1037,6 +1038,30 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 }
 
 /* La vignette du formulaire : l'image actuelle, cliquable. */
+/* --- Le recadrage d'une illustration --------------------------------------- */
+/* La carte en grand à gauche, ses réglages à droite. On tire l'image dans la
+   carte elle-même : c'est le geste d'un recadrage, et l'on voit le résultat
+   dans la fenêtre où il comptera — pas dans un carré de démonstration. */
+.recadrage {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: start;
+  padding: 14px; margin: 12px 0 4px; border-radius: 12px;
+  background: var(--violet-pale); border: 1px solid var(--violet-clair);
+}
+@media (max-width: 720px) { .recadrage { grid-template-columns: minmax(0, 1fr); } }
+.recadrage-vue { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.recadrage-vue .carte.solo { font-size: 22px; user-select: none; }
+.recadrage-vue .illus { cursor: grab; touch-action: none; }
+.recadrage-vue .illus:active { cursor: grabbing; }
+.recadrage-vue .aide { font-size: .72rem; text-align: center; max-width: 260px; }
+.recadrage-reglages { display: flex; flex-direction: column; gap: 10px; }
+.recadrage-reglages input[type="range"] { flex: 1 1 auto; min-width: 120px; accent-color: var(--violet); }
+.cadre-val { min-width: 54px; text-align: right; font-variant-numeric: tabular-nums; }
+/* Les quatre flèches en croix : le déplacement au clavier de la souris, pour
+   régler au point près ce que le glissé approche. */
+.croix-cadre { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.croix-cadre > div { display: flex; gap: 28px; }
+.croix-cadre .pill.mini { min-width: 34px; }
+
 .vignette-illus {
   width: 62px; height: 44px; border-radius: 5px; border: 1px solid var(--gris-clair);
   background: #f2f0f6 center/cover no-repeat; cursor: pointer; padding: 0;
@@ -1061,6 +1086,19 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
   padding: 2px 7px; font-size: .68rem; font-weight: 700; letter-spacing: .02em;
   white-space: nowrap;
 }
+/* Une LIGNE de tableau ajoutée par une version. Un <span> autour d'un <tr>
+   n'est pas du HTML : le navigateur le déplace hors du tableau, et la pastille
+   se retrouve au-dessus, comme si tout le tableau était neuf. Le marquage vit
+   donc sur la ligne, et la pastille sur sa première cellule. */
+.tbl tr.maj-tr td { color: var(--violet); }
+.tbl tr.maj-tr td b { color: var(--violet); }
+.tbl td.maj-pastille::after {
+  content: attr(data-v); margin-left: 6px; vertical-align: .12em;
+  background: var(--violet-pale); color: var(--violet); border-radius: 999px;
+  padding: 2px 7px; font-size: .68rem; font-weight: 700; letter-spacing: .02em;
+  white-space: nowrap;
+}
+
 .regle-maj-bloc {
   position: relative; color: var(--violet); border-left: 4px solid var(--violet);
   background: var(--violet-pale); border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 18px 0;
@@ -1470,6 +1508,15 @@ table.tbl th.th-tri.num { text-align: right; }
   font-size: .62em; font-weight: 800; padding: .2em .42em; border-radius: .22em;
   letter-spacing: .04em; white-space: nowrap;
 }
+/* Le lot : « 2 points par 3 Armes ». La pastille orange dit qu'on compte par
+   paquets et non à l'unité — ce qui change tout, un paquet incomplet ne
+   rapportant rien. */
+.tag.tag-lot {
+  background: #40260f; color: #ffc27a; border: 1px solid #8a5a24;
+  font-size: .62em; font-weight: 800; padding: .2em .42em; border-radius: .22em;
+  letter-spacing: .04em; white-space: nowrap;
+}
+
 /* La flèche qui dit de quel côté de la pile on compte les séquences. */
 .fleche-seq {
   color: #cbb6ff; font-size: 1.1em; line-height: 1; font-weight: 800;

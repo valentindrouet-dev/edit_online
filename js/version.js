@@ -1,8 +1,22 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.76';
-export const BUILD_DATE = '2026-08-31 15:10';
+export const VERSION = '1.77';
+export const BUILD_DATE = '2026-08-31 18:40';
 
 export const CHANGELOG = [
+  {
+    v: '1.77',
+    date: '31/08/2026',
+    items: [
+      "<b>Neuf pouvoirs de plus, et un vocabulaire qui les relie. Règles v0.14.5.</b> Les bandeaux d'origine comptent chacun une chose et une seule ; les neuf nouveaux comptent tous « une <b>cible</b> » et ne se distinguent que par ce qu'ils en font. Une cible est au choix une <b>Carte</b> (Raccords compris), un <b>Plan</b> (hors Raccord), une <b>Carte Raccord</b>, un <b>Plan de mort</b>, un <b>plan sans personnage</b>, un <b>cadrage</b>, une <b>icône</b> précise, <b>toutes les icônes</b> confondues, une <b>valeur</b> — les icônes différentes : un plan à deux armes porte deux icônes et une seule valeur — ou une <b>séquence</b> du banc. Sans ce vocabulaire commun, il aurait fallu neuf variantes de chaque pouvoir ; avec lui, la même colonne de CSV les porte tous.",
+      "<b>Compter ailleurs que chez soi.</b> <b>« n × cible dans les AUTRES SÉQUENCES »</b> — celles du dessus, celles du dessous, ou les deux —, sa propre ligne toujours exclue. Et <b>« n × cible à gauche / à droite du CENTRE »</b>, le centre d'une ligne étant son <b>ancre</b>, le plan qui l'a ouverte : il n'appartient à aucun des deux côtés. Ces deux-là portent leur portée dans leur définition et ne se règlent donc pas — l'éditeur le dit au lieu d'afficher un choix sans effet.",
+      "<b>Par paquets, ou d'un coup.</b> <b>« n × LOT de k cibles »</b> : un lot incomplet ne rapporte rien, sept armes font deux lots de trois. <b>« n si au moins / au plus k cibles »</b> : tout ou rien, dans la portée qu'on veut — « aucune » s'écrit « au plus 0 ». C'est ce dernier qui couvre « si 0 ou 3 Raccords », « si 2 séquences au plus », « si x icônes à gauche ».",
+      "<b>Ce qui manque, et ce qui domine.</b> <b>« n × ICONE absente »</b> compte les types d'icônes que la portée ne montre nulle part. <b>« n × ICONE la plus / la moins présente »</b> compte les exemplaires de celle qui domine — ou de la plus rare, lue <b>parmi celles qui apparaissent</b> : les cinq absentes gagneraient sinon toujours, à zéro, et le bandeau ne rapporterait jamais rien.",
+      "<b>La forme du banc.</b> <b>« n × PLAN portant k icônes »</b>, exactement, au moins ou au plus. <b>« n si CHAQUE SÉQUENCE a k plans »</b> — une seule ligne trop courte fait tout tomber. Et <b>« la plus petite / plus grosse CARTE compte double »</b> : la carte extrême de la portée ajoute sa valeur une fois de plus, et « grosse » se dit au choix en <b>points</b>, en <b>icônes</b> ou en <b>taille de cadrage</b>. Deux cartes qui se doubleraient l'une l'autre ne tournent pas en rond : un doublement ne se double pas.",
+      "<b>Recadrer une illustration.</b> Dans le sélecteur d'images, la carte se dessine en grand : on <b>tire le dessin à la souris</b>, on <b>zoome à la molette</b> ou au curseur, de 50 à 400 %, et quatre flèches règlent au point près. Les visuels de la boîte sont taillés au format exact de leur emplacement — à 100 % ils tombent juste ; le recadrage sert à <b>adapter un autre visuel</b>, tailler un Gros Plan dans un Plan Moyen, loger un dessin qui n'a pas la bonne proportion. L'image ne peut pas glisser au point de laisser un bord de carte à découvert, le réglage voyage dans le CSV, et il suit jusque dans les planches PDF.",
+      "Choisir une image ne <b>ferme plus le sélecteur</b> : on la pose, on la recadre dans la foulée, et le miroir est là aussi. La galerie du Matériel n'est refaite qu'à la fermeture.",
+      "<b>Créer une Carte Raccord.</b> Les cinq familles se créaient déjà — Plan Large, version de départ, Plan Moyen, Gros Plan, appariement PM / GP. Manquait la <b>Carte Raccord</b> : elle se crée maintenant depuis les onglets où l'on fabrique des scènes, vierge d'icônes, avec son pouvoir sur ses <b>deux moitiés</b> — un Raccord rapporte autant par le bout qu'on le joue. Ouverture et Générique de fin restent ceux qui sont imprimés : ce sont les serre-livres du film.",
+    ],
+  },
   {
     v: '1.76',
     date: '31/08/2026',

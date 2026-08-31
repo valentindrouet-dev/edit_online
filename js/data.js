@@ -59,6 +59,10 @@ export function teinteObj(o) {
     case 'MORT':    return ENCRES.MORT;
     case 'NEANT':   return ENCRES.NEANT;
     case 'FORMAT':  return ENCRES_FORMAT[o.format] || ENCRES.NEANT;
+    // Les pouvoirs du vocabulaire commun prennent la teinte de leur cible :
+    // une icône a la sienne, un cadrage la sienne, le reste reste neutre.
+    case 'AILLEURS': case 'CENTRE': case 'LOT': case 'SEUIL':
+      return ENCRES[o.cible] || ENCRES_FORMAT[o.cible] || ENCRES.NEANT;
     default:        return ENCRES.NEANT;
   }
 }
@@ -116,6 +120,33 @@ export const CADRAGES_POUVOIR = ['PL', 'PM', 'GP', 'DEP'];
 //                de `seuil` fois (`SANS`). Le seuil compte des PLANS porteurs
 //                et vaut 1 quand il n'est pas écrit : on retrouve alors la
 //                lecture simple, « avec » et « sans »
+//   SEQ_TOUTES   n points si CHAQUE séquence du banc a au moins (`MIN`) ou au
+//                plus (`MAX`) `seuil` plans — un banc sans séquence ne rapporte
+//                rien : il n'y a rien à juger
+//
+// Neuf bandeaux enfin partagent le **vocabulaire de cibles** CIBLES_COMPTE —
+// une carte, un plan, un Raccord, un cadrage, une icône, toutes les icônes,
+// les icônes différentes, une séquence — et ne se distinguent que par ce
+// qu'ils en font :
+//   AILLEURS     n points par cible dans les AUTRES séquences : celles du
+//                dessus (`DESSUS`), du dessous (`DESSOUS`), ou les deux
+//                (`AUTRES`). Sa portée est écrite là : elle ne se règle pas
+//   CENTRE       n points par cible d'un côté du CENTRE de sa ligne — l'ancre,
+//                le plan qui a ouvert la séquence, qui n'est d'aucun côté
+//   LOT          n points par LOT de `seuil` cibles : un lot incomplet ne
+//                rapporte rien, sept armes font deux lots de trois
+//   SEUIL        n points, une fois, si la portée compte au moins (`MIN`) ou
+//                au plus (`MAX`) `seuil` cibles. « Aucun » s'écrit MAX 0
+//   ABSENTES     n points par type d'icône que la portée ne montre nulle part
+//   EXTREME      n points par exemplaire de l'icône la plus (`PLUS`) ou la
+//                moins (`MOINS`) présente. « La moins » se lit parmi celles
+//                qui apparaissent : sinon les absentes gagneraient à zéro
+//   PLAN_ICONES  n points par plan portant exactement (`EXACT`), au moins
+//                (`MIN`) ou au plus (`MAX`) `seuil` icônes
+//   DOUBLE       la plus petite (`MOINS`) ou la plus grosse (`PLUS`) carte de
+//                la portée compte n fois de plus — n = 1 la fait compter
+//                double. `critere` dit ce que « grosse » veut dire : ce
+//                qu'elle rapporte, ses icônes, ou la taille de son cadrage
 
 // --- La portée d'un bandeau ------------------------------------------------
 // Tout bandeau dit où il compte : parmi les cartes placées avant lui, après
@@ -164,10 +195,144 @@ export const OBJ = {
   // qu'un bandeau sans seuil reste identique à ce qui est imprimé.
   seqAvec:     (n, sens, cible, seuil) => ({ kind: 'SEQ_AVEC', n, sens, cible,
     ...(seuil > 1 ? { seuil: Math.min(20, Math.floor(seuil)) } : {}) }),
+
+  // --- Les pouvoirs du vocabulaire commun ----------------------------------
+  // Tous prennent une `cible` prise dans CIBLES_COMPTE ; ce qu'ils en font
+  // change d'un pouvoir à l'autre. Les deux premiers portent leur propre
+  // portée dans leur définition même — les autres séquences, un côté du
+  // centre —, les autres se règlent librement.
+
+  // Ce que les AUTRES séquences portent. `sens` : DESSUS — celles posées
+  // au-dessus de la sienne ; DESSOUS — celles d'en dessous ; AUTRES — les
+  // deux à la fois, c'est-à-dire tout le banc sauf sa propre ligne.
+  ailleurs: (n, cible, sens) => ({ kind: 'AILLEURS', n, cible, sens: sens || 'AUTRES' }),
+
+  // De quel côté du CENTRE de sa ligne. Le centre est l'ancre — le plan qui a
+  // ouvert la séquence, celui sur lequel elle est alignée ; il n'appartient à
+  // aucun des deux côtés. `sens` : GAUCHE | DROITE.
+  centre: (n, cible, sens) => ({ kind: 'CENTRE', n, cible, sens: sens === 'DROITE' ? 'DROITE' : 'GAUCHE' }),
+
+  // Par LOT : « 2 points par 3 Armes ». `seuil` est la taille du lot ; un lot
+  // incomplet ne rapporte rien — sept armes font deux lots de trois.
+  lot: (n, cible, seuil, portee) => ({ kind: 'LOT', n, cible,
+    seuil: Math.max(2, Math.min(20, Math.floor(seuil || 2))), portee: portee || 'SEQUENCE' }),
+
+  // Un SEUIL à franchir, tout ou rien : « 4 si au moins 3 Armes dans sa
+  // ligne », « 2 si aucune Valeur dans le montage ». `sens` : MIN — au moins
+  // `seuil` ; MAX — au plus. « Aucun » s'écrit MAX 0.
+  seuilCible: (n, cible, sens, seuil, portee) => ({ kind: 'SEUIL', n, cible,
+    sens: sens === 'MAX' ? 'MAX' : 'MIN', seuil: Math.max(0, Math.min(99, Math.floor(seuil ?? 1))),
+    portee: portee || 'SEQUENCE' }),
+
+  // Par icône ABSENTE : n points par type d'icône que la portée ne montre
+  // nulle part. Les six éléments sont les six candidats.
+  absentes: (n, portee) => ({ kind: 'ABSENTES', n, portee: portee || 'MONTAGE' }),
+
+  // Si CHAQUE séquence tient la taille demandée. `sens` : MIN — toutes ont au
+  // moins `seuil` plans ; MAX — toutes en ont au plus. Un banc vide ne
+  // rapporte rien : il n'y a pas de séquence à juger.
+  seqToutes: (n, seuil, sens) => ({ kind: 'SEQ_TOUTES', n,
+    seuil: Math.max(1, Math.min(20, Math.floor(seuil || 3))), sens: sens === 'MAX' ? 'MAX' : 'MIN' }),
+
+  // L'icône la PLUS — ou la MOINS — présente de la portée, et l'on compte ses
+  // exemplaires. « La moins présente » se lit parmi celles qui apparaissent :
+  // sans cela, les cinq icônes absentes gagneraient toujours, à zéro.
+  extreme: (n, sens, portee) => ({ kind: 'EXTREME', n, sens: sens === 'MOINS' ? 'MOINS' : 'PLUS',
+    portee: portee || 'SEQUENCE' }),
+
+  // Par plan selon COMBIEN d'icônes il porte : « 2 par plan à 3 icônes ».
+  // `sens` : EXACT — exactement `seuil` ; MIN — au moins ; MAX — au plus.
+  planIcones: (n, seuil, sens, portee) => ({ kind: 'PLAN_ICONES', n,
+    seuil: Math.max(0, Math.min(12, Math.floor(seuil ?? 2))),
+    sens: sens === 'MIN' || sens === 'MAX' ? sens : 'EXACT', portee: portee || 'SEQUENCE' }),
+
+  // Une carte de la portée compte DOUBLE : la plus petite, ou la plus grosse.
+  // `critere` dit ce que « petit » veut dire — ce qu'elle rapporte, combien
+  // d'icônes elle porte, ou la taille de son cadrage. `n` est le nombre de
+  // fois qu'on ajoute sa valeur : 1 la fait compter double, 2 triple.
+  doubleCarte: (n, sens, critere, portee) => ({ kind: 'DOUBLE', n,
+    sens: sens === 'PLUS' ? 'PLUS' : 'MOINS',
+    critere: ['POINTS', 'ICONES', 'CADRAGE'].includes(critere) ? critere : 'POINTS',
+    portee: portee || 'SEQUENCE' }),
 };
 
 /** Les bandeaux qui comptent des séquences : leur portée est le montage. */
-export const KINDS_SEQUENCE = ['SEQ_TAILLE', 'SEQ_VOISINES', 'SEQ_LONGUE', 'SEQ_AVEC'];
+export const KINDS_SEQUENCE = ['SEQ_TAILLE', 'SEQ_VOISINES', 'SEQ_LONGUE', 'SEQ_AVEC', 'SEQ_TOUTES'];
+
+/**
+ * Les bandeaux dont la portée est **écrite dans leur définition** et ne se
+ * règle donc pas : « dans l'ordre » juge le film entier, les bandeaux de
+ * séquence lisent la forme du banc, et deux des pouvoirs ajoutés désignent
+ * eux-mêmes où ils comptent — les autres lignes, un côté du centre.
+ */
+export const KINDS_PORTEE_FIXE = ['CHRONO', 'AILLEURS', 'CENTRE', ...KINDS_SEQUENCE];
+
+/** Ce bandeau-là laisse-t-il choisir sa portée ? */
+export const porteeReglable = (o) => !!o && !KINDS_PORTEE_FIXE.includes(o.kind);
+
+/** Pourquoi la portée de ce bandeau ne se règle pas. */
+export function porteeFigee(o) {
+  if (!o) return '';
+  if (o.kind === 'CHRONO') return '« Dans l’ordre » se lit toujours sur le montage entier.';
+  if (o.kind === 'AILLEURS') return 'Ce bandeau dit lui-même où il compte : dans les autres séquences.';
+  if (o.kind === 'CENTRE') return 'Ce bandeau dit lui-même où il compte : d’un côté du centre de sa ligne.';
+  return 'Un bandeau de séquence lit la forme du banc entier : sa portée ne se règle pas.';
+}
+
+// --- Ce qu'un pouvoir peut compter -----------------------------------------
+// Les bandeaux d'origine comptent chacun une chose et une seule : l'un des
+// plans, l'autre des Raccords, un troisième une icône. Les pouvoirs ajoutés
+// ensuite comptent tous « quelque chose » dans une portée — un lot, un seuil,
+// un côté du centre —, et il aurait fallu neuf variantes de chacun pour couvrir
+// les mêmes cibles. Ils partagent donc **un seul vocabulaire**, celui-ci, et
+// une seule clé — `cible` —, qui tient dans la colonne CSV qui existe déjà.
+//
+// Deux cibles ne désignent pas des cartes mais ce qu'elles portent :
+//   ICONE   toutes les icônes confondues — un plan à deux armes en porte deux
+//   VALEUR  les icônes DIFFÉRENTES : deux armes et une voiture font 2 valeurs
+// et une dernière ne regarde pas la portée mais la forme du banc :
+//   SEQUENCE  le nombre de séquences du montage
+// `label` nomme la cible dans une liste déroulante, où il faut lever toute
+// ambiguïté ; `court` la nomme dans une phrase, où la parenthèse pèserait. `f`
+// marque le féminin, pour que « aucune Valeur » s'accorde.
+const PLURIELS_CADRAGE = { PL: 'Plans Larges', PM: 'Plans Moyens', GP: 'Gros Plans', DEP: 'Plans de départ' };
+
+export const CIBLES_COMPTE = [
+  { id: 'CARTE',    label: 'Carte (Raccords compris)', court: 'Carte',   pl: 'Cartes', f: true },
+  { id: 'PLAN',     label: 'Plan (hors Raccord)',      court: 'Plan',    pl: 'Plans' },
+  { id: 'RACCORD',  label: 'Carte Raccord',            court: 'Raccord', pl: 'Raccords' },
+  { id: 'MORT',     label: 'Plan de mort',             court: 'Plan de mort', pl: 'Plans de mort' },
+  { id: 'NEANT',    label: 'Plan sans personnage',     court: 'Plan sans personnage',
+    pl: 'Plans sans personnage' },
+  ...CADRAGES_POUVOIR.map((f) => ({ id: f, label: FORMATS[f].label, court: FORMATS[f].label,
+    pl: PLURIELS_CADRAGE[f] })),
+  ...ELEMENT_IDS.map((e) => ({ id: e, label: ELEMENTS[e].label, court: ELEMENTS[e].label,
+    pl: `${ELEMENTS[e].label}s`, f: e === 'HEROINE' || e === 'ARME' })),
+  { id: 'ICONE',    label: 'Icône (toutes confondues)', court: 'icône',    pl: 'icônes', f: true },
+  { id: 'VALEUR',   label: 'Valeur (icône différente)', court: 'valeur',   pl: 'valeurs', f: true },
+  { id: 'SEQUENCE', label: 'Séquence du banc',          court: 'séquence', pl: 'séquences', f: true },
+];
+
+export const CIBLE_IDS = CIBLES_COMPTE.map((c) => c.id);
+
+/** Le libellé d'une cible du vocabulaire commun, tel qu'on l'écrit dans une phrase. */
+export function libelleCibleCompte(cible, liste) {
+  const c = CIBLES_COMPTE.find((x) => x.id === cible);
+  if (!c) return libelleCible(cible);
+  return liste ? c.label : c.court;
+}
+
+/** « aucun Plan », « aucune Valeur » — l'accord suit la cible. */
+function aucunCible(cible) {
+  const c = CIBLES_COMPTE.find((x) => x.id === cible);
+  return `${c && c.f ? 'aucune' : 'aucun'} ${libelleCibleCompte(cible)}`;
+}
+
+/** « 3 Armes », « 2 séquences » — les pluriels sont écrits, pas devinés. */
+export function cibleNombre(cible, k) {
+  const c = CIBLES_COMPTE.find((x) => x.id === cible);
+  return `${k} ${k > 1 && c && c.pl ? c.pl : libelleCibleCompte(cible)}`;
+}
 
 /**
  * Ce qu'une séquence peut porter, pour « n × séquence avec / sans … » : une
@@ -221,9 +386,30 @@ function objQuoi(o) {
       }
       return `séquence ${o.sens === 'SANS' ? 'sans' : 'avec'} ${libelleCible(o.cible)}`;
     }
+    // --- Les pouvoirs du vocabulaire commun --------------------------------
+    case 'AILLEURS': return `${libelleCibleCompte(o.cible)} ${
+      o.sens === 'DESSUS' ? 'dans les séquences au-dessus de la sienne'
+        : o.sens === 'DESSOUS' ? 'dans les séquences en dessous de la sienne'
+          : 'dans les autres séquences'}`;
+    case 'CENTRE': return `${libelleCibleCompte(o.cible)} à ${
+      o.sens === 'DROITE' ? 'droite' : 'gauche'} du centre de sa ligne`;
+    case 'LOT': return `lot de ${cibleNombre(o.cible, o.seuil)}`;
+    case 'ABSENTES': return 'icône absente';
+    case 'EXTREME': return `${o.sens === 'MOINS' ? 'exemplaire de l’icône la moins présente'
+      : 'exemplaire de l’icône la plus présente'}`;
+    case 'PLAN_ICONES': return `Plan à ${
+      o.sens === 'MIN' ? 'au moins ' : o.sens === 'MAX' ? 'au plus ' : ''}${o.seuil} icône${
+      o.seuil > 1 ? 's' : ''}`;
     default: return '';
   }
 }
+
+/** Ce que « la plus grosse carte » veut dire, selon le critère choisi. */
+export const CRITERES_DOUBLE = {
+  POINTS: 'en points',
+  ICONES: 'en nombre d’icônes',
+  CADRAGE: 'en taille de cadrage',
+};
 
 export function objLabel(o, cfg) {
   if (!o) return '';
@@ -232,6 +418,21 @@ export function objLabel(o, cfg) {
   switch (o.kind) {
     case 'ABSENT':  return `${o.n} si ${ELEMENTS[o.el].label} est absent${ou}`;
     case 'CHRONO':  return `${o.n} si tout est dans l’ordre${ou || ' dans le montage'}`;
+    case 'SEUIL': {
+      // « Au plus zéro » se dit « aucun » : c'est la lecture qui vient à
+      // l'esprit, et celle qu'on écrirait sur la carte.
+      const ou2 = o.cible === 'SEQUENCE' ? ' dans le banc' : ou;
+      if (o.sens === 'MAX' && o.seuil === 0) return `${o.n} si ${aucunCible(o.cible)}${ou2}`;
+      return `${o.n} si ${o.sens === 'MAX' ? 'au plus' : 'au moins'} ${
+        cibleNombre(o.cible, o.seuil)}${ou2}`;
+    }
+    case 'SEQ_TOUTES': return `${o.n} si chaque séquence a ${
+      o.sens === 'MAX' ? 'au plus' : 'au moins'} ${o.seuil} plan${o.seuil > 1 ? 's' : ''}`;
+    // « Compte double » se dit ainsi, pas « 1 × sa valeur » : c'est la même
+    // chose, mais une seule des deux tournures se lit sur une carte.
+    case 'DOUBLE': return `${o.sens === 'PLUS' ? 'La plus grosse' : 'La plus petite'} carte${ou} — ${
+      CRITERES_DOUBLE[o.critere] || CRITERES_DOUBLE.POINTS} — compte ${
+      o.n === 1 ? 'double' : `${o.n + 1} fois`}`;
     case 'SANS_TC': return `${o.n} si aucun plan ${
       o.sens === 'AVANT' ? `avant ${tcTexte(o.seuil)}`
         : o.sens === 'APRES' ? `après ${tcTexte(o.seuil)}`
@@ -249,7 +450,9 @@ export function objPortee(o, cfg) {
   if (!o) return 'MONTAGE';
   // « Dans l'ordre » ne se règle pas : c'est le film entier que l'on juge.
   // Les bandeaux de séquence non plus : ils lisent la forme du banc entier.
-  if (o.kind === 'CHRONO' || KINDS_SEQUENCE.includes(o.kind)) return 'MONTAGE';
+  // Ni ceux qui portent leur portée dans leur définition — les autres lignes,
+  // un côté du centre : le décompte va la chercher là, pas ici.
+  if (!porteeReglable(o)) return 'MONTAGE';
   if (PORTEE_IDS.includes(o.portee)) return o.portee;
   return cfg && cfg.porteeParDefaut === 'SEQUENCE' ? 'SEQUENCE' : 'MONTAGE';
 }
@@ -337,9 +540,12 @@ export const idScene = (idx) => `SC${idx}`;
 
 /** Une scène créée : la même forme que les imprimées, valeurs par défaut comprises. */
 function hydraterScene(a) {
+  // Une scène de TRANSITION porte son pouvoir sur ses deux moitiés — c'est `S`
+  // qui s'en charge, à condition qu'on lui dise la famille et le raccord.
   return S(a.idx, a.tc || 0, a.famille || 'PERSONNAGE', a.pmNum, a.gpNum,
     (a.pmEl || []).slice(), (a.gpEl || []).slice(), a.obj ? { ...a.obj } : null,
-    { ...(a.titre ? { titre: a.titre } : {}), ...(a.mort ? { mort: true } : {}), ajoutee: true });
+    { ...(a.titre ? { titre: a.titre } : {}), ...(a.mort ? { mort: true } : {}),
+      ...(a.transition ? { transition: a.transition } : {}), ajoutee: true });
 }
 
 export function sceneDe(idx) {
@@ -634,6 +840,44 @@ export function miroirDe(cle) {
 }
 
 /**
+ * Le recadrage d'une illustration : de combien on zoome dedans (`z`, 1 étant
+ * l'image telle qu'elle vient), et de combien on la fait glisser derrière la
+ * fenêtre de la carte (`x`, `y`, en pour-cent de cette fenêtre).
+ *
+ * Les visuels de la boîte sont taillés au format exact de leur emplacement :
+ * à z = 1 ils tombent juste, et il n'y a rien à régler. Le recadrage sert à
+ * **adapter un autre visuel** — tailler un Gros Plan dans un Plan Moyen, ou
+ * loger une image qui n'a pas la bonne proportion.
+ */
+export function cadreDe(cle) {
+  const s = sur(cle);
+  return normaliserCadre(s && s.cadre);
+}
+
+/** Le cadre neutre — l'image telle qu'elle vient — se dit `null`, pas `{z:1}`. */
+export function normaliserCadre(c) {
+  if (!c) return null;
+  const z = Math.max(0.5, Math.min(4, Math.round((Number(c.z) || 1) * 100) / 100));
+  // On ne glisse pas l'image plus loin que ce que le zoom permet : au-delà,
+  // un bord de la carte se retrouverait vide. À z = 1, elle ne bouge pas.
+  const max = Math.round((Math.abs(z - 1) / 2) * 100);
+  const borne = (v) => Math.max(-max, Math.min(max, Math.round(Number(v) || 0)));
+  const x = borne(c.x);
+  const y = borne(c.y);
+  return z === 1 && !x && !y ? null : { z, x, y };
+}
+
+/** Le recadrage tel qu'il s'écrit dans une colonne de tableur : « 1.5|-10|4 ». */
+export function cadreTexte(c) {
+  return c ? `${c.z}|${c.x}|${c.y}` : '';
+}
+
+export function cadreDepuisTexte(t) {
+  const m = String(t || '').split('|');
+  return m.length === 3 ? normaliserCadre({ z: parseFloat(m[0]), x: m[1], y: m[2] }) : null;
+}
+
+/**
  * Le numéro affiché d'un plan. Ce n'est qu'une étiquette : l'identité d'un
  * plan reste son numéro imprimé, qui sert de clé et désigne son illustration.
  * Renuméroter ne casse donc aucun appariement — et deux plans peuvent porter
@@ -709,6 +953,7 @@ export function halfInfo(sceneIdx, format, opts = {}) {
     numOrigine: origine,
     image: imageDe(cle, imageImprimee(format === 'GP' ? 'gp' : 'pm', origine)),
     miroir: miroirDe(cle),
+    cadre: cadreDe(cle),
   };
 }
 
@@ -745,6 +990,7 @@ export function plHalf(carte) {
     depart: !!carte.depart,
     image: imageDe(cle, imageImprimee('pl', carte.num)),
     miroir: miroirDe(cle),
+    cadre: cadreDe(cle),
   };
 }
 
@@ -768,10 +1014,11 @@ export function catalogue() {
       imprime: {
         tc: defauts.tc, el: (defauts.el || []).slice(), obj: defauts.obj || null,
         obj2: defauts.obj2 || null, mort: !!defauts.mort, num: origine, image: imprimee,
-        miroir: false,
+        miroir: false, cadre: null,
       },
       image: imageDe(cle, imprimee),
       miroir: miroirDe(cle),
+      cadre: cadreDe(cle),
       ...extra,
     });
   };

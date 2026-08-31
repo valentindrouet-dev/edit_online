@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.76';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.76';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.77';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.77';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -101,7 +101,64 @@ function objCoeur(obj, taille, compact) {
       return `${tagSeq(compact)}${obj.sens === 'SANS'
         ? `<span class="barre">${quoi}${croixNon()}</span>` : quoi}`;
     }
+    // --- Les pouvoirs du vocabulaire commun --------------------------------
+    // Chacun montre sa cible, précédée ou suivie de ce qui le distingue : une
+    // flèche de pile pour les autres lignes, un pivot pour le centre, un seuil
+    // pour ceux qui en ont un.
+    // En compact — un Gros Plan —, la pastille « Séquence » saute : la flèche
+    // violette dit déjà qu'on regarde d'autres lignes, et la place manque.
+    case 'AILLEURS': return `${compact ? '' : tagSeq(false)}<span class="fleche-seq">${
+      obj.sens === 'DESSUS' ? '▲' : obj.sens === 'DESSOUS' ? '▼' : '⇅'
+    }</span>${cibleHTML(obj.cible, taille, compact)}`;
+    case 'CENTRE': {
+      const q = cibleHTML(obj.cible, taille, compact);
+      const pivot = `<span class="tag tag-blanc">${compact ? 'ctr' : 'centre'}</span>`;
+      // L'ordre de lecture dit le côté : la cible avant le pivot quand on
+      // compte à gauche, après quand on compte à droite.
+      return obj.sens === 'DROITE'
+        ? `${pivot}<span class="fleche-pos">▶</span>${q}`
+        : `${q}<span class="fleche-pos">◀</span>${pivot}`;
+    }
+    case 'LOT': return `<span class="tag tag-lot">${compact ? `×${obj.seuil}` : `lot de ${obj.seuil}`}</span>${
+      cibleHTML(obj.cible, taille, compact)}`;
+    case 'SEUIL': return `<span class="tc-seuil">${
+      obj.sens === 'MAX' ? '≤' : '≥'}${compact ? '' : '&nbsp;'}${obj.seuil}</span>${
+      cibleHTML(obj.cible, taille, compact)}`;
+    case 'ABSENTES': return `<span class="barre"><span class="tag tag-blanc">${
+      compact ? 'Ic.' : 'Icône'}</span>${croixNon()}</span>`;
+    case 'SEQ_TOUTES': return `<span class="tag tag-seq">${compact ? 'toutes' : 'chaque séq.'}</span>
+      <span class="tc-seuil">${obj.sens === 'MAX' ? '≤' : '≥'}&nbsp;${obj.seuil}</span>`;
+    case 'EXTREME': return `<span class="tag tag-blanc">${compact ? 'Ic.' : 'Icône'}</span>
+      <span class="tc-seuil">${obj.sens === 'MOINS' ? 'min' : 'max'}</span>`;
+    case 'PLAN_ICONES': return `<span class="tag tag-blanc">Plan</span>
+      <span class="tc-seuil">${obj.sens === 'MIN' ? '≥' : obj.sens === 'MAX' ? '≤' : '='}${
+  compact ? '' : '&nbsp;'}${obj.seuil}${compact ? '' : '&nbsp;icônes'}</span>`;
+    case 'DOUBLE': return `<span class="tag tag-blanc">${
+      obj.sens === 'PLUS' ? (compact ? '+ grosse' : 'plus grosse carte')
+        : (compact ? '+ petite' : 'plus petite carte')}</span>${
+      obj.critere === 'POINTS' ? '' : `<span class="tc-seuil">${
+        obj.critere === 'ICONES' ? (compact ? 'ic.' : 'icônes') : (compact ? 'cadr.' : 'cadrage')}</span>`}`;
     default: return '';
+  }
+}
+
+/**
+ * Une cible du vocabulaire commun, dessinée : une icône garde son rond, un
+ * cadrage son étiquette de couleur, et ce qui n'a pas d'image — une carte, une
+ * valeur — prend un mot. Les neuf bandeaux qui partagent ce vocabulaire
+ * partagent donc aussi son dessin.
+ */
+function cibleHTML(cible, taille, compact) {
+  switch (cible) {
+    case 'CARTE':    return '<span class="tag tag-blanc">Carte</span>';
+    case 'PLAN':     return '<span class="tag tag-blanc">Plan</span>';
+    case 'RACCORD':  return '<span class="tag tag-gris">Raccord</span>';
+    case 'MORT':     return elIcon('MORT', taille);
+    case 'NEANT':    return elIcon('NEANT', taille);
+    case 'SEQUENCE': return tagSeq(compact);
+    case 'ICONE':    return `<span class="tag tag-blanc">${compact ? 'Ic.' : 'Icône'}</span>`;
+    case 'VALEUR':   return `<span class="tag tag-blanc">${compact ? 'Val.' : 'Valeur'}</span>`;
+    default:         return FORMATS[cible] ? tagCadrage(cible, compact) : elIcon(cible, taille);
   }
 }
 
@@ -124,7 +181,7 @@ export function objHTML(obj, taille, cfg) {
 }
 
 /** Les bandeaux qui se lisent « n si … » plutôt que « n × … ». */
-const OBJ_SI = ['ABSENT', 'CHRONO', 'SANS_TC'];
+const OBJ_SI = ['ABSENT', 'CHRONO', 'SANS_TC', 'SEUIL', 'SEQ_TOUTES'];
 export const estSi = (o) => !!o && OBJ_SI.includes(o.kind);
 
 /**
@@ -180,7 +237,14 @@ export function renderPlan(h, opts = {}) {
   // résoudrait contre la feuille de style et non contre le document. Elle vit
   // dans sa propre couche sous le minutage, pour qu'un retournement en miroir
   // ne retourne que le dessin — des chiffres à l'envers ne se lisent pas.
-  const fond = h.image ? `background-image:url('${h.image}');` : '';
+  // Le recadrage et le miroir sont une seule transformation : le miroir en
+  // premier — donc le plus à droite —, pour que déplacer l'image se fasse
+  // toujours dans le sens de l'écran, même sur un dessin retourné.
+  const t = [];
+  if (h.cadre) t.push(`translate(${h.cadre.x}%, ${h.cadre.y}%) scale(${h.cadre.z})`);
+  if (h.miroir) t.push('scaleX(-1)');
+  const fond = `${h.image ? `background-image:url('${h.image}');` : ''}${
+    t.length ? `transform:${t.join(' ')};` : ''}`;
   // Le crâne se lit avec les autres : c'est une icône de la carte, pas un état.
   const icones = h.mort ? [...h.el, 'MORT'] : h.el;
   // Ce que ce plan-là rapporte, ici et maintenant : un jeton au coin, en face

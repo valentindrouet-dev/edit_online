@@ -2,34 +2,36 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.76';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.77';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
-  KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.76';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.76';
-import { elIcon, numIcon } from './icons.js?v=1.76';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.76';
+  ciblesSequence,
+  CIBLES_COMPTE, CIBLE_IDS, libelleCibleCompte, porteeReglable, porteeFigee, CRITERES_DOUBLE,
+  normaliserCadre, cadreTexte, cadreDepuisTexte,
+} from './data.js?v=1.77';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.77';
+import { elIcon, numIcon } from './icons.js?v=1.77';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.77';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.76';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.76';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone, bancVide } from './scoring.js?v=1.76';
-import { releve, voler, stopperVols } from './anim.js?v=1.76';
-import { campagne } from './lab.js?v=1.76';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.76';
-import { Salon } from './net/salon.js?v=1.76';
-import { TransportLocal } from './net/local.js?v=1.76';
-import { TransportSupabase } from './net/supabase.js?v=1.76';
-import { enLigneDisponible } from './net/config.js?v=1.76';
-import { coupNu } from './net/protocole.js?v=1.76';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.76';
+} from './engine.js?v=1.77';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.77';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, bancVide } from './scoring.js?v=1.77';
+import { releve, voler, stopperVols } from './anim.js?v=1.77';
+import { campagne } from './lab.js?v=1.77';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.77';
+import { Salon } from './net/salon.js?v=1.77';
+import { TransportLocal } from './net/local.js?v=1.77';
+import { TransportSupabase } from './net/supabase.js?v=1.77';
+import { enLigneDisponible } from './net/config.js?v=1.77';
+import { coupNu } from './net/protocole.js?v=1.77';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.77';
 
 const app = document.getElementById('app');
 
@@ -2104,6 +2106,18 @@ const KINDS = [
   ['SEQ_VOISINES', 'par SÉQUENCE au-dessus / en dessous…'],
   ['SEQ_LONGUE',   'par PLAN de la plus longue SÉQUENCE'],
   ['SEQ_AVEC',     'par SÉQUENCE avec / sans…'],
+  ['SEQ_TOUTES',   'si CHAQUE SÉQUENCE a n plans…'],
+  // Les neuf pouvoirs qui partagent le vocabulaire de cibles. Ils comptent
+  // tous « quelque chose » — une carte, une icône, une valeur — et ne se
+  // distinguent que par ce qu'ils en font.
+  ['AILLEURS',    'par CIBLE dans les AUTRES SÉQUENCES…'],
+  ['CENTRE',      'par CIBLE à gauche / à droite du CENTRE…'],
+  ['LOT',         'par LOT de n CIBLES…'],
+  ['SEUIL',       'si au moins / au plus n CIBLES…'],
+  ['ABSENTES',    'par ICONE absente'],
+  ['EXTREME',     'par ICONE la plus / la moins présente…'],
+  ['PLAN_ICONES', 'par PLAN portant n ICONES…'],
+  ['DOUBLE',      'la plus petite / plus grosse CARTE compte double…'],
 ];
 
 const KIND_LABEL = Object.fromEntries(KINDS.map(([k, l]) => [k, l]));
@@ -2200,6 +2214,21 @@ function creerCarte(famille) {
     sauverCfg();
     return { cles: [String(a), String(b)], cartes: [`S${type}f${a}`, `S${type}f${b}`],
       quoi: `Plan de départ version ${type} — faces ${a} et ${b}` };
+  }
+  // Une Carte Raccord est une scène comme les autres, à ceci près qu'elle ne
+  // raconte rien : famille TRANSITION, pas d'icône, et son pouvoir sur ses
+  // DEUX moitiés — un Raccord rapporte autant par le bout qu'on le joue.
+  // Ouverture et Générique de fin, eux, restent ceux qui sont imprimés : ce
+  // sont les serre-livres du film, et le banc n'en accepte qu'un de chaque.
+  if (famille === 'RACCORD') {
+    const idx = prochainIdxScene();
+    const pmNum = prochainNumero(290);
+    const gpNum = prochainNumero(390);
+    m.ajouts.scenes.push({ idx, pmNum, gpNum, tc: 0, famille: 'TRANSITION',
+      transition: 'RACCORD', titre: 'Raccord', pmEl: [], gpEl: [], obj: OBJ.plan(1) });
+    sauverCfg();
+    return { cles: [`${pmNum}R`, `${gpNum}R`],
+      quoi: `Carte Raccord — Plan Moyen ${pmNum} et Gros Plan ${gpNum}` };
   }
   if (famille === 'GP' || famille === 'PM' || famille === 'SCENE') {
     const idx = prochainIdxScene();
@@ -2516,18 +2545,33 @@ function barreJeu() {
  * La vue « Tous les plans » mélange les familles : elle ne crée rien, on lui
  * dit où aller.
  */
+// Ce qu'on peut créer, onglet par onglet. Une vue peut en proposer plusieurs :
+// là où l'on fabrique une scène, on peut aussi fabriquer une Carte Raccord —
+// c'en est une, elle aussi, mais qui ne raconte rien.
+const RACCORD_NEUF = ['RACCORD', '+ Nouveau Raccord',
+  'Une Carte Raccord vierge : pas d’icône, et son pouvoir sur ses deux moitiés'];
+
 const A_CREER = {
-  CARTES: ['CARTES', '+ Nouvelle carte PM / GP', 'Un nouvel appariement de deux moitiés existantes'],
-  GP: ['GP', '+ Nouveau Gros Plan', 'Une nouvelle scène : elle fournit un Gros Plan et son Plan Moyen'],
-  PM: ['PM', '+ Nouveau Plan Moyen', 'Une nouvelle scène : elle fournit un Plan Moyen et son Gros Plan'],
-  PL: ['PL', '+ Nouveau Plan Large', 'Une carte Plan Large vierge, à régler et à illustrer'],
-  DEPART: ['DEPART', '+ Nouveau Plan de départ', 'Une nouvelle version recto-verso, ses deux faces vierges'],
+  CARTES: [
+    ['CARTES', '+ Nouvelle carte PM / GP', 'Un nouvel appariement de deux moitiés existantes'],
+    RACCORD_NEUF,
+  ],
+  GP: [
+    ['GP', '+ Nouveau Gros Plan', 'Une nouvelle scène : elle fournit un Gros Plan et son Plan Moyen'],
+    RACCORD_NEUF,
+  ],
+  PM: [
+    ['PM', '+ Nouveau Plan Moyen', 'Une nouvelle scène : elle fournit un Plan Moyen et son Gros Plan'],
+    RACCORD_NEUF,
+  ],
+  PL: [['PL', '+ Nouveau Plan Large', 'Une carte Plan Large vierge, à régler et à illustrer']],
+  DEPART: [['DEPART', '+ Nouveau Plan de départ', 'Une nouvelle version recto-verso, ses deux faces vierges']],
 };
 
 function boutonCreer() {
-  const e = A_CREER[mat.vue];
-  if (!e) return '';
-  return `<button class="pill mini creer" data-creer="${e[0]}" title="${e[2]}">${e[1]}</button>`;
+  return (A_CREER[mat.vue] || [])
+    .map((e) => `<button class="pill mini creer" data-creer="${e[0]}" title="${e[2]}">${e[1]}</button>`)
+    .join('');
 }
 
 /**
@@ -2843,7 +2887,7 @@ function blocPouvoirMixte(plans, ou, rang = 1) {
   const opt = (v, l, on) => `<option value="${v}" ${on ? 'selected' : ''}>${l}</option>`;
   const memeN = objs.every((o) => o.n === objs[0].n) ? objs[0].n : '';
   const portees = [...new Set(objs.map((o) => objPortee(o, store.cfg)))];
-  const figes = objs.filter((o) => o.kind === 'CHRONO' || KINDS_SEQUENCE.includes(o.kind)).length;
+  const figes = objs.filter((o) => !porteeReglable(o)).length;
   return `<div class="champ-bloc">
     <span class="ch-lg">${rang === 2 ? 'Second pouvoir' : 'Pouvoir'} — ${objs.length} bandeaux différents</span>
     <p class="aide">Les pouvoirs diffèrent : la <b>valeur</b> et la <b>portée</b> se règlent quand
@@ -2955,6 +2999,9 @@ function ligneIllustration(plans) {
       : `imprimée ${nomImage(plans[0].imprime.image)}`}</span>` : ''}
     <button class="pill mini ${plans.every((p) => p.miroir) ? 'on' : ''}" data-miroir="${cles}"
       title="Retourner l’illustration horizontalement — le minutage, lui, ne se retourne pas">⇄ miroir</button>
+    ${plans.some((p) => p.cadre) ? `<span class="imp-rappel">recadré${plans.length > 1
+      && !plans.every((p) => p.cadre) ? ' en partie' : ''}${plans.length === 1
+      ? ` à ${Math.round(plans[0].cadre.z * 100)} %` : ''}</span>` : ''}
     ${retouchees ? `<button class="pill mini" data-image-reset="${cles}">↺ imprimée</button>` : ''}
   </div>`;
 }
@@ -2985,6 +3032,86 @@ function poserImage(cles, url) {
   });
 }
 
+// --- Le recadrage d'une illustration ---------------------------------------
+// Les visuels de la boîte sont taillés au format exact de leur emplacement :
+// posés tels quels, ils tombent juste. Ce n'est plus vrai dès qu'on pose sur
+// un plan une image faite pour un autre — un Plan Moyen sur un Gros Plan, un
+// dessin qu'on vient de livrer. Le recadrage sert à cela : on zoome dans
+// l'image et on la fait glisser derrière la fenêtre de la carte, jusqu'à ce
+// que le cadrage soit celui qu'on voulait.
+
+const CADRE_PAS = 0.1;
+
+/** Le recadrage commun à une sélection — rien s'ils ne l'ont pas tous. */
+function cadreCommun(cles) {
+  return surLeModifie(() => {
+    const cs = cles.map((c) => (planDeCle(c) || {}).cadre || null);
+    const t = JSON.stringify(cs[0] || null);
+    return cs.every((c) => JSON.stringify(c || null) === t) ? cs[0] : null;
+  });
+}
+
+/** Pose un recadrage sur toute la sélection. `null` la remet à l'imprimé. */
+function poserCadre(cles, cadre) {
+  const c = normaliserCadre(cadre);
+  surLeModifie(() => { for (const k of cles) retoucher(k, 'cadre', c || undefined); });
+  sauverCfg();
+}
+
+/**
+ * Le plan que l'aperçu du recadrage montre : le premier de la sélection. Régler
+ * un lot sur un seul aperçu se tient — c'est la même image et le même geste
+ * qu'on leur applique à tous.
+ */
+function planApercuCadre(cles) {
+  return surLeModifie(() => planDeCle(cles[0]));
+}
+
+/**
+ * L'atelier de recadrage : la carte telle qu'elle sera, et de quoi la régler.
+ * On tire l'image à la souris, on zoome à la molette ou au curseur, et l'on
+ * voit tout de suite le résultat — minutage et bandeau compris, puisque c'est
+ * la vraie carte qui est dessinée, pas une vignette approchée.
+ */
+function blocRecadrage(cles) {
+  const plan = planApercuCadre(cles);
+  if (!plan) return '';
+  const c = cadreCommun(cles) || { z: 1, x: 0, y: 0 };
+  const memeCadre = cles.length === 1 || cadreCommun(cles) !== null
+    || cles.every((k) => !(planDeCle(k) || {}).cadre);
+  return `<div class="recadrage">
+    <div class="recadrage-vue">
+      <div class="carte solo" id="cadre-carte">${surLeModifie(() => renderPlan(plan, { muet: true }))}</div>
+      <div class="aide">${c.z === 1 ? 'Zoomez, puis tirez l’image pour la déplacer.'
+    : 'Tirez l’image pour la déplacer ; la molette zoome.'}</div>
+    </div>
+    <div class="recadrage-reglages">
+      <label class="champ-ligne">
+        <span>Zoom</span>
+        <input type="range" id="cadre-zoom" min="0.5" max="4" step="0.05" value="${c.z}">
+        <b class="cadre-val">${Math.round(c.z * 100)} %</b>
+      </label>
+      <div class="rangee-mini">
+        <button class="pill mini" data-cadre-zoom="-1">− dézoomer</button>
+        <button class="pill mini" data-cadre-zoom="1">+ zoomer</button>
+        <button class="pill mini ${plan.miroir ? 'on' : ''}" id="cadre-miroir">⇄ miroir</button>
+        <button class="pill mini" id="cadre-reset" ${cadreCommun(cles) ? '' : 'disabled'}>↺ recadrage</button>
+      </div>
+      <div class="croix-cadre">
+        <button class="pill mini" data-cadre-pan="0,-1">▲</button>
+        <div>
+          <button class="pill mini" data-cadre-pan="-1,0">◀</button>
+          <button class="pill mini" data-cadre-pan="1,0">▶</button>
+        </div>
+        <button class="pill mini" data-cadre-pan="0,1">▼</button>
+      </div>
+      <p class="aide">${memeCadre ? '' : '<b>Les plans choisis n’ont pas le même recadrage.</b> '}Le
+        recadrage se pose sur ${cles.length > 1 ? 'toute la sélection' : 'ce plan'}, comme l’image.
+        À 100 % l’illustration tombe telle qu’elle vient : c’est en zoomant qu’on peut la déplacer.</p>
+    </div>
+  </div>`;
+}
+
 /** Le choix d'une illustration : toutes celles de la boîte, en vignettes. */
 async function ouvrirChoixImage(cles) {
   const inv = await chargerImages();
@@ -2997,6 +3124,7 @@ async function ouvrirChoixImage(cles) {
     <p class="aide">Les ${total} visuels de la boîte. Un clic pose l’image
       ${cles.length > 1 ? 'sur toute la sélection' : 'sur ce plan'} ; rien n’empêche deux plans de
       partager la même. Le numéro imprimé, lui, ne bouge pas — c’est l’identité du plan.</p>
+    <div id="bloc-recadrage">${blocRecadrage(cles)}</div>
     ${DOSSIERS_IMAGES.map(([d, titre]) => (inv[d] && inv[d].length ? `<h3>${titre}</h3>
       <div class="grille-illus">
         ${inv[d].map((f) => {
@@ -3014,7 +3142,82 @@ async function ouvrirChoixImage(cles) {
     </div>
   </div>`;
 
-  const fermer = () => { fond.remove(); document.removeEventListener('keydown', touche); };
+  // Le recadrage se règle sans quitter la modale : chaque geste réécrit
+  // l'aperçu, et la galerie du Matériel n'est refaite qu'à la fermeture.
+  let touchee = false;
+  const redessiner = () => {
+    const hote = fond.querySelector('#bloc-recadrage');
+    if (hote) hote.innerHTML = blocRecadrage(cles);
+    brancherRecadrage();
+  };
+  const regler = (f) => {
+    const c = cadreCommun(cles) || { z: 1, x: 0, y: 0 };
+    poserCadre(cles, f({ ...c }));
+    touchee = true;
+    redessiner();
+  };
+
+  function brancherRecadrage() {
+    const zoom = fond.querySelector('#cadre-zoom');
+    if (zoom) zoom.addEventListener('input', () => regler((c) => ({ ...c, z: parseFloat(zoom.value) })));
+    fond.querySelectorAll('[data-cadre-zoom]').forEach((b) => b.addEventListener('click', () => {
+      regler((c) => ({ ...c, z: c.z + CADRE_PAS * Number(b.dataset.cadreZoom) }));
+    }));
+    fond.querySelectorAll('[data-cadre-pan]').forEach((b) => b.addEventListener('click', () => {
+      const [dx, dy] = b.dataset.cadrePan.split(',').map(Number);
+      regler((c) => ({ ...c, x: c.x + dx * 2, y: c.y + dy * 2 }));
+    }));
+    const reset = fond.querySelector('#cadre-reset');
+    if (reset) reset.addEventListener('click', () => { poserCadre(cles, null); touchee = true; redessiner(); });
+    const mir = fond.querySelector('#cadre-miroir');
+    if (mir) mir.addEventListener('click', () => { basculerMiroir(cles); sauverCfg(); touchee = true; redessiner(); });
+
+    const vue = fond.querySelector('#cadre-carte .illus');
+    if (!vue) return;
+    // La molette zoome là où l'on regarde ; le glisser déplace l'image en
+    // pour-cent de la fenêtre, pour que le réglage ne dépende pas de la taille
+    // à laquelle l'aperçu est dessiné.
+    vue.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      regler((c) => ({ ...c, z: c.z + (e.deltaY < 0 ? CADRE_PAS : -CADRE_PAS) }));
+    }, { passive: false });
+    vue.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      const r = vue.getBoundingClientRect();
+      const depart = cadreCommun(cles) || { z: 1, x: 0, y: 0 };
+      const x0 = e.clientX, y0 = e.clientY;
+      const bouge = (ev) => {
+        poserCadre(cles, { ...depart,
+          x: depart.x + ((ev.clientX - x0) / r.width) * 100,
+          y: depart.y + ((ev.clientY - y0) / r.height) * 100 });
+        touchee = true;
+        // Pendant le glissé on ne réécrit que la transformation : refaire tout
+        // le bloc à chaque pixel arracherait le pointeur de sa cible.
+        const img = vue.querySelector('.illus-image');
+        const c = cadreCommun(cles);
+        if (img) {
+          img.style.transform = `${c ? `translate(${c.x}%, ${c.y}%) scale(${c.z})` : ''}${
+            planApercuCadre(cles).miroir ? ' scaleX(-1)' : ''}`.trim();
+        }
+      };
+      const fini = () => {
+        vue.removeEventListener('pointermove', bouge);
+        vue.removeEventListener('pointerup', fini);
+        vue.removeEventListener('pointercancel', fini);
+        redessiner();
+      };
+      vue.setPointerCapture(e.pointerId);
+      vue.addEventListener('pointermove', bouge);
+      vue.addEventListener('pointerup', fini);
+      vue.addEventListener('pointercancel', fini);
+    });
+  }
+
+  const fermer = () => {
+    fond.remove();
+    document.removeEventListener('keydown', touche);
+    if (touchee) vueMateriel();
+  };
   const touche = (e) => { if (e.key === 'Escape') fermer(); };
   document.addEventListener('keydown', touche);
   fond.addEventListener('click', (e) => {
@@ -3023,10 +3226,15 @@ async function ouvrirChoixImage(cles) {
     if (!b) return;
     poserImage(cles, b.dataset.choixImage);
     sauverCfg();
-    fermer();
-    vueMateriel();
+    // Poser une image ne ferme plus la modale : on veut la recadrer dans la
+    // foulée, sans avoir à rouvrir le sélecteur.
+    touchee = true;
+    fond.querySelectorAll('[data-choix-image]').forEach((t) => t.classList
+      .toggle('on', t.dataset.choixImage === b.dataset.choixImage && !!b.dataset.choixImage));
+    redessiner();
   });
   document.body.appendChild(fond);
+  brancherRecadrage();
 }
 
 /** Ajoute ou retire une icône, en gardant l'ordre canonique des éléments. */
@@ -3042,6 +3250,12 @@ function blocPouvoir(o, ou, rang = 1) {
   const R = ` data-rang="${rang}"`;
   const opt = (v, l, on) => `<option value="${v}" ${on ? 'selected' : ''}>${l}</option>`;
   const elOpts = (choisi) => ELEMENT_IDS.map((e) => opt(e, ELEMENTS[e].label, choisi === e)).join('');
+  // Le choix d'une cible du vocabulaire commun. « Séquence » n'y figure que
+  // là où compter des séquences veut dire quelque chose : dans les autres
+  // lignes ou d'un côté du centre, ce sont des cartes que l'on compte.
+  const cibleSel = (choisi, sansSeq) => `<select data-champ-obj="${ou}"${R} data-part="cible">
+    ${CIBLES_COMPTE.filter((c) => !(sansSeq && c.id === 'SEQUENCE'))
+    .map((c) => opt(c.id, c.label, choisi === c.id)).join('')}</select>`;
 
   let complement = '';
   if (kind === 'FORMAT') {
@@ -3097,6 +3311,61 @@ function blocPouvoir(o, ou, rang = 1) {
       <span class="plus">plan${(o.seuil || 1) > 1 ? 's' : ''}</span>
       <select data-champ-obj="${ou}"${R} data-part="cible">
         ${ciblesSequence().map((c) => opt(c.id, c.label, o.cible === c.id)).join('')}</select>`;
+  } else if (kind === 'SEQ_TOUTES') {
+    complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
+        ${opt('MIN', 'a au moins', o.sens !== 'MAX')}${opt('MAX', 'a au plus', o.sens === 'MAX')}
+      </select>
+      <input type="number" class="pts" min="1" max="20" value="${o.seuil}"
+        data-champ-obj="${ou}"${R} data-part="seuil">
+      <span class="plus">plan${o.seuil > 1 ? 's' : ''}</span>`;
+  } else if (kind === 'AILLEURS') {
+    complement = `${cibleSel(o.cible, true)}
+      <select data-champ-obj="${ou}"${R} data-part="sens">
+        ${opt('AUTRES', 'dans les autres séquences', o.sens !== 'DESSUS' && o.sens !== 'DESSOUS')}
+        ${opt('DESSUS', 'dans celles au-dessus', o.sens === 'DESSUS')}
+        ${opt('DESSOUS', 'dans celles en dessous', o.sens === 'DESSOUS')}
+      </select>`;
+  } else if (kind === 'CENTRE') {
+    complement = `${cibleSel(o.cible, true)}
+      <select data-champ-obj="${ou}"${R} data-part="sens">
+        ${opt('GAUCHE', 'à gauche du centre', o.sens !== 'DROITE')}
+        ${opt('DROITE', 'à droite du centre', o.sens === 'DROITE')}
+      </select>`;
+  } else if (kind === 'LOT') {
+    complement = `<input type="number" class="pts" min="2" max="20" value="${o.seuil}"
+        data-champ-obj="${ou}"${R} data-part="seuil">
+      ${cibleSel(o.cible)}`;
+  } else if (kind === 'SEUIL') {
+    complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
+        ${opt('MIN', 'au moins', o.sens !== 'MAX')}${opt('MAX', 'au plus', o.sens === 'MAX')}
+      </select>
+      <input type="number" class="pts" min="0" max="99" value="${o.seuil}"
+        data-champ-obj="${ou}"${R} data-part="seuil">
+      ${cibleSel(o.cible)}`;
+  } else if (kind === 'EXTREME') {
+    complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
+        ${opt('PLUS', 'la plus présente', o.sens !== 'MOINS')}
+        ${opt('MOINS', 'la moins présente', o.sens === 'MOINS')}
+      </select>`;
+  } else if (kind === 'PLAN_ICONES') {
+    complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
+        ${opt('EXACT', 'portant exactement', o.sens !== 'MIN' && o.sens !== 'MAX')}
+        ${opt('MIN', 'portant au moins', o.sens === 'MIN')}
+        ${opt('MAX', 'portant au plus', o.sens === 'MAX')}
+      </select>
+      <input type="number" class="pts" min="0" max="12" value="${o.seuil}"
+        data-champ-obj="${ou}"${R} data-part="seuil">
+      <span class="plus">icône${o.seuil > 1 ? 's' : ''}</span>`;
+  } else if (kind === 'DOUBLE') {
+    // `n` n'est plus un compte mais un nombre de fois : à 1 la carte compte
+    // double, à 2 elle compte triple. Le libellé le rappelle.
+    complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
+        ${opt('MOINS', 'de la plus petite carte', o.sens !== 'PLUS')}
+        ${opt('PLUS', 'de la plus grosse carte', o.sens === 'PLUS')}
+      </select>
+      <select data-champ-obj="${ou}"${R} data-part="critere">
+        ${Object.entries(CRITERES_DOUBLE).map(([k, l]) => opt(k, l, (o.critere || 'POINTS') === k)).join('')}
+      </select>`;
   }
 
   return `<div class="champ-bloc">
@@ -3105,16 +3374,15 @@ function blocPouvoir(o, ou, rang = 1) {
       <input type="number" class="pts" min="-20" max="20" value="${o ? o.n : 1}"
         data-champ-obj="${ou}"${R} data-part="n" ${o ? '' : 'disabled'}>
       <span class="x">${estSi(o) ? 'si' : '×'}</span>
-      <select data-champ-obj="${ou}"${R} data-part="kind">${KINDS.map(([k, l]) => opt(k, l, kind === k)).join('')}</select>
+      <select data-champ-obj="${ou}"${R} data-part="kind" title="${KIND_LABEL[kind] || 'aucun pouvoir'}"
+        >${KINDS.map(([k, l]) => opt(k, l, kind === k)).join('')}</select>
       ${complement}
     </div>
-    ${o && o.kind !== 'CHRONO' && !KINDS_SEQUENCE.includes(o.kind) ? `<div class="portee-choix">
+    ${porteeReglable(o) ? `<div class="portee-choix">
       ${PORTEES.map((x) => `<button class="pp ${objPortee(o, store.cfg) === x.id ? 'on' : ''}"
         data-champ-portee="${ou}"${R} data-portee="${x.id}" title="${x.label}">
         ${x.gauche ? '◀' : ''} ${x.court} ${x.droite ? '▶' : ''}</button>`).join('')}
-    </div>` : (o ? `<div class="aide portee-fixe">${KINDS_SEQUENCE.includes(o.kind)
-      ? 'Un bandeau de séquence lit la forme du banc entier : sa portée ne se règle pas.'
-      : '« Dans l’ordre » se lit toujours sur le montage entier.'}</div>` : '')}
+    </div>` : (o ? `<div class="aide portee-fixe">${porteeFigee(o)}</div>` : '')}
     <div class="apercu-obj">${o ? `${objHTML(o, 26, store.cfg)}<span class="lit">${objLabel(o, store.cfg)}</span>`
       : '<span class="aide">Bandeau vide</span>'}</div>
   </div>`;
@@ -3404,11 +3672,22 @@ function declencheurs(obj, plans) {
     case 'NEANT':   return plans.filter((p) => !p.el.some((e) => PERSONNAGES.includes(e))).length;
     case 'MINUTAGE': return plans.filter((p) => (obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
     // Les « si » : le pouvoir se déclenche, ou pas — jamais plusieurs fois.
-    case 'ABSENT': case 'CHRONO': case 'SANS_TC': return 1;
+    case 'ABSENT': case 'CHRONO': case 'SANS_TC': case 'SEUIL': return 1;
     // Les bandeaux de séquence ne se déclenchent pas sur une carte mais sur la
     // forme du banc : le matériel seul ne peut pas dire combien de fois. On les
-    // compte donc une fois — leur plancher honnête.
-    case 'SEQ_TAILLE': case 'SEQ_VOISINES': case 'SEQ_LONGUE': case 'SEQ_AVEC': return 1;
+    // compte donc une fois — leur plancher honnête. Il en va de même de ceux
+    // qui désignent une carte du banc plutôt qu'un contenu.
+    case 'SEQ_TAILLE': case 'SEQ_VOISINES': case 'SEQ_LONGUE': case 'SEQ_AVEC':
+    case 'SEQ_TOUTES': case 'DOUBLE': case 'EXTREME': case 'ABSENTES': return 1;
+    // Ceux du vocabulaire commun se comptent comme les autres compteurs : ce
+    // que le matériel entier met sur la table.
+    case 'AILLEURS': case 'CENTRE': return compteCible(plans, obj.cible, null);
+    case 'LOT': return Math.floor(compteCible(plans, obj.cible, null) / Math.max(2, obj.seuil || 2));
+    case 'PLAN_ICONES': {
+      const k = Math.max(0, obj.seuil ?? 0);
+      return plans.filter((p) => !estRaccord(p) && (obj.sens === 'MIN' ? p.el.length >= k
+        : obj.sens === 'MAX' ? p.el.length <= k : p.el.length === k)).length;
+    }
     default: return 0;
   }
 }
@@ -4026,6 +4305,11 @@ function construireObj(kind, actuel) {
   if (!kind) return null;
   const n = actuel ? actuel.n : 1;
   const e0 = actuel && actuel.el ? actuel.el : (actuel && actuel.els ? actuel.els[0] : ELEMENT_IDS[0]);
+  // La cible que le nouveau pouvoir reprend : celle du précédent si elle
+  // appartient au vocabulaire commun, sinon son icône, sinon son cadrage.
+  const cible0 = actuel && CIBLE_IDS.includes(actuel.cible) ? actuel.cible
+    : actuel && CIBLE_IDS.includes(actuel.format) ? actuel.format
+      : (actuel && actuel.el) || e0;
   const neuf = {
     FORMAT:  () => OBJ.format(n, actuel && actuel.format ? actuel.format : 'PM',
       undefined, actuel && actuel.format2),
@@ -4047,6 +4331,22 @@ function construireObj(kind, actuel) {
     SEQ_LONGUE:   () => OBJ.seqLongue(n),
     SEQ_AVEC:     () => OBJ.seqAvec(n, actuel && actuel.sens === 'SANS' ? 'SANS' : 'AVEC',
       actuel && actuel.cible ? actuel.cible : e0, actuel && actuel.seuil),
+    SEQ_TOUTES:   () => OBJ.seqToutes(n, actuel && actuel.seuil ? actuel.seuil : 3,
+      actuel && actuel.sens === 'MAX' ? 'MAX' : 'MIN'),
+    // Les pouvoirs du vocabulaire commun. Changer de type garde la cible quand
+    // elle a un sens pour le nouveau : passer de « par icône » à « par lot »
+    // ne doit pas repartir de la première icône de la liste.
+    AILLEURS:    () => OBJ.ailleurs(n, cible0, actuel && actuel.sens),
+    CENTRE:      () => OBJ.centre(n, cible0, actuel && actuel.sens),
+    LOT:         () => OBJ.lot(n, cible0, actuel && actuel.seuil > 1 ? actuel.seuil : 2),
+    SEUIL:       () => OBJ.seuilCible(n, cible0, actuel && actuel.sens === 'MAX' ? 'MAX' : 'MIN',
+      actuel && actuel.seuil !== undefined ? actuel.seuil : 3),
+    ABSENTES:    () => OBJ.absentes(n),
+    EXTREME:     () => OBJ.extreme(n, actuel && actuel.sens === 'MOINS' ? 'MOINS' : 'PLUS'),
+    PLAN_ICONES: () => OBJ.planIcones(n, actuel && actuel.seuil !== undefined ? actuel.seuil : 2,
+      actuel && actuel.sens),
+    DOUBLE:      () => OBJ.doubleCarte(n, actuel && actuel.sens === 'PLUS' ? 'PLUS' : 'MOINS',
+      actuel && actuel.critere),
   }[kind]();
   // Changer de type ne déplace pas le bandeau : il garde sa portée.
   if (actuel && PORTEE_IDS.includes(actuel.portee)) neuf.portee = actuel.portee;
@@ -4079,9 +4379,9 @@ function majObjectif(cles, part, valeur, rang = 1) {
         const o = JSON.parse(JSON.stringify(o0));
         if (part === 'n') o.n = Math.max(-20, Math.min(20, parseInt(valeur, 10) || 0));
         else {
-          // « dans l'ordre » et les bandeaux de séquence n'ont pas de portée
-          // à régler : ils lisent toujours le banc entier.
-          if (o.kind === 'CHRONO' || KINDS_SEQUENCE.includes(o.kind)) continue;
+          // « dans l'ordre », les bandeaux de séquence et ceux qui portent
+          // leur portée dans leur définition n'ont rien à régler ici.
+          if (!porteeReglable(o)) continue;
           o.portee = valeur;
         }
         poserObj([c], o, rang);
@@ -4099,11 +4399,16 @@ function majObjectif(cles, part, valeur, rang = 1) {
   else if (part === 'el1') o.els = [o.els[0], valeur];
   else if (part === 'sens') o.sens = valeur;
   else if (part === 'cible') o.cible = valeur;
+  else if (part === 'critere') o.critere = valeur;
   // Une séquence d'« au moins zéro plan » ne veut rien dire : le seuil des
-  // bandeaux de séquence part de 1, celui des minutages part de 00:00.
+  // bandeaux de séquence part de 1, celui des minutages part de 00:00. Un lot
+  // part de 2 : un « lot de 1 » n'est plus un lot, c'est l'unité.
   else if (part === 'seuil') {
-    const plancher = o.kind === 'SEQ_TAILLE' || o.kind === 'SEQ_AVEC' ? 1 : 0;
-    o.seuil = Math.max(plancher, Math.min(99, parseInt(valeur, 10) || 0));
+    const plancher = o.kind === 'LOT' ? 2
+      : ['SEQ_TAILLE', 'SEQ_AVEC', 'SEQ_TOUTES'].includes(o.kind) ? 1 : 0;
+    const plafond = o.kind === 'PLAN_ICONES' ? 12
+      : ['SEQ_TAILLE', 'SEQ_AVEC', 'SEQ_TOUTES', 'LOT'].includes(o.kind) ? 20 : 99;
+    o.seuil = Math.max(plancher, Math.min(plafond, parseInt(valeur, 10) || 0));
     // Un « avec / sans » à un seul plan est le cas ordinaire : on n'écrit pas
     // son seuil, pour qu'il reste identique à ce qui est imprimé.
     if (o.kind === 'SEQ_AVEC' && o.seuil <= 1) delete o.seuil;
@@ -4128,7 +4433,7 @@ function memeObjectif(a, b) {
 const CSV_COLS = ['objet', 'cle', 'numero', 'minutage', 'icones', 'mort',
   'pouvoir', 'points', 'cible', 'portee', 'sens', 'seuil',
   'pouvoir2', 'points2', 'cible2', 'portee2', 'sens2', 'seuil2',
-  'illustration', 'miroir', 'gros_plan', 'plan_moyen', 'boite'];
+  'illustration', 'miroir', 'cadrage', 'gros_plan', 'plan_moyen', 'boite'];
 
 function csvEchappe(v) {
   const t = v === undefined || v === null ? '' : String(v);
@@ -4141,6 +4446,10 @@ function cibleObj(o) {
   if (o.kind === 'PAIRE') return o.els.join('+');
   // Deux cadrages visés tiennent dans la même colonne : « PL+DEP ».
   if (o.kind === 'FORMAT' && o.format2) return `${o.format}+${o.format2}`;
+  // Le pouvoir qui double une carte n'a pas de cible mais un critère — ce que
+  // « la plus grosse » veut dire. Il loge dans la même colonne : elle dit ce
+  // que le bandeau vise, et c'est bien ce dont il s'agit.
+  if (o.kind === 'DOUBLE') return o.critere || 'POINTS';
   // Un bandeau de séquence vise une icône, un cadrage ou un Raccord : tout
   // tient dans la même colonne que les autres cibles.
   if (o.cible) return o.cible;
@@ -4159,16 +4468,17 @@ function exporterCSV() {
     for (const p of catalogue()) {
       lignes.push([
         'plan', p.cle, p.num, p.tc, p.el.join('|'), p.mort ? 'oui' : 'non',
-        ...colsObj(p.obj), ...colsObj(p.obj2), p.image, p.miroir ? 'oui' : 'non', '', '', '',
+        ...colsObj(p.obj), ...colsObj(p.obj2), p.image, p.miroir ? 'oui' : 'non',
+        cadreTexte(p.cadre), '', '', '',
       ].map(csvEchappe).join(';'));
     }
     for (const c of buildCartesDoubles()) {
-      lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+      lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
         c.gpNum, c.pmNum, estDesactivee(c.id) ? 'non' : 'oui'].map(csvEchappe).join(';'));
     }
     for (const f of ['PL', 'DEPART']) {
       for (const c of cartesDe(f)) {
-        lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+        lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
           '', '', estDesactivee(c.id) ? 'non' : 'oui'].map(csvEchappe).join(';'));
       }
     }
@@ -4241,6 +4551,20 @@ function objDepuisCSV(r, suf = '') {
       const [a, b] = cible.split('+');
       return ELEMENT_IDS.includes(a) && ELEMENT_IDS.includes(b) ? OBJ.paire(n, a, b, portee) : null;
     }
+    // --- Les pouvoirs du vocabulaire commun --------------------------------
+    // Une cible que la colonne ne reconnaît pas fait tomber le bandeau : mieux
+    // vaut pas de pouvoir qu'un pouvoir qui compte autre chose que ce qui est
+    // écrit dans le fichier.
+    case 'SEQ_TOUTES': return OBJ.seqToutes(n, Math.max(1, seuil || 3), sens0 === 'MAX' ? 'MAX' : 'MIN');
+    case 'AILLEURS': return CIBLE_IDS.includes(cible) ? OBJ.ailleurs(n, cible, sens0) : null;
+    case 'CENTRE':   return CIBLE_IDS.includes(cible) ? OBJ.centre(n, cible, sens0) : null;
+    case 'LOT':      return CIBLE_IDS.includes(cible) ? OBJ.lot(n, cible, Math.max(2, seuil || 2), portee) : null;
+    case 'SEUIL':    return CIBLE_IDS.includes(cible)
+      ? OBJ.seuilCible(n, cible, sens0 === 'MAX' ? 'MAX' : 'MIN', seuil, portee) : null;
+    case 'ABSENTES': return OBJ.absentes(n, portee);
+    case 'EXTREME':  return OBJ.extreme(n, sens0 === 'MOINS' ? 'MOINS' : 'PLUS', portee);
+    case 'PLAN_ICONES': return OBJ.planIcones(n, seuil, sens0, portee);
+    case 'DOUBLE':   return OBJ.doubleCarte(n, sens0 === 'PLUS' ? 'PLUS' : 'MOINS', cible, portee);
     default: return null;
   }
 }
@@ -4304,6 +4628,10 @@ function appliquerCSV(texte) {
         const img = (r.illustration || '').trim();
         if (img && img !== p.imprime.image && /^assets\//.test(img)) mis.image = img;
         if (/^(oui|1|true|vrai|x)$/i.test(r.miroir || '')) mis.miroir = true;
+        // Le recadrage tient dans une colonne : « zoom|x|y ». Une valeur
+        // aberrante est ramenée dans ses bornes plutôt que rejetée.
+        const cadre = cadreDepuisTexte(r.cadrage);
+        if (cadre) mis.cadre = cadre;
         if (Object.keys(mis).length) plans[p.cle] = mis;
 
       } else if (objet === 'carte') {
