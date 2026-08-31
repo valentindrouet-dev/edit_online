@@ -623,6 +623,17 @@ export function imageDe(cle, defaut) {
 }
 
 /**
+ * L'illustration est-elle retournée ? Un plan peut se lire dans un miroir sans
+ * qu'on redessine quoi que ce soit — la silhouette regarde alors de l'autre
+ * côté. Cela sert à vérifier un visuel, et à faire deux plans d'un seul dessin.
+ * Le minutage, lui, ne se retourne pas : il resterait illisible.
+ */
+export function miroirDe(cle) {
+  const s = sur(cle);
+  return !!(s && s.miroir);
+}
+
+/**
  * Le numéro affiché d'un plan. Ce n'est qu'une étiquette : l'identité d'un
  * plan reste son numéro imprimé, qui sert de clé et désigne son illustration.
  * Renuméroter ne casse donc aucun appariement — et deux plans peuvent porter
@@ -697,6 +708,7 @@ export function halfInfo(sceneIdx, format, opts = {}) {
     num: numDe(cle, origine),
     numOrigine: origine,
     image: imageDe(cle, imageImprimee(format === 'GP' ? 'gp' : 'pm', origine)),
+    miroir: miroirDe(cle),
   };
 }
 
@@ -732,6 +744,7 @@ export function plHalf(carte) {
     numOrigine: carte.num,
     depart: !!carte.depart,
     image: imageDe(cle, imageImprimee('pl', carte.num)),
+    miroir: miroirDe(cle),
   };
 }
 
@@ -755,8 +768,10 @@ export function catalogue() {
       imprime: {
         tc: defauts.tc, el: (defauts.el || []).slice(), obj: defauts.obj || null,
         obj2: defauts.obj2 || null, mort: !!defauts.mort, num: origine, image: imprimee,
+        miroir: false,
       },
       image: imageDe(cle, imprimee),
+      miroir: miroirDe(cle),
       ...extra,
     });
   };

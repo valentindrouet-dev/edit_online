@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, sceneDe, faceJouee,
-} from './data.js?v=1.74';
-import { compter, bancVide, plansComptes } from './scoring.js?v=1.74';
+} from './data.js?v=1.75';
+import { compter, bancVide, plansComptes } from './scoring.js?v=1.75';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -642,6 +642,16 @@ export function appliquer(banc, coup, cfg) {
   // Le recto et le verso d'une carte ne portent pas le même minutage : la face
   // jouée se déduit du bout où la moitié visible se retrouve.
   const plan = planPose(coup.carte, coup.format, coup.role, faceJouee(coup.format, coup.cote, cfg));
+  return appliquerPlan(banc, coup, plan);
+}
+
+/**
+ * Pose un plan **déjà choisi** à l'endroit qu'un coup désigne. `appliquer` s'en
+ * sert après avoir déduit la moitié et la face d'une carte ; le Banc de montage
+ * s'en sert directement, puisqu'on y désigne le plan soi-même — sans carte, et
+ * sans que le côté de pose décide de la face.
+ */
+export function appliquerPlan(banc, coup, plan) {
   switch (coup.action) {
     case 'NOUVELLE_SEQUENCE':
       // Le plan qui ouvre une ligne en est l'**ancre** : c'est sur lui que la

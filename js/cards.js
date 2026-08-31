@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.74';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.74';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.75';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.75';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -177,7 +177,9 @@ export function renderPlan(h, opts = {}) {
   // emplacements qu'elle propose.
   const label = h.depart ? 'Plan de départ' : F.label;
   // L'image est posée en style inline : dans une variable CSS, url() se
-  // résoudrait contre la feuille de style et non contre le document.
+  // résoudrait contre la feuille de style et non contre le document. Elle vit
+  // dans sa propre couche sous le minutage, pour qu'un retournement en miroir
+  // ne retourne que le dessin — des chiffres à l'envers ne se lisent pas.
   const fond = h.image ? `background-image:url('${h.image}');` : '';
   // Le crâne se lit avec les autres : c'est une icône de la carte, pas un état.
   const icones = h.mort ? [...h.el, 'MORT'] : h.el;
@@ -193,7 +195,8 @@ export function renderPlan(h, opts = {}) {
   const bulle = opts.muet ? '' : ` data-apercu="${donneesApercu(h, label, opts.points, opts.detail)}"`;
   return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"${bulle}>
     ${jeton}
-    <div class="illus"${h.cle ? ` data-illus="${h.cle}"` : ''} style="${fond}">
+    <div class="illus"${h.cle ? ` data-illus="${h.cle}"` : ''}>
+      <div class="illus-image${h.miroir ? ' miroir' : ''}" style="${fond}"></div>
       <div class="tcode ${h.tc === 0 || h.transition ? 'bleu' : ''}">${tc(h.tc)}</div>
     </div>
     <div class="pastilles" style="--n:${Math.max(1, icones.length)}">${icones.length

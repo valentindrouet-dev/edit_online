@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.74';
-export const BUILD_DATE = '2026-08-27 10:30';
+export const VERSION = '1.75';
+export const BUILD_DATE = '2026-08-27 11:45';
 
 export const CHANGELOG = [
+  {
+    v: '1.75',
+    date: '27/08/2026',
+    items: [
+      "<b>Le Banc de montage</b> — un établi, pas une partie. <b>Tous les plans du jeu</b> sous la main, rangés par cadrage : 14 Plans Larges, 66 faces de Plan Moyen, 66 de Gros Plan, 4 Plans de départ. On choisit, on pose, et le montage se construit avec <b>exactement les règles de la partie</b> — ce qui peut s'accrocher où, la limite de séquences, les variantes cochées. Le décompte se refait à chaque coup, au point près : c'est le même moteur, pas une approximation.",
+      "<b>Trois libertés qu'une partie n'a pas.</b> On <b>choisit</b> son plan au lieu de le tirer. On <b>reprend</b> un plan déjà posé d'un clic — il revient en main, et se remet où l'on veut : c'est ainsi qu'on déplace un plan dans son montage. Et l'on <b>annule</b>, jusqu'à cent vingt coups en arrière, avec un <b>rétablir</b> pour revenir sur ses pas.",
+      "L'écran se lit d'un bloc : le <b>montage</b> à gauche avec ses emplacements ouverts dès qu'un plan est en main, le <b>décompte détaillé</b> à droite — chaque bandeau, ce qu'il rapporte, le recensement des icônes —, et la <b>réserve</b> en dessous. Le mode de jeu et les variables sont rappelés en tête : ce sont elles qui décident, et elles se changent dans <b>Variables</b> ⚙.",
+      "<b>⇄ Miroir sur une illustration.</b> Dans l'éditeur, à côté du choix de l'image : un bouton retourne le dessin horizontalement — la silhouette regarde alors de l'autre côté. Le <b>minutage, lui, ne se retourne pas</b> : il vit désormais dans sa propre couche, au-dessus de l'illustration, et reste lisible à sa place. De quoi vérifier un visuel, ou tirer deux plans d'un seul dessin. Le réglage voyage dans le CSV comme le reste.",
+    ],
+  },
   {
     v: '1.74',
     date: '27/08/2026',

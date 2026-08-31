@@ -2,34 +2,34 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.74';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.75';
 import {
-  ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, OBJ, objLabel,
+  ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.74';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.74';
-import { elIcon, numIcon } from './icons.js?v=1.74';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.74';
+} from './data.js?v=1.75';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.75';
+import { elIcon, numIcon } from './icons.js?v=1.75';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.75';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
-  piochesMelees,
+  piochesMelees, appliquerPlan,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.74';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.74';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone } from './scoring.js?v=1.74';
-import { releve, voler, stopperVols } from './anim.js?v=1.74';
-import { campagne } from './lab.js?v=1.74';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.74';
-import { Salon } from './net/salon.js?v=1.74';
-import { TransportLocal } from './net/local.js?v=1.74';
-import { TransportSupabase } from './net/supabase.js?v=1.74';
-import { enLigneDisponible } from './net/config.js?v=1.74';
-import { coupNu } from './net/protocole.js?v=1.74';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.74';
+} from './engine.js?v=1.75';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.75';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone, bancVide } from './scoring.js?v=1.75';
+import { releve, voler, stopperVols } from './anim.js?v=1.75';
+import { campagne } from './lab.js?v=1.75';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.75';
+import { Salon } from './net/salon.js?v=1.75';
+import { TransportLocal } from './net/local.js?v=1.75';
+import { TransportSupabase } from './net/supabase.js?v=1.75';
+import { enLigneDisponible } from './net/config.js?v=1.75';
+import { coupNu } from './net/protocole.js?v=1.75';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.75';
 
 const app = document.getElementById('app');
 
@@ -42,6 +42,10 @@ const LS = {
 
 const store = {
   cfg: Object.assign(cloneConfig(DEFAULTS), migrerCfg(LS.get('cfg', {}))),
+  // L'établi : un banc que l'on monte à la main, son historique pour annuler,
+  // et le plan qu'on tient. Il ne se sauvegarde pas — c'est un brouillon.
+  bac: { banc: { sequences: [], ouverture: false, fermeture: false },
+    historique: [], refaits: [], choisi: null, famille: 'PL', filtre: '', dernierPose: null },
   joueurs: LS.get('joueurs', [
     { nom: 'Val', couleur: COULEURS_JOUEURS[0], type: 'HUMAIN' },
     { nom: 'Justine', couleur: COULEURS_JOUEURS[1], type: 'EQUILIBRE' },
@@ -162,6 +166,7 @@ function sauverJoueurs() { LS.set('joueurs', store.joueurs); }
 // --- Chrome ----------------------------------------------------------------
 
 const ONGLETS = [
+  ['#/banc', 'Banc de montage'],
   ['#/materiel', 'Matériel'],
   ['#/regles', 'Règles'],
   ['#/variables', 'Variables'],
@@ -275,6 +280,7 @@ function vueAccueil() {
     </div>
 
     <div class="rangee-boutons">
+      <button class="pill" data-go="#/banc">Banc de montage</button>
       <button class="pill" data-go="#/labo">Laboratoire d’équilibrage</button>
       <button class="pill" data-go="#/regles">Règles du jeu</button>
       <button class="pill" data-go="#/materiel">Matériel</button>
@@ -705,10 +711,13 @@ function bancBloc(st, i, titre, interactif) {
   // Deux façons de viser un emplacement : depuis la rivière, avant même
   // d'avoir pris la carte — c'est le tour ordinaire —, ou depuis la carte en
   // main, quand l'ordre imprimé sépare le dérushage du montage.
-  const vise = interactif ? viseeCourante(st, i) : null;
-  const coups = vise
-    ? coupsPossibles(st, i, vise.carte).filter((c) => c.format === vise.format)
-    : [];
+  // `interactif` vaut true à la table — la visée se lit alors dans le store —,
+  // ou porte directement une visée : c'est ainsi que le Banc de montage pose un
+  // plan qu'il a choisi lui-même, sans carte et sans tour de jeu.
+  const vise = interactif === true ? viseeCourante(st, i)
+    : (interactif && typeof interactif === 'object' ? interactif : null);
+  const coups = !vise ? []
+    : vise.coups || coupsPossibles(st, i, vise.carte).filter((c) => c.format === vise.format);
   // Variante « banc en lignes » : une séquence par ligne, empilées de haut en
   // bas. On ne pose donc plus une séquence *entre* deux autres — on l'ajoute
   // au-dessus ou en dessous —, et les emplacements changent d'axe : ceux des
@@ -745,8 +754,11 @@ function bancBloc(st, i, titre, interactif) {
     const lg = etiquetteCoup(c, lignes);
     const debout = !couche && lg.length > 3;
     const bouton = `<button class="fente-btn ${debout ? 'debout' : ''}" data-coup="${coup}">${lg}</button>`;
-    if (!carteEnMain) return `<span class="fente-choix">${bouton}</span>`;
-    const plan = planPose(carteEnMain, c.format, c.role, faceJouee(c.format, c.cote, st.cfg));
+    if (!carteEnMain && !(vise && vise.plan)) return `<span class="fente-choix">${bouton}</span>`;
+    // Le Banc de montage désigne le plan lui-même : c'est celui-là qu'on
+    // montre en aperçu, sans que le côté de pose lui change de face.
+    const plan = vise.plan
+      || planPose(carteEnMain, c.format, c.role, faceJouee(c.format, c.cote, st.cfg));
     // L'aperçu porte lui aussi le coup : c'est toute la carte en pointillés qui
     // se clique, pas seulement son étiquette.
     return `<span class="fente-choix vers-${versOu(c)}" style="--ap:${LARGEUR_BANC[plan.format] || 169}px">
@@ -2941,8 +2953,22 @@ function ligneIllustration(plans) {
     ${retouchees ? `<span class="imp-rappel">${plans.length > 1
       ? `${retouchees} remplacée${retouchees > 1 ? 's' : ''}`
       : `imprimée ${nomImage(plans[0].imprime.image)}`}</span>` : ''}
+    <button class="pill mini ${plans.every((p) => p.miroir) ? 'on' : ''}" data-miroir="${cles}"
+      title="Retourner l’illustration horizontalement — le minutage, lui, ne se retourne pas">⇄ miroir</button>
     ${retouchees ? `<button class="pill mini" data-image-reset="${cles}">↺ imprimée</button>` : ''}
   </div>`;
+}
+
+/**
+ * Retourne l'illustration. Sur un lot, le bouton suit le sens commun : si tous
+ * sont déjà retournés on les remet à l'endroit, sinon on retourne tout — un
+ * bouton qui ne fait pas la même chose à tous serait illisible.
+ */
+function basculerMiroir(cles) {
+  surLeModifie(() => {
+    const tous = cles.every((c) => (planDeCle(c) || {}).miroir);
+    for (const c of cles) retoucher(c, 'miroir', tous ? undefined : true);
+  });
 }
 
 /**
@@ -3814,6 +3840,10 @@ function brancherEditeur(refaire) {
     poserImage(el.dataset.imageReset.split(' ').filter(Boolean), null);
     sauverCfg(); vueMateriel();
   }));
+  app.querySelectorAll('[data-miroir]').forEach((el) => el.addEventListener('click', () => {
+    basculerMiroir(el.dataset.miroir.split(' ').filter(Boolean));
+    sauverCfg(); refaire();
+  }));
   app.querySelectorAll('.editeur-faces .illus[data-illus]').forEach((el) => {
     el.classList.add('illus-cliquable');
     el.title = 'Choisir une autre illustration';
@@ -4098,7 +4128,7 @@ function memeObjectif(a, b) {
 const CSV_COLS = ['objet', 'cle', 'numero', 'minutage', 'icones', 'mort',
   'pouvoir', 'points', 'cible', 'portee', 'sens', 'seuil',
   'pouvoir2', 'points2', 'cible2', 'portee2', 'sens2', 'seuil2',
-  'illustration', 'gros_plan', 'plan_moyen', 'boite'];
+  'illustration', 'miroir', 'gros_plan', 'plan_moyen', 'boite'];
 
 function csvEchappe(v) {
   const t = v === undefined || v === null ? '' : String(v);
@@ -4129,16 +4159,16 @@ function exporterCSV() {
     for (const p of catalogue()) {
       lignes.push([
         'plan', p.cle, p.num, p.tc, p.el.join('|'), p.mort ? 'oui' : 'non',
-        ...colsObj(p.obj), ...colsObj(p.obj2), p.image, '', '', '',
+        ...colsObj(p.obj), ...colsObj(p.obj2), p.image, p.miroir ? 'oui' : 'non', '', '', '',
       ].map(csvEchappe).join(';'));
     }
     for (const c of buildCartesDoubles()) {
-      lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+      lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
         c.gpNum, c.pmNum, estDesactivee(c.id) ? 'non' : 'oui'].map(csvEchappe).join(';'));
     }
     for (const f of ['PL', 'DEPART']) {
       for (const c of cartesDe(f)) {
-        lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+        lignes.push(['carte', c.id, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
           '', '', estDesactivee(c.id) ? 'non' : 'oui'].map(csvEchappe).join(';'));
       }
     }
@@ -4273,6 +4303,7 @@ function appliquerCSV(texte) {
         // L'illustration : un chemin sous assets/, ou vide pour celle du numéro.
         const img = (r.illustration || '').trim();
         if (img && img !== p.imprime.image && /^assets\//.test(img)) mis.image = img;
+        if (/^(oui|1|true|vrai|x)$/i.test(r.miroir || '')) mis.miroir = true;
         if (Object.keys(mis).length) plans[p.cle] = mis;
 
       } else if (objet === 'carte') {
@@ -4672,6 +4703,253 @@ function repartitionElements() {
 }
 
 // ===========================================================================
+// BANC DE MONTAGE
+// ===========================================================================
+// Un établi, pas une partie. On y a **tous les plans du jeu** sous la main,
+// rangés par cadrage, et l'on monte ce qu'on veut — avec exactement les mêmes
+// contraintes de pose qu'en partie, et le même décompte. C'est là qu'on essaie
+// une combinaison, qu'on vérifie ce que rapporte un bandeau, qu'on cherche le
+// meilleur montage possible avec un matériel donné.
+//
+// Trois libertés qu'une partie n'a pas : on choisit son plan au lieu de le
+// tirer, on **reprend** un plan déjà posé pour le remettre ailleurs, et l'on
+// **annule**. Tout le reste — ce qui peut se poser où, ce que cela rapporte —
+// est le moteur de la partie, sans un chiffre de différence.
+
+const FAMILLES_BAC = [
+  ['PL', 'Plans Larges'], ['PM', 'Plans Moyens'], ['GP', 'Gros Plans'], ['DEP', 'Plans de départ'],
+];
+
+/** Tous les plans d'un cadrage, tels qu'ils se poseraient. */
+function plansDuBac(famille) {
+  return surLeModifie(() => {
+    if (famille === 'PL') {
+      return buildPlansLarges(false).map((c) => plHalf(c));
+    }
+    if (famille === 'DEP') {
+      return DEPARTS().flatMap((d) => d.faces.map((f) => plHalf({ ...f, depart: true })));
+    }
+    // Une moitié Plan Moyen / Gros Plan a deux faces, qui ne portent pas le
+    // même minutage : ce sont deux plans, et on les propose tous les deux.
+    return SCENES().flatMap((s) => FACES.map((f) => halfInfo(s.idx, famille, { face: f.id })))
+      .filter(Boolean);
+  });
+}
+
+/**
+ * Une carte fictive, le temps de demander au moteur où ce plan peut se poser.
+ * `coupsPossibles` raisonne sur des cartes ; ici on n'en a pas — on désigne un
+ * plan. La carte n'existe que pour cette question, et rien n'en sort : c'est le
+ * plan choisi qui se pose, avec sa face à lui.
+ */
+function carteFictive(plan) {
+  if (plan.format === 'PL' || plan.format === 'DEP') {
+    return { id: 'bac', type: 'PL', num: plan.numOrigine, tc: plan.tc, el: plan.el,
+      obj: plan.obj, obj2: plan.obj2, depart: plan.format === 'DEP' };
+  }
+  const s = surLeModifie(() => sceneDe(plan.scene));
+  return { id: 'bac', type: 'DOUBLE', pmScene: plan.scene, gpScene: plan.scene,
+    pmNum: s ? s.pmNum : plan.numOrigine, gpNum: s ? s.gpNum : plan.numOrigine };
+}
+
+/** Les poses légales du plan en main, dans le banc de l'établi. */
+function coupsDuBac() {
+  const b = store.bac;
+  if (!b.choisi) return [];
+  const plan = b.choisi.plan;
+  const st = { cfg: store.cfg, bancs: [b.banc], mains: [[]], joueurs: [{}] };
+  const fmt = plan.format === 'DEP' ? 'PL' : plan.format;
+  return surLeModifie(() => coupsPossibles(st, 0, carteFictive(plan)).filter((c) => c.format === fmt));
+}
+
+/** Une copie du banc, pour l'historique — et pour ne jamais partager un plan. */
+const clonerBanc = (b) => JSON.parse(JSON.stringify(b));
+
+function memoriserBac() {
+  const b = store.bac;
+  b.historique.push(clonerBanc(b.banc));
+  if (b.historique.length > 120) b.historique.shift();
+  b.refaits.length = 0;
+}
+
+/**
+ * Retire un plan du banc et le rend. La ligne qui se vide disparaît ; celle qui
+ * perd son ancre en désigne une autre — sans quoi la ligne n'aurait plus de
+ * centre et sauterait de place. Un Générique retiré rouvre le bout du montage.
+ */
+function retirerPlanDuBanc(banc, si, k) {
+  const seq = banc.sequences[si];
+  if (!seq || !seq[k]) return null;
+  const plan = seq[k];
+  seq.splice(k, 1);
+  if (plan.transition === 'OUVERTURE') banc.ouverture = false;
+  if (plan.transition === 'CREDITS') banc.fermeture = false;
+  if (!seq.length) banc.sequences.splice(si, 1);
+  else if (plan.ancre && !seq.some((p) => p.ancre)) {
+    (seq.find((p) => p.format === 'PL' || p.format === 'DEP') || seq[0]).ancre = true;
+  }
+  return plan;
+}
+
+let numeroBac = 0;
+
+function poserDansBac(coup) {
+  const b = store.bac;
+  if (!b.choisi) return;
+  memoriserBac();
+  // Chaque plan posé est une copie à lui : le décompte reconnaît les plans à
+  // leur identité, et deux exemplaires du même plan doivent rester deux.
+  const plan = { ...b.choisi.plan, el: b.choisi.plan.el.slice(), ancre: false,
+    carteId: `bac-${numeroBac++}` };
+  appliquerPlan(b.banc, coup, plan);
+  b.dernierPose = positionDansBanc(b.banc, plan);
+  b.choisi = null;
+  vueBanc();
+}
+
+/** Où un plan se trouve dans le banc — pour l'éclairer après la pose. */
+function positionDansBanc(banc, plan) {
+  for (const [si, seq] of banc.sequences.entries()) {
+    const idx = seq.indexOf(plan);
+    if (idx >= 0) return { p: 0, seq: si, idx };
+  }
+  return null;
+}
+
+function vueBanc() {
+  const b = store.bac;
+  const cfg = store.cfg;
+  const s = compter(b.banc, cfg);
+  const coups = coupsDuBac();
+  const st = { cfg, bancs: [b.banc], joueurs: [{ nom: 'Établi' }], mains: [[]],
+    phase: 'MONTAGE', courant: 0, dernierPose: b.dernierPose };
+  const vise = b.choisi ? { plan: b.choisi.plan, coups } : null;
+
+  const plans = plansDuBac(b.famille);
+  const filtre = b.filtre.trim().toLowerCase();
+  const vus = filtre
+    ? plans.filter((p) => `${p.num} ${p.famille || ''} ${p.transition || ''}`.toLowerCase().includes(filtre))
+    : plans;
+
+  const mode = modeCourant(cfg);
+  html(`${topbar('#/banc')}
+  <div class="wrap large">
+    <div class="panneau">
+      <h2>Banc de montage</h2>
+      <p class="aide">Tous les plans du jeu sous la main, et les <b>règles de pose de la partie</b> —
+      mode <b>${mode.label}</b>, ${cfg.tours} plans, ${cfg.sequencesMax || '∞'} séquences au plus.
+      Rien n’est tiré au sort : on choisit, on pose, on reprend, on annule. Le décompte est celui
+      de la partie, au point près. Les règles se changent dans <b>Variables</b> ⚙.</p>
+      <div class="barre-outils" style="margin-top:12px">
+        <button class="pill" id="bac-annuler" ${b.historique.length ? '' : 'disabled'}>↶ Annuler</button>
+        <button class="pill" id="bac-retablir" ${b.refaits.length ? '' : 'disabled'}>↷ Rétablir</button>
+        <button class="pill" id="bac-vider" ${b.banc.sequences.length ? '' : 'disabled'}>✕ Vider le banc</button>
+        ${boutonIllus()}
+        <span class="aide">${b.choisi
+    ? `<b>${b.choisi.plan.num}</b> en main — cliquez un emplacement${coups.length ? '' : ' … mais il n’y en a aucun'}`
+    : 'Cliquez un plan ci-dessous, ou un plan déjà posé pour le reprendre.'}</span>
+      </div>
+    </div>
+
+    <div class="bac-2col">
+      <div class="panneau">
+        <h2>Le montage<span class="banc-compte">Plan <b>${s.plans} / ${cfg.tours}</b>
+          · ${s.sequences} séquence${s.sequences > 1 ? 's' : ''}</span></h2>
+        ${bancBloc(st, 0, null, vise)}
+        ${b.banc.sequences.length ? '<p class="aide" style="margin-top:10px">Un clic sur un plan posé le reprend en main : on le remet où l’on veut.</p>' : ''}
+      </div>
+      <div class="panneau">
+        <h2>Décompte</h2>
+        ${listeObjectifs(s)}
+        ${blocRecensement(s)}
+      </div>
+    </div>
+
+    <div class="panneau">
+      <h2>La réserve<span class="banc-compte">${vus.length} plan${vus.length > 1 ? 's' : ''}</span></h2>
+      <div class="filtre-barre" style="margin-top:10px">
+        ${FAMILLES_BAC.map(([k, l]) => `<button class="pill ${b.famille === k ? 'on' : ''}" data-fam-bac="${k}">${l}</button>`).join('')}
+        <input type="search" id="bac-filtre" placeholder="numéro…" value="${b.filtre}" style="max-width:140px">
+      </div>
+      <div class="rack">${vus.map((p) => `<div class="rack-plan ${b.choisi && b.choisi.plan.cle === p.cle ? 'sel' : ''}"
+        data-plan-bac="${p.cle}"><div class="carte tiny">${renderPlan(p, { muet: true })}</div></div>`).join('')}</div>
+    </div>
+  </div>
+  ${pied()}`);
+
+  brancherBanc();
+}
+
+function brancherBanc() {
+  const b = store.bac;
+
+  app.querySelectorAll('[data-fam-bac]').forEach((el) => el.addEventListener('click', () => {
+    b.famille = el.dataset.famBac; vueBanc();
+  }));
+  const f = app.querySelector('#bac-filtre');
+  if (f) f.addEventListener('input', () => {
+    b.filtre = f.value;
+    vueBanc();
+    const n = app.querySelector('#bac-filtre');
+    if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); }
+  });
+
+  // Choisir un plan dans la réserve. Recliquer le même le repose.
+  app.querySelectorAll('[data-plan-bac]').forEach((el) => el.addEventListener('click', () => {
+    const cle = el.dataset.planBac;
+    if (b.choisi && b.choisi.plan.cle === cle && b.choisi.source === 'reserve') b.choisi = null;
+    else {
+      const plan = plansDuBac(b.famille).find((p) => p.cle === cle);
+      b.choisi = plan ? { plan, source: 'reserve' } : null;
+    }
+    vueBanc();
+  }));
+
+  // Reprendre un plan déjà posé : il quitte le banc et passe en main.
+  const sequences = [...app.querySelectorAll('.banc .sequence')];
+  sequences.forEach((seq, si) => {
+    [...seq.children].forEach((el, k) => el.addEventListener('click', () => {
+      memoriserBac();
+      const plan = retirerPlanDuBanc(b.banc, si, k);
+      b.choisi = plan ? { plan, source: 'banc' } : null;
+      b.dernierPose = null;
+      vueBanc();
+    }));
+  });
+
+  // Poser : les emplacements portent leur coup, comme à la table.
+  app.querySelectorAll('[data-coup]').forEach((el) => el.addEventListener('click', () => {
+    poserDansBac(JSON.parse(decodeURIComponent(el.dataset.coup)));
+  }));
+
+  const annuler = app.querySelector('#bac-annuler');
+  if (annuler) annuler.addEventListener('click', () => {
+    if (!b.historique.length) return;
+    b.refaits.push(clonerBanc(b.banc));
+    b.banc = b.historique.pop();
+    b.choisi = null; b.dernierPose = null;
+    vueBanc();
+  });
+  const retablir = app.querySelector('#bac-retablir');
+  if (retablir) retablir.addEventListener('click', () => {
+    if (!b.refaits.length) return;
+    b.historique.push(clonerBanc(b.banc));
+    b.banc = b.refaits.pop();
+    b.choisi = null; b.dernierPose = null;
+    vueBanc();
+  });
+  const vider = app.querySelector('#bac-vider');
+  if (vider) vider.addEventListener('click', () => {
+    memoriserBac();
+    b.banc = bancVide(); b.choisi = null; b.dernierPose = null;
+    vueBanc();
+  });
+
+  brancherBasculeIllus(vueBanc);
+  brancherApercu();
+}
+
+// ===========================================================================
 // LABORATOIRE
 // ===========================================================================
 
@@ -5045,6 +5323,7 @@ const ROUTES = {
   '#/materiel': vueMateriel,
   '#/regles': vueRegles,
   '#/variables': vueVariables,
+  '#/banc': vueBanc,
   '#/labo': vueLabo,
   '#/historique': vueHistorique,
   '#/versions': vueVersions,
