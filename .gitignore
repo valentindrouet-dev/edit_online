@@ -1,0 +1,11 @@
+# Débris des essais lancés depuis la racine du dépôt : quelques scripts de
+# vérification écrivent leur rendu dans le dossier courant — une planche
+# exportée, une carte rastérisée — et ces fichiers se régénèrent à chaque
+# passage. Ils n'ont rien à faire dans le site publié.
+#
+# La liste est nominative à dessein : un `*.pdf` ou un `*.png` cacherait aussi
+# les visuels et les documents déposés à la racine, qui, eux, doivent se voir.
+/planche.pdf
+/cartes-neuves.png
+/carte.jpg
+/planlarge.jpg
