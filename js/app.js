@@ -2,34 +2,34 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.75';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.76';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   KINDS_SEQUENCE, ciblesSequence,
-} from './data.js?v=1.75';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.75';
-import { elIcon, numIcon } from './icons.js?v=1.75';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.75';
+} from './data.js?v=1.76';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.76';
+import { elIcon, numIcon } from './icons.js?v=1.76';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.76';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.75';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.75';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone, bancVide } from './scoring.js?v=1.75';
-import { releve, voler, stopperVols } from './anim.js?v=1.75';
-import { campagne } from './lab.js?v=1.75';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.75';
-import { Salon } from './net/salon.js?v=1.75';
-import { TransportLocal } from './net/local.js?v=1.75';
-import { TransportSupabase } from './net/supabase.js?v=1.75';
-import { enLigneDisponible } from './net/config.js?v=1.75';
-import { coupNu } from './net/protocole.js?v=1.75';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.75';
+} from './engine.js?v=1.76';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.76';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone, bancVide } from './scoring.js?v=1.76';
+import { releve, voler, stopperVols } from './anim.js?v=1.76';
+import { campagne } from './lab.js?v=1.76';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.76';
+import { Salon } from './net/salon.js?v=1.76';
+import { TransportLocal } from './net/local.js?v=1.76';
+import { TransportSupabase } from './net/supabase.js?v=1.76';
+import { enLigneDisponible } from './net/config.js?v=1.76';
+import { coupNu } from './net/protocole.js?v=1.76';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.76';
 
 const app = document.getElementById('app');
 
@@ -4723,17 +4723,34 @@ const FAMILLES_BAC = [
 /** Tous les plans d'un cadrage, tels qu'ils se poseraient. */
 function plansDuBac(famille) {
   return surLeModifie(() => {
-    if (famille === 'PL') {
-      return buildPlansLarges(false).map((c) => plHalf(c));
-    }
-    if (famille === 'DEP') {
-      return DEPARTS().flatMap((d) => d.faces.map((f) => plHalf({ ...f, depart: true })));
-    }
-    // Une moitié Plan Moyen / Gros Plan a deux faces, qui ne portent pas le
-    // même minutage : ce sont deux plans, et on les propose tous les deux.
-    return SCENES().flatMap((s) => FACES.map((f) => halfInfo(s.idx, famille, { face: f.id })))
-      .filter(Boolean);
+    const liste = () => {
+      if (famille === 'PL') {
+        return buildPlansLarges(false).map((c) => plHalf(c));
+      }
+      if (famille === 'DEP') {
+        return DEPARTS().flatMap((d) => d.faces.map((f) => plHalf({ ...f, depart: true })));
+      }
+      // Une moitié Plan Moyen / Gros Plan a deux faces, qui ne portent pas le
+      // même minutage : ce sont deux plans, et on les propose tous les deux.
+      return SCENES().flatMap((s) => FACES.map((f) => halfInfo(s.idx, famille, { face: f.id })))
+        .filter(Boolean);
+    };
+    // Rangés comme la galerie du Matériel : par numéro imprimé, recto avant
+    // verso. On cherche un plan par son numéro, pas par sa place dans la table
+    // des scènes — et les deux faces d'une moitié se suivent.
+    return liste().sort((a, b) => a.num - b.num || (a.face === b.face ? 0 : a.face === 'V' ? 1 : -1));
   });
+}
+
+/**
+ * Le nom d'un plan sous sa vignette, comme dans le Matériel : le cadrage, le
+ * numéro imprimé, et la face — sans quoi les deux faces d'une même moitié se
+ * ressemblent trop pour qu'on sache laquelle on prend.
+ */
+function libelleDuBac(p) {
+  const F = FORMATS[p.transition ? 'TR' : p.format] || FORMATS.PM;
+  const face = p.face ? ` — ${p.face === 'R' ? 'recto' : 'verso'}` : '';
+  return `${F.label} ${p.num}${face}`;
 }
 
 /**
@@ -4872,7 +4889,8 @@ function vueBanc() {
         <input type="search" id="bac-filtre" placeholder="numéro…" value="${b.filtre}" style="max-width:140px">
       </div>
       <div class="rack">${vus.map((p) => `<div class="rack-plan ${b.choisi && b.choisi.plan.cle === p.cle ? 'sel' : ''}"
-        data-plan-bac="${p.cle}"><div class="carte tiny">${renderPlan(p, { muet: true })}</div></div>`).join('')}</div>
+        data-plan-bac="${p.cle}"><div class="carte solo small">${renderPlan(p)}</div>
+        <div class="lg">${libelleDuBac(p)}</div></div>`).join('')}</div>
     </div>
   </div>
   ${pied()}`);

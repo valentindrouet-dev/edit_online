@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.75';
-export const BUILD_DATE = '2026-08-27 11:45';
+export const VERSION = '1.76';
+export const BUILD_DATE = '2026-08-31 15:10';
 
 export const CHANGELOG = [
+  {
+    v: '1.76',
+    date: '31/08/2026',
+    items: [
+      "<b>La réserve du Banc de montage se lit comme le Matériel.</b> Les plans y étaient étirés à la largeur de leur tuile : un Gros Plan, large de 202 points sur une carte, s'affichait aussi large qu'un Plan Moyen, son illustration écrasée et sa boîte de minutage démesurée. Chaque plan reprend sa <b>vraie proportion</b> — le Gros Plan étroit et debout, le Plan Moyen deux fois plus large, le Plan Large sur toute la carte —, à la même taille que les vignettes du Matériel.",
+      "<b>Chaque vignette porte son nom</b> — « Gros Plan 303 — recto » —, sans quoi les deux faces d'une même moitié ne se distinguaient pas. Et le <b>survol ouvre l'aperçu</b> du plan, comme partout ailleurs : le pouvoir en toutes lettres, avant de le poser.",
+      "La réserve est enfin <b>rangée par numéro imprimé</b>, recto avant verso — 301, 302, 303… — et non plus dans l'ordre de la table des scènes. On y cherche un plan comme dans le Matériel : par son numéro, celui qui est écrit sur la carte.",
+    ],
+  },
   {
     v: '1.75',
     date: '27/08/2026',
