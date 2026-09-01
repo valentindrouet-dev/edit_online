@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.83';
-export const BUILD_DATE = '2026-09-01 21:35';
+export const VERSION = '1.84';
+export const BUILD_DATE = '2026-09-01 22:20';
 
 export const CHANGELOG = [
+  {
+    v: '1.84',
+    date: '01/09/2026',
+    items: [
+      "<b>Le numéro d'une moitié se tape, dans l'Assemblage.</b> Poser une moitié précise sur une carte demandait jusqu'ici de la retrouver dans un relevé de trente-trois cases, de la cliquer, puis de cliquer celle qu'elle remplace — un geste qu'il fallait deviner. Le numéro de chaque moitié est désormais un <b>champ</b> : on écrit celui qu'on veut, on valide d'<b>Entrée</b>, et la moitié se pose. <b>Échap</b> se ravise. C'est la façon la plus courte de faire entrer une moitié qui n'est <b>sur aucune carte</b> — le Plan Moyen 292 et le Gros Plan 392, sur le jeu imprimé.",
+      "<b>Ce qui est refusé est dit.</b> Un numéro qui n'existe pas ne se corrige pas en silence : la carte disparaîtrait, faute de scène à lui donner. L'écran répond « Aucun Plan Moyen ne porte le n° 777 », et surtout, pour l'erreur la plus probable : « Le n° 392 est un <b>Gros Plan</b>, pas un Plan Moyen — tapez-le sur l'autre moitié de la carte. » Le refus s'efface dès qu'on fait autre chose. Chaque champ propose en complétion les numéros de son cadrage.",
+      "Corrigé au passage, et jamais vu parce qu'il fallait avoir renuméroté un plan pour le rencontrer : l'appariement était écrit avec le numéro <b>affiché</b> de la moitié, alors qu'il ne sait relire que celui qui <b>désigne la scène</b>. Renuméroter un plan puis le poser ou le mélanger faisait donc disparaître sa carte, faute de scène à ce numéro-là. Les deux numéros sont maintenant distingués partout : on tape celui qu'on lit, l'appariement garde celui qui identifie.",
+    ],
+  },
   {
     v: '1.83',
     date: '01/09/2026',

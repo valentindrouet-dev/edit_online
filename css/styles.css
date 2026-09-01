@@ -1156,7 +1156,29 @@ body .demi { transition: box-shadow .12s; }
 .demi.prise { opacity: .45; }
 .demi.cible { border-color: var(--violet); box-shadow: 0 0 0 2px var(--violet-clair); }
 .demi.vise { border-color: var(--orange); box-shadow: 0 0 0 2px var(--orange-clair); }
-.demi-num { font-weight: 800; font-size: .78rem; font-variant-numeric: tabular-nums; }
+/* Le numéro est un champ, mais il ne doit pas en avoir l'air tant qu'on n'y
+   touche pas : une grille de cinquante cartes bordée de cinquante boîtes de
+   saisie serait illisible. Il se donne au survol et se cerne à la saisie. */
+.demi-num {
+  font-weight: 800; font-size: .78rem; font-variant-numeric: tabular-nums;
+  width: 3.3em; padding: 1px 3px; color: inherit; font-family: inherit;
+  background: transparent; border: 1px solid transparent; border-radius: 5px;
+  /* La pastille interdit la sélection — c'est ce qui rend le glissé net. Le
+     champ, lui, doit se laisser sélectionner, sinon on ne peut pas l'écrire. */
+  cursor: text; user-select: text; -webkit-user-select: text;
+}
+/* La liste de complétion vaut pour ce qu'elle propose en tapant, pas pour son
+   chevron : dans une case de trois chiffres, il prenait la place d'un chiffre
+   et le numéro s'y trouvait tronqué. */
+.demi-num::-webkit-calendar-picker-indicator { display: none !important; }
+.demi-num:hover { border-color: rgba(0, 0, 0, .18); background: rgba(255, 255, 255, .55); }
+.demi-num:focus {
+  outline: none; background: #fff; border-color: var(--violet);
+  box-shadow: 0 0 0 2px var(--violet-clair);
+}
+/* Le motif d'un refus, au-dessus de la grille : un numéro qui n'existe pas ne
+   se corrige pas en silence — la carte disparaîtrait, faute de scène. */
+.refus-numero { margin: 10px 0 0; }
 .demi-icones { display: flex; gap: 1px; align-items: center; margin-left: auto; }
 .demi-icones .pastille { width: 15px; height: 15px; }
 

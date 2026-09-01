@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.83';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.84';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -11,28 +11,28 @@ import {
   ciblesSequence,
   CIBLES_COMPTE, CIBLE_IDS, libelleCibleCompte, porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte,
-} from './data.js?v=1.83';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.83';
-import { elIcon, numIcon } from './icons.js?v=1.83';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, reglerLectureNue } from './cards.js?v=1.83';
+} from './data.js?v=1.84';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.84';
+import { elIcon, numIcon } from './icons.js?v=1.84';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, reglerLectureNue } from './cards.js?v=1.84';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.83';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.83';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.83';
-import { releve, voler, stopperVols } from './anim.js?v=1.83';
-import { campagne } from './lab.js?v=1.83';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.83';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.83';
-import { Salon } from './net/salon.js?v=1.83';
-import { TransportLocal } from './net/local.js?v=1.83';
-import { TransportSupabase } from './net/supabase.js?v=1.83';
-import { enLigneDisponible } from './net/config.js?v=1.83';
-import { coupNu } from './net/protocole.js?v=1.83';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.83';
+} from './engine.js?v=1.84';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.84';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.84';
+import { releve, voler, stopperVols } from './anim.js?v=1.84';
+import { campagne } from './lab.js?v=1.84';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.84';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.84';
+import { Salon } from './net/salon.js?v=1.84';
+import { TransportLocal } from './net/local.js?v=1.84';
+import { TransportSupabase } from './net/supabase.js?v=1.84';
+import { enLigneDisponible } from './net/config.js?v=1.84';
+import { coupNu } from './net/protocole.js?v=1.84';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.84';
 
 const app = document.getElementById('app');
 
@@ -2083,7 +2083,7 @@ const mat = {
   triValeurs: { col: 'valeur', sens: 1 },
   // L'assemblage : les contraintes cochées, le dernier rapport de mélange, et
   // la moitié qu'on met en avant depuis le relevé.
-  assemblage: { contraintes: CONTRAINTES_PAR_DEFAUT.slice(), rapport: null, surligne: null },
+  assemblage: { contraintes: CONTRAINTES_PAR_DEFAUT.slice(), rapport: null, surligne: null, erreur: null },
 };
 
 const VUES = [
@@ -3546,15 +3546,21 @@ function appariement(carte) {
 // le mesure, le brasse sous contraintes, et laisse échanger deux moitiés d'un
 // glisser-déposer.
 
+// Deux numéros par moitié, et il ne faut pas les confondre. `num` est celui
+// qu'on lit sur le plan — renuméroter un plan le change. `ref` est celui qui
+// **désigne la scène** dans l'appariement, et c'est le seul que `paires` sache
+// relire : écrire un numéro d'affichage à sa place ferait disparaître la carte,
+// faute de scène à ce numéro-là.
+
 /** Les cartes, avec leurs deux moitiés lues sur le recto — le verso les suit. */
 function cartesAssemblage() {
   return buildCartesDoubles().map((c) => {
     const m = moitiesDe(c, 'R');
-    const demi = (h, scene) => (h ? { num: h.num, numOrigine: h.numOrigine, scene,
+    const demi = (h, scene, ref) => (h ? { num: h.num, numOrigine: h.numOrigine, scene, ref,
       el: h.el.slice(), famille: h.famille, transition: h.transition, mort: !!h.mort,
       objs: objsDe(h), titre: h.titre, plan: h } : null);
     return { id: c.id, rang: c.rang, carte: c, modifie: c.appariementModifie,
-      pm: demi(m.PM, c.pmScene), gp: demi(m.GP, c.gpScene) };
+      pm: demi(m.PM, c.pmScene, c.pmNum), gp: demi(m.GP, c.gpScene, c.gpNum) };
   });
 }
 
@@ -3562,9 +3568,19 @@ function cartesAssemblage() {
 function moitiesToutes(cote) {
   return SCENES().map((sc) => {
     const h = halfInfo(sc.idx, cote, { face: 'R' });
-    return h ? { num: h.num, scene: sc.idx, titre: sc.titre || null, famille: sc.famille,
+    return h ? { num: h.num, ref: cote === 'GP' ? sc.gpNum : sc.pmNum,
+      scene: sc.idx, titre: sc.titre || null, famille: sc.famille,
       transition: sc.transition || null, plan: h } : null;
   }).filter(Boolean);
+}
+
+/**
+ * La moitié d'un cadrage qui porte ce numéro-là — celui qu'on lit sur le plan.
+ * C'est par lui qu'on la désigne quand on le tape sur une carte : c'est le seul
+ * que l'écran montre.
+ */
+function moitieParNumero(cote, num) {
+  return moitiesToutes(cote).find((m) => m.num === num) || null;
 }
 
 /** Écrit un appariement, ou l'efface s'il retrouve celui qui est imprimé. */
@@ -3598,14 +3614,50 @@ function echangerMoitie(rangA, rangB, cote) {
   sauverCfg();
 }
 
-/** Pose une moitié précise sur une carte — depuis le relevé, sans échange. */
-function poserMoitie(rang, cote, num) {
+/**
+ * Pose une moitié précise sur une carte, sans échange — c'est ce qui permet de
+ * faire entrer une moitié qui n'était sur aucune carte. `ref` désigne la scène,
+ * pas le numéro affiché.
+ */
+function poserMoitie(rang, cote, ref) {
   surLeModifie(() => {
     const c = buildCartesDoubles().find((x) => x.rang === rang);
     if (!c) return;
-    poserAppariement(rang, cote === 'PM' ? num : c.pmNum, cote === 'GP' ? num : c.gpNum);
+    poserAppariement(rang, cote === 'PM' ? ref : c.pmNum, cote === 'GP' ? ref : c.gpNum);
   });
   sauverCfg();
+}
+
+/**
+ * Poser une moitié en tapant son numéro sur la carte. C'est le geste le plus
+ * direct — et le seul qui n'oblige pas à retrouver la moitié voulue dans un
+ * relevé de trente-trois cases. Ce qui est refusé est dit, plutôt que corrigé
+ * en silence : un numéro qui n'existe pas ferait disparaître la carte, faute de
+ * scène à lui donner.
+ * Retourne un message d'erreur, ou `null` si la pose a eu lieu.
+ */
+function poserNumeroMoitie(rang, cote, texte) {
+  const quoi = cote === 'GP' ? 'Gros Plan' : 'Plan Moyen';
+  const num = parseInt(String(texte).trim(), 10);
+  if (!Number.isFinite(num)) return `« ${texte} » n’est pas un numéro.`;
+  return surLeModifie(() => {
+    const c = buildCartesDoubles().find((x) => x.rang === rang);
+    if (!c) return 'Cette carte n’existe plus.';
+    const m = moitieParNumero(cote, num);
+    if (!m) {
+      // Se tromper de cadrage est l'erreur la plus probable : on le dit, plutôt
+      // que de laisser croire que le plan n'existe pas.
+      const autre = moitieParNumero(cote === 'GP' ? 'PM' : 'GP', num);
+      return autre
+        ? `Le n° ${num} est un ${cote === 'GP' ? 'Plan Moyen' : 'Gros Plan'}, pas un ${quoi}`
+          + ` — tapez-le sur l’autre moitié de la carte.`
+        : `Aucun ${quoi} ne porte le n° ${num}.`;
+    }
+    const dejaLa = (cote === 'GP' ? c.gpNum : c.pmNum) === m.ref;
+    if (dejaLa) return null;
+    poserMoitie(rang, cote, m.ref);
+    return null;
+  });
 }
 
 /** Le mélange : on brasse les Gros Plans, on rend compte, on écrit. */
@@ -3615,7 +3667,8 @@ function melangerAssemblage() {
   const avant = bilan(cartes, actives);
   const r = melangerMoities(cartes, actives);
   surLeModifie(() => {
-    r.cartes.forEach((c, i) => poserAppariement(cartes[i].rang, c.pm.num, c.gp.num));
+    // `ref` et non `num` : c'est la scène qu'un appariement désigne.
+    r.cartes.forEach((c, i) => poserAppariement(cartes[i].rang, c.pm.ref, c.gp.ref));
   });
   sauverCfg();
   mat.assemblage.rapport = { avant, apres: r.bilan, deplaces: r.deplaces, actives: actives.slice() };
@@ -3645,18 +3698,36 @@ function rapportMelange() {
   </div>`;
 }
 
-/** Une moitié, en pastille : son numéro, ses icônes, et de quoi la saisir. */
+/**
+ * Une moitié, en pastille : son numéro, ses icônes, et de quoi la saisir.
+ * Le numéro est un **champ** : le taper est la façon la plus courte de poser
+ * une moitié précise sur une carte — celle qui n'était sur aucune, notamment.
+ */
 function pastilleMoitie(c, cote) {
   const m = cote === 'GP' ? c.gp : c.pm;
   if (!m) return `<div class="demi vide">—</div>`;
   const sur = mat.assemblage.surligne;
   const vise = sur && sur.cote === cote && sur.num === m.num;
+  const quoi = cote === 'GP' ? 'Gros Plan' : 'Plan Moyen';
   return `<div class="demi ${cote.toLowerCase()} ${vise ? 'vise' : ''}" draggable="true"
-    data-demi="${c.rang}" data-cote="${cote}" data-num="${m.num}"
-    title="${cote === 'GP' ? 'Gros Plan' : 'Plan Moyen'} ${m.num}${m.titre ? ` — ${m.titre}` : ''} · glissez-le sur une autre carte pour les échanger">
-    <span class="demi-num">${m.num}</span>
+    data-demi="${c.rang}" data-cote="${cote}" data-num="${m.num}" data-ref="${m.ref}"
+    title="${quoi} ${m.num}${m.titre ? ` — ${m.titre}` : ''} · glissez-le sur une autre carte pour les échanger">
+    <input class="demi-num" type="text" inputmode="numeric" value="${m.num}" size="3"
+      list="nums-${cote}" data-numero-moitie="${c.rang}" data-cote="${cote}"
+      aria-label="${quoi} de la carte ${c.id}"
+      title="Tapez le numéro d’un autre ${quoi} pour le poser ici">
     <span class="demi-icones">${m.el.map((e) => elIcon(e, 15)).join('') || '<i class="aide">—</i>'}</span>
   </div>`;
+}
+
+/**
+ * La liste des numéros existants, offerte en complétion aux champs. Une saisie
+ * hors liste reste possible — et refusée avec un motif : le navigateur ne
+ * contraint pas un `datalist`, il ne fait que proposer.
+ */
+function listeNumeros(cote) {
+  return `<datalist id="nums-${cote}">${moitiesToutes(cote)
+    .map((m) => `<option value="${m.num}">${m.titre || m.famille}</option>`).join('')}</datalist>`;
 }
 
 /** Une carte de l'assemblage : ses deux moitiés, et ce qui cloche entre elles. */
@@ -3680,7 +3751,7 @@ function tableauRepartition(cote, cartes) {
     const etat = m.n === 0 ? 'absente' : m.n > 1 ? 'repetee' : '';
     const vise = sur && sur.cote === cote && sur.num === m.num;
     return `<button class="case-moitie ${etat} ${vise ? 'vise' : ''}"
-      data-surligne="${cote}:${m.num}"
+      data-surligne="${cote}:${m.num}:${m.ref}"
       title="${m.titre || m.famille}${m.n === 0 ? ' — sur aucune carte'
     : ` — sur ${m.n} carte${m.n > 1 ? 's' : ''}`}">
       <b>${m.num}</b><span>${m.n}</span></button>`;
@@ -3724,13 +3795,19 @@ function vueAssemblage() {
   </div>
 
   <h3 style="margin-top:20px">Les ${cartes.length} cartes</h3>
-  <p class="aide">Prenez une moitié et <b>déposez-la sur la moitié de même cadrage</b> d'une autre
-  carte : les deux s'échangent, recto et verso compris.${mat.assemblage.surligne
+  <p class="aide"><b>Le numéro de chaque moitié se tape.</b> Écrivez celui d'un autre Plan Moyen
+  ou d'un autre Gros Plan sur la carte qui doit l'accueillir, validez d'<b>Entrée</b>, et la moitié
+  s'y pose — recto et verso compris. C'est ainsi qu'on fait entrer une moitié qui n'est
+  <b>sur aucune carte</b> : on tape son numéro à la place de celle qu'elle remplace.
+  Un numéro qui n'existe pas, ou d'un autre cadrage, est refusé et le dit.</p>
+  <p class="aide">Pour <b>échanger</b> deux moitiés plutôt que d'en remplacer une, prenez-en une et
+  déposez-la sur la moitié de même cadrage d'une autre carte : les deux permutent.${
+  mat.assemblage.surligne
     ? ` <b class="pose-en-cours">${mat.assemblage.surligne.cote === 'GP' ? 'Gros Plan' : 'Plan Moyen'}
       ${mat.assemblage.surligne.num} en main</b> — cliquez une moitié de même cadrage pour l'y poser
-      à la place de celle qui s'y trouve.`
-    : ' Pour <b>poser</b> une moitié précise — celle qui n\'est sur aucune carte, par exemple —,'
-      + ' choisissez-la dans le relevé du bas, puis cliquez la moitié qu\'elle remplace.'}</p>
+      à la place de celle qui s'y trouve.` : ''}</p>
+  ${mat.assemblage.erreur ? `<p class="encart attention refus-numero">${mat.assemblage.erreur}</p>` : ''}
+  ${listeNumeros('PM')}${listeNumeros('GP')}
   <div class="grille-assemblage">${cartes.map((c) => carteAssemblage(c, actives)).join('')}</div>
 
   <h3 style="margin-top:22px">Où sont les moitiés</h3>
@@ -4259,7 +4336,12 @@ function vuePouvoirs() {
  * à faire à la place d'un Plan Moyen.
  */
 function brancherAssemblage() {
-  const refaire = () => vueMateriel();
+  // Un refus parle du numéro qu'on vient de taper : il n'a plus rien à dire dès
+  // qu'on fait autre chose. Seule la saisie d'un numéro le garde.
+  const refaire = (garderLeRefus) => {
+    if (!garderLeRefus) mat.assemblage.erreur = null;
+    vueMateriel();
+  };
 
   app.querySelectorAll('[data-contrainte]').forEach((el) => el.addEventListener('change', () => {
     const id = el.dataset.contrainte;
@@ -4281,11 +4363,33 @@ function brancherAssemblage() {
   });
 
   app.querySelectorAll('[data-surligne]').forEach((el) => el.addEventListener('click', () => {
-    const [cote, num] = el.dataset.surligne.split(':');
+    const [cote, num, ref] = el.dataset.surligne.split(':');
     const s2 = mat.assemblage.surligne;
-    mat.assemblage.surligne = s2 && s2.cote === cote && s2.num === +num ? null : { cote, num: +num };
+    mat.assemblage.surligne = s2 && s2.cote === cote && s2.num === +num
+      ? null : { cote, num: +num, ref: +ref };
     refaire();
   }));
+
+  // Taper un numéro sur une moitié la remplace. Le champ vit dans une pastille
+  // qui se glisse : tant qu'on écrit dedans, on suspend le glissé — sinon le
+  // navigateur emporte la carte au premier mouvement de sélection du texte.
+  app.querySelectorAll('[data-numero-moitie]').forEach((inp) => {
+    const demi = inp.closest('.demi');
+    const avant = inp.value;
+    inp.addEventListener('pointerdown', () => { if (demi) demi.draggable = false; });
+    inp.addEventListener('focus', () => { if (demi) demi.draggable = false; inp.select(); });
+    inp.addEventListener('blur', () => { if (demi) demi.draggable = true; });
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+      // Échap rend la main sans rien changer : on peut se raviser.
+      if (e.key === 'Escape') { inp.value = avant; inp.blur(); }
+    });
+    inp.addEventListener('change', () => {
+      if (inp.value.trim() === avant) return;
+      mat.assemblage.erreur = poserNumeroMoitie(+inp.dataset.numeroMoitie, inp.dataset.cote, inp.value);
+      refaire(true);
+    });
+  });
 
   let prise = null;
   app.querySelectorAll('[data-demi]').forEach((el) => {
@@ -4307,10 +4411,12 @@ function brancherAssemblage() {
     // Un clic, quand une moitié est mise en avant dans le relevé : on la POSE
     // ici. C'est ce qui permet de faire entrer une moitié qui n'était sur
     // aucune carte, ce qu'un échange ne saurait faire.
-    el.addEventListener('click', () => {
+    el.addEventListener('click', (e) => {
+      // Cliquer le champ de numéro, c'est vouloir l'écrire, pas poser dessus.
+      if (e.target.closest('[data-numero-moitie]')) return;
       const v = mat.assemblage.surligne;
-      if (!v || v.cote !== el.dataset.cote || v.num === +el.dataset.num) return;
-      poserMoitie(+el.dataset.demi, v.cote, v.num);
+      if (!v || v.cote !== el.dataset.cote || v.ref === +el.dataset.ref) return;
+      poserMoitie(+el.dataset.demi, v.cote, v.ref);
       refaire();
     });
     el.addEventListener('drop', (e) => {
@@ -4338,6 +4444,9 @@ function brancherMateriel() {
   // La sélection survit au changement de vue : on peut régler d'un coup des
   // Gros Plans et des Plans Moyens pris dans deux galeries différentes.
   app.querySelectorAll('[data-vue]').forEach((b) => b.addEventListener('click', () => {
+    // Le refus d'un numéro ne survit pas au changement d'écran : il parlait
+    // d'une saisie qu'on ne voit plus.
+    mat.assemblage.erreur = null;
     mat.vue = b.dataset.vue; refaire();
   }));
 
