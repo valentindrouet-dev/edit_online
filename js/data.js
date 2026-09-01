@@ -289,7 +289,11 @@ export function porteeFigee(o) {
 //
 // Deux cibles ne désignent pas des cartes mais ce qu'elles portent :
 //   ICONE   toutes les icônes confondues — un plan à deux armes en porte deux
-//   VALEUR  les icônes DIFFÉRENTES : deux armes et une voiture font 2 valeurs
+//   VALEUR  la **valeur de cadre**, le mot de cinéma pour le cadrage, et l'on
+//           compte celles qui sont DIFFÉRENTES : une ligne qui alterne Plan
+//           Large, Plan Moyen et Gros Plan en montre trois, quel que soit le
+//           nombre de cartes. Un cadrage nommé — « Gros Plan » — se vise
+//           directement, sans passer par là
 // et une dernière ne regarde pas la portée mais la forme du banc :
 //   SEQUENCE  le nombre de séquences du montage
 // `label` nomme la cible dans une liste déroulante, où il faut lever toute
@@ -309,7 +313,8 @@ export const CIBLES_COMPTE = [
   ...ELEMENT_IDS.map((e) => ({ id: e, label: ELEMENTS[e].label, court: ELEMENTS[e].label,
     pl: `${ELEMENTS[e].label}s`, f: e === 'HEROINE' || e === 'ARME' })),
   { id: 'ICONE',    label: 'Icône (toutes confondues)', court: 'icône',    pl: 'icônes', f: true },
-  { id: 'VALEUR',   label: 'Valeur (icône différente)', court: 'valeur',   pl: 'valeurs', f: true },
+  { id: 'VALEUR',   label: 'Valeur de cadre (cadrage différent)',
+    court: 'valeur de cadre', pl: 'valeurs de cadre', f: true },
   { id: 'SEQUENCE', label: 'Séquence du banc',          court: 'séquence', pl: 'séquences', f: true },
 ];
 

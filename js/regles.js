@@ -14,13 +14,23 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.77';
-import { elIcon } from './icons.js?v=1.77';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.78';
+import { elIcon } from './icons.js?v=1.78';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.14.6',
+    date: '31/08/2026',
+    origine: 'Correction demandée par l’auteur',
+    corps: (c) => corps_0_14_6(c),
+    items: [
+      '<b>Une « valeur » est une valeur de cadre</b> — le mot de cinéma pour le <b>cadrage</b> : Plan Large, Plan Moyen, Gros Plan. La cible <b>VALEUR</b> compte donc les cadrages <b>différents</b> d’une portée : une ligne qui alterne les trois en montre trois, quel qu’y soit le nombre de cartes. Un <b>Raccord n’est pas un plan</b> : il n’a pas de valeur de cadre.',
+      'Elle comptait jusqu’ici les <b>icônes</b> différentes : c’était un contresens sur le mot. Pour viser un cadrage précis — « 2 points par lot de 3 Gros Plans » —, on le nomme directement ; « valeur de cadre » sert à récompenser la <b>variété</b> des cadrages, ou son absence.',
+    ],
+  },
   {
     v: '0.14.5',
     date: '31/08/2026',
@@ -274,6 +284,19 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.14.6 ---------------------------------------------------------------
+// « Valeur » est un mot de cinéma : la valeur de cadre, c'est-à-dire le
+// cadrage. La cible le comptait comme un type d'icône — contresens.
+
+function corps_0_14_6(c) {
+  return corps_0_14_5(c).replace(
+    /une <b>valeur<\/b> — c’est-à-dire le\s*\n?\s*nombre d’icônes <b>différentes<\/b> : un plan à deux armes porte deux icônes et une seule\s*\n?\s*valeur —/,
+    maj('0.14.6', `une <b>valeur de cadre</b> — le mot de cinéma
+    pour le cadrage, et l’on compte celles qui sont <b>différentes</b> : une ligne qui alterne
+    Plan Large, Plan Moyen et Gros Plan en montre trois, quel qu’y soit le nombre de cartes ; un
+    Raccord n’étant pas un plan, il n’en a pas —`));
 }
 
 // --- v0.14.5 ---------------------------------------------------------------

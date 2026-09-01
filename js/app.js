@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.77';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.78';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -11,27 +11,27 @@ import {
   ciblesSequence,
   CIBLES_COMPTE, CIBLE_IDS, libelleCibleCompte, porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, cadreTexte, cadreDepuisTexte,
-} from './data.js?v=1.77';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.77';
-import { elIcon, numIcon } from './icons.js?v=1.77';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.77';
+} from './data.js?v=1.78';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.78';
+import { elIcon, numIcon } from './icons.js?v=1.78';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.78';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.77';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.77';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, bancVide } from './scoring.js?v=1.77';
-import { releve, voler, stopperVols } from './anim.js?v=1.77';
-import { campagne } from './lab.js?v=1.77';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.77';
-import { Salon } from './net/salon.js?v=1.77';
-import { TransportLocal } from './net/local.js?v=1.77';
-import { TransportSupabase } from './net/supabase.js?v=1.77';
-import { enLigneDisponible } from './net/config.js?v=1.77';
-import { coupNu } from './net/protocole.js?v=1.77';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.77';
+} from './engine.js?v=1.78';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.78';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, bancVide } from './scoring.js?v=1.78';
+import { releve, voler, stopperVols } from './anim.js?v=1.78';
+import { campagne } from './lab.js?v=1.78';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.78';
+import { Salon } from './net/salon.js?v=1.78';
+import { TransportLocal } from './net/local.js?v=1.78';
+import { TransportSupabase } from './net/supabase.js?v=1.78';
+import { enLigneDisponible } from './net/config.js?v=1.78';
+import { coupNu } from './net/protocole.js?v=1.78';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.78';
 
 const app = document.getElementById('app');
 
@@ -757,9 +757,10 @@ function bancBloc(st, i, titre, interactif) {
     const debout = !couche && lg.length > 3;
     const bouton = `<button class="fente-btn ${debout ? 'debout' : ''}" data-coup="${coup}">${lg}</button>`;
     if (!carteEnMain && !(vise && vise.plan)) return `<span class="fente-choix">${bouton}</span>`;
-    // Le Banc de montage désigne le plan lui-même : c'est celui-là qu'on
-    // montre en aperçu, sans que le côté de pose lui change de face.
-    const plan = vise.plan
+    // Le Banc de montage désigne le plan lui-même. Il peut le désigner par une
+    // FONCTION du coup : la carte se retourne selon le côté où on l'accroche,
+    // et l'aperçu doit montrer la face qu'on obtiendra vraiment.
+    const plan = (typeof vise?.plan === 'function' ? vise.plan(c) : vise && vise.plan)
       || planPose(carteEnMain, c.format, c.role, faceJouee(c.format, c.cote, st.cfg));
     // L'aperçu porte lui aussi le coup : c'est toute la carte en pointillés qui
     // se clique, pas seulement son étiquette.
@@ -5058,27 +5059,33 @@ function plansDuBac(famille) {
       if (famille === 'DEP') {
         return DEPARTS().flatMap((d) => d.faces.map((f) => plHalf({ ...f, depart: true })));
       }
-      // Une moitié Plan Moyen / Gros Plan a deux faces, qui ne portent pas le
-      // même minutage : ce sont deux plans, et on les propose tous les deux.
-      return SCENES().flatMap((s) => FACES.map((f) => halfInfo(s.idx, famille, { face: f.id })))
-        .filter(Boolean);
+      // Une moitié Plan Moyen / Gros Plan a deux faces — mais on n'en propose
+      // qu'UNE dans la réserve : à la table, on ne choisit pas sa face, c'est
+      // le CÔTÉ où l'on accroche la carte qui la décide. La réserve montre donc
+      // la carte, et la face se règle à la pose, comme en partie.
+      return SCENES().map((s) => halfInfo(s.idx, famille, { face: 'R' })).filter(Boolean);
     };
-    // Rangés comme la galerie du Matériel : par numéro imprimé, recto avant
-    // verso. On cherche un plan par son numéro, pas par sa place dans la table
-    // des scènes — et les deux faces d'une moitié se suivent.
-    return liste().sort((a, b) => a.num - b.num || (a.face === b.face ? 0 : a.face === 'V' ? 1 : -1));
+    // Rangés comme la galerie du Matériel : par numéro imprimé. On cherche un
+    // plan par son numéro, pas par sa place dans la table des scènes.
+    return liste().sort((a, b) => a.num - b.num);
   });
 }
 
 /**
- * Le nom d'un plan sous sa vignette, comme dans le Matériel : le cadrage, le
- * numéro imprimé, et la face — sans quoi les deux faces d'une même moitié se
- * ressemblent trop pour qu'on sache laquelle on prend.
+ * L'identité d'une carte de la réserve : son cadrage et son numéro imprimé —
+ * pas sa face. Un plan repris du banc peut être sur son verso ; c'est bien la
+ * même carte, et c'est elle que la réserve doit montrer comme choisie.
+ */
+const identiteBac = (p) => (p ? `${p.format}:${p.numOrigine ?? p.num}` : '');
+
+/**
+ * Le nom d'une carte sous sa vignette : le cadrage et le numéro imprimé. La
+ * face ne s'y écrit pas — la réserve ne propose qu'une carte, et c'est le côté
+ * où on l'accroche qui décide de celle qu'on verra.
  */
 function libelleDuBac(p) {
   const F = FORMATS[p.transition ? 'TR' : p.format] || FORMATS.PM;
-  const face = p.face ? ` — ${p.face === 'R' ? 'recto' : 'verso'}` : '';
-  return `${F.label} ${p.num}${face}`;
+  return `${F.label} ${p.num}`;
 }
 
 /**
@@ -5138,13 +5145,30 @@ function retirerPlanDuBanc(banc, si, k) {
 
 let numeroBac = 0;
 
+/**
+ * La face qu'un plan montre selon le côté où on l'accroche. À la table, une
+ * carte Plan Moyen / Gros Plan se retourne quand on la pose de l'autre côté du
+ * plan central : le Gros Plan à gauche montre son verso, à droite son recto —
+ * et le Plan Moyen l'inverse. La réserve ne propose donc qu'une carte, et
+ * c'est la pose qui décide de ce qu'on en voit, minutage compris.
+ *
+ * Un Plan Large et un Plan de départ n'ont qu'une face : ils ne bougent pas.
+ */
+function planSelonCote(plan, cote) {
+  if (plan.scene === null || plan.scene === undefined) return plan;
+  const face = faceJouee(plan.format, cote, store.cfg);
+  if (face === plan.face) return plan;
+  return surLeModifie(() => halfInfo(plan.scene, plan.format, { face })) || plan;
+}
+
 function poserDansBac(coup) {
   const b = store.bac;
   if (!b.choisi) return;
   memoriserBac();
   // Chaque plan posé est une copie à lui : le décompte reconnaît les plans à
   // leur identité, et deux exemplaires du même plan doivent rester deux.
-  const plan = { ...b.choisi.plan, el: b.choisi.plan.el.slice(), ancre: false,
+  const tourne = planSelonCote(b.choisi.plan, coup.cote);
+  const plan = { ...tourne, el: tourne.el.slice(), ancre: false,
     carteId: `bac-${numeroBac++}` };
   appliquerPlan(b.banc, coup, plan);
   b.dernierPose = positionDansBanc(b.banc, plan);
@@ -5168,7 +5192,9 @@ function vueBanc() {
   const coups = coupsDuBac();
   const st = { cfg, bancs: [b.banc], joueurs: [{ nom: 'Établi' }], mains: [[]],
     phase: 'MONTAGE', courant: 0, dernierPose: b.dernierPose };
-  const vise = b.choisi ? { plan: b.choisi.plan, coups } : null;
+  // La face suit le côté : l'aperçu de chaque emplacement montre donc la carte
+  // telle qu'elle s'y poserait, pas telle qu'elle est dans la réserve.
+  const vise = b.choisi ? { plan: (c) => planSelonCote(b.choisi.plan, c.cote), coups } : null;
 
   const plans = plansDuBac(b.famille);
   const filtre = b.filtre.trim().toLowerCase();
@@ -5181,10 +5207,15 @@ function vueBanc() {
   <div class="wrap large">
     <div class="panneau">
       <h2>Banc de montage</h2>
-      <p class="aide">Tous les plans du jeu sous la main, et les <b>règles de pose de la partie</b> —
-      mode <b>${mode.label}</b>, ${cfg.tours} plans, ${cfg.sequencesMax || '∞'} séquences au plus.
-      Rien n’est tiré au sort : on choisit, on pose, on reprend, on annule. Le décompte est celui
-      de la partie, au point près. Les règles se changent dans <b>Variables</b> ⚙.</p>
+      <p class="aide">Toutes les cartes du jeu sous la main, et les <b>règles de pose de la
+      partie</b> — mode <b>${mode.label}</b>, ${cfg.tours} plans,
+      ${cfg.sequencesMax || '∞'} séquences au plus. Rien n’est tiré au sort : on choisit, on pose,
+      on reprend, on annule. Le décompte est celui de la partie, au point près.
+      ${cfg.faceSelonPose === false ? ''
+    : 'Comme à la table, une carte Plan Moyen / Gros Plan <b>se retourne selon le côté</b> où on '
+      + 'l’accroche : la réserve en montre une seule, et c’est la pose qui décide de la face — '
+      + 'donc du minutage et du pouvoir. L’aperçu de chaque emplacement montre déjà celle qu’on aura. '}
+      Les règles se changent dans <b>Variables</b> ⚙.</p>
       <div class="barre-outils" style="margin-top:12px">
         <button class="pill" id="bac-annuler" ${b.historique.length ? '' : 'disabled'}>↶ Annuler</button>
         <button class="pill" id="bac-retablir" ${b.refaits.length ? '' : 'disabled'}>↷ Rétablir</button>
@@ -5192,7 +5223,7 @@ function vueBanc() {
         ${boutonIllus()}
         <span class="aide">${b.choisi
     ? `<b>${b.choisi.plan.num}</b> en main — cliquez un emplacement${coups.length ? '' : ' … mais il n’y en a aucun'}`
-    : 'Cliquez un plan ci-dessous, ou un plan déjà posé pour le reprendre.'}</span>
+    : 'Cliquez une carte ci-dessous, ou un plan déjà posé pour le reprendre.'}</span>
       </div>
     </div>
 
@@ -5216,7 +5247,8 @@ function vueBanc() {
         ${FAMILLES_BAC.map(([k, l]) => `<button class="pill ${b.famille === k ? 'on' : ''}" data-fam-bac="${k}">${l}</button>`).join('')}
         <input type="search" id="bac-filtre" placeholder="numéro…" value="${b.filtre}" style="max-width:140px">
       </div>
-      <div class="rack">${vus.map((p) => `<div class="rack-plan ${b.choisi && b.choisi.plan.cle === p.cle ? 'sel' : ''}"
+      <div class="rack">${vus.map((p) => `<div class="rack-plan ${
+    b.choisi && identiteBac(b.choisi.plan) === identiteBac(p) ? 'sel' : ''}"
         data-plan-bac="${p.cle}"><div class="carte solo small">${renderPlan(p)}</div>
         <div class="lg">${libelleDuBac(p)}</div></div>`).join('')}</div>
     </div>
@@ -5243,11 +5275,11 @@ function brancherBanc() {
   // Choisir un plan dans la réserve. Recliquer le même le repose.
   app.querySelectorAll('[data-plan-bac]').forEach((el) => el.addEventListener('click', () => {
     const cle = el.dataset.planBac;
-    if (b.choisi && b.choisi.plan.cle === cle && b.choisi.source === 'reserve') b.choisi = null;
-    else {
-      const plan = plansDuBac(b.famille).find((p) => p.cle === cle);
-      b.choisi = plan ? { plan, source: 'reserve' } : null;
-    }
+    const plan = plansDuBac(b.famille).find((x) => x.cle === cle);
+    // Recliquer la carte qu'on tient la repose dans la réserve.
+    if (b.choisi && b.choisi.source === 'reserve'
+      && identiteBac(b.choisi.plan) === identiteBac(plan)) b.choisi = null;
+    else b.choisi = plan ? { plan, source: 'reserve' } : null;
     vueBanc();
   }));
 

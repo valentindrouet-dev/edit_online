@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.77';
-export const BUILD_DATE = '2026-08-31 18:40';
+export const VERSION = '1.78';
+export const BUILD_DATE = '2026-09-01 09:20';
 
 export const CHANGELOG = [
+  {
+    v: '1.78',
+    date: '01/09/2026',
+    items: [
+      "<b>Une « valeur » est une valeur de cadre. Règles v0.14.6.</b> La cible <b>VALEUR</b> comptait les <b>icônes</b> différentes : contresens sur le mot. « Valeur » est le terme de cinéma pour le <b>cadrage</b> — valeur de cadre : Plan Large, Plan Moyen, Gros Plan. Elle compte donc les <b>cadrages différents</b> d'une portée : une ligne qui alterne les trois en montre trois, quel qu'y soit le nombre de cartes, et un Raccord — qui n'est pas un plan — n'en apporte aucune. Pour viser un cadrage précis, « 2 points par lot de 3 Gros Plans », on le nomme directement ; « valeur de cadre » sert à récompenser la <b>variété</b> des cadrages, ou son absence.",
+      "<b>Le couple d'icônes se resserre.</b> Les deux pastilles de « n × 2 ICONES » se suivaient, séparées d'un trait : il fallait deux icônes et demie de large, quand le bandeau d'un Gros Plan n'a qu'un tiers de carte. Elles se <b>chevauchent</b> désormais — la seconde par-dessus la première, détachée d'un fin liseré clair —, et le couple tient dans <b>une icône et demie</b> : un cinquième de largeur en moins, et deux icônes toujours lisibles.",
+      "<b>Le Banc de montage ne montre plus qu'une carte par scène.</b> La réserve alignait le recto <b>et</b> le verso de chaque Plan Moyen et de chaque Gros Plan — 66 vignettes là où le jeu n'a que 33 cartes. Elle en montre une seule, et c'est la <b>pose</b> qui décide de la face, comme à la table : un Gros Plan accroché <b>à gauche</b> du plan central montre son verso, <b>à droite</b> son recto — et le Plan Moyen l'inverse. Le minutage, les icônes et le pouvoir suivent.",
+      "L'<b>aperçu de chaque emplacement</b> montre déjà la face qu'on obtiendra : on voit ce que la carte devient avant de la lâcher. Reprendre un plan posé pour l'accrocher de l'autre côté le retourne de la même façon. Le réglage <b>« la face jouée suit le sens de pose »</b> commande tout cela : décoché, la carte reste sur son recto, et l'écran cesse de l'annoncer.",
+      "À noter : recto et verso d'une moitié portent <b>les mêmes valeurs tant qu'on n'en a retouché aucune</b>. C'est dans le <b>Matériel</b> qu'on les sépare — l'éditeur les traite depuis toujours comme deux plans distincts, « 301R » et « 301V ». Retourner une carte ne change donc quelque chose que si ses deux faces disent quelque chose de différent.",
+    ],
+  },
   {
     v: '1.77',
     date: '31/08/2026',

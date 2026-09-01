@@ -488,8 +488,18 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .tag-gris { background: #4a4a52; color: #d8d8de; }
 .tag-blanc { background: #f2f2f4; color: #1b1b20; white-space: nowrap; }
 .tag-fmt { background: #17171b; color: var(--c); }
+/* Un couple d'icônes : la seconde CHEVAUCHE la première, décalée vers la
+   gauche. Posées côte à côte et séparées d'un trait, les deux pastilles
+   demandaient plus de largeur que le bandeau d'un Gros Plan n'en a — un tiers
+   de carte. Superposées, le couple tient dans une icône et demie.
+   Le liseré clair de celle de dessus la détache de celle de dessous : sans
+   lui, deux ronds sombres se fondraient en une seule tache. */
 .paire { display: inline-flex; align-items: center; height: 100%; }
-.paire i { width: .4em; height: .28em; background: #e8e8ec; display: block; }
+.paire > .pastille + .pastille {
+  margin-left: -.78em; position: relative; z-index: 2;
+  filter: drop-shadow(-.055em 0 0 rgba(255, 255, 255, .92))
+          drop-shadow(0 0 .045em rgba(0, 0, 0, .45));
+}
 .barre { position: relative; display: inline-flex; align-items: center; height: 100%; }
 /* L'icône barrée : la croix doit se voir avant l'icône, sinon on lit
    « compte cet élément » là où il faut lire « cet élément doit être absent ».

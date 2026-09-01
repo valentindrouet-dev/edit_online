@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, objPortee, objsDe } from './data.js?v=1.77';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, objPortee, objsDe } from './data.js?v=1.78';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -67,9 +67,10 @@ function couples(plans, els) {
  * variantes chacun.
  *
  * Deux cibles ne comptent pas des cartes mais ce qu'elles portent — `ICONE`,
- * toutes les icônes confondues, et `VALEUR`, les icônes DIFFÉRENTES : un plan
- * à deux armes porte deux icônes et une seule valeur. Une dernière ne regarde
- * pas la portée du tout : `SEQUENCE` compte les séquences du banc.
+ * toutes les icônes confondues, et `VALEUR`, la **valeur de cadre** : on
+ * compte les cadrages DIFFÉRENTS, une ligne qui alterne Plan Large, Plan Moyen
+ * et Gros Plan en montrant trois. Une dernière ne regarde pas la portée du
+ * tout : `SEQUENCE` compte les séquences du banc.
  */
 export function compteCible(plans, cible, banc) {
   switch (cible) {
@@ -79,7 +80,11 @@ export function compteCible(plans, cible, banc) {
     case 'MORT':     return plans.filter((p) => p.mort).length;
     case 'NEANT':    return plans.filter((p) => !p.el.some((e) => PERSONNAGES.includes(e))).length;
     case 'ICONE':    return plans.reduce((s, p) => s + p.el.length, 0);
-    case 'VALEUR':   return new Set(plans.flatMap((p) => p.el)).size;
+    // La **valeur de cadre** — le mot de cinéma pour le cadrage : Plan Large,
+    // Plan Moyen, Gros Plan. On compte celles qui sont DIFFÉRENTES : une ligne
+    // qui alterne les trois en montre trois, quel que soit le nombre de cartes.
+    // Un Raccord n'est pas un plan : il n'a pas de valeur de cadre.
+    case 'VALEUR':   return new Set(plans.filter((p) => !estRaccord(p)).map((p) => p.format)).size;
     case 'SEQUENCE': return banc ? banc.sequences.length : 0;
     default:
       if (CADRAGES_POUVOIR.includes(cible)) return plans.filter((p) => p.format === cible).length;

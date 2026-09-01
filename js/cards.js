@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.77';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.77';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.78';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.78';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -63,7 +63,12 @@ function objCoeur(obj, taille, compact) {
     case 'FORMAT':  return tagCadrage(obj.format, compact)
       + (obj.format2 ? `<span class="et-cadrage">&amp;</span>${tagCadrage(obj.format2, compact)}` : '');
     case 'ELEMENT': return elIcon(obj.el, taille);
-    case 'PAIRE':   return `<span class="paire">${elIcon(obj.els[0], taille)}<i></i>${elIcon(obj.els[1], taille)}</span>`;
+    // Les deux icônes d'un couple se **chevauchent** au lieu de se suivre : le
+    // bandeau d'un Gros Plan n'a qu'un tiers de carte, et deux pastilles
+    // séparées d'un trait n'y entraient pas. Superposées, elles tiennent dans
+    // une largeur et demie et se lisent toujours comme deux.
+    case 'PAIRE':   return `<span class="paire">${elIcon(obj.els[0], taille)}${
+      elIcon(obj.els[1], taille)}</span>`;
     case 'MORT':    return elIcon('MORT', taille);
     case 'NEANT':   return elIcon('NEANT', taille);
     case 'ABSENT':  return `<span class="barre">${elIcon(obj.el, taille)}${croixNon()}</span>`;
@@ -157,7 +162,7 @@ function cibleHTML(cible, taille, compact) {
     case 'NEANT':    return elIcon('NEANT', taille);
     case 'SEQUENCE': return tagSeq(compact);
     case 'ICONE':    return `<span class="tag tag-blanc">${compact ? 'Ic.' : 'Icône'}</span>`;
-    case 'VALEUR':   return `<span class="tag tag-blanc">${compact ? 'Val.' : 'Valeur'}</span>`;
+    case 'VALEUR':   return `<span class="tag tag-blanc">${compact ? 'Val.' : 'Valeur de cadre'}</span>`;
     default:         return FORMATS[cible] ? tagCadrage(cible, compact) : elIcon(cible, taille);
   }
 }
