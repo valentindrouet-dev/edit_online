@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.86';
+import { ELEMENT_IDS } from './data.js?v=1.87';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -13,8 +13,12 @@ export const DEFAULTS = {
   // Plans Larges face cachée, Plans Moyens / Gros Plans face visible.
   chutierPL: 3,              // cartes visibles dans la rivière — 0 = nb de joueuses
   chutierPMGP: 3,            // idem pour les Plans Moyens / Gros Plans
+  // Piocher au sommet d'une pile plutôt que dans la rivière : on prend une
+  // carte que personne n'a vue, mais on la prend seul. Ce droit n'est plus
+  // ouvert à tout le monde : il se gagne par le pouvoir « Vous pouvez piocher
+  // sur la pioche PM / GP ». Cocher l'une de ces deux cases le rend à tous.
   piocheDirectePL: false,    // piocher au sommet de la pioche Plans Larges
-  piocheDirectePMGP: true,   // piocher au sommet de la pioche PM / GP
+  piocheDirectePMGP: false,  // piocher au sommet de la pioche PM / GP
   // Les Plans de départ ne se tirent pas : chaque joueuse a toujours les deux
   // versions A et B devant elle, donc les quatre faces au choix.
   premierJoueurAleatoire: true,
@@ -88,6 +92,11 @@ export const DEFAULTS = {
     // dans une portée, et ne se distinguent que par ce qu'ils en font.
     AILLEURS: true, CENTRE: true, LOT: true, SEUIL: true, ABSENTES: true,
     EXTREME: true, PLAN_ICONES: true, DOUBLE: true,
+    // Les pouvoirs de RÈGLE. Ils ne rapportent pas de points : les décocher
+    // n'annule pas un gain, cela retire un droit — plus de pioche au sommet,
+    // plus de séquence ni de plan supplémentaire, et les Raccords revalent ce
+    // que la variable dit.
+    PIOCHER: true, SEQ_PLUS: true, PLAN_PLUS: true, RACCORD_VAUT: true,
   },
   // Une carte peut porter deux fois la même icône. Par défaut chacune rapporte
   // ses points ; à false, un objectif d'élément compte les plans porteurs.
@@ -99,6 +108,10 @@ export const DEFAULTS = {
   multiplicateurObjectif: 1,
   scorerDepart: true,           // le Plan de départ compte dans le décompte
   pointsParPlan: 0,
+  // Ce que chaque Carte Raccord du montage vaut à qui la pose. Un Raccord
+  // relie, il ne raconte rien : l'étoffer coûte deux points. Le pouvoir « Les
+  // Raccords vous rapportent +2 » remplace ce montant pour sa seule porteuse.
+  pointsParRaccord: -2,
 
   // --- Variante : raccord par élément partagé ------------------------------
   // Absente des règles officielles, proposée pour tester une autre économie.
@@ -262,8 +275,11 @@ export const SCHEMA = [
     { k: 'tours', l: 'Plans dans le banc', t: 'int', min: 2, max: 30, aide: 'Plan de départ compris' },
     { k: 'chutierPL', l: 'Chutier Plans Larges', t: 'int', min: 0, max: 8, aide: 'trois par les règles ; 0 = autant que de joueuses' },
     { k: 'chutierPMGP', l: 'Chutier Plans Moyens / Gros Plans', t: 'int', min: 0, max: 8, aide: 'trois par les règles ; 0 = autant que de joueuses' },
-    { k: 'piocheDirectePMGP', l: 'Pioche PM / GP accessible au sommet', t: 'bool' },
-    { k: 'piocheDirectePL', l: 'Pioche Plans Larges accessible au sommet', t: 'bool' },
+    { k: 'piocheDirectePMGP', l: 'Pioche PM / GP accessible au sommet', t: 'bool',
+      aide: 'pour tout le monde ; décochée, seul le pouvoir « Vous pouvez piocher sur la pioche '
+        + 'PM / GP » l’ouvre à qui le porte' },
+    { k: 'piocheDirectePL', l: 'Pioche Plans Larges accessible au sommet', t: 'bool',
+      aide: 'idem, pour la pile des Plans Larges' },
     { k: 'premierJoueurAleatoire', l: 'Première joueuse tirée au sort', t: 'bool' },
     { k: 'premierJoueur', l: 'Sinon, qui commence', t: 'int', min: 0, max: 3,
       aide: 'le rang de la joueuse, 0 pour la première de la liste' },
@@ -315,6 +331,9 @@ export const SCHEMA = [
     { k: 'elementParIcone', l: 'Compter chaque icône, pas chaque plan', t: 'bool',
       aide: 'une carte à deux armes rapporte deux fois' },
     { k: 'pointsParPlan', l: 'Points fixes par plan visible', t: 'int', min: 0, max: 5 },
+    { k: 'pointsParRaccord', l: 'Points par Carte Raccord de votre montage', t: 'int', min: -10, max: 10,
+      aide: '−2 par les règles : un Raccord relie sans rien raconter. Le pouvoir « Les Raccords vous '
+        + 'rapportent +2 » remplace ce montant pour qui le porte' },
   ] },
   { groupe: 'Variante — raccord par élément', champs: [
     { k: 'raccordElement', l: 'Activer', t: 'bool', aide: 'hors règles officielles' },

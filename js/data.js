@@ -260,10 +260,38 @@ export const OBJ = {
     sens: sens === 'PLUS' ? 'PLUS' : 'MOINS',
     critere: ['POINTS', 'ICONES', 'CADRAGE'].includes(critere) ? critere : 'POINTS',
     portee: portee || 'SEQUENCE' }),
+
+  // --- Les pouvoirs de RÈGLE ------------------------------------------------
+  // Ceux-là ne comptent rien sur le banc : ils changent ce que leur porteuse a
+  // le **droit** de faire, ou ce que son montage lui rapporte par ailleurs. Ils
+  // valent tant que la carte est dans le montage, et n'ont donc ni portée ni
+  // valeur en points. Aucun symbole ne les dit : ils s'écrivent en toutes
+  // lettres sur la carte.
+  //
+  // Le droit de piocher au sommet d'une pile plutôt que dans la rivière : on
+  // prend une carte que personne n'a vue, mais on la prend seul.
+  piocher: (cible) => ({ kind: 'PIOCHER', n: 0, cible: cible === 'PL' ? 'PL' : 'PMGP' }),
+  // Une ligne de plus que les cinq de la règle, ou un plan de plus que les dix.
+  // `n` n'est pas un nombre de points mais un nombre de lignes, ou de plans.
+  sequencePlus: (n) => ({ kind: 'SEQ_PLUS', n: Math.max(1, Math.min(9, Math.floor(n || 1))) }),
+  planPlus: (n) => ({ kind: 'PLAN_PLUS', n: Math.max(1, Math.min(9, Math.floor(n || 1))) }),
+  // Ce que chaque Carte Raccord du montage vaut à sa porteuse, à la place de ce
+  // que la variable de partie lui ferait valoir. `n` est ce montant — positif
+  // ou négatif : c'est un remplacement, pas un ajout.
+  raccordVaut: (n) => ({ kind: 'RACCORD_VAUT',
+    n: Math.max(-20, Math.min(20, Math.floor(n === undefined ? 2 : n))) }),
 };
 
 /** Les bandeaux qui comptent des séquences : leur portée est le montage. */
 export const KINDS_SEQUENCE = ['SEQ_TAILLE', 'SEQ_VOISINES', 'SEQ_LONGUE', 'SEQ_AVEC', 'SEQ_TOUTES'];
+
+/**
+ * Les pouvoirs de RÈGLE : ils ne rapportent pas de points par eux-mêmes, ils
+ * changent une règle pour leur porteuse. Le décompte les laisse à zéro ; c'est
+ * le moteur — et, pour le Raccord, le total du montage — qui les lit.
+ */
+export const KINDS_REGLE = ['PIOCHER', 'SEQ_PLUS', 'PLAN_PLUS', 'RACCORD_VAUT'];
+export const estRegleKind = (k) => KINDS_REGLE.includes(k);
 
 /**
  * Les bandeaux dont la portée est **écrite dans leur définition** et ne se
@@ -271,7 +299,7 @@ export const KINDS_SEQUENCE = ['SEQ_TAILLE', 'SEQ_VOISINES', 'SEQ_LONGUE', 'SEQ_
  * séquence lisent la forme du banc, et deux des pouvoirs ajoutés désignent
  * eux-mêmes où ils comptent — les autres lignes, un côté du centre.
  */
-export const KINDS_PORTEE_FIXE = ['CHRONO', 'AILLEURS', 'CENTRE', ...KINDS_SEQUENCE];
+export const KINDS_PORTEE_FIXE = ['CHRONO', 'AILLEURS', 'CENTRE', ...KINDS_SEQUENCE, ...KINDS_REGLE];
 
 /** Ce bandeau-là laisse-t-il choisir sa portée ? */
 export const porteeReglable = (o) => !!o && !KINDS_PORTEE_FIXE.includes(o.kind);
@@ -282,7 +310,27 @@ export function porteeFigee(o) {
   if (o.kind === 'CHRONO') return '« Dans l’ordre » se lit toujours sur le montage entier.';
   if (o.kind === 'AILLEURS') return 'Ce bandeau dit lui-même où il compte : dans les autres séquences.';
   if (o.kind === 'CENTRE') return 'Ce bandeau dit lui-même où il compte : d’un côté du centre de sa ligne.';
+  if (estRegleKind(o.kind)) {
+    return 'Ce pouvoir ne compte rien : il change une règle pour vous, tant que la carte est'
+      + ' dans votre montage. Il n’a donc pas de portée.';
+  }
   return 'Un bandeau de séquence lit la forme du banc entier : sa portée ne se règle pas.';
+}
+
+/**
+ * Un seuil, tel qu'il s'écrit sur un bandeau. Le « ≥ » et le « ≤ » ne passent
+ * pas à l'impression — et se lisent mal à la taille d'un Gros Plan. On écrit
+ * donc « 3+ » et « 3 max », qui se lisent sans avoir appris les symboles.
+ *
+ *   MIN    au moins k              « 3+ »
+ *   MAX    au plus k               « 3 max »
+ *   MOINS  strictement moins de k  « 2 max » — le même seuil, dit autrement
+ */
+export function seuilTexte(sens, k) {
+  const v = Math.floor(k);
+  if (sens === 'MAX') return `${v} max`;
+  if (sens === 'MOINS') return `${Math.max(0, v - 1)} max`;
+  return `${v}+`;
 }
 
 // --- Ce qu'un pouvoir peut compter -----------------------------------------
@@ -458,6 +506,21 @@ export function objLabel(o, cfg) {
   const p = PORTEES.find((x) => x.id === objPortee(o, cfg)) || PORTEES[3];
   const ou = p.id === 'MONTAGE' ? '' : ` ${p.label}`;
   switch (o.kind) {
+    // --- Les pouvoirs de règle : une phrase, pas un compte ------------------
+    case 'PIOCHER': return `Vous pouvez piocher sur la pioche ${
+      o.cible === 'PL' ? 'Plans Larges' : 'PM / GP'}`;
+    case 'SEQ_PLUS': return `Vous pouvez monter ${o.n} séquence${
+      o.n > 1 ? 's' : ''} supplémentaire${o.n > 1 ? 's' : ''}${
+      cfg && cfg.sequencesMax > 0 ? ` (${cfg.sequencesMax + o.n})` : ''}`;
+    case 'PLAN_PLUS': return `Vous pouvez monter ${o.n} Plan${
+      o.n > 1 ? 's' : ''} supplémentaire${o.n > 1 ? 's' : ''}${
+      cfg && cfg.tours ? ` (${cfg.tours + o.n})` : ''}`;
+    case 'RACCORD_VAUT': {
+      const signe = (v) => (v > 0 ? `+${v}` : `${v}`);
+      const base = cfg ? cfg.pointsParRaccord : undefined;
+      return `Les Raccords vous rapportent ${signe(o.n)}${
+        base !== undefined && base !== o.n ? ` au lieu de ${signe(base)}` : ''}`;
+    }
     case 'ABSENT':  return `${o.n} si ${ELEMENTS[o.el].label} est absent${ou}`;
     case 'CHRONO':  return `${o.n} si tout est dans l’ordre${ou || ' dans le montage'}`;
     case 'SEUIL': {

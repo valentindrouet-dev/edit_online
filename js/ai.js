@@ -5,9 +5,9 @@
 // Équilibré : compare tous les placements et évite d'éparpiller ses séquences.
 // Stratège  : anticipe le tour suivant à partir de ce qu'offrent les chutiers.
 
-import { coupsPossibles, appliquer, optionsDerushage, choixDepart } from './engine.js?v=1.86';
-import { compter } from './scoring.js?v=1.86';
-import { PROFILS_IA } from './config.js?v=1.86';
+import { coupsPossibles, appliquer, optionsDerushage, choixDepart, limiteSequences } from './engine.js?v=1.87';
+import { compter, bonusRegle, piocheOuverte } from './scoring.js?v=1.87';
+import { PROFILS_IA } from './config.js?v=1.87';
 
 function cloneBanc(b) {
   return { sequences: b.sequences.map((s) => s.slice()), ouverture: b.ouverture, fermeture: b.fermeture };
@@ -22,7 +22,38 @@ function potentiel(banc, cfg) {
   const morceaux = banc.sequences.length;
   const plus = banc.sequences.reduce((m, s) => Math.max(m, s.length), 0);
   const penalite = cfg.porteeParDefaut === 'SEQUENCE' ? 2.2 : 0.9;
-  return plus * 0.6 - Math.max(0, morceaux - 1) * penalite;
+  return plus * 0.6 - Math.max(0, morceaux - 1) * penalite + valeurDesDroits(banc, cfg);
+}
+
+/**
+ * Ce que valent les pouvoirs de RÈGLE, que le décompte laisse à zéro.
+ *
+ * Ils ne rapportent rien au moment où on les pose : ils ouvrent une porte. Une
+ * IA qui ne lirait que le score les prendrait donc pour des bandeaux vides et
+ * ne les poserait jamais — sinon par hasard. Les valeurs sont des ordres de
+ * grandeur en points, mesurés sur le décompte moyen d'une partie :
+ *
+ *   un plan de plus         vaut à peu près ce que rapporte un plan ordinaire ;
+ *   une séquence de plus    ne vaut que si le banc est près de sa limite —
+ *                           ailleurs c'est un droit qu'on n'utilisera pas ;
+ *   la pioche au sommet     vaut le choix qu'elle ajoute, pas une carte de plus.
+ *
+ * Le pouvoir sur les Raccords n'est pas ici : celui-là change le TOTAL, et le
+ * décompte le voit déjà.
+ */
+export function valeurDesDroits(banc, cfg) {
+  let v = bonusRegle(banc, cfg, 'PLAN_PLUS') * 4;
+  const seqPlus = bonusRegle(banc, cfg, 'SEQ_PLUS');
+  if (seqPlus) {
+    // Une ligne de plus ne sert qu'à qui manque de place : on la paie au prix
+    // fort quand le banc est plein, presque rien quand il lui reste des lignes.
+    const limite = limiteSequences(cfg, banc);
+    const reste = Number.isFinite(limite) ? limite - banc.sequences.length : 9;
+    v += seqPlus * (reste <= seqPlus ? 3.5 : 0.8);
+  }
+  if (piocheOuverte(banc, cfg, 'PMGP') && !cfg.piocheDirectePMGP) v += 1.5;
+  if (piocheOuverte(banc, cfg, 'PL') && !cfg.piocheDirectePL) v += 1.2;
+  return v;
 }
 
 function noteCoup(banc, coup, cfg, base) {

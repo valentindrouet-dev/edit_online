@@ -523,6 +523,27 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    tiers de carte, il les prend un cran plus bas. */
 .bandeau .x, .bandeau .si { color: #fff; font-weight: 800; font-size: 1.5em; line-height: 1;
   text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+/* Un mot nu du bandeau — « avec » —, ni cartouche ni pastille : il relie deux
+   pièces et doit se lire comme du texte, pas comme une étiquette de plus. */
+.bandeau .mot { font-size: .66em; font-weight: 700; color: #fff; line-height: 1;
+  flex: 0 0 auto; text-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
+/* Les pouvoirs de RÈGLE s'écrivent en toutes lettres, dans la graisse du « × » :
+   aucun symbole ne dit « vous pouvez monter une séquence de plus ». La phrase
+   se replie sur autant de lignes qu'il faut, et son corps est calculé pour
+   qu'elle tienne exactement dans le bandeau — il arrive dans `--cp`, voir
+   `corpsPhrase`. Sans ce calcul, une phrase longue sur un Gros Plan serait
+   rognée en silence par le `overflow: hidden` de la bande. */
+/* `flex: 1 1 0` et non `auto` : sur une base automatique, le navigateur part de
+   la largeur de la phrase D'UN SEUL TENANT — le bandeau d'un Gros Plan qui
+   porte aussi un second pouvoir débordait alors par la droite. À zéro, la
+   phrase prend ce qui reste une fois l'autre pouvoir servi, et s'y replie. */
+.bandeau-obj.regle { flex: 1 1 0; min-width: 0; }
+.bandeau .regle-mot {
+  display: block;
+  font-size: var(--cp, .5em); font-weight: 800; line-height: 1.06;
+  color: #fff; text-align: center; text-wrap: balance;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .5); overflow-wrap: anywhere;
+}
 .bandeau .fleche-pos { font-size: 1.35em; line-height: 1; }
 .moitie.f-GP .bandeau { gap: .12em; }
 .moitie.f-GP .bandeau .x, .moitie.f-GP .bandeau .si { font-size: 1.15em; }

@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.86';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.87';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -11,28 +11,28 @@ import {
   ciblesSequence,
   CIBLES_COMPTE, CIBLE_IDS, libelleCibleCompte, porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=1.86';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.86';
-import { elIcon, numIcon } from './icons.js?v=1.86';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, reglerLectureNue } from './cards.js?v=1.86';
+} from './data.js?v=1.87';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.87';
+import { elIcon, numIcon } from './icons.js?v=1.87';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.87';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
-  piochesMelees, appliquerPlan,
+  piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.86';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.86';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.86';
-import { releve, voler, stopperVols } from './anim.js?v=1.86';
-import { campagne } from './lab.js?v=1.86';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.86';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.86';
-import { Salon } from './net/salon.js?v=1.86';
-import { TransportLocal } from './net/local.js?v=1.86';
-import { TransportSupabase } from './net/supabase.js?v=1.86';
-import { enLigneDisponible } from './net/config.js?v=1.86';
-import { coupNu } from './net/protocole.js?v=1.86';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.86';
+} from './engine.js?v=1.87';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.87';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.87';
+import { releve, voler, stopperVols } from './anim.js?v=1.87';
+import { campagne } from './lab.js?v=1.87';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.87';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.87';
+import { Salon } from './net/salon.js?v=1.87';
+import { TransportLocal } from './net/local.js?v=1.87';
+import { TransportSupabase } from './net/supabase.js?v=1.87';
+import { enLigneDisponible } from './net/config.js?v=1.87';
+import { coupNu } from './net/protocole.js?v=1.87';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.87';
 
 const app = document.getElementById('app');
 
@@ -590,7 +590,8 @@ function vuePartie(enchainer = true) {
             ${st.joueurs.map((jj, i) => `<button class="onglet-banc ${i === vuB ? 'on' : ''}"
               data-onglet-banc="${i}" style="--enc:${encreDe(jj.couleur)}">${jj.nom}
               <b class="onglet-pts">${sc[i].total}</b></button>`).join('')}
-            <span class="banc-compte">Plan <b>${Math.min(compter(st.bancs[vuB], st.cfg).plans, st.cfg.tours)} / ${st.cfg.tours}</b></span>
+            <span class="banc-compte">Plan <b>${Math.min(compter(st.bancs[vuB], st.cfg).plans,
+    limitePlans(st.cfg, st.bancs[vuB]))} / ${limitePlans(st.cfg, st.bancs[vuB])}</b></span>
           </h2>
           ${bancBloc(st, vuB, null, vuB === p && humaine && (st.phase === 'MONTAGE' || st.phase === 'DERUSHAGE'))}
         </div>
@@ -857,9 +858,10 @@ function bancBloc(st, i, titre, interactif) {
 
   // Le compte de plans se lit au-dessus du banc qu'il décrit, plutôt que dans
   // un bandeau commun où il fallait se souvenir de qui il parlait.
-  const faits = Math.min(compter(banc, st.cfg).plans, st.cfg.tours);
+  const max = limitePlans(st.cfg, banc);
+  const faits = Math.min(compter(banc, st.cfg).plans, max);
   return `<div class="panneau">
-    <h2>${titre}${titre ? `<span class="banc-compte">Plan <b>${faits} / ${st.cfg.tours}</b></span>` : ''}</h2>
+    <h2>${titre}${titre ? `<span class="banc-compte">Plan <b>${faits} / ${max}</b></span>` : ''}</h2>
     ${banche}
   </div>`;
 }
@@ -1570,6 +1572,11 @@ function boiteApercu() {
 function compteObj(o, pts) {
   if (pts === undefined || pts === null) return '';
   const lg = objLabel(o, store.cfg);
+  // Un pouvoir de règle ne rapporte rien là où il est : il n'y a pas de compte
+  // à expliquer, seulement un droit à rappeler.
+  if (estRegle(o)) {
+    return `<span class="ap-calc" title="${lg}">actif tant que la carte est dans votre montage</span>`;
+  }
   if (estSi(o)) {
     return `<span class="ap-calc" title="${lg}">${pts ? 'obtenu' : 'non obtenu'}
       <b>${pts}</b> pt${Math.abs(pts) > 1 ? 's' : ''}</span>`;
@@ -2132,6 +2139,13 @@ const KINDS = [
   ['EXTREME',     'par ICONE la plus / la moins présente…'],
   ['PLAN_ICONES', 'par PLAN portant n ICONES…'],
   ['DOUBLE',      'la plus petite / plus grosse CARTE compte double…'],
+  // Les pouvoirs de RÈGLE. Ils ne comptent rien : ils donnent un droit, ou
+  // changent ce que le montage rapporte par ailleurs. Ils s'écrivent en toutes
+  // lettres sur la carte, faute de symbole qui les dise.
+  ['PIOCHER',      'vous pouvez PIOCHER au sommet…'],
+  ['SEQ_PLUS',     'vous pouvez monter n SÉQUENCES de plus…'],
+  ['PLAN_PLUS',    'vous pouvez monter n PLANS de plus…'],
+  ['RACCORD_VAUT', 'les RACCORDS vous rapportent n…'],
 ];
 
 const KIND_LABEL = Object.fromEntries(KINDS.map(([k, l]) => [k, l]));
@@ -3485,6 +3499,22 @@ function blocPouvoir(o, ou, rang = 1) {
       <input type="number" class="pts" min="0" max="12" value="${o.seuil}"
         data-champ-obj="${ou}"${R} data-part="seuil">
       <span class="plus">icône${o.seuil > 1 ? 's' : ''}</span>`;
+  } else if (kind === 'PIOCHER') {
+    complement = `<select data-champ-obj="${ou}"${R} data-part="cible">
+        ${opt('PMGP', 'sur la pioche PM / GP', o.cible !== 'PL')}
+        ${opt('PL', 'sur la pioche Plans Larges', o.cible === 'PL')}
+      </select>`;
+  } else if (kind === 'SEQ_PLUS' || kind === 'PLAN_PLUS') {
+    // `n` n'est pas un nombre de points mais un nombre de lignes, ou de plans :
+    // le champ de valeur est masqué, et celui-ci le remplace.
+    complement = `<input type="number" class="pts" min="1" max="9" value="${o.n}"
+        data-champ-obj="${ou}"${R} data-part="n">
+      <span class="plus">${kind === 'SEQ_PLUS' ? `séquence${o.n > 1 ? 's' : ''}`
+    : `Plan${o.n > 1 ? 's' : ''}`} de plus</span>`;
+  } else if (kind === 'RACCORD_VAUT') {
+    complement = `<input type="number" class="pts" min="-20" max="20" value="${o.n}"
+        data-champ-obj="${ou}"${R} data-part="n">
+      <span class="plus">par Carte Raccord, au lieu de ${store.cfg.pointsParRaccord}</span>`;
   } else if (kind === 'DOUBLE') {
     // `n` n'est plus un compte mais un nombre de fois : à 1 la carte compte
     // double, à 2 elle compte triple. Le libellé le rappelle.
@@ -3497,12 +3527,16 @@ function blocPouvoir(o, ou, rang = 1) {
       </select>`;
   }
 
+  // Un pouvoir de règle n'a ni valeur en points ni « × » devant lui : la valeur
+  // qu'il porte, quand il en a une, est un nombre de lignes ou de plans, et
+  // c'est son propre complément qui la règle.
+  const regle = estRegle(o);
   return `<div class="champ-bloc">
     <span class="ch-lg">${rang === 2 ? 'Second pouvoir' : 'Pouvoir'}</span>
     <div class="editeur-obj">
-      <input type="number" class="pts" min="-20" max="20" value="${o ? o.n : 1}"
+      ${regle ? '' : `<input type="number" class="pts" min="-20" max="20" value="${o ? o.n : 1}"
         data-champ-obj="${ou}"${R} data-part="n" ${o ? '' : 'disabled'}>
-      <span class="x">${estSi(o) ? 'si' : '×'}</span>
+      <span class="x">${estSi(o) ? 'si' : '×'}</span>`}
       <select data-champ-obj="${ou}"${R} data-part="kind" title="${KIND_LABEL[kind] || 'aucun pouvoir'}"
         >${KINDS.map(([k, l]) => opt(k, l, kind === k)).join('')}</select>
       ${complement}
@@ -4917,6 +4951,13 @@ function construireObj(kind, actuel) {
       actuel && actuel.sens),
     DOUBLE:      () => OBJ.doubleCarte(n, actuel && actuel.sens === 'PLUS' ? 'PLUS' : 'MOINS',
       actuel && actuel.critere),
+    // Les pouvoirs de règle. `n` y change de sens — des lignes, des plans, ou
+    // des points par Raccord —, on repart donc de leur valeur naturelle plutôt
+    // que de reprendre le compte de points du bandeau précédent.
+    PIOCHER:      () => OBJ.piocher(actuel && actuel.cible === 'PL' ? 'PL' : 'PMGP'),
+    SEQ_PLUS:     () => OBJ.sequencePlus(actuel && actuel.kind === 'PLAN_PLUS' ? actuel.n : 1),
+    PLAN_PLUS:    () => OBJ.planPlus(actuel && actuel.kind === 'SEQ_PLUS' ? actuel.n : 1),
+    RACCORD_VAUT: () => OBJ.raccordVaut(actuel && actuel.kind === 'RACCORD_VAUT' ? actuel.n : 2),
   }[kind]();
   // Changer de type ne déplace pas le bandeau : il garde sa portée.
   if (actuel && PORTEE_IDS.includes(actuel.portee)) neuf.portee = actuel.portee;
@@ -5137,6 +5178,12 @@ function objDepuisCSV(r, suf = '') {
     case 'SEUIL':    return CIBLE_IDS.includes(cible)
       ? OBJ.seuilCible(n, cible, sens0 === 'MAX' ? 'MAX' : 'MIN', seuil, portee) : null;
     case 'ABSENTES': return OBJ.absentes(n, portee);
+    // Les pouvoirs de règle. `points` y porte un nombre de lignes, de plans ou
+    // de points par Raccord — pas un compte de points de bandeau.
+    case 'PIOCHER':      return OBJ.piocher(cible === 'PL' ? 'PL' : 'PMGP');
+    case 'SEQ_PLUS':     return OBJ.sequencePlus(n);
+    case 'PLAN_PLUS':    return OBJ.planPlus(n);
+    case 'RACCORD_VAUT': return OBJ.raccordVaut(n);
     case 'EXTREME':  return OBJ.extreme(n, sens0 === 'MOINS' ? 'MOINS' : 'PLUS', portee);
     case 'PLAN_ICONES': return OBJ.planIcones(n, seuil, sens0, portee);
     case 'DOUBLE':   return OBJ.doubleCarte(n, sens0 === 'PLUS' ? 'PLUS' : 'MOINS', cible, portee);
@@ -5806,7 +5853,7 @@ function vueBanc() {
 
     <div class="bac-2col">
       <div class="panneau">
-        <h2>Le montage<span class="banc-compte">Plan <b>${s.plans} / ${cfg.tours}</b>
+        <h2>Le montage<span class="banc-compte">Plan <b>${s.plans} / ${limitePlans(cfg, b.banc)}</b>
           · ${s.sequences} séquence${s.sequences > 1 ? 's' : ''}</span></h2>
         ${bancBloc(st, 0, null, vise)}
         ${b.banc.sequences.length ? '<p class="aide" style="margin-top:10px">Un clic sur un plan posé le reprend en main : on le remet où l’on veut.</p>' : ''}

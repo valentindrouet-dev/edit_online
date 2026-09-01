@@ -14,13 +14,26 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.86';
-import { elIcon } from './icons.js?v=1.86';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.87';
+import { elIcon } from './icons.js?v=1.87';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.14.9',
+    date: '01/09/2026',
+    origine: 'Règle étendue par l’auteur',
+    corps: (c) => corps_0_14_9(c),
+    items: [
+      '<b>Quatre pouvoirs qui ne comptent rien.</b> Tous les bandeaux jusqu’ici rapportaient des points. Ceux-ci changent une <b>règle</b>, pour la seule joueuse qui les a dans son montage, et tant qu’ils y sont. Aucun symbole ne les dit : ils s’écrivent <b>en toutes lettres</b> sur la carte.',
+      '<b>« Vous pouvez piocher sur la pioche PM / GP. »</b> Piocher au sommet d’une pile plutôt que dans la rivière : on prend une carte que personne n’a vue, mais on la prend seul. Ce droit <b>n’est plus ouvert à tout le monde</b> — c’est le changement de règle qui va avec ce pouvoir. La variable de partie « Pioche PM / GP accessible au sommet » le rend à tous quand on la coche.',
+      '<b>« Vous pouvez monter 1 séquence supplémentaire. »</b> Six lignes au lieu de cinq. <b>« Vous pouvez monter 1 Plan supplémentaire. »</b> Onze plans au lieu de dix — et la fin de partie se déclenche donc <b>banc par banc</b>, chacun à sa propre limite, plutôt qu’à un compte unique. Deux cartes s’additionnent.',
+      '<b>« Les Raccords vous rapportent +2 au lieu de −2. »</b> Une Carte Raccord dans votre montage vous <b>coûte deux points</b> : elle relie sans rien raconter. Ce pouvoir retourne le compte pour qui le porte. Il <b>remplace</b> le montant, il ne s’y ajoute pas : deux cartes qui le portent ne cumulent pas, c’est la plus généreuse qui vaut. Le montant de base se règle dans les variables.',
+      '<b>Les seuils s’écrivent en chiffres, plus en symboles.</b> « ≥ 3 » devient <b>« 3+ »</b> et « ≤ 3 » devient <b>« 3 max »</b> : le symbole ne passait pas à l’impression et se lisait mal à la taille d’un Gros Plan. Les deux bandeaux de séquence gagnent au passage le mot <b>« avec »</b> en toutes lettres — « SÉQUENCE avec 3+ Objet » se lit sans avoir rien appris.',
+    ],
+  },
   {
     v: '0.14.8',
     date: '01/09/2026',
@@ -306,6 +319,45 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.14.9 ---------------------------------------------------------------
+// Quatre bandeaux qui ne comptent rien : ils changent une règle. Ils entrent à
+// la suite du tableau, sous leur propre en-tête — les mêler aux autres ferait
+// croire qu'ils rapportent des points.
+
+function corps_0_14_9(c) {
+  const raccord = c && c.pointsParRaccord !== undefined ? c.pointsParRaccord : -2;
+  const signe = (v) => (v > 0 ? `+${v}` : `${v}`);
+  return corps_0_14_8(c)
+    // Les quatre pouvoirs de règle, à la fin du tableau des bandeaux.
+    .replace('      <td>Sa portée ◀ ▶</td></tr>\n  </table>',
+      `      <td>Sa portée ◀ ▶</td></tr>
+    ${maj('0.14.9', '<b>Les pouvoirs de RÈGLE.</b> Ceux-là ne rapportent rien : ils changent une '
+      + 'règle pour la seule joueuse qui les a dans son montage, et tant qu’ils y sont. Aucun '
+      + 'symbole ne les dit — ils s’écrivent en toutes lettres sur la carte.')}
+    <tr class="maj-tr"><td class="maj-pastille" data-v="v0.14.9"><b>Vous pouvez piocher sur la pioche PM / GP</b></td>
+      <td>vous pouvez prendre la carte du <b>sommet de la pile</b>, que personne n’a vue, au lieu
+      d’une carte de la rivière. Sans ce pouvoir, la pile ne se pioche pas</td>
+      <td>Tant que la carte est dans votre montage</td></tr>
+    <tr class="maj-tr"><td><b>Vous pouvez monter n séquences supplémentaires</b></td>
+      <td>votre banc porte <b>n lignes de plus</b> que les cinq de la règle. Deux cartes
+      s’additionnent</td><td>Tant que la carte est dans votre montage</td></tr>
+    <tr class="maj-tr"><td><b>Vous pouvez monter n Plans supplémentaires</b></td>
+      <td>votre montage compte <b>n plans de plus</b> que les dix de la règle. La fin de partie se
+      déclenche donc à <b>votre</b> limite, pas à celle des autres</td>
+      <td>Tant que la carte est dans votre montage</td></tr>
+    <tr class="maj-tr"><td><b>Les Raccords vous rapportent n</b></td>
+      <td>chaque Carte Raccord de votre montage vaut <b>n</b> au lieu de ${signe(raccord)}. C’est un
+      <b>remplacement</b> : deux cartes qui le portent ne cumulent pas, la plus généreuse vaut</td>
+      <td>Tant que la carte est dans votre montage</td></tr>
+  </table>`)
+    // Ce que coûte une Carte Raccord, dit une fois pour toutes.
+    .replace('<b>La cible d’un bandeau.</b>',
+      `${maj('0.14.9', `<b>Ce que coûte un Raccord.</b> Une Carte Raccord posée dans votre montage
+      vous coûte <b>${Math.abs(raccord)} points</b> : elle relie, elle ne raconte rien. C’est ce
+      montant que le pouvoir « Les Raccords vous rapportent +2 » retourne.`)}
+    <b>La cible d’un bandeau.</b>`);
 }
 
 // --- v0.14.8 ---------------------------------------------------------------

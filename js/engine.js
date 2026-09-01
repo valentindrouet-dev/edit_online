@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, sceneDe, faceJouee,
-} from './data.js?v=1.86';
-import { compter, bancVide, plansComptes } from './scoring.js?v=1.86';
+} from './data.js?v=1.87';
+import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=1.87';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -283,15 +283,20 @@ export function optionsDerushage(state, toutes = false) {
   // eux, ont un vrai dos — leur pioche reste aveugle. Pioches mêlées, la pile
   // porte les deux familles : elle redevient aveugle, et se prend au pari.
   const melees = piochesMelees(cfg);
-  if (!melees && cfg.piocheDirectePMGP && state.piochePMGP.length) {
+  // Piocher au sommet plutôt que dans la rivière : on prend une carte que
+  // personne n'a vue, mais on la prend seul. La variable de partie ouvre ce
+  // droit à tout le monde ; sinon, seul un banc qui porte le pouvoir l'a.
+  const sommetPMGP = cfg.piocheDirectePMGP || piocheOuverte(banc, cfg, 'PMGP');
+  const sommetPL = cfg.piocheDirectePL || piocheOuverte(banc, cfg, 'PL');
+  if (!melees && sommetPMGP && state.piochePMGP.length) {
     const sommet = state.piochePMGP[0];
     pousse({ source: 'PIOCHE_PMGP', carte: sommet, sommet: true },
       quePL || sansPose(sommet), quePL ? RAISON_PMGP : RAISON_AUCUNE);
   }
-  if (melees && cfg.piocheDirectePL && state.piochePMGP.length) {
+  if (melees && sommetPL && state.piochePMGP.length) {
     pousse({ source: 'PIOCHE_PMGP', carte: null, sommet: true, aveugle: true }, false, '');
   }
-  if (!melees && cfg.piocheDirectePL && state.piochePL.length) {
+  if (!melees && sommetPL && state.piochePL.length) {
     pousse({ source: 'PIOCHE_PL', carte: null, sommet: true }, pasDeLigne, RAISON_PL);
   }
 
@@ -438,9 +443,22 @@ function estPL(plan) { return plan.format === 'PL'; }
  *
  * Zéro ou absent : aucune limite, pour qui veut l'ancienne partie.
  */
-export function limiteSequences(cfg) {
+export function limiteSequences(cfg, banc) {
   const n = cfg && cfg.sequencesMax;
-  return n === undefined || n === null || n <= 0 ? Infinity : n;
+  if (n === undefined || n === null || n <= 0) return Infinity;
+  // « Vous pouvez monter 1 séquence supplémentaire » : la limite est celle de
+  // la règle, plus ce que le banc s'est donné le droit d'ouvrir.
+  return n + bonusRegle(banc, cfg, 'SEQ_PLUS');
+}
+
+/**
+ * Combien de plans ce banc-là peut monter. La règle en fixe dix, Plan de départ
+ * compris ; un pouvoir « Vous pouvez monter 1 Plan supplémentaire » les porte à
+ * onze pour sa seule porteuse — la fin de partie se déclenche donc plan par
+ * plan, banc par banc, et non à un compte unique.
+ */
+export function limitePlans(cfg, banc) {
+  return (cfg && cfg.tours ? cfg.tours : 0) + bonusRegle(banc, cfg, 'PLAN_PLUS');
 }
 
 /** Le Plan Large ne peut pas toucher un autre Plan Large. */
@@ -540,7 +558,7 @@ export function coupsPossibles(state, p, hypothese) {
       // ouvertes, un Plan Large n'en ouvre plus : il ne peut plus entrer que
       // **par la charnière d'un Raccord**, dans une ligne déjà là — ce que la
       // boucle ETENDRE ci-dessous propose encore.
-      const places = banc.sequences.length >= limiteSequences(cfg) ? []
+      const places = banc.sequences.length >= limiteSequences(cfg, banc) ? []
         : lignes && banc.sequences.length
           ? [0, banc.sequences.length]   // au-dessus, ou en dessous : jamais entre
           : Array.from({ length: banc.sequences.length + 1 }, (_, i) => i);
@@ -738,10 +756,11 @@ export function poser(state, p, coup) {
  */
 function declencherFin(state, p) {
   if (state.finDeclenchee != null) return;
-  if (plansComptes(state.bancs[p]) < state.cfg.tours) return;
+  const limite = limitePlans(state.cfg, state.bancs[p]);
+  if (plansComptes(state.bancs[p]) < limite) return;
   state.finDeclenchee = p;
   state.toursApresFin = 0;
-  journal(state, `${state.joueurs[p].nom} pose son ${state.cfg.tours}e plan — un dernier tour pour les autres`, p);
+  journal(state, `${state.joueurs[p].nom} pose son ${limite}e plan — un dernier tour pour les autres`, p);
 }
 
 /** Le tour de la dernière joueuse est joué : on arrête. */

@@ -1,8 +1,20 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.86';
-export const BUILD_DATE = '2026-09-01 23:30';
+export const VERSION = '1.87';
+export const BUILD_DATE = '2026-09-02 00:40';
 
 export const CHANGELOG = [
+  {
+    v: '1.87',
+    date: '02/09/2026',
+    items: [
+      "<b>Quatre pouvoirs qui ne comptent rien. Règles v0.14.9.</b> Tous les bandeaux jusqu'ici rapportaient des points. Ceux-ci changent une <b>règle</b>, pour la seule joueuse qui les a dans son montage, et tant qu'ils y sont. Aucun symbole ne les dit : ils s'écrivent <b>en toutes lettres</b> sur la carte, dans la graisse du « × », et leur corps est calculé pour que la phrase tienne exactement dans son bandeau — un Gros Plan en reçoit la forme courte.",
+      "<b>« Vous pouvez piocher sur la pioche PM / GP. »</b> Prendre la carte du sommet, que personne n'a vue, au lieu d'une carte de la rivière. Ce droit <b>n'est plus ouvert à tout le monde</b> : c'est le changement de règle qui accompagne ce pouvoir. La variable « Pioche PM / GP accessible au sommet » le rend à tous quand on la coche. Un second réglage vise la pile des Plans Larges.",
+      "<b>« Vous pouvez monter 1 séquence supplémentaire. »</b> Six lignes au lieu de cinq. <b>« Vous pouvez monter 1 Plan supplémentaire. »</b> Onze plans au lieu de dix — la fin de partie se déclenche donc <b>banc par banc</b>, chacun à sa propre limite. Le compteur du haut d'un banc l'annonce : « Plan 7 / 11 » chez qui porte le pouvoir, « 7 / 10 » chez les autres. Deux cartes s'additionnent, et le nombre se règle jusqu'à neuf.",
+      "<b>« Les Raccords vous rapportent +2 au lieu de −2. »</b> Une Carte Raccord de votre montage vous <b>coûte deux points</b> — elle relie sans rien raconter —, et ce pouvoir retourne le compte. Il <b>remplace</b> le montant plutôt que de s'y ajouter : deux cartes qui le portent ne cumulent pas, la plus généreuse vaut. Le montant de base est une variable de partie, réglée à −2. <b>Attention :</b> ce malus s'applique à toutes les parties — c'est le sens de « au lieu de −2 ».",
+      "<b>Les IA les jouent.</b> Le décompte laisse ces pouvoirs à zéro : sans jugement à part, une IA les prendrait pour des bandeaux vides. Elle les estime donc en points — un plan de plus vaut à peu près ce que rapporte un plan ; une ligne de plus vaut cher quand le banc est à sa limite et presque rien quand il lui reste de la place ; le droit de piocher ne vaut plus rien si tout le monde l'a déjà. Le pouvoir sur les Raccords, lui, change le total : le décompte le voit tout seul.",
+      "<b>Les seuils s'écrivent en chiffres.</b> « ≥ 3 » devient <b>« 3+ »</b> et « ≤ 3 » devient <b>« 3 max »</b> — le symbole ne passait pas à l'impression et se lisait mal à la taille d'un Gros Plan. Les deux bandeaux de séquence gagnent le mot <b>« avec »</b> en toutes lettres : « SÉQUENCE avec 3+ Objet » se lit sans avoir rien appris. Les deux autres bandeaux à seuil suivent la même écriture, et « séquence sans au moins 3 Armes » se dit maintenant « 2 max ».",
+    ],
+  },
   {
     v: '1.86',
     date: '01/09/2026',

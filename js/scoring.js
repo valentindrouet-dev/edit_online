@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, objPortee, objsDe } from './data.js?v=1.86';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind } from './data.js?v=1.87';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -185,6 +185,10 @@ export function porteeDe(obj, sequence, banc, cfg, porteur) {
 export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = false) {
   if (!obj) return 0;
   if (cfg.objectifsActifs && cfg.objectifsActifs[obj.kind] === false) return 0;
+  // Un pouvoir de RÈGLE ne rapporte rien à l'endroit où il est posé : il donne
+  // un droit, ou change ce que le montage entier vaut. C'est `compter` — et le
+  // moteur — qui le lisent, pas ce décompte carte par carte.
+  if (estRegleKind(obj.kind)) return 0;
 
   const portee = porteeDe(obj, sequence, banc, cfg, porteur);
   const n = obj.n;
@@ -404,6 +408,45 @@ function jonctionsRaccordees(banc, cfg) {
   return n;
 }
 
+// --- Ce que les pouvoirs de RÈGLE changent ---------------------------------
+// Ils valent tant que leur carte est dans le montage. On les lit donc sur le
+// banc entier, pas séquence par séquence : rien ne dit qu'un droit s'arrête au
+// bout d'une ligne.
+
+/** Tous les bandeaux visibles du banc, dans l'ordre de lecture. */
+function bandeauxDe(banc) {
+  return tousLesPlans(banc).flatMap(objsDe);
+}
+
+/** Un pouvoir de règle est-il actif ? Le décochage des objectifs vaut ici aussi. */
+const regleActive = (kind, cfg) => !(cfg && cfg.objectifsActifs && cfg.objectifsActifs[kind] === false);
+
+/** La somme d'un pouvoir de règle sur le banc — deux cartes en donnent deux. */
+export function bonusRegle(banc, cfg, kind) {
+  if (!banc || !regleActive(kind, cfg)) return 0;
+  return bandeauxDe(banc).reduce((s, o) => (o && o.kind === kind ? s + o.n : s), 0);
+}
+
+/** Le banc donne-t-il le droit de piocher au sommet de cette pile-là ? */
+export function piocheOuverte(banc, cfg, cible) {
+  if (!banc || !regleActive('PIOCHER', cfg)) return false;
+  return bandeauxDe(banc).some((o) => o && o.kind === 'PIOCHER' && o.cible === cible);
+}
+
+/**
+ * Ce que vaut chaque Carte Raccord du montage. La variable de partie le dit —
+ * elle vaut −2 par les règles : un Raccord relie, il ne raconte rien, et
+ * l'étoffer coûte. Un pouvoir « Les Raccords vous rapportent +2 » **remplace**
+ * ce montant ; il ne s'y ajoute pas. Deux cartes qui le portent ne cumulent
+ * donc pas : c'est la plus généreuse qui vaut.
+ */
+export function valeurRaccord(banc, cfg) {
+  const base = cfg && cfg.pointsParRaccord !== undefined ? cfg.pointsParRaccord : 0;
+  if (!banc || !regleActive('RACCORD_VAUT', cfg)) return base;
+  const dits = bandeauxDe(banc).filter((o) => o && o.kind === 'RACCORD_VAUT').map((o) => o.n);
+  return dits.length ? Math.max(...dits) : base;
+}
+
 /** Décompte complet d'un banc, ventilé par source. */
 export function compter(banc, cfg) {
   const montage = tousLesPlans(banc);
@@ -415,7 +458,11 @@ export function compter(banc, cfg) {
     SEQ_TAILLE: 0, SEQ_VOISINES: 0, SEQ_LONGUE: 0, SEQ_AVEC: 0, SEQ_TOUTES: 0,
     AILLEURS: 0, CENTRE: 0, LOT: 0, SEUIL: 0, ABSENTES: 0,
     EXTREME: 0, PLAN_ICONES: 0, DOUBLE: 0,
-    CHRONOLOGIE: 0, POSE: 0, JONCTION: 0,
+    // Les pouvoirs de règle restent à zéro : ils ne rapportent pas de points
+    // là où ils sont posés. Leur effet se lit ailleurs — dans le moteur pour
+    // les trois premiers, dans COUT_RACCORD pour le dernier.
+    PIOCHER: 0, SEQ_PLUS: 0, PLAN_PLUS: 0, RACCORD_VAUT: 0,
+    CHRONOLOGIE: 0, POSE: 0, JONCTION: 0, COUT_RACCORD: 0,
   };
   const lignes = [];
 
@@ -433,6 +480,9 @@ export function compter(banc, cfg) {
   });
 
   detail.POSE = montage.length * (cfg.pointsParPlan || 0);
+  // Ce que les Cartes Raccord du montage valent — un coût par les règles, un
+  // gain pour qui porte le pouvoir qui le retourne.
+  detail.COUT_RACCORD = montage.filter(estRaccord).length * valeurRaccord(banc, cfg);
   const jr = jonctionsRaccordees(banc, cfg);
   detail.JONCTION = jr * (cfg.raccordElementPoints || 0);
   const ch = chrono(banc, cfg);
@@ -515,7 +565,12 @@ export const SOURCES_LABEL = {
   EXTREME: 'Objectifs d’icône la plus / la moins présente',
   PLAN_ICONES: 'Objectifs de plan chargé',
   DOUBLE: 'Objectifs de carte doublée',
+  PIOCHER: 'Droit de piocher au sommet',
+  SEQ_PLUS: 'Séquences supplémentaires',
+  PLAN_PLUS: 'Plans supplémentaires',
+  RACCORD_VAUT: 'Ce que valent vos Raccords',
   CHRONOLOGIE: 'Variante — chronologie',
   POSE: 'Points de pose',
   JONCTION: 'Jonctions raccordées',
+  COUT_RACCORD: 'Cartes Raccord de votre montage',
 };

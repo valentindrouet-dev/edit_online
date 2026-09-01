@@ -13,8 +13,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.86';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.86';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.87';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.87';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -59,6 +59,28 @@ function croixNon() {
   </svg></span>`;
 }
 
+/**
+ * La phrase d'un pouvoir de règle. Aucun symbole ne dit « vous pouvez monter
+ * une séquence de plus » : ceux-là s'écrivent. Le Gros Plan n'a qu'un tiers de
+ * carte et en reçoit une forme courte ; l'aperçu au survol garde la phrase
+ * entière, dans les deux cas.
+ */
+export function phraseRegle(obj, compact) {
+  const s = (n) => (n > 1 ? 's' : '');
+  switch (obj.kind) {
+    case 'PIOCHER': return compact
+      ? `Pioche ${obj.cible === 'PL' ? 'PL' : 'PM/GP'}`
+      : `Vous pouvez piocher sur la pioche ${obj.cible === 'PL' ? 'Plans Larges' : 'PM / GP'}`;
+    case 'SEQ_PLUS': return compact ? `+${obj.n} séquence`
+      : `Vous pouvez monter ${obj.n} séquence${s(obj.n)} supplémentaire${s(obj.n)}`;
+    case 'PLAN_PLUS': return compact ? `+${obj.n} Plan`
+      : `Vous pouvez monter ${obj.n} Plan${s(obj.n)} supplémentaire${s(obj.n)}`;
+    case 'RACCORD_VAUT': return `${compact ? 'Raccords' : 'Les Raccords vous rapportent'} ${
+      obj.n > 0 ? '+' : ''}${obj.n}`;
+    default: return '';
+  }
+}
+
 /** Ce que le bandeau compte, sans les flèches de portée. */
 function objCoeur(obj, taille, compact) {
   switch (obj.kind) {
@@ -86,8 +108,9 @@ function objCoeur(obj, taille, compact) {
     }&nbsp;${tcTexte(obj.seuil)}</span>${croixNon()}</span>`;
     // Les bandeaux de séquence : la pastille violette dit qu'on compte des
     // séquences et non des plans, et ce qui la suit dit lesquelles.
-    case 'SEQ_TAILLE': return `${tagSeq(compact)}
-      <span class="tc-seuil">${obj.sens === 'MAX' ? '≤' : '≥'}&nbsp;${obj.seuil}</span>`;
+    case 'SEQ_TAILLE': return `${tagSeq(compact)}<span class="mot">avec</span>
+      <span class="tc-seuil">${seuilTexte(obj.sens === 'MAX' ? 'MAX' : 'MIN', obj.seuil)}</span>
+      <span class="tag tag-blanc">Plan</span>`;
     case 'SEQ_VOISINES': return `${tagSeq(compact)}
       <span class="fleche-seq">${obj.sens === 'APRES' ? '▼' : '▲'}</span>`;
     // « La plus longue » : on compte ses plans, d'où la pastille Plan.
@@ -104,11 +127,11 @@ function objCoeur(obj, taille, compact) {
       // elle dirait « aucun », ce qui n'est plus ce que le bandeau demande.
       const k = Math.max(1, obj.seuil || 1);
       if (k > 1) {
-        return `${tagSeq(compact)}<span class="tc-seuil">${
-          obj.sens === 'SANS' ? '&lt;' : '≥'}&nbsp;${k}</span>${quoi}`;
+        return `${tagSeq(compact)}<span class="mot">avec</span><span class="tc-seuil">${
+          seuilTexte(obj.sens === 'SANS' ? 'MOINS' : 'MIN', k)}</span>${quoi}`;
       }
       return `${tagSeq(compact)}${obj.sens === 'SANS'
-        ? `<span class="barre">${quoi}${croixNon()}</span>` : quoi}`;
+        ? `<span class="barre">${quoi}${croixNon()}</span>` : `<span class="mot">avec</span>${quoi}`}`;
     }
     // --- Les pouvoirs du vocabulaire commun --------------------------------
     // Chacun montre sa cible, précédée ou suivie de ce qui le distingue : une
@@ -130,18 +153,22 @@ function objCoeur(obj, taille, compact) {
     }
     case 'LOT': return `<span class="tag tag-lot">${compact ? `×${obj.seuil}` : `lot de ${obj.seuil}`}</span>${
       cibleHTML(obj.cible, taille, compact)}`;
-    case 'SEUIL': return `<span class="tc-seuil">${
-      obj.sens === 'MAX' ? '≤' : '≥'}${compact ? '' : '&nbsp;'}${obj.seuil}</span>${
+    case 'SEUIL': return `<span class="tc-seuil">${seuilTexte(obj.sens, obj.seuil)}</span>${
       cibleHTML(obj.cible, taille, compact)}`;
     case 'ABSENTES': return `<span class="barre"><span class="tag tag-blanc">${
       compact ? 'Ic.' : 'Icône'}</span>${croixNon()}</span>`;
     case 'SEQ_TOUTES': return `<span class="tag tag-seq">${compact ? 'toutes' : 'chaque séq.'}</span>
-      <span class="tc-seuil">${obj.sens === 'MAX' ? '≤' : '≥'}&nbsp;${obj.seuil}</span>`;
+      <span class="tc-seuil">${seuilTexte(obj.sens, obj.seuil)}</span>
+      <span class="tag tag-blanc">Plan</span>`;
     case 'EXTREME': return `<span class="tag tag-blanc">${compact ? 'Ic.' : 'Icône'}</span>
       <span class="tc-seuil">${obj.sens === 'MOINS' ? 'min' : 'max'}</span>`;
     case 'PLAN_ICONES': return `<span class="tag tag-blanc">Plan</span>
-      <span class="tc-seuil">${obj.sens === 'MIN' ? '≥' : obj.sens === 'MAX' ? '≤' : '='}${
-  compact ? '' : '&nbsp;'}${obj.seuil}${compact ? '' : '&nbsp;icônes'}</span>`;
+      <span class="tc-seuil">${obj.sens === 'EXACT' || !obj.sens
+    ? `=&nbsp;${obj.seuil}` : seuilTexte(obj.sens, obj.seuil)}${
+  compact ? '' : '&nbsp;icônes'}</span>`;
+    // --- Les pouvoirs de règle : une phrase, dans la police du « × » -------
+    case 'PIOCHER': case 'SEQ_PLUS': case 'PLAN_PLUS': case 'RACCORD_VAUT':
+      return `<span class="regle-mot">${phraseRegle(obj, compact)}</span>`;
     case 'DOUBLE': return `<span class="tag tag-blanc">${
       obj.sens === 'PLUS' ? (compact ? '+ grosse' : 'plus grosse carte')
         : (compact ? '+ petite' : 'plus petite carte')}</span>${
@@ -185,6 +212,7 @@ function tagSeq(compact) {
 /** L'objectif en entier — « 2 × ⛨ » — pour les cartes et les tableaux. */
 export function objHTML(obj, taille, cfg) {
   if (!obj) return '';
+  if (estRegle(obj)) return `<span class="obj-html">${objContenu(obj, taille, false, cfg)}</span>`;
   const n = numIcon(obj.n, taille);
   return `<span class="obj-html">${n}<span class="${estSi(obj) ? 'si' : 'x'}">${estSi(obj) ? 'si' : '×'}</span>${objContenu(obj, taille, false, cfg)}</span>`;
 }
@@ -192,6 +220,14 @@ export function objHTML(obj, taille, cfg) {
 /** Les bandeaux qui se lisent « n si … » plutôt que « n × … ». */
 const OBJ_SI = ['ABSENT', 'CHRONO', 'SANS_TC', 'SEUIL', 'SEQ_TOUTES'];
 export const estSi = (o) => !!o && OBJ_SI.includes(o.kind);
+
+/**
+ * Les bandeaux qui ne se lisent ni « n × » ni « n si » : une phrase, sans
+ * valeur devant. Un pouvoir de règle ne rapporte pas n points — il donne un
+ * droit —, et lui coller un « 1 × » ferait lire un compte là où il n'y en a
+ * pas.
+ */
+export const estRegle = (o) => !!o && estRegleKind(o.kind);
 
 // --- Ce qu'un bandeau réclame comme place -----------------------------------
 // Toutes les pastilles d'un bandeau — la valeur comme les icônes — font la
@@ -226,6 +262,32 @@ export function reglerLectureNue(v) { lectureNue = !!v; }
 /** La place utile d'un bandeau, selon le cadrage de la moitié qui le porte. */
 const LARGEUR_MOITIE = { GP: 6.72, PM: 13.28, PL: 20, DEP: 20 };
 
+// La hauteur d'une moitié, en em de la carte, et la part qu'y prend le bandeau :
+// 18 % avec l'illustration, 30 % en lecture nue. C'est cette hauteur qui décide
+// du nombre de lignes dont dispose une phrase.
+const HAUTEUR_MOITIE = 13.8;
+const PART_BANDEAU = { illustre: 0.18, nu: 0.3 };
+
+/**
+ * Le corps d'écriture d'une phrase de pouvoir de règle, en em de la carte.
+ *
+ * Une phrase de C caractères écrite au corps f occupe environ 0,53 × C × f de
+ * longueur totale. Repliée dans une boîte large de W, elle tient sur
+ * 0,53 × C × f / W lignes, hautes de 1,05 × f chacune. Poser cette hauteur
+ * égale à celle du bandeau donne f d'un coup, sans essais successifs :
+ *
+ *     f = √( H × W / (0,56 × C) )
+ *
+ * Le corps est borné des deux côtés : une phrase de trois mots ne doit pas
+ * devenir un titre, et une phrase longue reste lisible plutôt que de disparaître.
+ */
+function corpsPhrase(texte, large, nu) {
+  const H = HAUTEUR_MOITIE * (nu ? PART_BANDEAU.nu : PART_BANDEAU.illustre) * 0.86;
+  const W = Math.max(1, large - 0.5);
+  const C = Math.max(1, String(texte).length);
+  return Math.max(0.3, Math.min(0.86, Math.sqrt((H * W) / (0.56 * C))));
+}
+
 /**
  * Ce que réclame le cœur d'un bandeau — ce qui suit le « × ». Cette fonction
  * suit `objCoeur` pas à pas : ce qui s'y dessine se compte ici. Un pouvoir
@@ -245,6 +307,9 @@ function coutCoeur(obj, compact, P) {
     return FORMATS[c] ? t(FORMATS[c].label, FORMATS[c].short) : P.rond;
   };
   const tt = (x) => P.tag0 + P.tag1 * String(x).length;
+  // Un mot nu — « avec » — n'a pas le rembourrage d'un cartouche : seules ses
+  // lettres comptent.
+  const mot = (x) => P.tag1 * String(x).length;
   const g = EM.gapCoeur;
   switch (obj.kind) {
     case 'RACCORD': return t('Raccord');
@@ -258,21 +323,37 @@ function coutCoeur(obj, compact, P) {
     case 'MINUTAGE': return (compact ? 0 : t('Plan') + g) + tt(`< ${tcTexte(obj.seuil)}`);
     case 'CHRONO': return tt('↗ ordre');
     case 'SANS_TC': return tt(`= ${tcTexte(obj.seuil)}`);
-    case 'SEQ_TAILLE': return t('Séquence', 'Séq.') + g + tt(`≥ ${obj.seuil}`);
+    case 'SEQ_TAILLE': return t('Séquence', 'Séq.') + g + mot('avec') + g
+      + tt(seuilTexte(obj.sens === 'MAX' ? 'MAX' : 'MIN', obj.seuil)) + g + t('Plan');
     case 'SEQ_VOISINES': return t('Séquence', 'Séq.') + g + 0.9;
     case 'SEQ_LONGUE': return t('Plan') + g + t('plus longue séq.', 'séq. ⌀');
     case 'SEQ_AVEC': {
       const k = Math.max(1, obj.seuil || 1);
-      return t('Séquence', 'Séq.') + g + (k > 1 ? tt(`≥ ${k}`) + g : 0) + cible(obj.cible);
+      // « avec » est écrit dans les deux cas ; seul « sans » le remplace par la
+      // croix, qui ne coûte rien de plus que l'icône qu'elle recouvre.
+      const avec = obj.sens === 'SANS' && k === 1 ? 0 : mot('avec') + g;
+      return t('Séquence', 'Séq.') + g + avec
+        + (k > 1 ? tt(seuilTexte(obj.sens === 'SANS' ? 'MOINS' : 'MIN', k)) + g : 0) + cible(obj.cible);
     }
-    case 'SEQ_TOUTES': return t('chaque séq.', 'toutes') + g + tt(`≥ ${obj.seuil}`);
+    case 'SEQ_TOUTES': return t('chaque séq.', 'toutes') + g + tt(seuilTexte(obj.sens, obj.seuil))
+      + g + t('Plan');
     case 'AILLEURS': return (compact ? 0 : t('Séquence') + g) + 0.9 + g + cible(obj.cible);
     case 'CENTRE': return cible(obj.cible) + g + 0.9 + g + t('centre', 'ctr');
     case 'LOT': return tt(compact ? `×${obj.seuil}` : `lot de ${obj.seuil}`) + g + cible(obj.cible);
-    case 'SEUIL': return tt(`≥ ${obj.seuil}`) + g + cible(obj.cible);
+    case 'SEUIL': return tt(seuilTexte(obj.sens, obj.seuil)) + g + cible(obj.cible);
     case 'ABSENTES': return t('Icône', 'Ic.');
     case 'EXTREME': return t('Icône', 'Ic.') + g + tt('max');
-    case 'PLAN_ICONES': return t('Plan') + g + tt(compact ? '≥ 3' : '≥ 3 icônes');
+    case 'PLAN_ICONES': {
+      const seuil = obj.sens === 'EXACT' || !obj.sens ? `= ${obj.seuil}` : seuilTexte(obj.sens, obj.seuil);
+      return t('Plan') + g + tt(compact ? seuil : `${seuil} icônes`);
+    }
+    // Une phrase entière : elle se replie sur plusieurs lignes, et c'est sa
+    // ligne la plus longue qui décide de la largeur. On compte donc le mot le
+    // plus long plutôt que la phrase entière — la hauteur, elle, est libre.
+    // Une phrase se replie sur plusieurs lignes et choisit elle-même son corps
+    // pour tenir dans la boîte — voir `corpsPhrase`. Elle ne réclame donc
+    // aucune largeur au serrage, qui n'a rien à resserrer pour elle.
+    case 'PIOCHER': case 'SEQ_PLUS': case 'PLAN_PLUS': case 'RACCORD_VAUT': return 0;
     case 'DOUBLE': return t('plus petite carte', '+ petite')
       + (obj.critere === 'POINTS' ? 0 : g + tt(compact ? 'cadr.' : 'cadrage'));
     default: return P.rond;
@@ -280,7 +361,18 @@ function coutCoeur(obj, compact, P) {
 }
 
 /** Ce que réclame un pouvoir entier — sa valeur, son signe, son cœur, ses flèches. */
-function coutObj(obj, compact, cfg, P) {
+function coutObj(obj, compact, cfg, P, format) {
+  // Un pouvoir de règle n'a ni valeur, ni « × », ni flèches de portée : sa
+  // phrase occupe le reste du bandeau et choisit son corps pour y tenir. Elle
+  // ne peut cependant pas se replier en deçà de son plus long mot : c'est cette
+  // largeur-là qu'elle réclame, et elle suffit à faire reculer ce qui est à
+  // côté d'elle.
+  if (estRegle(obj)) {
+    const phrase = phraseRegle(obj, compact);
+    const corps = corpsPhrase(phrase, (LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM) / 2, P === PROFILS.nu);
+    const longMot = phrase.split(/\s+/).reduce((m, w) => Math.max(m, w.length), 0);
+    return longMot * corps * 0.56;
+  }
   const p = PORTEES.find((x) => x.id === objPortee(obj, cfg)) || PORTEES[3];
   const fleches = (p.gauche ? P.fleche : 0) + (p.droite ? P.fleche : 0);
   return P.rond + EM.gap + (estSi(obj) ? P.si : P.x) + EM.gap + fleches + coutCoeur(obj, compact, P);
@@ -299,7 +391,7 @@ export function serrageBandeau(objs, format, cfg, nu) {
   // Une marge de sûreté : tout ne rétrécit pas exactement en proportion — une
   // bordure d'un pixel, l'interlettrage, l'arrondi des glyphes aux petites
   // tailles. Mieux vaut un bandeau un cheveu trop serré qu'un mot coupé.
-  const besoin = (objs.reduce((s, o) => s + coutObj(o, compact, cfg, P), 0)
+  const besoin = (objs.reduce((s, o) => s + coutObj(o, compact, cfg, P, format), 0)
     + (objs.length - 1) * EM.sep) * 1.2;
   const dispo = LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM;
   // On ne descend pas sous une taille de pastille plancher : en dessous plus
@@ -321,8 +413,15 @@ function bandeau(objs, format, cfg) {
   // deux moitiés d'une carte.
   if (!objs.length) return '<div class="bandeau sans-objectif"></div>';
   const compact = format === 'GP' || objs.length > 1;
-  const un = (o) => `<span class="bandeau-obj">${numIcon(o.n)}<span class="${
-    estSi(o) ? 'si' : 'x'}">${estSi(o) ? 'si' : '×'}</span>${objContenu(o, undefined, compact, cfg)}</span>`;
+  // Deux pouvoirs se partagent la largeur : une phrase n'en a donc que la
+  // moitié, et se met à l'échelle en conséquence.
+  const large = (LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM) / objs.length;
+  const un = (o) => (estRegle(o)
+    ? `<span class="bandeau-obj regle" style="--cp:${
+      corpsPhrase(phraseRegle(o, compact), large, lectureNue).toFixed(3)}em">${
+      objContenu(o, undefined, compact, cfg)}</span>`
+    : `<span class="bandeau-obj">${numIcon(o.n)}<span class="${
+      estSi(o) ? 'si' : 'x'}">${estSi(o) ? 'si' : '×'}</span>${objContenu(o, undefined, compact, cfg)}</span>`);
   const ec = serrageBandeau(objs, format, cfg);
   return `<div class="bandeau ${objs.length > 1 ? 'deux' : ''}"${ec < 1 ? ` style="--ec:${ec}"` : ''}>${
     objs.map(un).join('<i class="bandeau-sep"></i>')}</div>`;
