@@ -15,8 +15,8 @@
 // Ce module n'appelle jamais `.from()`, `.rpc()`, `.auth` ni `presence` : il
 // ouvre des canaux, il écoute, il envoie. Rien d'autre.
 
-import { ANNONCE_MS, estPerime, resume } from './protocole.js?v=1.88';
-import { CANAL_HALL, canalSalon, SUPABASE_ANON_KEY, SUPABASE_URL } from './config.js?v=1.88';
+import { ANNONCE_MS, estPerime, resume } from './protocole.js?v=1.89';
+import { CANAL_HALL, canalSalon, SUPABASE_ANON_KEY, SUPABASE_URL } from './config.js?v=1.89';
 
 /** D'où vient le client temps réel. Pas de bundler ici : on le prend au vol. */
 const CDN = 'https://esm.sh/@supabase/supabase-js@2';

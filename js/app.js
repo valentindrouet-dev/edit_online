@@ -2,38 +2,38 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.88';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.89';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   ciblesSequence,
-  CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte,
+  CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=1.88';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.88';
-import { elIcon, numIcon } from './icons.js?v=1.88';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.88';
+} from './data.js?v=1.89';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.89';
+import { elIcon, numIcon } from './icons.js?v=1.89';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.89';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.88';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.88';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.88';
-import { releve, voler, stopperVols } from './anim.js?v=1.88';
-import { campagne } from './lab.js?v=1.88';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.88';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.88';
-import { Salon } from './net/salon.js?v=1.88';
-import { TransportLocal } from './net/local.js?v=1.88';
-import { TransportSupabase } from './net/supabase.js?v=1.88';
-import { enLigneDisponible } from './net/config.js?v=1.88';
-import { coupNu } from './net/protocole.js?v=1.88';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.88';
+} from './engine.js?v=1.89';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.89';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.89';
+import { releve, voler, stopperVols } from './anim.js?v=1.89';
+import { campagne } from './lab.js?v=1.89';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.89';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.89';
+import { Salon } from './net/salon.js?v=1.89';
+import { TransportLocal } from './net/local.js?v=1.89';
+import { TransportSupabase } from './net/supabase.js?v=1.89';
+import { enLigneDisponible } from './net/config.js?v=1.89';
+import { coupNu } from './net/protocole.js?v=1.89';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.89';
 
 const app = document.getElementById('app');
 
@@ -791,7 +791,11 @@ function bancBloc(st, i, titre, interactif) {
     : '');
 
   const carte = (plan, si, k) => renderPlan(plan, {
-    points: objsDe(plan).length ? (points.get(plan) || 0) : 0,
+    // Un compteur ne s'affiche que si le plan a de quoi marquer. Sans pouvoir,
+    // ou avec un pouvoir qui n'ouvre qu'un droit — piocher, monter une séquence
+    // de plus —, il n'y a rien à compter : un « 0 » y ferait croire à un
+    // pouvoir qui a échoué.
+    points: planMarque(objsDe(plan)) ? (points.get(plan) || 0) : undefined,
     detail: detail.get(plan) || [],
     neuf: !!(neuf && neuf.seq === si && neuf.idx === k),
   });

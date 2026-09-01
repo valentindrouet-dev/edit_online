@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.88';
-export const BUILD_DATE = '2026-09-02 01:30';
+export const VERSION = '1.89';
+export const BUILD_DATE = '2026-09-02 02:10';
 
 export const CHANGELOG = [
+  {
+    v: '1.89',
+    date: '02/09/2026',
+    items: [
+      "<b>Le compteur du coin ne paraît que s'il y a de quoi compter.</b> Un plan <b>sans pouvoir</b>, ou dont le pouvoir n'ouvre qu'un <b>droit</b> — piocher sur la pile, monter une séquence de plus, monter un plan de plus —, affichait un « 0 » au coin. Ce zéro se lisait comme un pouvoir qui a échoué, là où il n'y a simplement rien à compter. Il disparaît.",
+      "Le « 0 » reste, en revanche, sur un pouvoir <b>qui pouvait marquer et n'a rien marqué</b> : « 6 si dans l'ordre » sur un montage à contresens vaut zéro, et le dire est une information — c'est le seul cas où le compteur se dessine en gris.",
+      "<b>Et il vaut ce que le pouvoir a rapporté, sans exception.</b> « Les Raccords vous rapportent +2 » faisait mentir la règle : ses points allaient dans une ligne du montage, pas sur la carte, qui affichait donc <b>0</b> pendant que le pouvoir marquait. La ligne lui revient désormais — trois Raccords à +2 font un compteur à <b>6</b> sur la carte qui le dit. Entre deux cartes qui le disent, c'est la plus généreuse qui porte tout ; l'autre reste à zéro.",
+    ],
+  },
   {
     v: '1.88',
     date: '02/09/2026',

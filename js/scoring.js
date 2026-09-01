@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.88';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.89';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -463,10 +463,27 @@ export function piocheOuverte(banc, cfg, cible) {
  * donc pas : c'est la plus généreuse qui vaut.
  */
 export function valeurRaccord(banc, cfg) {
+  return sourceRaccord(banc, cfg).valeur;
+}
+
+/**
+ * D'où vient cette valeur : de la variable de partie, ou d'une carte posée ?
+ * La question n'est pas rhétorique — c'est elle qui décide où les points se
+ * comptent. Quand une carte dit ce que valent les Raccords, la ligne entière
+ * lui revient : son compteur montre alors ce que son pouvoir a rapporté, comme
+ * pour tous les autres. Sans carte, la ligne reste au montage, sans porteuse.
+ */
+export function sourceRaccord(banc, cfg) {
   const base = cfg && cfg.pointsParRaccord !== undefined ? cfg.pointsParRaccord : 0;
-  if (!banc || !regleActive('RACCORD_VAUT', cfg)) return base;
-  const dits = bandeauxDe(banc).filter((o) => o && o.kind === 'RACCORD_VAUT').map((o) => o.n);
-  return dits.length ? Math.max(...dits) : base;
+  if (!banc || !regleActive('RACCORD_VAUT', cfg)) return { valeur: base, plan: null, obj: null };
+  let mieux = null;
+  banc.sequences.forEach((seq, si) => seq.forEach((p) => {
+    for (const o of objsDe(p)) {
+      if (o.kind !== 'RACCORD_VAUT') continue;
+      if (!mieux || o.n > mieux.obj.n) mieux = { valeur: o.n, plan: p, obj: o, sequence: si };
+    }
+  }));
+  return mieux || { valeur: base, plan: null, obj: null };
 }
 
 /** Décompte complet d'un banc, ventilé par source. */
@@ -480,9 +497,9 @@ export function compter(banc, cfg) {
     SEQ_TAILLE: 0, SEQ_VOISINES: 0, SEQ_LONGUE: 0, SEQ_AVEC: 0, SEQ_TOUTES: 0,
     AILLEURS: 0, CENTRE: 0, LOT: 0, SEUIL: 0, ABSENTES: 0, DOMINE: 0,
     EXTREME: 0, PLAN_ICONES: 0, DOUBLE: 0,
-    // Les pouvoirs de règle restent à zéro : ils ne rapportent pas de points
-    // là où ils sont posés. Leur effet se lit ailleurs — dans le moteur pour
-    // les trois premiers, dans COUT_RACCORD pour le dernier.
+    // Trois pouvoirs de règle restent à zéro : ils n'ouvrent qu'un droit, et
+    // leur effet se lit dans le moteur. Le quatrième, lui, compte : ce que
+    // valent les Cartes Raccord se pose sur la carte qui le dit.
     PIOCHER: 0, SEQ_PLUS: 0, PLAN_PLUS: 0, RACCORD_VAUT: 0,
     CHRONOLOGIE: 0, POSE: 0, JONCTION: 0, COUT_RACCORD: 0,
   };
@@ -503,8 +520,17 @@ export function compter(banc, cfg) {
 
   detail.POSE = montage.length * (cfg.pointsParPlan || 0);
   // Ce que les Cartes Raccord du montage valent — un coût par les règles, un
-  // gain pour qui porte le pouvoir qui le retourne.
-  detail.COUT_RACCORD = montage.filter(estRaccord).length * valeurRaccord(banc, cfg);
+  // gain pour qui porte le pouvoir qui le retourne. Et quand c'est une carte
+  // qui le dit, la ligne lui revient : elle se compte sur elle, comme tout
+  // pouvoir se compte sur la carte qui le porte.
+  const rac = sourceRaccord(banc, cfg);
+  const ptsRac = Math.round(montage.filter(estRaccord).length * rac.valeur * mult);
+  if (rac.plan) {
+    detail.RACCORD_VAUT = ptsRac;
+    lignes.push({ sequence: rac.sequence, obj: rac.obj, pts: ptsRac, plan: rac.plan });
+  } else {
+    detail.COUT_RACCORD = montage.filter(estRaccord).length * rac.valeur;
+  }
   const jr = jonctionsRaccordees(banc, cfg);
   detail.JONCTION = jr * (cfg.raccordElementPoints || 0);
   const ch = chrono(banc, cfg);

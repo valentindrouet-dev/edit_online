@@ -308,6 +308,22 @@ export const KINDS_REGLE = ['PIOCHER', 'SEQ_PLUS', 'PLAN_PLUS', 'RACCORD_VAUT'];
 export const estRegleKind = (k) => KINDS_REGLE.includes(k);
 
 /**
+ * Ces trois-là ne rapportent RIEN, jamais : ils ouvrent un droit. La carte qui
+ * les porte n'a donc pas de compteur de points — un « 0 » y ferait croire à un
+ * pouvoir qui a échoué, là où il n'y a rien à compter.
+ *
+ * `RACCORD_VAUT` n'en est pas : il dit ce que valent les Cartes Raccord du
+ * montage, et ce qu'elles valent alors se compte sur lui.
+ */
+export const KINDS_SANS_POINTS = ['PIOCHER', 'SEQ_PLUS', 'PLAN_PLUS'];
+
+/** Ce bandeau-là peut-il rapporter — ou coûter — des points ? */
+export const rapportePoints = (o) => !!o && !KINDS_SANS_POINTS.includes(o.kind);
+
+/** Ce plan a-t-il de quoi marquer ? Sinon, pas de compteur au coin. */
+export const planMarque = (objs) => (objs || []).some(rapportePoints);
+
+/**
  * Les bandeaux dont la portée est **écrite dans leur définition** et ne se
  * règle donc pas : « dans l'ordre » juge le film entier, les bandeaux de
  * séquence lisent la forme du banc, et deux des pouvoirs ajoutés désignent
