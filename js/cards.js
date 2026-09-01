@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.80';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.80';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.81';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.81';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -189,20 +189,138 @@ export function objHTML(obj, taille, cfg) {
 const OBJ_SI = ['ABSENT', 'CHRONO', 'SANS_TC', 'SEUIL', 'SEQ_TOUTES'];
 export const estSi = (o) => !!o && OBJ_SI.includes(o.kind);
 
+// --- Ce qu'un bandeau réclame comme place -----------------------------------
+// Toutes les pastilles d'un bandeau — la valeur comme les icônes — font la
+// MÊME taille, et ne se rétrécissent pas les unes au détriment des autres.
+// Pour tenir cette promesse il faut savoir, avant de dessiner, si le contenu
+// entre dans la place disponible : sinon c'est le bandeau ENTIER qui se
+// resserre, d'un coup, en gardant ses proportions.
+//
+// Les coûts sont **mesurés**, pas devinés : un rond fait 2,11 em, une flèche
+// de portée 1,10, le « × » 0,88, le « si » 1,25, et une étiquette environ
+// 0,75 + 0,42 par caractère. Une vérification compare ce calcul au rendu réel
+// pour chaque pouvoir et chaque cadrage — si les deux divergent, elle le dit.
+// Deux profils, car la **lecture nue** — sans illustration — donne au bandeau
+// près du double de hauteur et grossit tout ce qu'il porte. Les deux jeux de
+// nombres sont relevés de la même façon, sur le rendu réel.
+const PROFILS = {
+  illustre: { rond: 2.11, fleche: 1.1, x: 0.88, si: 1.25, tag0: 0.75, tag1: 0.42 },
+  nu:       { rond: 2.92, fleche: 1.52, x: 1.23, si: 1.75, tag0: 0.8, tag1: 0.56 },
+};
+const EM = { gap: 0.24, gapCoeur: 0.34, sep: 0.78, chevauche: 0.78 };
+
+// La plus petite pastille qu'on accepte de dessiner, en em de la carte.
+const ATOME_MIN = 1.05;
+
+// Quel profil vaut en ce moment. L'application le dit — elle seule sait si la
+// lecture nue est demandée, et elle le sait AVANT de dessiner. Interroger le
+// document à la place reviendrait toujours à lire l'état d'avant : la classe
+// n'est posée qu'une fois le HTML construit.
+let lectureNue = false;
+export function reglerLectureNue(v) { lectureNue = !!v; }
+
+/** La place utile d'un bandeau, selon le cadrage de la moitié qui le porte. */
+const LARGEUR_MOITIE = { GP: 6.72, PM: 13.28, PL: 20, DEP: 20 };
+
+/**
+ * Ce que réclame le cœur d'un bandeau — ce qui suit le « × ». Cette fonction
+ * suit `objCoeur` pas à pas : ce qui s'y dessine se compte ici. Un pouvoir
+ * ajouté sans passer par là serait sous-estimé, et la vérification le
+ * signalerait aussitôt.
+ */
+function coutCoeur(obj, compact, P) {
+  const t = (long, court) => P.tag0 + P.tag1 * String(compact && court !== undefined ? court : long).length;
+  const cible = (c) => {
+    if (c === 'CARTE') return t('Carte');
+    if (c === 'PLAN') return t('Plan');
+    if (c === 'RACCORD') return t('Raccord');
+    if (c === 'MORT' || c === 'NEANT') return P.rond;
+    if (c === 'SEQUENCE') return t('Séquence', 'Séq.');
+    if (c === 'ICONE') return t('Icône', 'Ic.');
+    if (c === 'VALEUR') return t('Valeur de cadre', 'Val.');
+    return FORMATS[c] ? t(FORMATS[c].label, FORMATS[c].short) : P.rond;
+  };
+  const tt = (x) => P.tag0 + P.tag1 * String(x).length;
+  const g = EM.gapCoeur;
+  switch (obj.kind) {
+    case 'RACCORD': return t('Raccord');
+    case 'PLAN': return t('Plan');
+    case 'FORMAT': return t(FORMATS[obj.format].label, FORMATS[obj.format].short)
+      + (obj.format2 ? g + 0.6 + g + t(FORMATS[obj.format2].label, FORMATS[obj.format2].short) : 0);
+    case 'ELEMENT': case 'MORT': case 'NEANT': case 'ABSENT': return P.rond;
+    // Les icônes d'un groupe se chevauchent : chacune après la première ne
+    // coûte que ce qu'elle dépasse de la précédente.
+    case 'PAIRE': return P.rond + (obj.els.length - 1) * (P.rond - EM.chevauche);
+    case 'MINUTAGE': return (compact ? 0 : t('Plan') + g) + tt(`< ${tcTexte(obj.seuil)}`);
+    case 'CHRONO': return tt('↗ ordre');
+    case 'SANS_TC': return tt(`= ${tcTexte(obj.seuil)}`);
+    case 'SEQ_TAILLE': return t('Séquence', 'Séq.') + g + tt(`≥ ${obj.seuil}`);
+    case 'SEQ_VOISINES': return t('Séquence', 'Séq.') + g + 0.9;
+    case 'SEQ_LONGUE': return t('Plan') + g + t('plus longue séq.', 'séq. ⌀');
+    case 'SEQ_AVEC': {
+      const k = Math.max(1, obj.seuil || 1);
+      return t('Séquence', 'Séq.') + g + (k > 1 ? tt(`≥ ${k}`) + g : 0) + cible(obj.cible);
+    }
+    case 'SEQ_TOUTES': return t('chaque séq.', 'toutes') + g + tt(`≥ ${obj.seuil}`);
+    case 'AILLEURS': return (compact ? 0 : t('Séquence') + g) + 0.9 + g + cible(obj.cible);
+    case 'CENTRE': return cible(obj.cible) + g + 0.9 + g + t('centre', 'ctr');
+    case 'LOT': return tt(compact ? `×${obj.seuil}` : `lot de ${obj.seuil}`) + g + cible(obj.cible);
+    case 'SEUIL': return tt(`≥ ${obj.seuil}`) + g + cible(obj.cible);
+    case 'ABSENTES': return t('Icône', 'Ic.');
+    case 'EXTREME': return t('Icône', 'Ic.') + g + tt('max');
+    case 'PLAN_ICONES': return t('Plan') + g + tt(compact ? '≥ 3' : '≥ 3 icônes');
+    case 'DOUBLE': return t('plus petite carte', '+ petite')
+      + (obj.critere === 'POINTS' ? 0 : g + tt(compact ? 'cadr.' : 'cadrage'));
+    default: return P.rond;
+  }
+}
+
+/** Ce que réclame un pouvoir entier — sa valeur, son signe, son cœur, ses flèches. */
+function coutObj(obj, compact, cfg, P) {
+  const p = PORTEES.find((x) => x.id === objPortee(obj, cfg)) || PORTEES[3];
+  const fleches = (p.gauche ? P.fleche : 0) + (p.droite ? P.fleche : 0);
+  return P.rond + EM.gap + (estSi(obj) ? P.si : P.x) + EM.gap + fleches + coutCoeur(obj, compact, P);
+}
+
+/**
+ * De combien le bandeau doit se resserrer pour tenir dans sa moitié de carte :
+ * 1 quand tout entre, moins sinon. Le facteur s'applique au bandeau entier —
+ * pastilles, étiquettes, écarts — si bien que la composition garde exactement
+ * ses proportions, et que la valeur reste de la taille des icônes.
+ */
+export function serrageBandeau(objs, format, cfg, nu) {
+  if (!objs.length) return 1;
+  const compact = format === 'GP' || objs.length > 1;
+  const P = PROFILS[(nu === undefined ? lectureNue : nu) ? 'nu' : 'illustre'];
+  // Une marge de sûreté : tout ne rétrécit pas exactement en proportion — une
+  // bordure d'un pixel, l'interlettrage, l'arrondi des glyphes aux petites
+  // tailles. Mieux vaut un bandeau un cheveu trop serré qu'un mot coupé.
+  const besoin = (objs.reduce((s, o) => s + coutObj(o, compact, cfg, P), 0)
+    + (objs.length - 1) * EM.sep) * 1.2;
+  const dispo = LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM;
+  // On ne descend pas sous une taille de pastille plancher : en dessous plus
+  // rien ne se lit, et mieux vaut alors rogner un mot que rendre la carte
+  // illisible. Le plancher se dit en taille de rond, pas en facteur — sans
+  // quoi la lecture nue, qui part de ronds plus gros, s'arrêterait trop tôt.
+  const plancher = ATOME_MIN / P.rond;
+  return Math.max(plancher, Math.min(1, Math.round((dispo / besoin) * 100) / 100));
+}
+
 /**
  * Le bandeau d'un plan — un pouvoir, deux, ou aucun. Deux pouvoirs se posent
  * côte à côte, séparés d'un trait : ils comptent tous les deux. La place étant
  * alors deux fois plus courte, ils se lisent en version compacte, comme sur un
  * Gros Plan.
  */
-function bandeau(objs, format) {
+function bandeau(objs, format, cfg) {
   // Même sans objectif le bandeau reste : c'est lui qui aligne le bas des
   // deux moitiés d'une carte.
   if (!objs.length) return '<div class="bandeau sans-objectif"></div>';
   const compact = format === 'GP' || objs.length > 1;
   const un = (o) => `<span class="bandeau-obj">${numIcon(o.n)}<span class="${
-    estSi(o) ? 'si' : 'x'}">${estSi(o) ? 'si' : '×'}</span>${objContenu(o, undefined, compact)}</span>`;
-  return `<div class="bandeau ${objs.length > 1 ? 'deux' : ''}">${
+    estSi(o) ? 'si' : 'x'}">${estSi(o) ? 'si' : '×'}</span>${objContenu(o, undefined, compact, cfg)}</span>`;
+  const ec = serrageBandeau(objs, format, cfg);
+  return `<div class="bandeau ${objs.length > 1 ? 'deux' : ''}"${ec < 1 ? ` style="--ec:${ec}"` : ''}>${
     objs.map(un).join('<i class="bandeau-sep"></i>')}</div>`;
 }
 
@@ -274,7 +392,7 @@ export function renderPlan(h, opts = {}) {
     </div>
     <div class="pastilles" style="--n:${Math.max(1, icones.length)}">${icones.length
       ? `<span class="pastilles-fond">${icones.map((e) => elIcon(e)).join('')}</span>` : ''}</div>
-    ${bandeau(objsDe(h), h.format)}
+    ${bandeau(objsDe(h), h.format, opts.cfg)}
     <div class="libelle" style="--c:${encreLibelle(h.format, !!h.transition)}">${label}</div>
   </div>`;
 }

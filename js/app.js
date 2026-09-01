@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.80';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.81';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -11,27 +11,27 @@ import {
   ciblesSequence,
   CIBLES_COMPTE, CIBLE_IDS, libelleCibleCompte, porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte,
-} from './data.js?v=1.80';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.80';
-import { elIcon, numIcon } from './icons.js?v=1.80';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.80';
+} from './data.js?v=1.81';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.81';
+import { elIcon, numIcon } from './icons.js?v=1.81';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, reglerLectureNue } from './cards.js?v=1.81';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.80';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.80';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.80';
-import { releve, voler, stopperVols } from './anim.js?v=1.80';
-import { campagne } from './lab.js?v=1.80';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.80';
-import { Salon } from './net/salon.js?v=1.80';
-import { TransportLocal } from './net/local.js?v=1.80';
-import { TransportSupabase } from './net/supabase.js?v=1.80';
-import { enLigneDisponible } from './net/config.js?v=1.80';
-import { coupNu } from './net/protocole.js?v=1.80';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.80';
+} from './engine.js?v=1.81';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.81';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.81';
+import { releve, voler, stopperVols } from './anim.js?v=1.81';
+import { campagne } from './lab.js?v=1.81';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.81';
+import { Salon } from './net/salon.js?v=1.81';
+import { TransportLocal } from './net/local.js?v=1.81';
+import { TransportSupabase } from './net/supabase.js?v=1.81';
+import { enLigneDisponible } from './net/config.js?v=1.81';
+import { coupNu } from './net/protocole.js?v=1.81';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.81';
 
 const app = document.getElementById('app');
 
@@ -144,6 +144,10 @@ appliquerJeuActif();
 function sauverCfg() {
   LS.set('cfg', store.cfg);
   appliquerJeuActif();
+  // Le rendu des cartes doit connaître la lecture demandée AVANT de dessiner :
+  // c'est de là que dépend le serrage des bandeaux, calculé au moment où l'on
+  // construit le HTML — bien avant que la classe n'atterrisse sur le document.
+  reglerLectureNue(!store.cfg.illustrations);
   // Une retouche faite dans la même fenêtre qu'une partie en cours : l'événement
   // `storage` ne se déclenche que dans les AUTRES fenêtres, il faut donc faire
   // ici ce qu'il y ferait. Une partie finie n'y touche pas — son décompte est
@@ -201,6 +205,9 @@ const pied = () => `<div class="pied">Version ${VERSION} — compilée le ${BUIL
 function html(s, garderDefilement = false) {
   if (apercuEl) apercuEl.classList.remove('visible');
   document.body.classList.toggle('sans-illus', !store.cfg.illustrations);
+  // Le dessin des cartes a déjà eu lieu : cette ligne prépare le SUIVANT.
+  // C'est `sauverCfg` qui met le rendu au courant à temps.
+  reglerLectureNue(!store.cfg.illustrations);
   document.body.classList.toggle('sans-points', store.cfg.pointsSurCartes === false);
   const y = window.scrollY;
   app.innerHTML = s;
@@ -5069,6 +5076,7 @@ function vueVariables() {
     // partie, et elles ont leur propre bouton dans Matériel.
     const materiel = store.cfg.materiel;
     store.cfg = cloneConfig(DEFAULTS);
+    reglerLectureNue(!store.cfg.illustrations);
     store.cfg.materiel = materiel;
     sauverCfg(); vueVariables();
   });
@@ -5087,6 +5095,8 @@ function vueVariables() {
           const lu = JSON.parse(t);
           const materiel = store.cfg.materiel;
           store.cfg = Object.assign(cloneConfig(DEFAULTS), migrerCfg(lu));
+  reglerLectureNue(!store.cfg.illustrations);
+          reglerLectureNue(!store.cfg.illustrations);
           // Un fichier antérieur à l'éditeur ne porte pas de matériel : on
           // garde alors les retouches en place plutôt que de les effacer.
           if (!lu.materiel) store.cfg.materiel = materiel;
@@ -6006,6 +6016,9 @@ export function calerMinutage() {
     r.setProperty('--tc-bas', `${Math.max(0, ecart * 2).toFixed(4)}em`);
   } catch { /* pas de canevas : on garde le centrage par défaut */ }
 }
+
+// Le rendu part avec la lecture qui a été enregistrée, pas avec le défaut.
+reglerLectureNue(!store.cfg.illustrations);
 
 calerMinutage();
 // Les fontes du système sont là tout de suite, mais on remesure quand le

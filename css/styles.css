@@ -256,8 +256,14 @@ button { font-family: inherit; }
   display: flex; align-items: center; gap: .1em; padding: 0 .2em; height: 100%;
   max-width: 100%; min-width: 0; background: rgba(255,255,255,.62);
 }
+/* `--ec` : de combien ce bandeau-là doit se resserrer pour tenir dans sa
+   moitié de carte. Il agit sur la taille du texte, donc sur tous les écarts et
+   toutes les étiquettes, et les pastilles le reprennent sur leur hauteur : le
+   bandeau rétrécit d'un bloc, en gardant ses proportions. Le calcul est dans
+   `serrageBandeau`, à partir de largeurs mesurées. */
 .bandeau   { flex: 0 0 18%;   display: flex; align-items: center; justify-content: center;
-             gap: .24em; overflow: hidden; background: var(--fmt-gp); }
+             gap: .24em; overflow: hidden; background: var(--fmt-gp);
+             font-size: calc(1em * var(--ec, 1)); }
 /* Deux pouvoirs sur un même bandeau : côte à côte, séparés d'un trait, chacun
    libre de se resserrer pour que les deux tiennent dans la même hauteur. */
 /* `align-self: stretch` donne au groupe une hauteur définie : sans elle, les
@@ -273,7 +279,10 @@ button { font-family: inherit; }
   flex: 0 0 auto; width: 1.5px; align-self: stretch; margin: .22em .04em;
   background: rgba(0, 0, 0, .28); border-radius: 1px;
 }
-.bandeau.deux .pastille-num { height: 74%; }
+/* Deux pouvoirs à loger : tout le monde recule d'autant, la valeur comme les
+   icônes. Ne faire reculer que la valeur la faisait passer pour une pastille
+   de second rang. */
+.bandeau.deux .pastille, .bandeau.deux .pastille-num { height: calc(74% * var(--ec, 1)); }
 .bandeau.deux .tag { font-size: .74em; padding: .2em .34em; }
 .bandeau.deux .x, .bandeau.deux .si { font-size: 1.15em; }
 .bandeau.deux .fleche-pos { font-size: 1em; }
@@ -296,7 +305,12 @@ body.sans-illus .pastilles-fond {
 body.sans-illus .pastilles .pastille { height: auto; width: auto; max-height: 100%;
   max-width: calc((100% - (var(--n, 1) - 1) * .18em) / var(--n, 1)); }
 body.sans-illus .bandeau { flex: 0 0 30%; gap: .3em; }
-body.sans-illus .bandeau .pastille, body.sans-illus .bandeau .pastille-num { height: 68%; }
+/* Le serrage vaut ici aussi : sans lui, les pastilles de la lecture nue
+   restaient à leur pleine taille pendant que le reste du bandeau se resserrait,
+   et le contenu débordait. */
+body.sans-illus .bandeau .pastille, body.sans-illus .bandeau .pastille-num {
+  height: calc(68% * var(--ec, 1));
+}
 body.sans-illus .bandeau .x, body.sans-illus .bandeau .si { font-size: 2.1em; }
 body.sans-illus .bandeau .tag { font-size: .82em; padding: .28em .5em; }
 body.sans-illus .bandeau .tc-seuil { font-size: .84em; }
@@ -433,10 +447,19 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .pastilles .pastille {
   height: 80%; width: auto; flex: 0 1 auto; min-width: 0; object-fit: contain;
 }
-/* Les icônes du bandeau se laissent rétrécir plutôt que déborder : sur un Gros
-   Plan, un bandeau de couple demande trois pastilles dans un tiers de carte. */
+/* Les ronds d'un bandeau — la valeur et les icônes — font tous la MÊME taille,
+   et se rétrécissent ensemble quand la place manque : sur un Gros Plan, un
+   bandeau de trio demande quatre pastilles dans un tiers de carte.
+   `aspect-ratio` est ce qui le garantit. Sans elle, une icône est une <img>
+   dont la largeur naturelle se déduit de sa hauteur — base solide —, tandis
+   que la valeur est un <svg> sans dimension propre : sa base se calculait sur
+   son contenu, et toute la compression lui tombait dessus. Elle s'écrasait
+   jusqu'à disparaître pendant que les icônes gardaient leur taille pleine.
+   Avec une proportion imposée, les deux ont la même base, donc la même part
+   de l'effort. */
 .bandeau .pastille, .bandeau .pastille-num {
-  height: 82%; width: auto; flex: 0 1 auto; min-width: 0; object-fit: contain;
+  height: calc(82% * var(--ec, 1)); aspect-ratio: 1 / 1; width: auto;
+  flex: 0 0 auto; object-fit: contain;
 }
 
 .moitie.f-PM .bandeau, .moitie.f-PL .bandeau { background: var(--fmt-pm); }
@@ -494,13 +517,13 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    de carte. Superposées, le couple tient dans une icône et demie.
    Le liseré clair de celle de dessus la détache de celle de dessous : sans
    lui, deux ronds sombres se fondraient en une seule tache. */
-.paire { display: inline-flex; align-items: center; height: 100%; }
+.paire { display: inline-flex; align-items: center; height: 100%; min-width: 0; }
 .paire > .pastille + .pastille {
   margin-left: -.78em; position: relative; z-index: 2;
   filter: drop-shadow(-.055em 0 0 rgba(255, 255, 255, .92))
           drop-shadow(0 0 .045em rgba(0, 0, 0, .45));
 }
-.barre { position: relative; display: inline-flex; align-items: center; height: 100%; }
+.barre { position: relative; display: inline-flex; align-items: center; height: 100%; min-width: 0; }
 /* L'icône barrée : la croix doit se voir avant l'icône, sinon on lit
    « compte cet élément » là où il faut lire « cet élément doit être absent ».
    Elle déborde donc volontairement de la pastille, tout en laissant voir
@@ -1546,14 +1569,19 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 
 /* La portée d'un pouvoir : la flèche pointe le côté compté. Elle se serre
    contre ce qu'elle porte — .obj-noyau — car elle en fait partie. */
-.obj-noyau { display: inline-flex; align-items: center; height: 100%; gap: .06em; }
+/* Les enveloppes du bandeau se laissent comprimer — `min-width: 0` retire la
+   taille minimale automatique d'un conteneur flex. Sans elles, un groupe
+   d'icônes était incompressible et TOUT le manque de place retombait sur la
+   pastille de valeur, seule à pouvoir céder : elle s'écrasait jusqu'à zéro
+   pendant que les icônes gardaient leur taille pleine. */
+.obj-noyau { display: inline-flex; align-items: center; height: 100%; gap: .06em; min-width: 0; }
 /* Ce que le bandeau compte, flèches de portée exclues. Ses pièces sont des
    mots distincts — « Séquence » et sa flèche, « Plan » et son seuil, deux
    cadrages reliés d'un « & » — et il leur faut de l'air : les espaces écrits
    dans le HTML ne comptent pas entre deux enfants d'un conteneur flex, si
    bien que tout se touchait. Un Gros Plan et un bandeau à deux pouvoirs, plus
    à l'étroit, se contentent d'un peu moins. */
-.obj-coeur { display: inline-flex; align-items: center; height: 100%; gap: .34em; }
+.obj-coeur { display: inline-flex; align-items: center; height: 100%; gap: .34em; min-width: 0; }
 .bandeau.deux .obj-coeur { gap: .2em; }
 .moitie.f-GP .bandeau .obj-coeur { gap: .24em; }
 .moitie.f-GP .bandeau.deux .obj-coeur { gap: .16em; }

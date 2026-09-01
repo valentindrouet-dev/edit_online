@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.80';
-export const BUILD_DATE = '2026-09-01 13:30';
+export const VERSION = '1.81';
+export const BUILD_DATE = '2026-09-01 17:15';
 
 export const CHANGELOG = [
+  {
+    v: '1.81',
+    date: '01/09/2026',
+    items: [
+      "<b>Toutes les pastilles d'un bandeau font la même taille.</b> La valeur — le « 3 » de « 3 × … » — se dessinait bien plus petite que les icônes qu'elle multiplie, et dans les cas les plus serrés elle disparaissait purement et simplement. La cause : une icône est une image, dont la largeur se déduit de sa hauteur ; la valeur est un dessin vectoriel sans dimension propre, et <b>toute la compression lui tombait dessus</b> — elle était la seule à pouvoir céder pendant que les icônes gardaient leur pleine taille.",
+      "<b>Quand la place manque, c'est le bandeau ENTIER qui se resserre</b>, d'un bloc, en gardant ses proportions : les pastilles, les étiquettes et les écarts reculent ensemble. Un bandeau de Gros Plan — un tiers de carte — n'a jamais eu la place d'un trio d'icônes ; il l'obtient maintenant en se dessinant plus petit, au lieu de rogner ce qu'il ne peut pas loger.",
+      "Le serrage n'est pas deviné : chaque pouvoir <b>déclare ce qu'il réclame</b>, à partir de largeurs relevées sur le rendu réel — un rond fait 2,11 em, une flèche de portée 1,10, une étiquette 0,75 plus 0,42 par caractère. La <b>lecture nue</b>, sans illustration, a son propre jeu de mesures : la bande y est deux fois plus haute et tout y grandit.",
+      "Vérifié sur <b>377 configurations</b> — les vingt-huit pouvoirs, dans leurs variantes, sur les trois cadrages, seuls ou par deux, avec et sans illustration, plus l'objectif écrit en toutes lettres : <b>aucun écart de taille, aucun débordement, aucun bandeau serré plus que nécessaire</b>. Le contrôle est gardé : un pouvoir ajouté sans dire ce qu'il occupe se signalera tout seul.",
+    ],
+  },
   {
     v: '1.80',
     date: '01/09/2026',
