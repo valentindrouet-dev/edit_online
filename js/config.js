@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.85';
+import { ELEMENT_IDS } from './data.js?v=1.86';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -324,7 +324,9 @@ export const SCHEMA = [
   { groupe: 'Variante — chronologie', champs: [
     { k: 'chronoBonus', l: 'Bonus par paire dans l’ordre', t: 'int', min: 0, max: 10 },
     { k: 'chronoMalus', l: 'Malus par paire à contresens', t: 'int', min: 0, max: 10 },
-    { k: 'chronoIgnoreZero', l: 'Les plans à 00:00 sont neutres', t: 'bool' },
+    { k: 'chronoIgnoreZero', l: 'Les plans sans minutage (--:--) sont neutres', t: 'bool',
+      aide: 'ils sont retirés de la lecture de l’ordre : Raccords, Génériques et scènes de'
+        + ' personnage ne rompent donc pas la chronologie, où qu’on les pose' },
   ] },
   { groupe: 'Divers', champs: [
     { k: 'graine', l: 'Graine de partie', t: 'texte', aide: 'vide = tirage aléatoire ; une graine rejoue la même distribution' },

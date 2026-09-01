@@ -13,12 +13,14 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.85';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.85';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.86';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.86';
 
-export function tc(min) {
-  return `${String(Math.floor(min)).padStart(2, '0')}:00`;
-}
+// Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
+// ici une seconde copie de la même formule ; les deux ont divergé le jour où
+// « 00:00 » est devenu « --:-- », et l'une des deux écritures serait restée en
+// arrière. Le nom court reste, il sert dans tout l'écran.
+export const tc = tcTexte;
 
 /**
  * Le contenu d'un bandeau d'objectif, en icônes. `compact` sert au Gros Plan,
@@ -391,7 +393,7 @@ export function renderPlan(h, opts = {}) {
     <div class="illus"${h.cle ? ` data-illus="${h.cle}"` : ''}>
       <div class="illus-image${h.miroir ? ' miroir' : ''}" style="${fond}"></div>
       <div class="boite-tc"></div>
-      <div class="tcode ${h.tc === 0 || h.transition ? 'bleu' : ''}">${tc(h.tc)}</div>
+      <div class="tcode ${teinteTc(h.tc)}">${tc(h.tc)}</div>
     </div>
     <div class="pastilles" style="--n:${Math.max(1, icones.length)}">${icones.length
       ? `<span class="pastilles-fond">${icones.map((e) => elIcon(e)).join('')}</span>` : ''}</div>

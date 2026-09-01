@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.85';
-export const BUILD_DATE = '2026-09-01 22:55';
+export const VERSION = '1.86';
+export const BUILD_DATE = '2026-09-01 23:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.86',
+    date: '01/09/2026',
+    items: [
+      "<b>Un minutage de 00:00 s'écrit « --:-- ». Règles v0.14.8.</b> Ce n'est pas un instant du film : c'est l'<b>absence</b> de minutage. Les Raccords et les Génériques relient sans rien raconter ; les six scènes de <b>personnage</b> — 201 à 206, 301 à 306 — se placent où l'on veut. Écrit « 00:00 », ce vide se lisait comme un instant très précoce, donc comme le tout début du film, <b>avant l'Ouverture</b>. L'afficheur n'affiche plus rien, et la couleur bleue reste.",
+      "<b>01:00 et 99:00 passent à l'orangé.</b> Ce sont les deux bornes : le <b>premier</b> et le <b>dernier</b> plan du film. Trois lectures, trois couleurs — rouge pour un instant ordinaire, orangé pour une borne, bleu pour l'absence —, à l'identique sur la carte, dans l'aperçu au survol et dans l'éditeur.",
+      "<b>Rien ne change au décompte</b>, et le désordre que cette écriture pointait n'existait déjà pas : la variante <i>« Les plans sans minutage sont neutres »</i>, cochée par défaut, <b>retire ces plans de la lecture</b> de l'ordre chronologique. Un « --:-- » posé avant 01:00 ou après 99:00 ne rompt donc pas l'ordre — et il ne le masque pas non plus, puisqu'il est retiré au lieu d'être sauté.",
+      "Le minutage n'avait pas une mais <b>deux</b> écritures dans le code, la même formule copiée deux fois. Elles auraient divergé ce jour-ci, l'une gardant « 00:00 ». Il n'y en a plus qu'une.",
+    ],
+  },
   {
     v: '1.85',
     date: '01/09/2026',

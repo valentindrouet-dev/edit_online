@@ -409,7 +409,14 @@ body.sans-illus .illus > .boite-tc { display: none; }
 body.sans-illus .moitie .tcode {
   background: #0d0d10; border-radius: .3em; text-shadow: none;
 }
+/* Trois lectures, trois couleurs. Rouge — la couleur par défaut, celle de
+   l'imprimé — pour un instant du film. Bleu pour « --:-- », l'absence de
+   minutage : un Raccord, un Générique, une scène de personnage se placent où
+   l'on veut. Orangé pour les deux bornes, 01:00 et 99:00 : le premier et le
+   dernier plan du film ne sont pas des minutages comme les autres, et se
+   repèrent d'un coup d'œil dans une pioche. */
 .moitie .tcode.bleu { color: #38bdf8; }
+.moitie .tcode.borne { color: #ff9f0a; }
 
 /* Ce que le plan rapporte, au coin opposé du minutage. Le jeton ne paraît
    qu'au montage : ailleurs, une carte ne rapporte rien en particulier. */
@@ -1329,6 +1336,10 @@ body .demi { transition: box-shadow .12s; }
   padding: 3px 7px; border-radius: 5px; letter-spacing: .05em; border: 1px solid #3a3b44;
   font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
 }
+/* Les mêmes trois lectures que sur la carte : l'éditeur montre la couleur que
+   le minutage aura, sans qu'on ait à aller la vérifier sur la vignette. */
+.tc-apercu.bleu { color: #38bdf8; }
+.tc-apercu.borne { color: #ff9f0a; }
 
 /* --- Aperçu au survol d'une carte ----------------------------------------- */
 
@@ -1346,6 +1357,7 @@ body .demi { transition: box-shadow .12s; }
   font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
 }
 .ap-tc.bleu { color: #38bdf8; }
+.ap-tc.borne { color: #ff9f0a; }
 .ap-cadrage { font-size: .86rem; color: var(--encre-doux); }
 .ap-icones { display: flex; flex-wrap: wrap; gap: 12px; }
 .ap-icone { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 62px; }

@@ -14,13 +14,24 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.85';
-import { elIcon } from './icons.js?v=1.85';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.86';
+import { elIcon } from './icons.js?v=1.86';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.14.8',
+    date: '01/09/2026',
+    origine: 'Écriture précisée par l’auteur',
+    corps: (c) => corps_0_14_8(c),
+    items: [
+      '<b>Un minutage de 00:00 s’écrit désormais « --:-- ».</b> Ce n’est pas un instant du film : c’est l’<b>absence</b> de minutage. Les Raccords et les Génériques relient sans rien raconter ; les six scènes de <b>personnage</b> se placent où l’on veut. Écrit « 00:00 », ce vide se lisait comme un instant très précoce — donc comme le tout début du film, avant l’Ouverture.',
+      '<b>01:00 et 99:00 prennent une couleur orangée.</b> Ce sont les deux bornes : le <b>premier</b> et le <b>dernier</b> plan du film. Elles se repèrent ainsi d’un coup d’œil, sans se confondre avec un minutage ordinaire, en rouge, ni avec l’absence de minutage, en bleu.',
+      'Rien ne change au décompte : « --:-- » vaut toujours zéro, et les plans qui le portent étaient déjà <b>retirés de la lecture</b> de l’ordre chronologique — un plan sans minutage ne rompt donc pas l’ordre, où qu’on le pose. Le bandeau « n si aucun plan à --:-- » les vise toujours.',
+    ],
+  },
   {
     v: '0.14.7',
     date: '01/09/2026',
@@ -295,6 +306,20 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.14.8 ---------------------------------------------------------------
+// « 00:00 » n'est pas un instant : c'est l'absence de minutage. L'afficheur le
+// dit maintenant — « --:-- » —, et les deux mentions du texte suivent. Rien du
+// décompte ne bouge : ces plans étaient déjà retirés de la lecture de l'ordre.
+
+function corps_0_14_8(c) {
+  return corps_0_14_7(c)
+    .replace('plan n’a ce minutage — à 00:00, cela vise les Raccords et les\n      Génériques',
+      `plan n’a ce minutage — à ${maj('0.14.8', '<b>--:--</b>')}, cela vise les Raccords, les
+      Génériques et les scènes de personnage`)
+    .replace('les Raccords et Génériques, à 00:00, sont',
+      `les plans sans minutage, à ${maj('0.14.8', '<b>--:--</b>')}, sont`);
 }
 
 // --- v0.14.7 ---------------------------------------------------------------

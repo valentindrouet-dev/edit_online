@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.85';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.86';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -10,29 +10,29 @@ import {
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   ciblesSequence,
   CIBLES_COMPTE, CIBLE_IDS, libelleCibleCompte, porteeReglable, porteeFigee, CRITERES_DOUBLE,
-  normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte,
-} from './data.js?v=1.85';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.85';
-import { elIcon, numIcon } from './icons.js?v=1.85';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, reglerLectureNue } from './cards.js?v=1.85';
+  normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
+} from './data.js?v=1.86';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.86';
+import { elIcon, numIcon } from './icons.js?v=1.86';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, reglerLectureNue } from './cards.js?v=1.86';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.85';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.85';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.85';
-import { releve, voler, stopperVols } from './anim.js?v=1.85';
-import { campagne } from './lab.js?v=1.85';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.85';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.85';
-import { Salon } from './net/salon.js?v=1.85';
-import { TransportLocal } from './net/local.js?v=1.85';
-import { TransportSupabase } from './net/supabase.js?v=1.85';
-import { enLigneDisponible } from './net/config.js?v=1.85';
-import { coupNu } from './net/protocole.js?v=1.85';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.85';
+} from './engine.js?v=1.86';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.86';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.86';
+import { releve, voler, stopperVols } from './anim.js?v=1.86';
+import { campagne } from './lab.js?v=1.86';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.86';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.86';
+import { Salon } from './net/salon.js?v=1.86';
+import { TransportLocal } from './net/local.js?v=1.86';
+import { TransportSupabase } from './net/supabase.js?v=1.86';
+import { enLigneDisponible } from './net/config.js?v=1.86';
+import { coupNu } from './net/protocole.js?v=1.86';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.86';
 
 const app = document.getElementById('app');
 
@@ -1587,7 +1587,7 @@ function contenuApercu(d) {
   const cadrage = d.transition ? 'Raccord' : (FORMATS[d.format]?.label || d.format);
   return `
     <div class="ap-tete">
-      <span class="ap-tc ${d.tc === 0 || d.transition ? 'bleu' : ''}">${tc(d.tc)}</span>
+      <span class="ap-tc ${teinteTc(d.tc)}">${tc(d.tc)}</span>
       <span class="ap-cadrage">${cadrage} <b>n°${d.num}</b></span>
     </div>
     ${(() => {
@@ -2804,7 +2804,7 @@ function blocPlan(h) {
     <label class="champ-ligne">
       <span>Minutage</span>
       <input type="number" min="0" max="99" step="1" value="${h.tc}" data-champ-tc="${h.cle}">
-      <span class="tc-apercu">${tc(h.tc)}</span>
+      <span class="tc-apercu ${teinteTc(h.tc)}">${tc(h.tc)}</span>
       ${h.tc !== imp.tc ? `<span class="imp-rappel">imprimé ${tc(imp.tc)}</span>` : ''}
     </label>
 
@@ -2860,7 +2860,7 @@ function blocLot(plans) {
     <label class="champ-ligne">
       <span>Minutage</span>
       <input type="number" min="0" max="99" step="1" value="${tcCommun}" data-lot-tc="1" placeholder="—">
-      ${tcCommun === '' ? '<span class="aide">minutages différents</span>' : `<span class="tc-apercu">${tc(tcCommun)}</span>`}
+      ${tcCommun === '' ? '<span class="aide">minutages différents</span>' : `<span class="tc-apercu ${teinteTc(tcCommun)}">${tc(tcCommun)}</span>`}
     </label>
 
     ${ligneIllustration(plans)}

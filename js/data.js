@@ -365,9 +365,35 @@ export function libelleCible(cible) {
   return ELEMENTS[cible] ? ELEMENTS[cible].label : cible;
 }
 
-/** « 25:00 », en toutes lettres d'afficheur. */
+// Trois minutages ne se lisent pas comme les autres, et l'afficheur le dit.
+//
+// **00:00** n'est pas un instant du film : c'est l'absence de minutage. Les
+// Raccords et les Génériques relient sans rien raconter, et les six scènes de
+// PERSONNAGE se placent où l'on veut. Écrit « 00:00 », ce vide passait pour un
+// instant très précoce — donc pour le tout début du film, avant l'Ouverture. Il
+// s'écrit donc « --:-- » : un afficheur qui n'affiche rien.
+//
+// **01:00** et **99:00** sont, eux, des instants — le premier et le dernier
+// plan du film. Ils gardent leur écriture et prennent leur propre couleur.
+export const TC_VIDE = 0;
+export const TC_PREMIER = 1;
+export const TC_DERNIER = 99;
+
+/** « 25:00 », en toutes lettres d'afficheur — et « --:-- » pour l'absence. */
 export function tcTexte(min) {
+  if (Math.floor(min) === TC_VIDE) return '--:--';
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
+}
+
+/**
+ * La couleur d'un minutage : bleue quand il n'y en a pas, orangée pour les
+ * bornes du film, rouge — la couleur par défaut — partout ailleurs.
+ */
+export function teinteTc(min) {
+  const v = Math.floor(min);
+  if (v === TC_VIDE) return 'bleu';
+  if (v === TC_PREMIER || v === TC_DERNIER) return 'borne';
+  return '';
 }
 
 /** Ce que le bandeau compte, sans sa portée. */
