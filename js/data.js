@@ -183,7 +183,12 @@ export const OBJ = {
     ...(portee ? { portee } : {}) }),
   mort:    (n, portee) => ({ kind: 'MORT', n, ...(portee ? { portee } : {}) }),
   neant:   (n, portee) => ({ kind: 'NEANT', n, ...(portee ? { portee } : {}) }),
-  absent:  (n, e, portee) => ({ kind: 'ABSENT', n, el: e, portee: portee || 'MONTAGE' }),
+  // « n si CIBLE est absente ». La cible n'est plus une icône seulement : une
+  // valeur de cadre, une Carte Raccord, un plan de mort peuvent manquer aussi.
+  // Le champ s'appelait `el` du temps où seule une icône s'y logeait ; les
+  // configurations enregistrées avant ce jour le portent encore, et les
+  // lecteurs acceptent les deux — voir `cibleDe`.
+  absent:  (n, c, portee) => ({ kind: 'ABSENT', n, cible: c, portee: portee || 'MONTAGE' }),
   minutage: (n, sens, seuil, portee) => ({ kind: 'MINUTAGE', n, sens, seuil, portee: portee || 'MONTAGE' }),
   chrono:  (n, portee) => ({ kind: 'CHRONO', n, portee: portee || 'MONTAGE' }),
   sansTc: (n, sens, seuil, portee) => ({ kind: 'SANS_TC', n, sens, seuil, portee: portee || 'MONTAGE' }),
@@ -260,6 +265,15 @@ export const OBJ = {
     sens: sens === 'PLUS' ? 'PLUS' : 'MOINS',
     critere: ['POINTS', 'ICONES', 'CADRAGE'].includes(critere) ? critere : 'POINTS',
     portee: portee || 'SEQUENCE' }),
+
+  // « n si l'Arme est l'icône la plus présente ». On NOMME la cible, et l'on
+  // gagne si elle domine — ou si elle est la plus rare, au choix. À ne pas
+  // confondre avec `extreme`, qui compte les exemplaires de celle qui domine
+  // sans dire laquelle : ici c'est une condition sur une cible désignée.
+  // La comparaison se fait dans sa propre famille : une icône se compare aux
+  // six icônes, un cadrage aux trois cadrages.
+  domine: (n, cible, sens, portee) => ({ kind: 'DOMINE', n, cible,
+    sens: sens === 'MOINS' ? 'MOINS' : 'PLUS', portee: portee || 'MONTAGE' }),
 
   // --- Les pouvoirs de RÈGLE ------------------------------------------------
   // Ceux-là ne comptent rien sur le banc : ils changent ce que leur porteuse a
@@ -374,6 +388,31 @@ export const CIBLES_COMPTE = [
 
 export const CIBLE_IDS = CIBLES_COMPTE.map((c) => c.id);
 
+/**
+ * La cible d'un bandeau. `ABSENT` la rangeait dans `el` du temps où elle ne
+ * pouvait être qu'une icône : les configurations enregistrées avant qu'elle ne
+ * s'ouvre au vocabulaire entier portent encore ce champ-là. On lit les deux
+ * plutôt que de réécrire au chargement — une partie sauvegardée ne doit pas
+ * dépendre d'une migration pour se relire.
+ */
+export const cibleDe = (o) => (o ? o.cible || o.el : undefined);
+
+/** Les cibles qu'une comparaison de présence sait départager, par famille. */
+export const FAMILLE_CIBLE = {
+  ICONE: ELEMENT_IDS,
+  CADRAGE: CADRAGES_POUVOIR,
+};
+
+/** À quelle famille cette cible se compare — ou rien, si elle ne se compare pas. */
+export function familleDeCible(c) {
+  if (ELEMENT_IDS.includes(c)) return 'ICONE';
+  if (CADRAGES_POUVOIR.includes(c)) return 'CADRAGE';
+  return null;
+}
+
+/** Les cibles qu'un bandeau de présence peut viser : les icônes et les cadrages. */
+export const CIBLES_PRESENCE = [...CADRAGES_POUVOIR, ...ELEMENT_IDS];
+
 /** Le libellé d'une cible du vocabulaire commun, tel qu'on l'écrit dans une phrase. */
 export function libelleCibleCompte(cible, liste) {
   const c = CIBLES_COMPTE.find((x) => x.id === cible);
@@ -385,6 +424,12 @@ export function libelleCibleCompte(cible, liste) {
 function aucunCible(cible) {
   const c = CIBLES_COMPTE.find((x) => x.id === cible);
   return `${c && c.f ? 'aucune' : 'aucun'} ${libelleCibleCompte(cible)}`;
+}
+
+/** Le « e » d'un participe accordé à la cible : « la Valeur est absente ». */
+function accordCible(cible) {
+  const c = CIBLES_COMPTE.find((x) => x.id === cible);
+  return c && c.f ? 'e' : '';
 }
 
 /** « 3 Armes », « 2 séquences » — les pluriels sont écrits, pas devinés. */
@@ -462,6 +507,7 @@ function objQuoi(o) {
         : `${mot} ${o.els.map((x) => ELEMENTS[x].label).join(' + ')}`;
     }
     case 'MORT':    return 'Mort';
+    case 'DOMINE': return `${libelleCibleCompte(cibleDe(o))} ${o.sens === 'MOINS' ? 'min' : 'max'}`;
     case 'NEANT':   return 'Plan sans personnage';
     case 'MINUTAGE': return `Plan ${o.sens === 'APRES' ? 'après' : 'avant'} ${tcTexte(o.seuil)}`;
     case 'SEQ_TAILLE': return `séquence de ${o.seuil} plan${o.seuil > 1 ? 's' : ''} ou ${o.sens === 'MAX' ? 'moins' : 'plus'}`;
@@ -521,7 +567,18 @@ export function objLabel(o, cfg) {
       return `Les Raccords vous rapportent ${signe(o.n)}${
         base !== undefined && base !== o.n ? ` au lieu de ${signe(base)}` : ''}`;
     }
-    case 'ABSENT':  return `${o.n} si ${ELEMENTS[o.el].label} est absent${ou}`;
+    case 'ABSENT': {
+      const c = cibleDe(o);
+      return `${o.n} si ${libelleCibleCompte(c)} est absent${accordCible(c)}${ou}`;
+    }
+    case 'DOMINE': {
+      // Un cadrage est masculin, une icône féminine : l'article, l'adverbe et
+      // le participe s'accordent ensemble ou la phrase boite.
+      const masc = familleDeCible(cibleDe(o)) === 'CADRAGE';
+      return `${o.n} si ${libelleCibleCompte(cibleDe(o))} est ${masc ? 'le cadrage' : 'l’icône'} ${
+        masc ? 'le' : 'la'} ${o.sens === 'MOINS' ? 'moins' : 'plus'} présent${masc ? '' : 'e'}${
+        ou || ' du montage'}`;
+    }
     case 'CHRONO':  return `${o.n} si tout est dans l’ordre${ou || ' dans le montage'}`;
     case 'SEUIL': {
       // « Au plus zéro » se dit « aucun » : c'est la lecture qui vient à

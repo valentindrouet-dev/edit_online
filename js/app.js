@@ -2,37 +2,38 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.87';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.88';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   ciblesSequence,
-  CIBLES_COMPTE, CIBLE_IDS, libelleCibleCompte, porteeReglable, porteeFigee, CRITERES_DOUBLE,
+  CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte,
+  porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=1.87';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.87';
-import { elIcon, numIcon } from './icons.js?v=1.87';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.87';
+} from './data.js?v=1.88';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.88';
+import { elIcon, numIcon } from './icons.js?v=1.88';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.88';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.87';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.87';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.87';
-import { releve, voler, stopperVols } from './anim.js?v=1.87';
-import { campagne } from './lab.js?v=1.87';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.87';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.87';
-import { Salon } from './net/salon.js?v=1.87';
-import { TransportLocal } from './net/local.js?v=1.87';
-import { TransportSupabase } from './net/supabase.js?v=1.87';
-import { enLigneDisponible } from './net/config.js?v=1.87';
-import { coupNu } from './net/protocole.js?v=1.87';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.87';
+} from './engine.js?v=1.88';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.88';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.88';
+import { releve, voler, stopperVols } from './anim.js?v=1.88';
+import { campagne } from './lab.js?v=1.88';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.88';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.88';
+import { Salon } from './net/salon.js?v=1.88';
+import { TransportLocal } from './net/local.js?v=1.88';
+import { TransportSupabase } from './net/supabase.js?v=1.88';
+import { enLigneDisponible } from './net/config.js?v=1.88';
+import { coupNu } from './net/protocole.js?v=1.88';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.88';
 
 const app = document.getElementById('app');
 
@@ -2118,7 +2119,7 @@ const KINDS = [
   ['RACCORD', 'par RACCORD'],
   ['PLAN',    'par PLAN'],
   ['MINUTAGE', 'par MINUTAGE avant / après…'],
-  ['ABSENT',  'si ICONE absente…'],
+  ['ABSENT',  'si CIBLE absente…'],
   ['CHRONO',  'si DANS L’ORDRE'],
   ['SANS_TC', 'si AUCUN MINUTAGE…'],
   // Les bandeaux qui comptent des séquences plutôt que des plans : ils lisent
@@ -2137,6 +2138,7 @@ const KINDS = [
   ['SEUIL',       'si au moins / au plus n CIBLES…'],
   ['ABSENTES',    'par ICONE absente'],
   ['EXTREME',     'par ICONE la plus / la moins présente…'],
+  ['DOMINE',      'si CIBLE est la plus / la moins présente…'],
   ['PLAN_ICONES', 'par PLAN portant n ICONES…'],
   ['DOUBLE',      'la plus petite / plus grosse CARTE compte double…'],
   // Les pouvoirs de RÈGLE. Ils ne comptent rien : ils donnent un droit, ou
@@ -3406,8 +3408,21 @@ function blocPouvoir(o, ou, rang = 1) {
         ${opt('', '— aucun', !o.format2)}
         ${CADRAGES_POUVOIR.filter((f) => f !== o.format)
           .map((f) => opt(f, FORMATS[f].label, o.format2 === f)).join('')}</select>`;
-  } else if (kind === 'ELEMENT' || kind === 'ABSENT') {
+  } else if (kind === 'ELEMENT') {
     complement = `<select data-champ-obj="${ou}"${R} data-part="el">${elOpts(o.el)}</select>`;
+  } else if (kind === 'ABSENT') {
+    complement = cibleSel(cibleDe(o), true);
+  } else if (kind === 'DOMINE') {
+    // Une présence ne se compare qu'entre pareilles : une icône aux six icônes,
+    // un cadrage aux quatre cadrages. Les autres cibles n'ont pas de famille où
+    // se mesurer, elles ne sont donc pas proposées.
+    complement = `<select data-champ-obj="${ou}"${R} data-part="cible">
+        ${CIBLES_PRESENCE.map((c) => opt(c, libelleCibleCompte(c, true), cibleDe(o) === c)).join('')}
+      </select>
+      <select data-champ-obj="${ou}"${R} data-part="sens">
+        ${opt('PLUS', 'la plus présente', o.sens !== 'MOINS')}
+        ${opt('MOINS', 'la moins présente', o.sens === 'MOINS')}
+      </select>`;
   } else if (kind === 'PAIRE') {
     // Une troisième icône, facultative : le groupe passe alors du couple au
     // trio. « — aucune » le ramène à deux.
@@ -4167,7 +4182,8 @@ function declencheurs(obj, plans) {
     // compte donc une fois — leur plancher honnête. Il en va de même de ceux
     // qui désignent une carte du banc plutôt qu'un contenu.
     case 'SEQ_TAILLE': case 'SEQ_VOISINES': case 'SEQ_LONGUE': case 'SEQ_AVEC':
-    case 'SEQ_TOUTES': case 'DOUBLE': case 'EXTREME': case 'ABSENTES': return 1;
+    case 'SEQ_TOUTES': case 'DOUBLE': case 'EXTREME': case 'ABSENTES':
+    case 'DOMINE': return 1;
     // Ceux du vocabulaire commun se comptent comme les autres compteurs : ce
     // que le matériel entier met sur la table.
     case 'AILLEURS': case 'CENTRE': return compteCible(plans, obj.cible, null);
@@ -4910,14 +4926,14 @@ function construireObj(kind, actuel) {
   const e0 = actuel && actuel.el ? actuel.el : (actuel && actuel.els ? actuel.els[0] : ELEMENT_IDS[0]);
   // La cible que le nouveau pouvoir reprend : celle du précédent si elle
   // appartient au vocabulaire commun, sinon son icône, sinon son cadrage.
-  const cible0 = actuel && CIBLE_IDS.includes(actuel.cible) ? actuel.cible
+  const cible0 = actuel && CIBLE_IDS.includes(cibleDe(actuel)) ? cibleDe(actuel)
     : actuel && CIBLE_IDS.includes(actuel.format) ? actuel.format
       : (actuel && actuel.el) || e0;
   const neuf = {
     FORMAT:  () => OBJ.format(n, actuel && actuel.format ? actuel.format : 'PM',
       undefined, actuel && actuel.format2),
     ELEMENT: () => OBJ.element(n, e0),
-    ABSENT:  () => OBJ.absent(n, e0),
+    ABSENT:  () => OBJ.absent(n, cible0),
     PAIRE:   () => OBJ.paire(n, e0, actuel && actuel.els ? actuel.els[1] : e0,
       undefined, actuel && actuel.els ? actuel.els[2] : undefined),
     MORT:    () => OBJ.mort(n),
@@ -4947,6 +4963,10 @@ function construireObj(kind, actuel) {
       actuel && actuel.seuil !== undefined ? actuel.seuil : 3),
     ABSENTES:    () => OBJ.absentes(n),
     EXTREME:     () => OBJ.extreme(n, actuel && actuel.sens === 'MOINS' ? 'MOINS' : 'PLUS'),
+    // Seules les cibles qui ont une famille où se comparer : on retombe sur la
+    // première icône si celle d'avant n'en avait pas.
+    DOMINE:      () => OBJ.domine(n, CIBLES_PRESENCE.includes(cible0) ? cible0 : e0,
+      actuel && actuel.sens === 'MOINS' ? 'MOINS' : 'PLUS'),
     PLAN_ICONES: () => OBJ.planIcones(n, actuel && actuel.seuil !== undefined ? actuel.seuil : 2,
       actuel && actuel.sens),
     DOUBLE:      () => OBJ.doubleCarte(n, actuel && actuel.sens === 'PLUS' ? 'PLUS' : 'MOINS',
@@ -5153,7 +5173,7 @@ function objDepuisCSV(r, suf = '') {
         ? OBJ.format(n, f1, portee, CADRAGES_POUVOIR.includes(f2) ? f2 : undefined) : null;
     }
     case 'ELEMENT': return ELEMENT_IDS.includes(cible) ? OBJ.element(n, cible, portee) : null;
-    case 'ABSENT':  return ELEMENT_IDS.includes(cible) ? OBJ.absent(n, cible, portee) : null;
+    case 'ABSENT':  return CIBLE_IDS.includes(cible) ? OBJ.absent(n, cible, portee) : null;
     case 'MINUTAGE': return OBJ.minutage(n, sens, seuil, portee);
     case 'SEQ_TAILLE':   return OBJ.seqTaille(n, Math.max(1, seuil || 1), sens0 === 'MAX' ? 'MAX' : undefined);
     case 'SEQ_VOISINES': return OBJ.seqVoisines(n, sens0 === 'APRES' ? 'APRES' : 'AVANT');
@@ -5178,6 +5198,8 @@ function objDepuisCSV(r, suf = '') {
     case 'SEUIL':    return CIBLE_IDS.includes(cible)
       ? OBJ.seuilCible(n, cible, sens0 === 'MAX' ? 'MAX' : 'MIN', seuil, portee) : null;
     case 'ABSENTES': return OBJ.absentes(n, portee);
+    case 'DOMINE':   return CIBLES_PRESENCE.includes(cible)
+      ? OBJ.domine(n, cible, sens0 === 'MOINS' ? 'MOINS' : 'PLUS', portee) : null;
     // Les pouvoirs de règle. `points` y porte un nombre de lignes, de plans ou
     // de points par Raccord — pas un compte de points de bandeau.
     case 'PIOCHER':      return OBJ.piocher(cible === 'PL' ? 'PL' : 'PMGP');

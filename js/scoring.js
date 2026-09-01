@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind } from './data.js?v=1.87';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.88';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -215,7 +215,29 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
     case 'NEANT':
       return n * portee.filter((p) => !p.el.some((e) => PERSONNAGES.includes(e))).length;
     case 'ABSENT':
-      return portee.some((p) => p.el.includes(obj.el)) ? 0 : n;
+      // « Absent » se dit de tout ce que le vocabulaire sait compter : une
+      // icône, mais aussi une valeur de cadre, un Raccord, un plan de mort.
+      return compteCible(portee, cibleDe(obj), banc) === 0 ? n : 0;
+    case 'DOMINE': {
+      // Une cible domine sa portée quand rien de sa famille n'y est plus
+      // présent qu'elle — les icônes entre elles, les cadrages entre eux. À
+      // ÉGALITÉ elle domine aussi : sur la table, on compare des piles, et
+      // deux piles de même hauteur sont toutes deux les plus hautes.
+      // Encore faut-il qu'elle soit là : une icône absente ne domine rien, et
+      // « la moins présente » se lit parmi celles qui paraissent — sinon les
+      // cinq icônes absentes gagneraient toujours, à zéro.
+      const cible = cibleDe(obj);
+      const famille = familleDeCible(cible);
+      if (!famille) return 0;
+      const mien = compteCible(portee, cible, banc);
+      if (mien === 0) return 0;
+      const autres = FAMILLE_CIBLE[famille]
+        .filter((x) => x !== cible)
+        .map((x) => compteCible(portee, x, banc))
+        .filter((v) => (obj.sens === 'MOINS' ? v > 0 : true));
+      if (!autres.length) return n;
+      return (obj.sens === 'MOINS' ? mien <= Math.min(...autres) : mien >= Math.max(...autres)) ? n : 0;
+    }
     case 'MINUTAGE':
       // Le seuil est strict : « avant 25:00 » ne compte pas un plan à 25:00.
       return n * portee.filter((p) => (obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
@@ -456,7 +478,7 @@ export function compter(banc, cfg) {
     RACCORD: 0, PLAN: 0, FORMAT: 0, ELEMENT: 0, PAIRE: 0,
     MORT: 0, NEANT: 0, ABSENT: 0, MINUTAGE: 0, CHRONO: 0, SANS_TC: 0,
     SEQ_TAILLE: 0, SEQ_VOISINES: 0, SEQ_LONGUE: 0, SEQ_AVEC: 0, SEQ_TOUTES: 0,
-    AILLEURS: 0, CENTRE: 0, LOT: 0, SEUIL: 0, ABSENTES: 0,
+    AILLEURS: 0, CENTRE: 0, LOT: 0, SEUIL: 0, ABSENTES: 0, DOMINE: 0,
     EXTREME: 0, PLAN_ICONES: 0, DOUBLE: 0,
     // Les pouvoirs de règle restent à zéro : ils ne rapportent pas de points
     // là où ils sont posés. Leur effet se lit ailleurs — dans le moteur pour
@@ -562,6 +584,7 @@ export const SOURCES_LABEL = {
   LOT: 'Objectifs par lot',
   SEUIL: 'Objectifs à seuil',
   ABSENTES: 'Objectifs d’icônes absentes',
+  DOMINE: 'Objectifs de cible dominante',
   EXTREME: 'Objectifs d’icône la plus / la moins présente',
   PLAN_ICONES: 'Objectifs de plan chargé',
   DOUBLE: 'Objectifs de carte doublée',

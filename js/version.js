@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.87';
-export const BUILD_DATE = '2026-09-02 00:40';
+export const VERSION = '1.88';
+export const BUILD_DATE = '2026-09-02 01:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.88',
+    date: '02/09/2026',
+    items: [
+      "<b>« n si CIBLE absente » s'ouvre à tout ce qui se compte. Règles v0.14.10.</b> Le bandeau ne visait qu'une <b>icône</b> ; il vise désormais n'importe quelle cible du vocabulaire — une <b>valeur de cadre</b>, une <b>Carte Raccord</b>, un <b>plan de mort</b>, un cadrage, une icône. Sa portée se règle comme celle des autres : <b>avant</b> le plan, <b>après</b>, dans <b>toute sa ligne</b>, ou sur le montage entier. Un bandeau enregistré avant ce jour se relit tel quel.",
+      "<b>Nouveau pouvoir : « n si CIBLE est la plus présente ».</b> On <b>nomme</b> la cible, et l'on marque si elle domine sa portée — ou si elle en est la plus rare, au choix. À ne pas confondre avec « n × l'icône la plus présente », qui compte les exemplaires de celle qui domine <b>sans dire laquelle</b> : ici c'est une condition sur une cible désignée.",
+      "La comparaison se fait <b>dans sa propre famille</b> : une icône se mesure aux six icônes, un cadrage aux quatre cadrages. <b>À égalité, elle domine aussi</b> — sur la table on compare des piles, et deux piles de même hauteur sont toutes deux les plus hautes. Encore faut-il qu'elle soit là : une cible <b>absente ne domine rien</b>, et « la moins présente » se lit parmi celles qui paraissent, sinon les cinq icônes absentes gagneraient toujours, à zéro.",
+      "<b>La croix de l'interdit ne recouvre plus ce qu'elle nie : elle le marque.</b> Pleine largeur, elle cachait le dessin d'une icône — on voyait qu'une icône était interdite sans savoir laquelle — et rendait illisibles les cartouches qu'elle barrait, « RACCORD » ou « VALEUR DE CADRE ». Elle se pose maintenant en <b>petite pastille dans le coin bas-droit</b>, et se resserre avec le bandeau. Vérifié sur 84 configurations : aucune ne sort de sa bande, aucune n'en recouvre plus des trois quarts, aucune n'est trop petite pour se voir.",
+      "<b>« au moins » et « au plus » s'écrivent MIN et MAX.</b> « n si 4+ Armes » devient <b>« n si 4 Armes MIN »</b> : le nombre, la cible, puis le mot qui dit de quel côté il faut être. Même écriture pour « n si chaque séquence a k plans ». Les deux bandeaux de séquence gardent leur « avec k+ », posé la version précédente.",
+    ],
+  },
   {
     v: '1.87',
     date: '02/09/2026',

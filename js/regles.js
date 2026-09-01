@@ -14,13 +14,26 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.87';
-import { elIcon } from './icons.js?v=1.87';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.88';
+import { elIcon } from './icons.js?v=1.88';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.14.10',
+    date: '02/09/2026',
+    origine: 'Règle étendue par l’auteur',
+    corps: (c) => corps_0_14_10(c),
+    items: [
+      '<b>« n si CIBLE absente » s’ouvre à tout ce qui se compte.</b> Le bandeau ne visait qu’une <b>icône</b> ; il vise désormais n’importe quelle cible du vocabulaire — une <b>valeur de cadre</b>, une <b>Carte Raccord</b>, un <b>plan de mort</b>, un cadrage, une icône. Sa portée se règle comme celle des autres : <b>avant</b> le plan, <b>après</b>, dans <b>toute sa ligne</b>, ou sur le montage entier.',
+      '<b>Nouveau : « n si CIBLE est la plus présente ».</b> On <b>nomme</b> la cible, et l’on marque si elle domine sa portée — ou si elle en est la plus rare, au choix. À ne pas confondre avec « n × l’icône la plus présente », qui compte les exemplaires de celle qui domine <b>sans dire laquelle</b> : ici c’est une condition sur une cible désignée.',
+      'La comparaison se fait <b>dans sa propre famille</b> : une icône se mesure aux six icônes, un cadrage aux quatre cadrages. <b>À égalité, elle domine aussi</b> — sur la table, on compare des piles, et deux piles de même hauteur sont toutes deux les plus hautes. Encore faut-il qu’elle soit là : une cible <b>absente ne domine rien</b>, et « la moins présente » se lit parmi celles qui paraissent.',
+      '<b>La croix de l’interdit ne recouvre plus ce qu’elle nie : elle le marque.</b> Pleine largeur, elle cachait le dessin d’une icône — on voyait qu’une icône était interdite sans savoir laquelle — et rendait illisibles les cartouches qu’elle barrait. Elle se pose maintenant en <b>petite pastille dans le coin</b> de ce qu’elle marque.',
+      '<b>« au moins » et « au plus » s’écrivent MIN et MAX.</b> « n si 4+ Armes » devient <b>« n si 4 Armes MIN »</b>, et « au plus » devient <b>MAX</b> : le nombre, la cible, puis le mot qui dit de quel côté il faut être. Même écriture pour « n si chaque séquence a k plans ».',
+    ],
+  },
   {
     v: '0.14.9',
     date: '01/09/2026',
@@ -319,6 +332,31 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.14.10 --------------------------------------------------------------
+// « Absente » ne se disait que d'une icône ; un bandeau neuf vient à côté, et
+// les seuils changent d'écriture. Trois retouches dans le tableau, une note.
+
+function corps_0_14_10(c) {
+  return corps_0_14_9(c)
+    .replace(/<tr><td><b>n si ICONE absente<\/b><\/td>\s*\n?\s*<td>n points si l’icône ne paraît nulle part<\/td>/,
+      `${majTr('0.14.10')}<td class="maj-pastille" data-v="v0.14.10"><b>n si CIBLE absente</b></td>
+      <td>n points si la cible ne paraît <b>nulle part</b> dans la portée. Une icône, mais aussi une
+      <b>valeur de cadre</b>, une <b>Carte Raccord</b>, un <b>plan de mort</b>, un cadrage</td>`)
+    .replace('      <td>Sa portée ◀ ▶</td></tr>\n    <span class="regle-maj"',
+      `      <td>Sa portée ◀ ▶</td></tr>
+    ${majTr('0.14.10')}<td class="maj-pastille" data-v="v0.14.10"><b>n si CIBLE est la plus présente</b></td>
+      <td>n points si la cible <b>domine</b> sa portée — ou si elle en est la plus rare, au choix.
+      La comparaison se fait dans sa famille : une icône se mesure aux six icônes, un cadrage aux
+      quatre cadrages. <b>À égalité elle domine aussi</b> ; une cible absente ne domine rien</td>
+      <td>Sa portée ◀ ▶</td></tr>
+    <span class="regle-maj"`);
+}
+
+/** Une ligne de tableau entièrement neuve : le liseré se pose sur la ligne. */
+function majTr(v) {
+  return `<tr class="maj-tr" data-v="v${v}">`;
 }
 
 // --- v0.14.9 ---------------------------------------------------------------

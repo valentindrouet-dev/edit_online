@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.87';
+import { ELEMENT_IDS } from './data.js?v=1.88';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -90,7 +90,7 @@ export const DEFAULTS = {
     SEQ_TAILLE: true, SEQ_VOISINES: true, SEQ_LONGUE: true, SEQ_AVEC: true, SEQ_TOUTES: true,
     // Les bandeaux du vocabulaire commun : ils comptent tous « une cible »
     // dans une portée, et ne se distinguent que par ce qu'ils en font.
-    AILLEURS: true, CENTRE: true, LOT: true, SEUIL: true, ABSENTES: true,
+    AILLEURS: true, CENTRE: true, LOT: true, SEUIL: true, ABSENTES: true, DOMINE: true,
     EXTREME: true, PLAN_ICONES: true, DOUBLE: true,
     // Les pouvoirs de RÈGLE. Ils ne rapportent pas de points : les décocher
     // n'annule pas un gain, cela retire un droit — plus de pioche au sommet,

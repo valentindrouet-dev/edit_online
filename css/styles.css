@@ -591,11 +591,45 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    « compte cet élément » là où il faut lire « cet élément doit être absent ».
    Elle déborde donc volontairement de la pastille, tout en laissant voir
    dessous de quelle icône il s'agit. */
-.croix-non { position: absolute; inset: -6%; pointer-events: none; }
-.croix-non svg { width: 100%; height: 100%; display: block; overflow: visible; }
-/* Sur un seuil de minutage, la croix barre une étiquette large : elle s'étire
-   avec elle plutôt que de se perdre au milieu. */
-.barre .tc-seuil + .croix-non { inset: -4% -2%; }
+/* La croix de l'interdit ne recouvre plus ce qu'elle nie : elle le MARQUE.
+   Pleine largeur, elle cachait le dessin d'une icône — on voyait qu'une icône
+   était interdite sans savoir laquelle — et rendait illisibles les cartouches
+   qu'elle barrait, « RACCORD » ou « VALEUR DE CADRE ». Elle se pose donc en
+   pastille dans le coin bas-droit de ce qu'elle marque, assez grande pour se
+   voir, assez petite pour tout laisser lire. Le rond blanc la détache du fond,
+   quel qu'il soit. */
+/* La pastille se mesure à CE QU'ELLE MARQUE — un peu plus de la moitié de sa
+   hauteur —, et se pose dans son coin bas-droit. Sur une icône elle en occupe
+   l'angle ; sur un cartouche large — « RACCORD », « VALEUR DE CADRE » — elle
+   devient un petit sceau, et le mot se lit en entier.
+   Deux mesures, car les deux marqués ne se dimensionnent pas de la même façon :
+   une icône vaut un pourcentage de la bande — 82 %, 68 % en lecture nue —,
+   un cartouche se dimensionne en em de sa propre police. `.barre` doit garder
+   sa pleine hauteur : c'est elle qui donne aux pastilles leur référence, et
+   elles retomberaient à zéro sans elle. */
+.croix-non {
+  position: absolute; right: -7%; pointer-events: none;
+  aspect-ratio: 1 / 1; width: auto;
+  background: #fff; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, .3);
+}
+.croix-non svg { width: 100%; height: 100%; display: block; transform: scale(.84); }
+/* Une icône occupe 82 % de la bande — 68 % en lecture nue —, centrée, et se
+   resserre avec elle par `--ec`. La croix reprend le même facteur, sans quoi
+   elle resterait pleine taille sur un bandeau serré et finirait par recouvrir
+   l'icône qu'elle ne fait que marquer. Elle vaut 56 % d'elle, et son bas suit
+   celui de l'icône : (100 % − sa hauteur) / 2, moins un cheveu de débord. */
+.barre .pastille + .croix-non {
+  height: calc(46% * var(--ec, 1));
+  bottom: calc((100% - 82% * var(--ec, 1)) / 2 - 4%);
+}
+body.sans-illus .barre .pastille + .croix-non {
+  height: calc(38% * var(--ec, 1));
+  bottom: calc((100% - 68% * var(--ec, 1)) / 2 - 4%);
+}
+/* Un cartouche fait environ 1 em de haut, centré : la croix en fait 0,6. */
+.barre .tag + .croix-non, .barre .tc-seuil + .croix-non { height: .6em; bottom: 27%; }
+body.sans-illus .barre .tag + .croix-non,
+body.sans-illus .barre .tc-seuil + .croix-non { height: .8em; bottom: 30%; }
 
 .moitie .libelle {
   text-align: center; font-size: .54em; font-weight: 800; letter-spacing: .07em;

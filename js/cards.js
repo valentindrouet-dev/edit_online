@@ -13,8 +13,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.87';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.87';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.88';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.88';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -97,7 +97,13 @@ function objCoeur(obj, taille, compact) {
       obj.els.map((e) => elIcon(e, taille)).join('')}</span>`;
     case 'MORT':    return elIcon('MORT', taille);
     case 'NEANT':   return elIcon('NEANT', taille);
-    case 'ABSENT':  return `<span class="barre">${elIcon(obj.el, taille)}${croixNon()}</span>`;
+    case 'ABSENT':  return `<span class="barre">${
+      cibleHTML(cibleDe(obj), taille, compact)}${croixNon()}</span>`;
+    // « n si l'Arme domine » : la cible, puis le mot qui dit lequel des deux
+    // bouts on vise. Le même cartouche que « l'icône la plus présente », dont
+    // ce bandeau est la version nommée.
+    case 'DOMINE': return `${cibleHTML(cibleDe(obj), taille, compact)}
+      <span class="tc-seuil">${obj.sens === 'MOINS' ? 'min' : 'max'}</span>`;
     // Sur un bandeau, la place manque : « avant / après » se lit « < » et « > ».
     // Le libellé en toutes lettres reste dans l'aperçu au survol.
     case 'MINUTAGE': return `${compact ? '' : '<span class="tag tag-blanc">Plan</span>'}
@@ -153,13 +159,14 @@ function objCoeur(obj, taille, compact) {
     }
     case 'LOT': return `<span class="tag tag-lot">${compact ? `×${obj.seuil}` : `lot de ${obj.seuil}`}</span>${
       cibleHTML(obj.cible, taille, compact)}`;
-    case 'SEUIL': return `<span class="tc-seuil">${seuilTexte(obj.sens, obj.seuil)}</span>${
-      cibleHTML(obj.cible, taille, compact)}`;
+    case 'SEUIL': return `<span class="tc-seuil">${obj.seuil}</span>${
+      cibleHTML(obj.cible, taille, compact)}<span class="tc-seuil">${
+      obj.sens === 'MAX' ? 'MAX' : 'MIN'}</span>`;
     case 'ABSENTES': return `<span class="barre"><span class="tag tag-blanc">${
       compact ? 'Ic.' : 'Icône'}</span>${croixNon()}</span>`;
     case 'SEQ_TOUTES': return `<span class="tag tag-seq">${compact ? 'toutes' : 'chaque séq.'}</span>
-      <span class="tc-seuil">${seuilTexte(obj.sens, obj.seuil)}</span>
-      <span class="tag tag-blanc">Plan</span>`;
+      <span class="tc-seuil">${obj.seuil}</span><span class="tag tag-blanc">Plan</span>
+      <span class="tc-seuil">${obj.sens === 'MAX' ? 'MAX' : 'MIN'}</span>`;
     case 'EXTREME': return `<span class="tag tag-blanc">${compact ? 'Ic.' : 'Icône'}</span>
       <span class="tc-seuil">${obj.sens === 'MOINS' ? 'min' : 'max'}</span>`;
     case 'PLAN_ICONES': return `<span class="tag tag-blanc">Plan</span>
@@ -218,7 +225,7 @@ export function objHTML(obj, taille, cfg) {
 }
 
 /** Les bandeaux qui se lisent « n si … » plutôt que « n × … ». */
-const OBJ_SI = ['ABSENT', 'CHRONO', 'SANS_TC', 'SEUIL', 'SEQ_TOUTES'];
+const OBJ_SI = ['ABSENT', 'CHRONO', 'SANS_TC', 'SEUIL', 'SEQ_TOUTES', 'DOMINE'];
 export const estSi = (o) => !!o && OBJ_SI.includes(o.kind);
 
 /**
@@ -316,7 +323,9 @@ function coutCoeur(obj, compact, P) {
     case 'PLAN': return t('Plan');
     case 'FORMAT': return t(FORMATS[obj.format].label, FORMATS[obj.format].short)
       + (obj.format2 ? g + 0.6 + g + t(FORMATS[obj.format2].label, FORMATS[obj.format2].short) : 0);
-    case 'ELEMENT': case 'MORT': case 'NEANT': case 'ABSENT': return P.rond;
+    case 'ELEMENT': case 'MORT': case 'NEANT': return P.rond;
+    case 'ABSENT': return cible(cibleDe(obj));
+    case 'DOMINE': return cible(cibleDe(obj)) + g + tt('max');
     // Les icônes d'un groupe se chevauchent : chacune après la première ne
     // coûte que ce qu'elle dépasse de la précédente.
     case 'PAIRE': return P.rond + (obj.els.length - 1) * (P.rond - EM.chevauche);
@@ -335,12 +344,12 @@ function coutCoeur(obj, compact, P) {
       return t('Séquence', 'Séq.') + g + avec
         + (k > 1 ? tt(seuilTexte(obj.sens === 'SANS' ? 'MOINS' : 'MIN', k)) + g : 0) + cible(obj.cible);
     }
-    case 'SEQ_TOUTES': return t('chaque séq.', 'toutes') + g + tt(seuilTexte(obj.sens, obj.seuil))
-      + g + t('Plan');
+    case 'SEQ_TOUTES': return t('chaque séq.', 'toutes') + g + tt(String(obj.seuil))
+      + g + t('Plan') + g + tt('MIN');
     case 'AILLEURS': return (compact ? 0 : t('Séquence') + g) + 0.9 + g + cible(obj.cible);
     case 'CENTRE': return cible(obj.cible) + g + 0.9 + g + t('centre', 'ctr');
     case 'LOT': return tt(compact ? `×${obj.seuil}` : `lot de ${obj.seuil}`) + g + cible(obj.cible);
-    case 'SEUIL': return tt(seuilTexte(obj.sens, obj.seuil)) + g + cible(obj.cible);
+    case 'SEUIL': return tt(String(obj.seuil)) + g + cible(obj.cible) + g + tt('MIN');
     case 'ABSENTES': return t('Icône', 'Ic.');
     case 'EXTREME': return t('Icône', 'Ic.') + g + tt('max');
     case 'PLAN_ICONES': {
