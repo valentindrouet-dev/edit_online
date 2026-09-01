@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.81';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.82';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -11,27 +11,28 @@ import {
   ciblesSequence,
   CIBLES_COMPTE, CIBLE_IDS, libelleCibleCompte, porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte,
-} from './data.js?v=1.81';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.81';
-import { elIcon, numIcon } from './icons.js?v=1.81';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, reglerLectureNue } from './cards.js?v=1.81';
+} from './data.js?v=1.82';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.82';
+import { elIcon, numIcon } from './icons.js?v=1.82';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, reglerLectureNue } from './cards.js?v=1.82';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.81';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.81';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.81';
-import { releve, voler, stopperVols } from './anim.js?v=1.81';
-import { campagne } from './lab.js?v=1.81';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.81';
-import { Salon } from './net/salon.js?v=1.81';
-import { TransportLocal } from './net/local.js?v=1.81';
-import { TransportSupabase } from './net/supabase.js?v=1.81';
-import { enLigneDisponible } from './net/config.js?v=1.81';
-import { coupNu } from './net/protocole.js?v=1.81';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.81';
+} from './engine.js?v=1.82';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.82';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.82';
+import { releve, voler, stopperVols } from './anim.js?v=1.82';
+import { campagne } from './lab.js?v=1.82';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.82';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.82';
+import { Salon } from './net/salon.js?v=1.82';
+import { TransportLocal } from './net/local.js?v=1.82';
+import { TransportSupabase } from './net/supabase.js?v=1.82';
+import { enLigneDisponible } from './net/config.js?v=1.82';
+import { coupNu } from './net/protocole.js?v=1.82';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.82';
 
 const app = document.getElementById('app');
 
@@ -2080,11 +2081,15 @@ const mat = {
   triPouvoirs: { col: 'plans', sens: -1 },
   triFamilles: { col: 'plans', sens: -1 },
   triValeurs: { col: 'valeur', sens: 1 },
+  // L'assemblage : les contraintes cochées, le dernier rapport de mélange, et
+  // la moitié qu'on met en avant depuis le relevé.
+  assemblage: { contraintes: CONTRAINTES_PAR_DEFAUT.slice(), rapport: null, surligne: null },
 };
 
 const VUES = [
   ['CARTES', 'Cartes PM / GP'], ['GP', 'Gros Plans'], ['PM', 'Plans Moyens'],
   ['PL', 'Plans Larges'], ['DEPART', 'Plans de départ'], ['TOUS', 'Tous les plans'],
+  ['ASSEMBLAGE', 'Assemblage PM / GP'],
   ['TABLE', 'Tableau complet'], ['STATS', 'Statistiques'], ['POUVOIRS', 'Statistiques des pouvoirs'],
 ];
 
@@ -2234,6 +2239,8 @@ function creerCarte(famille) {
     const gpNum = prochainNumero(390);
     m.ajouts.scenes.push({ idx, pmNum, gpNum, tc: 0, famille: 'TRANSITION',
       transition: 'RACCORD', titre: 'Raccord', pmEl: [], gpEl: [], obj: OBJ.plan(1) });
+    // Sa carte avec lui, sans quoi le Raccord neuf ne se jouerait nulle part.
+    m.ajouts.paires.push({ pmNum, gpNum });
     sauverCfg();
     return { cles: [`${pmNum}R`, `${gpNum}R`],
       quoi: `Carte Raccord — Plan Moyen ${pmNum} et Gros Plan ${gpNum}` };
@@ -2243,11 +2250,17 @@ function creerCarte(famille) {
     const pmNum = prochainNumero(201);
     const gpNum = prochainNumero(301);
     m.ajouts.scenes.push({ idx, pmNum, gpNum, tc: 0, famille: 'PERSONNAGE', pmEl: [], gpEl: [], obj: null });
+    // Une scène ne se joue pas : ce sont les CARTES qui se jouent, et une carte
+    // apparie deux moitiés. Sans appariement, un Plan Moyen tout neuf n'entre
+    // dans aucun paquet et ne peut donc jamais paraître au montage. On lui
+    // donne donc sa carte, celle de ses deux moitiés — c'est l'appariement le
+    // plus évident, et le tableau d'assemblage sert ensuite à le changer.
+    m.ajouts.paires.push({ pmNum, gpNum });
     sauverCfg();
     const cles = famille === 'GP' ? [`${gpNum}R`, `${gpNum}V`]
       : famille === 'PM' ? [`${pmNum}R`, `${pmNum}V`]
         : [`${pmNum}R`, `${gpNum}R`];
-    return { cles, quoi: `scène ${idx} — Plan Moyen ${pmNum} et Gros Plan ${gpNum}` };
+    return { cles, quoi: `scène ${idx} — Plan Moyen ${pmNum} et Gros Plan ${gpNum}, et leur carte` };
   }
   // Une carte Plan Moyen / Gros Plan : un appariement de deux moitiés qui
   // existent déjà. On part des plus récentes — celles qu'on vient de créer.
@@ -2474,6 +2487,7 @@ const FAMILLES = ['TRANSITION', 'MORT', 'ARME', 'VEHICULE', 'OBJET', 'PERSONNAGE
 function vueMateriel() {
   let corps;
   if (mat.vue === 'TABLE') corps = tableauMateriel();
+  else if (mat.vue === 'ASSEMBLAGE') corps = surLeModifie(vueAssemblage);
   else if (mat.vue === 'STATS') corps = vueStats();
   else if (mat.vue === 'POUVOIRS') corps = vuePouvoirs();
   else corps = surLeModifie(galerieMateriel);
@@ -2495,6 +2509,7 @@ function vueMateriel() {
 
   brancherApercu();
   brancherMateriel();
+  if (mat.vue === 'ASSEMBLAGE') brancherAssemblage();
 }
 
 /**
@@ -2557,7 +2572,7 @@ function barreJeu() {
 // là où l'on fabrique une scène, on peut aussi fabriquer une Carte Raccord —
 // c'en est une, elle aussi, mais qui ne raconte rien.
 const RACCORD_NEUF = ['RACCORD', '+ Nouveau Raccord',
-  'Une Carte Raccord vierge : pas d’icône, et son pouvoir sur ses deux moitiés'];
+  'Une Carte Raccord vierge, et la carte qui la porte : pas d’icône, son pouvoir sur ses deux moitiés'];
 
 const A_CREER = {
   CARTES: [
@@ -2565,11 +2580,13 @@ const A_CREER = {
     RACCORD_NEUF,
   ],
   GP: [
-    ['GP', '+ Nouveau Gros Plan', 'Une nouvelle scène : elle fournit un Gros Plan et son Plan Moyen'],
+    ['GP', '+ Nouveau Gros Plan',
+      'Une nouvelle scène — un Gros Plan, son Plan Moyen — et la carte qui les porte'],
     RACCORD_NEUF,
   ],
   PM: [
-    ['PM', '+ Nouveau Plan Moyen', 'Une nouvelle scène : elle fournit un Plan Moyen et son Gros Plan'],
+    ['PM', '+ Nouveau Plan Moyen',
+      'Une nouvelle scène — un Plan Moyen, son Gros Plan — et la carte qui les porte'],
     RACCORD_NEUF,
   ],
   PL: [['PL', '+ Nouveau Plan Large', 'Une carte Plan Large vierge, à régler et à illustrer']],
@@ -3510,6 +3527,208 @@ function appariement(carte) {
   </div>`;
 }
 
+// --- L'assemblage des cartes Plan Moyen / Gros Plan --------------------------
+// Une carte double est une feuille qui porte deux moitiés venues de deux
+// scènes différentes. Quelle moitié avec quelle autre : c'est l'assemblage, et
+// c'est lui qui décide de la richesse du paquet. Cet écran le montre en entier,
+// le mesure, le brasse sous contraintes, et laisse échanger deux moitiés d'un
+// glisser-déposer.
+
+/** Les cartes, avec leurs deux moitiés lues sur le recto — le verso les suit. */
+function cartesAssemblage() {
+  return buildCartesDoubles().map((c) => {
+    const m = moitiesDe(c, 'R');
+    const demi = (h, scene) => (h ? { num: h.num, numOrigine: h.numOrigine, scene,
+      el: h.el.slice(), famille: h.famille, transition: h.transition, mort: !!h.mort,
+      objs: objsDe(h), titre: h.titre, plan: h } : null);
+    return { id: c.id, rang: c.rang, carte: c, modifie: c.appariementModifie,
+      pm: demi(m.PM, c.pmScene), gp: demi(m.GP, c.gpScene) };
+  });
+}
+
+/** Toutes les moitiés d'un cadrage, qu'elles servent ou non. */
+function moitiesToutes(cote) {
+  return SCENES().map((sc) => {
+    const h = halfInfo(sc.idx, cote, { face: 'R' });
+    return h ? { num: h.num, scene: sc.idx, titre: sc.titre || null, famille: sc.famille,
+      transition: sc.transition || null, plan: h } : null;
+  }).filter(Boolean);
+}
+
+/** Écrit un appariement, ou l'efface s'il retrouve celui qui est imprimé. */
+function poserAppariement(rang, pmNum, gpNum) {
+  const c = buildCartesDoubles().find((x) => x.rang === rang);
+  if (!c) return;
+  if (pmNum === c.pmImprime && gpNum === c.gpImprime) delete store.cfg.materiel.paires[rang];
+  else store.cfg.materiel.paires[rang] = [pmNum, gpNum];
+}
+
+/**
+ * Échange une moitié entre deux cartes. C'est le geste de la table : on prend
+ * le Gros Plan de celle-ci, on le met sur celle-là, et réciproquement. Les deux
+ * faces suivent, puisqu'une carte est une feuille.
+ */
+function echangerMoitie(rangA, rangB, cote) {
+  if (rangA === rangB) return;
+  surLeModifie(() => {
+    const cartes = buildCartesDoubles();
+    const a = cartes.find((x) => x.rang === rangA);
+    const b = cartes.find((x) => x.rang === rangB);
+    if (!a || !b) return;
+    if (cote === 'GP') {
+      poserAppariement(a.rang, a.pmNum, b.gpNum);
+      poserAppariement(b.rang, b.pmNum, a.gpNum);
+    } else {
+      poserAppariement(a.rang, b.pmNum, a.gpNum);
+      poserAppariement(b.rang, a.pmNum, b.gpNum);
+    }
+  });
+  sauverCfg();
+}
+
+/** Pose une moitié précise sur une carte — depuis le relevé, sans échange. */
+function poserMoitie(rang, cote, num) {
+  surLeModifie(() => {
+    const c = buildCartesDoubles().find((x) => x.rang === rang);
+    if (!c) return;
+    poserAppariement(rang, cote === 'PM' ? num : c.pmNum, cote === 'GP' ? num : c.gpNum);
+  });
+  sauverCfg();
+}
+
+/** Le mélange : on brasse les Gros Plans, on rend compte, on écrit. */
+function melangerAssemblage() {
+  const actives = mat.assemblage.contraintes;
+  const cartes = surLeModifie(cartesAssemblage);
+  const avant = bilan(cartes, actives);
+  const r = melangerMoities(cartes, actives);
+  surLeModifie(() => {
+    r.cartes.forEach((c, i) => poserAppariement(cartes[i].rang, c.pm.num, c.gp.num));
+  });
+  sauverCfg();
+  mat.assemblage.rapport = { avant, apres: r.bilan, deplaces: r.deplaces, actives: actives.slice() };
+}
+
+/** Le rapport du dernier mélange, contrainte par contrainte. */
+function rapportMelange() {
+  const r = mat.assemblage.rapport;
+  if (!r) return '';
+  const nom = (id) => (CONTRAINTES.find((c) => c.id === id) || {}).label || id;
+  const lignes = r.actives.map((id) => {
+    const n = r.apres.par[id] || 0;
+    const av = r.avant.par[id] || 0;
+    return `<li class="${n ? 'ko' : 'okc'}"><b>${n ? `✕ ${n} carte${n > 1 ? 's' : ''}` : '✓ tenue'}</b>
+      — ${nom(id)}${n ? ` <span class="aide">(${av} avant le mélange)</span>` : ''}</li>`;
+  }).join('');
+  const reste = r.apres.mauvaises;
+  return `<div class="rapport-melange ${reste ? 'partiel' : 'net'}">
+    <b>${reste ? `${reste} carte${reste > 1 ? 's' : ''} ne tiennent pas toutes les contraintes`
+    : 'Toutes les contraintes sont tenues'}</b>
+    — ${r.deplaces} Gros Plan${r.deplaces > 1 ? 's' : ''} ${r.deplaces > 1 ? 'ont' : 'a'} changé de carte,
+    sur ${r.apres.total}.
+    <ul>${lignes || '<li class="aide">Aucune contrainte cochée : le mélange a seulement brassé.</li>'}</ul>
+    ${reste ? `<span class="aide">Ce qui reste ne passe pas est probablement <b>impossible</b> avec
+      ces moitiés-là : le mélange essaie soixante assemblages et garde le meilleur. Décochez une
+      contrainte, ou changez une moitié à la main.</span>` : ''}
+  </div>`;
+}
+
+/** Une moitié, en pastille : son numéro, ses icônes, et de quoi la saisir. */
+function pastilleMoitie(c, cote) {
+  const m = cote === 'GP' ? c.gp : c.pm;
+  if (!m) return `<div class="demi vide">—</div>`;
+  const sur = mat.assemblage.surligne;
+  const vise = sur && sur.cote === cote && sur.num === m.num;
+  return `<div class="demi ${cote.toLowerCase()} ${vise ? 'vise' : ''}" draggable="true"
+    data-demi="${c.rang}" data-cote="${cote}" data-num="${m.num}"
+    title="${cote === 'GP' ? 'Gros Plan' : 'Plan Moyen'} ${m.num}${m.titre ? ` — ${m.titre}` : ''} · glissez-le sur une autre carte pour les échanger">
+    <span class="demi-num">${m.num}</span>
+    <span class="demi-icones">${m.el.map((e) => elIcon(e, 15)).join('') || '<i class="aide">—</i>'}</span>
+  </div>`;
+}
+
+/** Une carte de l'assemblage : ses deux moitiés, et ce qui cloche entre elles. */
+function carteAssemblage(c, actives) {
+  const f = fautes(c.pm, c.gp, actives);
+  const nom = (id) => (CONTRAINTES.find((x) => x.id === id) || {}).label || id;
+  return `<div class="carte-assemblage ${f.length ? 'fautive' : ''} ${c.modifie ? 'retouche' : ''}"
+    data-carte-assemblage="${c.rang}">
+    <div class="ca-tete">${c.id}${c.modifie ? ' <span class="et-mod">·</span>' : ''}</div>
+    ${pastilleMoitie(c, 'PM')}
+    ${pastilleMoitie(c, 'GP')}
+    ${f.length ? `<div class="ca-faute" title="${f.map(nom).join(' · ')}">⚠ ${f.length}</div>` : ''}
+  </div>`;
+}
+
+/** Le relevé d'un cadrage : chaque moitié, et sur combien de cartes elle est. */
+function tableauRepartition(cote, cartes) {
+  const rp = repartition(moitiesToutes(cote), cartes, cote);
+  const sur = mat.assemblage.surligne;
+  const cases = rp.lignes.map((m) => {
+    const etat = m.n === 0 ? 'absente' : m.n > 1 ? 'repetee' : '';
+    const vise = sur && sur.cote === cote && sur.num === m.num;
+    return `<button class="case-moitie ${etat} ${vise ? 'vise' : ''}"
+      data-surligne="${cote}:${m.num}"
+      title="${m.titre || m.famille}${m.n === 0 ? ' — sur aucune carte'
+    : ` — sur ${m.n} carte${m.n > 1 ? 's' : ''}`}">
+      <b>${m.num}</b><span>${m.n}</span></button>`;
+  }).join('');
+  return `<div class="repartition">
+    <h4>${cote === 'GP' ? 'Gros Plans' : 'Plans Moyens'}
+      <span class="aide">${rp.lignes.length} moitiés · ${rp.absentes} absente${rp.absentes > 1 ? 's' : ''}
+      · ${rp.repetees} en plusieurs exemplaires · jusqu’à ${rp.max} fois</span></h4>
+    <div class="grille-moities">${cases}</div>
+  </div>`;
+}
+
+function vueAssemblage() {
+  const cartes = cartesAssemblage();
+  const actives = mat.assemblage.contraintes;
+  const b = bilan(cartes, actives);
+  const retouches = Object.keys(store.cfg.materiel.paires).length;
+
+  return `<p class="aide" style="margin-top:14px">Une carte Plan Moyen / Gros Plan est une
+  <b>feuille</b> : elle porte deux moitiés venues de <b>deux scènes différentes</b>, et ce qui vaut
+  pour elle vaut pour ses deux faces. Quelle moitié avec quelle autre, c'est l'<b>assemblage</b> —
+  il décide de ce qu'on peut faire d'une carte, et c'est lui qu'on règle ici.</p>
+
+  <div class="assemblage-outils">
+    <div class="contraintes">
+      <b>Ce qu'un bon assemblage évite</b>
+      ${CONTRAINTES.map((c) => `<label class="chip ${actives.includes(c.id) ? 'on' : ''}"
+        title="${c.aide}"><input type="checkbox" data-contrainte="${c.id}"
+        ${actives.includes(c.id) ? 'checked' : ''}>${c.label}</label>`).join('')}
+    </div>
+    <div class="rangee-mini" style="margin-top:10px">
+      <button class="pill creer" id="melanger">🎲 Mélanger les Gros Plans</button>
+      <button class="pill mini" id="assemblage-reset" ${retouches ? '' : 'disabled'}>↺ Assemblage imprimé</button>
+      <span class="aide">${b.mauvaises
+    ? `<b>${b.mauvaises} carte${b.mauvaises > 1 ? 's' : ''}</b> sur ${b.total} ne tiennent pas
+       les contraintes cochées.`
+    : `Les ${b.total} cartes tiennent les contraintes cochées.`}
+      ${retouches ? ` ${retouches} appariement${retouches > 1 ? 's' : ''} retouché${retouches > 1 ? 's' : ''}.` : ''}</span>
+    </div>
+    ${rapportMelange()}
+  </div>
+
+  <h3 style="margin-top:20px">Les ${cartes.length} cartes</h3>
+  <p class="aide">Prenez une moitié et <b>déposez-la sur la moitié de même cadrage</b> d'une autre
+  carte : les deux s'échangent, recto et verso compris.${mat.assemblage.surligne
+    ? ` <b class="pose-en-cours">${mat.assemblage.surligne.cote === 'GP' ? 'Gros Plan' : 'Plan Moyen'}
+      ${mat.assemblage.surligne.num} en main</b> — cliquez une moitié de même cadrage pour l'y poser
+      à la place de celle qui s'y trouve.`
+    : ' Pour <b>poser</b> une moitié précise — celle qui n\'est sur aucune carte, par exemple —,'
+      + ' choisissez-la dans le relevé du bas, puis cliquez la moitié qu\'elle remplace.'}</p>
+  <div class="grille-assemblage">${cartes.map((c) => carteAssemblage(c, actives)).join('')}</div>
+
+  <h3 style="margin-top:22px">Où sont les moitiés</h3>
+  <p class="aide">Sur combien de cartes chaque moitié se trouve. <b class="lg-absente">En rouge</b>,
+  celles qui ne paraissent <b>nulle part</b> — dessinées, mais injouables. <b class="lg-repetee">En
+  orange</b>, celles qui reviennent plusieurs fois. Un clic met en avant les cartes concernées.</p>
+  ${tableauRepartition('PM', cartes)}
+  ${tableauRepartition('GP', cartes)}`;
+}
+
 // --- Le tableau complet -----------------------------------------------------
 
 function tableauMateriel() {
@@ -4021,6 +4240,78 @@ function vuePouvoirs() {
 
 // --- Les branchements -------------------------------------------------------
 
+/**
+ * Le glisser-déposer de l'assemblage. On prend une moitié, on la lâche sur
+ * celle de même cadrage d'une autre carte : les deux s'échangent. Lâcher
+ * ailleurs ne fait rien — et le cadrage est vérifié, un Gros Plan n'ayant rien
+ * à faire à la place d'un Plan Moyen.
+ */
+function brancherAssemblage() {
+  const refaire = () => vueMateriel();
+
+  app.querySelectorAll('[data-contrainte]').forEach((el) => el.addEventListener('change', () => {
+    const id = el.dataset.contrainte;
+    const l = mat.assemblage.contraintes;
+    mat.assemblage.contraintes = el.checked ? [...new Set([...l, id])] : l.filter((x) => x !== id);
+    // Les contraintes ne se rangent pas dans la configuration : elles disent
+    // comment on veut mélanger, pas ce que le jeu contient.
+    refaire();
+  }));
+
+  const mel = app.querySelector('#melanger');
+  if (mel) mel.addEventListener('click', () => { melangerAssemblage(); refaire(); });
+
+  const raz = app.querySelector('#assemblage-reset');
+  if (raz) raz.addEventListener('click', () => {
+    store.cfg.materiel.paires = {};
+    mat.assemblage.rapport = null;
+    sauverCfg(); refaire();
+  });
+
+  app.querySelectorAll('[data-surligne]').forEach((el) => el.addEventListener('click', () => {
+    const [cote, num] = el.dataset.surligne.split(':');
+    const s2 = mat.assemblage.surligne;
+    mat.assemblage.surligne = s2 && s2.cote === cote && s2.num === +num ? null : { cote, num: +num };
+    refaire();
+  }));
+
+  let prise = null;
+  app.querySelectorAll('[data-demi]').forEach((el) => {
+    el.addEventListener('dragstart', (e) => {
+      prise = { rang: +el.dataset.demi, cote: el.dataset.cote };
+      el.classList.add('prise');
+      e.dataTransfer.effectAllowed = 'move';
+      // Certains navigateurs refusent le glissé sans charge utile.
+      e.dataTransfer.setData('text/plain', `${prise.cote}:${prise.rang}`);
+    });
+    el.addEventListener('dragend', () => { el.classList.remove('prise'); prise = null; });
+    el.addEventListener('dragover', (e) => {
+      if (!prise || prise.cote !== el.dataset.cote || prise.rang === +el.dataset.demi) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      el.classList.add('cible');
+    });
+    el.addEventListener('dragleave', () => el.classList.remove('cible'));
+    // Un clic, quand une moitié est mise en avant dans le relevé : on la POSE
+    // ici. C'est ce qui permet de faire entrer une moitié qui n'était sur
+    // aucune carte, ce qu'un échange ne saurait faire.
+    el.addEventListener('click', () => {
+      const v = mat.assemblage.surligne;
+      if (!v || v.cote !== el.dataset.cote || v.num === +el.dataset.num) return;
+      poserMoitie(+el.dataset.demi, v.cote, v.num);
+      refaire();
+    });
+    el.addEventListener('drop', (e) => {
+      e.preventDefault();
+      el.classList.remove('cible');
+      if (!prise || prise.cote !== el.dataset.cote) return;
+      echangerMoitie(prise.rang, +el.dataset.demi, el.dataset.cote);
+      prise = null;
+      refaire();
+    });
+  });
+}
+
 function brancherMateriel() {
   const refaire = () => vueMateriel();
   const refaireEditeur = () => {
@@ -4293,7 +4584,10 @@ function brancherEditeur(refaire) {
 
   app.querySelectorAll('[data-paire]').forEach((el) => el.addEventListener('change', () => {
     const rang = el.dataset.paire;
-    const c = surLeModifie(buildCartesDoubles)[+rang];
+    // Par son RANG, pas par sa place : une carte supprimée laisse son rang
+    // vide, et les suivantes ne glissent pas d'un cran.
+    const c = surLeModifie(buildCartesDoubles).find((x) => x.rang === +rang);
+    if (!c) return;
     const pm = el.dataset.part === 'pm' ? +el.value : c.pmNum;
     const gp = el.dataset.part === 'gp' ? +el.value : c.gpNum;
     if (pm === c.pmImprime && gp === c.gpImprime) delete store.cfg.materiel.paires[rang];

@@ -1071,6 +1071,82 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 }
 
 /* La vignette du formulaire : l'image actuelle, cliquable. */
+/* --- L'assemblage des cartes Plan Moyen / Gros Plan ------------------------- */
+/* Une carte est une feuille à deux moitiés : cet écran montre qui va avec qui,
+   et laisse les échanger à la main. */
+.assemblage-outils {
+  margin-top: 14px; padding: 14px; border-radius: 12px;
+  background: var(--violet-pale); border: 1px solid var(--violet-clair);
+}
+.contraintes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.contraintes > b { flex: 0 0 100%; font-size: .8rem; margin-bottom: 2px; }
+
+.rapport-melange {
+  margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #fff;
+  border-left: 4px solid var(--vert, #3f8f3f); font-size: .84rem;
+}
+.rapport-melange.partiel { border-left-color: #d08a1f; }
+.rapport-melange ul { margin: 6px 0 0; padding-left: 18px; }
+.rapport-melange li.okc { color: #2f7a35; }
+.rapport-melange li.ko { color: #a8541a; }
+
+.grille-assemblage {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 8px; margin-top: 10px;
+}
+.carte-assemblage {
+  position: relative; padding: 6px; border-radius: 10px; background: #fff;
+  border: 1px solid var(--bord, #e0dcea); display: flex; flex-direction: column; gap: 4px;
+}
+.carte-assemblage.fautive { border-color: #e2a04a; background: #fffaf2; }
+.carte-assemblage.retouche { box-shadow: inset 0 0 0 2px var(--violet-clair); }
+/* La moitié qu'on tient depuis le relevé : les emplacements où la poser se
+   signalent au survol. */
+.pose-en-cours { color: var(--orange); }
+body .demi { transition: box-shadow .12s; }
+.ca-tete { font-size: .68rem; font-weight: 700; color: var(--gris); letter-spacing: .04em; }
+.ca-faute {
+  position: absolute; top: 4px; right: 6px; font-size: .68rem; font-weight: 800; color: #a8541a;
+}
+/* Une moitié : on la prend, on la lâche sur celle d'en face. Le curseur le dit
+   avant même qu'on essaie. */
+.demi {
+  display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 7px;
+  cursor: grab; user-select: none; border: 1px solid transparent;
+}
+.demi.pm { background: #fdeec4; }
+.demi.gp { background: #fbdac9; }
+.demi.vide { background: #f2f2f4; color: var(--gris); justify-content: center; }
+.demi:active { cursor: grabbing; }
+.demi.prise { opacity: .45; }
+.demi.cible { border-color: var(--violet); box-shadow: 0 0 0 2px var(--violet-clair); }
+.demi.vise { border-color: var(--orange); box-shadow: 0 0 0 2px var(--orange-clair); }
+.demi-num { font-weight: 800; font-size: .78rem; font-variant-numeric: tabular-nums; }
+.demi-icones { display: flex; gap: 1px; align-items: center; margin-left: auto; }
+.demi-icones .pastille { width: 15px; height: 15px; }
+
+/* Le relevé : une case par moitié, son numéro et le nombre de cartes qui la
+   portent. Le rouge dit « dessinée mais injouable », l'orange « en plusieurs
+   exemplaires ». */
+.repartition { margin-top: 12px; }
+.repartition h4 { margin: 0 0 6px; font-size: .84rem; }
+.repartition h4 .aide { font-weight: 400; margin-left: 8px; }
+.grille-moities { display: flex; flex-wrap: wrap; gap: 5px; }
+.case-moitie {
+  display: flex; flex-direction: column; align-items: center; min-width: 42px;
+  padding: 3px 5px; border-radius: 7px; cursor: pointer;
+  border: 1px solid var(--bord, #e0dcea); background: #fff; font-size: .72rem;
+}
+.case-moitie b { font-variant-numeric: tabular-nums; }
+.case-moitie span { font-size: .66rem; color: var(--gris); }
+.case-moitie.absente { border-color: #d8604e; background: #fff3f1; color: #8f3226; }
+.case-moitie.absente span { color: #b4453a; font-weight: 800; }
+.case-moitie.repetee { border-color: #e2a04a; background: #fffaf2; }
+.case-moitie.repetee span { color: #a8541a; font-weight: 800; }
+.case-moitie.vise { box-shadow: 0 0 0 2px var(--orange); }
+.lg-absente { color: #b4453a; }
+.lg-repetee { color: #a8541a; }
+
 /* --- Le recadrage d'une illustration --------------------------------------- */
 /* La carte en grand à gauche, ses réglages à droite. On tire l'image dans la
    carte elle-même : c'est le geste d'un recadrage, et l'on voit le résultat

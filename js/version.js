@@ -1,8 +1,20 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.81';
-export const BUILD_DATE = '2026-09-01 17:15';
+export const VERSION = '1.82';
+export const BUILD_DATE = '2026-09-01 20:40';
 
 export const CHANGELOG = [
+  {
+    v: '1.82',
+    date: '01/09/2026',
+    items: [
+      "<b>Un nouvel onglet du Matériel : Assemblage PM / GP.</b> Une carte Plan Moyen / Gros Plan est une <b>feuille</b> qui porte deux moitiés venues de <b>deux scènes différentes</b> — et ce qui vaut pour elle vaut pour ses deux faces. Quelle moitié avec quelle autre, c'est l'assemblage : il décide de ce qu'on peut faire d'une carte, et il n'était réglable que carte par carte, dans deux listes déroulantes. Il a maintenant son écran.",
+      "<b>Une moitié créée entre enfin dans le paquet.</b> Créer un Plan Moyen ou un Gros Plan créait une scène — donc deux moitiés — mais <b>aucune carte</b> : les plans neufs n'étaient distribués nulle part et ne pouvaient jamais paraître au montage. Chaque scène créée reçoit désormais sa carte, celle de ses deux moitiés ; l'assemblage sert ensuite à la remanier. Il en va de même d'un Raccord neuf.",
+      "<b>Le relevé des moitiés.</b> Sur combien de cartes chaque Plan Moyen et chaque Gros Plan se trouve : <b>en rouge</b> celles qui ne paraissent nulle part — dessinées, mais injouables —, <b>en orange</b> celles qui reviennent plusieurs fois. Le jeu imprimé en compte deux d'absentes, le Plan Moyen 292 et le Gros Plan 392 — les deux moitiés du Générique de fin —, et huit qui reviennent, jusqu'à six fois pour les Raccords.",
+      "<b>Échanger deux moitiés d'un glisser-déposer.</b> On prend le Gros Plan d'une carte, on le lâche sur celui d'une autre : les deux s'échangent, <b>recto et verso compris</b>. Même chose pour les Plans Moyens, et le cadrage est vérifié — un Gros Plan ne se dépose pas à la place d'un Plan Moyen. Pour <b>poser</b> une moitié précise plutôt que d'en échanger deux — celle qui n'est sur aucune carte, typiquement —, on la choisit dans le relevé et l'on clique celle qu'elle remplace.",
+      "<b>Le mélange sous contraintes.</b> Sept règles cochables : deux moitiés de scènes différentes, jamais deux Raccords ensemble, aucune icône en commun, deux pouvoirs différents, jamais deux plans de mort ensemble, deux familles différentes, jamais deux fois le même appariement. Un clic brasse les Gros Plans et cherche l'assemblage qui les tient toutes — soixante essais, chacun réparé par échanges tant qu'il progresse.",
+      "<b>Et il rend compte.</b> Contrainte par contrainte : tenue, ou enfreinte sur n cartes — avec le compte d'avant le mélange —, plus le nombre de moitiés qui ont changé de place. Ce qui ne passe toujours pas après soixante essais est probablement impossible avec ces moitiés-là, et l'écran le dit plutôt que de laisser croire à un échec du hasard. <b>Sur le jeu imprimé</b>, l'assemblage d'origine laisse <b>9 cartes sur 50</b> avec une icône en commun entre leurs deux moitiés ; le mélange en trouve un qui n'en laisse <b>aucune</b>, en déplaçant 13 Gros Plans.",
+    ],
+  },
   {
     v: '1.81',
     date: '01/09/2026',
