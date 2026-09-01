@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.78';
-export const BUILD_DATE = '2026-09-01 09:20';
+export const VERSION = '1.79';
+export const BUILD_DATE = '2026-09-01 11:05';
 
 export const CHANGELOG = [
+  {
+    v: '1.79',
+    date: '01/09/2026',
+    items: [
+      "<b>Le groupe d'icônes peut en demander trois. Règles v0.14.7.</b> « n × 2 ICONES » devient « n × 2 <b>ou 3</b> ICONES » : une troisième liste déroulante, réglée sur « — aucune » par défaut, fait du couple un <b>trio</b>. Le bandeau rapporte alors n points par groupe <b>complet</b> réuni dans sa portée.",
+      "<b>La même icône peut y figurer plusieurs fois</b>, et compte pour autant d'exemplaires : « Arme + Arme + Héroïne » demande deux armes <b>et</b> une héroïne. Quatre armes et deux héroïnes font <b>deux</b> groupes ; trois armes et une héroïne n'en font qu'<b>un</b> — c'est l'icône la plus chiche qui décide. Toujours un appariement, pas une adjacence : les icônes n'ont ni à se toucher, ni à être sur la même carte.",
+      "Le décompte, les statistiques du matériel et le CSV parlent désormais d'une seule voix : le calcul des groupes vit à un seul endroit, et la colonne <code>cible</code> porte le groupe entier — <code>ARME+ARME+HEROINE</code> — sans colonne de plus. Les <b>huit cartes imprimées</b> qui portent un couple le gardent tel quel.",
+      "Sur la carte, le trio se dessine comme le couple : les trois pastilles se <b>chevauchent</b>. Mesuré sur un bandeau de Gros Plan — le plus étroit du jeu, 84 px : le trio y tient en <b>59 px</b>, soit 2,3 icônes pour trois, sans rien déborder.",
+    ],
+  },
   {
     v: '1.78',
     date: '01/09/2026',

@@ -95,8 +95,10 @@ export const CADRAGES_POUVOIR = ['PL', 'PM', 'GP', 'DEP'];
 //   FORMAT    n points par plan du cadrage visé — deux cadrages au plus,
 //             « n × Plan Large & Plan de départ »
 //   ELEMENT   n points par plan portant cet élément
-//   PAIRE     n points par couple d'icônes réunies dans la portée : quatre
-//             icônes font deux couples, cinq en font deux aussi
+//   PAIRE     n points par GROUPE d'icônes réunies dans la portée — deux, ou
+//             trois. Quatre icônes font deux couples, cinq en font deux aussi :
+//             c'est un appariement, pas une adjacence. Un groupe qui demande
+//             deux fois la même icône en demande deux exemplaires
 //   MORT      n points par plan de mort
 //   NEANT     n points par plan sans aucun personnage
 //   ABSENT    n points si l'élément visé n'apparaît nulle part
@@ -174,7 +176,11 @@ export const OBJ = {
   format:  (n, f, portee, f2) => ({ kind: 'FORMAT', n, format: f,
     ...(f2 && f2 !== f ? { format2: f2 } : {}), ...(portee ? { portee } : {}) }),
   element: (n, e, portee) => ({ kind: 'ELEMENT', n, el: e, ...(portee ? { portee } : {}) }),
-  paire:   (n, a, b, portee) => ({ kind: 'PAIRE', n, els: [a, b], ...(portee ? { portee } : {}) }),
+  // Un GROUPE d'icônes à réunir : deux, ou trois. `c` est la troisième, et
+  // elle vient après la portée pour que les huit cartes imprimées, écrites
+  // avant qu'un trio soit possible, restent telles quelles.
+  paire:   (n, a, b, portee, c) => ({ kind: 'PAIRE', n, els: c ? [a, b, c] : [a, b],
+    ...(portee ? { portee } : {}) }),
   mort:    (n, portee) => ({ kind: 'MORT', n, ...(portee ? { portee } : {}) }),
   neant:   (n, portee) => ({ kind: 'NEANT', n, ...(portee ? { portee } : {}) }),
   absent:  (n, e, portee) => ({ kind: 'ABSENT', n, el: e, portee: portee || 'MONTAGE' }),
@@ -373,9 +379,14 @@ function objQuoi(o) {
       ? `${FORMATS[o.format].label} & ${FORMATS[o.format2].label}`
       : FORMATS[o.format].label;
     case 'ELEMENT': return ELEMENTS[o.el].label;
-    case 'PAIRE':   return o.els[0] === o.els[1]
-      ? `couple de ${ELEMENTS[o.els[0]].label}`
-      : `couple ${ELEMENTS[o.els[0]].label} + ${ELEMENTS[o.els[1]].label}`;
+    case 'PAIRE': {
+      // « couple de Héroïne » quand c'est la même icône répétée, sinon la
+      // liste — et « trio » dès qu'elles sont trois.
+      const mot = o.els.length > 2 ? 'trio' : 'couple';
+      const memes = o.els.every((x) => x === o.els[0]);
+      return memes ? `${mot} de ${ELEMENTS[o.els[0]].label}`
+        : `${mot} ${o.els.map((x) => ELEMENTS[x].label).join(' + ')}`;
+    }
     case 'MORT':    return 'Mort';
     case 'NEANT':   return 'Plan sans personnage';
     case 'MINUTAGE': return `Plan ${o.sens === 'APRES' ? 'après' : 'avant'} ${tcTexte(o.seuil)}`;

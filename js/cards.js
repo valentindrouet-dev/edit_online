@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.78';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.78';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.79';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.79';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -63,12 +63,12 @@ function objCoeur(obj, taille, compact) {
     case 'FORMAT':  return tagCadrage(obj.format, compact)
       + (obj.format2 ? `<span class="et-cadrage">&amp;</span>${tagCadrage(obj.format2, compact)}` : '');
     case 'ELEMENT': return elIcon(obj.el, taille);
-    // Les deux icônes d'un couple se **chevauchent** au lieu de se suivre : le
-    // bandeau d'un Gros Plan n'a qu'un tiers de carte, et deux pastilles
-    // séparées d'un trait n'y entraient pas. Superposées, elles tiennent dans
-    // une largeur et demie et se lisent toujours comme deux.
-    case 'PAIRE':   return `<span class="paire">${elIcon(obj.els[0], taille)}${
-      elIcon(obj.els[1], taille)}</span>`;
+    // Les icônes d'un groupe se **chevauchent** au lieu de se suivre : le
+    // bandeau d'un Gros Plan n'a qu'un tiers de carte, et des pastilles
+    // séparées d'un trait n'y entraient pas. Superposées, un couple tient dans
+    // une largeur et demie, un trio dans deux — et chacune se lit encore.
+    case 'PAIRE':   return `<span class="paire ${obj.els.length > 2 ? 'trio' : ''}">${
+      obj.els.map((e) => elIcon(e, taille)).join('')}</span>`;
     case 'MORT':    return elIcon('MORT', taille);
     case 'NEANT':   return elIcon('NEANT', taille);
     case 'ABSENT':  return `<span class="barre">${elIcon(obj.el, taille)}${croixNon()}</span>`;

@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.78';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.79';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -11,27 +11,27 @@ import {
   ciblesSequence,
   CIBLES_COMPTE, CIBLE_IDS, libelleCibleCompte, porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, cadreTexte, cadreDepuisTexte,
-} from './data.js?v=1.78';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.78';
-import { elIcon, numIcon } from './icons.js?v=1.78';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.78';
+} from './data.js?v=1.79';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.79';
+import { elIcon, numIcon } from './icons.js?v=1.79';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.79';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.78';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.78';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, bancVide } from './scoring.js?v=1.78';
-import { releve, voler, stopperVols } from './anim.js?v=1.78';
-import { campagne } from './lab.js?v=1.78';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.78';
-import { Salon } from './net/salon.js?v=1.78';
-import { TransportLocal } from './net/local.js?v=1.78';
-import { TransportSupabase } from './net/supabase.js?v=1.78';
-import { enLigneDisponible } from './net/config.js?v=1.78';
-import { coupNu } from './net/protocole.js?v=1.78';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.78';
+} from './engine.js?v=1.79';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.79';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.79';
+import { releve, voler, stopperVols } from './anim.js?v=1.79';
+import { campagne } from './lab.js?v=1.79';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.79';
+import { Salon } from './net/salon.js?v=1.79';
+import { TransportLocal } from './net/local.js?v=1.79';
+import { TransportSupabase } from './net/supabase.js?v=1.79';
+import { enLigneDisponible } from './net/config.js?v=1.79';
+import { coupNu } from './net/protocole.js?v=1.79';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.79';
 
 const app = document.getElementById('app');
 
@@ -2092,7 +2092,7 @@ const KINDS = [
   ['',        'aucun pouvoir'],
   ['FORMAT',  'par CADRAGE…'],
   ['ELEMENT', 'par ICONE…'],
-  ['PAIRE',   'par 2 ICONES…'],
+  ['PAIRE',   'par 2 ou 3 ICONES…'],
   ['MORT',    'par MORT'],
   ['NEANT',   'par PLAN SANS PERSONNAGE'],
   ['RACCORD', 'par RACCORD'],
@@ -3272,9 +3272,14 @@ function blocPouvoir(o, ou, rang = 1) {
   } else if (kind === 'ELEMENT' || kind === 'ABSENT') {
     complement = `<select data-champ-obj="${ou}"${R} data-part="el">${elOpts(o.el)}</select>`;
   } else if (kind === 'PAIRE') {
+    // Une troisième icône, facultative : le groupe passe alors du couple au
+    // trio. « — aucune » le ramène à deux.
     complement = `<select data-champ-obj="${ou}"${R} data-part="el0">${elOpts(o.els[0])}</select>
       <span class="plus">+</span>
-      <select data-champ-obj="${ou}"${R} data-part="el1">${elOpts(o.els[1])}</select>`;
+      <select data-champ-obj="${ou}"${R} data-part="el1">${elOpts(o.els[1])}</select>
+      <span class="plus">+</span>
+      <select data-champ-obj="${ou}"${R} data-part="el2">
+        ${opt('', '— aucune', !o.els[2])}${elOpts(o.els[2])}</select>`;
   } else if (kind === 'SANS_TC') {
     complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
         ${opt('EGAL', 'à', o.sens !== 'AVANT' && o.sens !== 'APRES')}
@@ -3663,12 +3668,9 @@ function declencheurs(obj, plans) {
     case 'ELEMENT': return store.cfg.elementParIcone === false
       ? plans.filter((p) => p.el.includes(obj.el)).length
       : compteIcone(plans, obj.el);
-    case 'PAIRE': {
-      // Un couple s'apparie : quatre icônes font deux couples, cinq aussi.
-      const [x, y] = obj.els;
-      const nx = compteIcone(plans, x);
-      return x === y ? Math.floor(nx / 2) : Math.min(nx, compteIcone(plans, y));
-    }
+    // Un groupe s'apparie : quatre icônes font deux couples, cinq aussi. C'est
+    // le décompte qui sait le faire — il n'y a pas deux façons de compter.
+    case 'PAIRE': return compteGroupes(plans, obj.els);
     case 'MORT':    return plans.filter((p) => p.mort).length;
     case 'NEANT':   return plans.filter((p) => !p.el.some((e) => PERSONNAGES.includes(e))).length;
     case 'MINUTAGE': return plans.filter((p) => (obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
@@ -4316,7 +4318,8 @@ function construireObj(kind, actuel) {
       undefined, actuel && actuel.format2),
     ELEMENT: () => OBJ.element(n, e0),
     ABSENT:  () => OBJ.absent(n, e0),
-    PAIRE:   () => OBJ.paire(n, e0, actuel && actuel.els ? actuel.els[1] : e0),
+    PAIRE:   () => OBJ.paire(n, e0, actuel && actuel.els ? actuel.els[1] : e0,
+      undefined, actuel && actuel.els ? actuel.els[2] : undefined),
     MORT:    () => OBJ.mort(n),
     NEANT:   () => OBJ.neant(n),
     RACCORD: () => OBJ.raccord(n),
@@ -4396,8 +4399,10 @@ function majObjectif(cles, part, valeur, rang = 1) {
   else if (part === 'format') { o.format = valeur; if (o.format2 === valeur) delete o.format2; }
   else if (part === 'format2') { if (valeur) o.format2 = valeur; else delete o.format2; }
   else if (part === 'el') o.el = valeur;
-  else if (part === 'el0') o.els = [valeur, o.els[1]];
-  else if (part === 'el1') o.els = [o.els[0], valeur];
+  else if (part === 'el0') o.els = [valeur, o.els[1], ...(o.els[2] ? [o.els[2]] : [])];
+  else if (part === 'el1') o.els = [o.els[0], valeur, ...(o.els[2] ? [o.els[2]] : [])];
+  // La troisième icône fait du couple un trio ; vidée, elle le défait.
+  else if (part === 'el2') o.els = valeur ? [o.els[0], o.els[1], valeur] : [o.els[0], o.els[1]];
   else if (part === 'sens') o.sens = valeur;
   else if (part === 'cible') o.cible = valeur;
   else if (part === 'critere') o.critere = valeur;
@@ -4549,8 +4554,11 @@ function objDepuisCSV(r, suf = '') {
     case 'SEQ_AVEC': return ciblesSequence().some((c) => c.id === cible)
       ? OBJ.seqAvec(n, sens0 === 'SANS' ? 'SANS' : 'AVEC', cible, seuil) : null;
     case 'PAIRE': {
-      const [a, b] = cible.split('+');
-      return ELEMENT_IDS.includes(a) && ELEMENT_IDS.includes(b) ? OBJ.paire(n, a, b, portee) : null;
+      // « ARME+ARME » ou « ARME+ARME+HEROINE » : la colonne porte le groupe
+      // entier, et une icône inconnue fait tomber le bandeau.
+      const els = cible.split('+').filter(Boolean);
+      if (els.length < 2 || els.length > 3 || !els.every((x) => ELEMENT_IDS.includes(x))) return null;
+      return OBJ.paire(n, els[0], els[1], portee, els[2]);
     }
     // --- Les pouvoirs du vocabulaire commun --------------------------------
     // Une cible que la colonne ne reconnaît pas fait tomber le bandeau : mieux

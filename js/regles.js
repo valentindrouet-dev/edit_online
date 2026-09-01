@@ -14,13 +14,24 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.78';
-import { elIcon } from './icons.js?v=1.78';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.79';
+import { elIcon } from './icons.js?v=1.79';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.14.7',
+    date: '01/09/2026',
+    origine: 'Règle étendue par l’auteur',
+    corps: (c) => corps_0_14_7(c),
+    items: [
+      '<b>Le groupe d’icônes peut en demander trois.</b> « n × 2 ICONES » devient « n × 2 <b>ou 3</b> ICONES » : le bandeau nomme deux ou trois icônes, et rapporte n points par groupe <b>complet</b> réuni dans sa portée.',
+      'La même icône peut y figurer plusieurs fois, et compte alors pour autant d’exemplaires : « <b>Arme + Arme + Héroïne</b> » demande deux armes ET une héroïne. Quatre armes et deux héroïnes en font <b>deux</b> groupes ; trois armes et une héroïne n’en font qu’<b>un</b>. C’est toujours un appariement, pas une adjacence : les icônes n’ont pas à se toucher, ni même à être sur la même carte.',
+      'Les <b>huit cartes imprimées</b> qui portent un couple le gardent tel quel : la troisième icône est facultative, et rien ne change tant qu’on ne l’ajoute pas.',
+    ],
+  },
   {
     v: '0.14.6',
     date: '31/08/2026',
@@ -284,6 +295,22 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.14.7 ---------------------------------------------------------------
+// Le couple d'icônes s'ouvre à trois. La ligne du tableau est réécrite en
+// entier : elle disait « couple » à chaque phrase.
+
+function corps_0_14_7(c) {
+  return corps_0_14_6(c).replace(
+    /<tr><td><b>n × 2 ICONES<\/b><\/td>\s*\n?\s*<td>n points par <b>couple<\/b>[\s\S]*?chaque<\/td><td>Sa portée ◀ ▶<\/td><\/tr>/,
+    maj('0.14.7', `<tr><td><b>n × 2 ou 3 ICONES</b></td>
+      <td>n points par <b>groupe complet</b> d’icônes réunies dans la portée. Le bandeau en nomme
+      deux, ou trois ; la même peut y figurer plusieurs fois et compte alors pour autant
+      d’exemplaires — « Arme + Arme + Héroïne » demande deux armes et une héroïne. Quatre armes et
+      deux héroïnes font <b>deux</b> groupes ; trois armes et une héroïne n’en font qu’un. C’est un
+      appariement, pas une adjacence : les icônes n’ont ni à se toucher, ni à être sur la même
+      carte</td><td>Sa portée ◀ ▶</td></tr>`));
 }
 
 // --- v0.14.6 ---------------------------------------------------------------

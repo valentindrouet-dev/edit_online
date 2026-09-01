@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, objPortee, objsDe } from './data.js?v=1.78';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, objPortee, objsDe } from './data.js?v=1.79';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -50,15 +50,22 @@ export function compteIcone(plans, e) {
 }
 
 /**
- * Les couples d'icônes réunis dans une portée. Quatre icônes font deux
- * couples, cinq en font deux aussi : c'est un appariement, pas une adjacence.
- * Un couple de deux icônes différentes en demande une de chaque.
+ * Les GROUPES d'icônes réunis dans une portée — un couple, ou un trio. Quatre
+ * icônes font deux couples, cinq en font deux aussi : c'est un appariement,
+ * pas une adjacence.
+ *
+ * Le groupe est une liste d'icônes à réunir, et la même peut y figurer
+ * plusieurs fois : « Arme + Arme + Héroïne » demande deux armes ET une
+ * héroïne, donc trois icônes par groupe. On compte alors, pour chaque icône
+ * demandée, combien de fois la portée peut la fournir — et c'est la plus
+ * chiche qui décide.
  */
-function couples(plans, els) {
-  const [x, y] = els;
-  const nx = compteIcone(plans, x);
-  if (x === y) return Math.floor(nx / 2);
-  return Math.min(nx, compteIcone(plans, y));
+export function compteGroupes(plans, els) {
+  const besoin = new Map();
+  for (const e of els) besoin.set(e, (besoin.get(e) || 0) + 1);
+  let n = Infinity;
+  for (const [e, k] of besoin) n = Math.min(n, Math.floor(compteIcone(plans, e) / k));
+  return Number.isFinite(n) ? n : 0;
 }
 
 /**
@@ -198,7 +205,7 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
         ? portee.filter((p) => p.el.includes(obj.el)).length
         : compteIcone(portee, obj.el));
     case 'PAIRE':
-      return n * couples(portee, obj.els);
+      return n * compteGroupes(portee, obj.els);
     case 'MORT':
       return n * portee.filter((p) => p.mort).length;
     case 'NEANT':
@@ -488,7 +495,7 @@ export const SOURCES_LABEL = {
   PLAN: 'Raccords (par carte de la séquence)',
   FORMAT: 'Objectifs de cadrage',
   ELEMENT: 'Objectifs d’élément',
-  PAIRE: 'Objectifs de couple d’icônes',
+  PAIRE: 'Objectifs de groupe d’icônes',
   MORT: 'Objectifs Mort',
   NEANT: 'Objectifs Plan sans personnage',
   ABSENT: 'Objectifs d’absence',
