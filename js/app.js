@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.82';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.83';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -11,28 +11,28 @@ import {
   ciblesSequence,
   CIBLES_COMPTE, CIBLE_IDS, libelleCibleCompte, porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte,
-} from './data.js?v=1.82';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.82';
-import { elIcon, numIcon } from './icons.js?v=1.82';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, reglerLectureNue } from './cards.js?v=1.82';
+} from './data.js?v=1.83';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.83';
+import { elIcon, numIcon } from './icons.js?v=1.83';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, reglerLectureNue } from './cards.js?v=1.83';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.82';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.82';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.82';
-import { releve, voler, stopperVols } from './anim.js?v=1.82';
-import { campagne } from './lab.js?v=1.82';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.82';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.82';
-import { Salon } from './net/salon.js?v=1.82';
-import { TransportLocal } from './net/local.js?v=1.82';
-import { TransportSupabase } from './net/supabase.js?v=1.82';
-import { enLigneDisponible } from './net/config.js?v=1.82';
-import { coupNu } from './net/protocole.js?v=1.82';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.82';
+} from './engine.js?v=1.83';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.83';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.83';
+import { releve, voler, stopperVols } from './anim.js?v=1.83';
+import { campagne } from './lab.js?v=1.83';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.83';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.83';
+import { Salon } from './net/salon.js?v=1.83';
+import { TransportLocal } from './net/local.js?v=1.83';
+import { TransportSupabase } from './net/supabase.js?v=1.83';
+import { enLigneDisponible } from './net/config.js?v=1.83';
+import { coupNu } from './net/protocole.js?v=1.83';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.83';
 
 const app = document.getElementById('app');
 
@@ -2999,10 +2999,22 @@ async function chargerImages() {
   return inventaireImages;
 }
 
-const DOSSIERS_IMAGES = [['pl', 'Plans Larges et Plans de départ'], ['pm', 'Plans Moyens'], ['gp', 'Gros Plans']];
+// Les dossiers de la boîte portent le cadrage dont ils tiennent les proportions
+// — mais ce ne sont que des rangements : rien n'empêche de poser un Plan Large
+// sur un Gros Plan, l'atelier de recadrage est là pour ça. Un dossier apporté
+// (assets/perso, assets/nuit…) apparaît donc à la suite, sous son propre nom :
+// l'inventaire est écrit à la publication à partir de ce qui est sur le disque,
+// et cette table ne sert qu'à donner un titre lisible à ceux qu'on connaît.
+const TITRES_DOSSIERS = {
+  pl: 'Plans Larges et Plans de départ',
+  pm: 'Plans Moyens',
+  gp: 'Gros Plans',
+  perso: 'Vos images',
+};
+const titreDossier = (d) => TITRES_DOSSIERS[d] || `Dossier ${d}`;
 
 /** « gp/317.webp » — de quoi nommer une image sans écrire tout son chemin. */
-const nomImage = (url) => String(url || '').replace(/^assets\//, '').replace(/\.webp$/i, '');
+const nomImage = (url) => String(url || '').replace(/^assets\//, '').replace(/\.\w+$/, '');
 
 /**
  * La ligne « Illustration » du formulaire : la vignette du visuel actuel, qui
@@ -3195,12 +3207,12 @@ async function ouvrirChoixImage(cles) {
       ${cles.length > 1 ? 'sur toute la sélection' : 'sur ce plan'} ; rien n’empêche deux plans de
       partager la même. Le numéro imprimé, lui, ne bouge pas — c’est l’identité du plan.</p>
     <div id="bloc-recadrage">${blocRecadrage(cles)}</div>
-    ${DOSSIERS_IMAGES.map(([d, titre]) => (inv[d] && inv[d].length ? `<h3>${titre}</h3>
+    ${Object.keys(inv).map((d) => (inv[d] && inv[d].length ? `<h3>${titreDossier(d)}</h3>
       <div class="grille-illus">
         ${inv[d].map((f) => {
     const url = `assets/${d}/${f}`;
     return `<button class="tuile-illus ${actuelles.has(url) ? 'on' : ''}" data-choix-image="${url}"
-            style="background-image:url('${url}')"><span>${f.replace(/\.webp$/i, '')}</span></button>`;
+            style="background-image:url('${url}')"><span>${f.replace(/\.\w+$/, '')}</span></button>`;
   }).join('')}
       </div>` : '')).join('')}
     ${total ? '' : `<p class="encart attention">Aucune illustration trouvée. Le fichier

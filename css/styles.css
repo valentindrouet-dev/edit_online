@@ -247,6 +247,36 @@ button { font-family: inherit; }
 .illus-image { position: absolute; inset: 0; background-size: cover;
              background-position: left top; background-repeat: no-repeat; }
 .illus-image.miroir { transform: scaleX(-1); }
+/* La boîte noire du minutage.
+   Elle est peinte dans les visuels de la boîte — l'extraction a repeint en noir
+   la boîte imprimée —, mais une image apportée ne l'a évidemment pas, et un
+   recadrage la fait glisser hors du coin. Les chiffres se retrouvaient alors
+   posés à même le dessin. On la redessine donc toujours, à sa place et à sa
+   taille exactes : sur un visuel d'origine elle se superpose au noir déjà là et
+   ne se voit pas ; partout ailleurs elle rend au minutage le fond qu'il lui
+   faut. Le minutage, lui, ne bouge pas d'un pixel : la boîte se glisse dessous.
+
+   Les dimensions sont mesurées sur les visuels : dans les trois séries, la
+   boîte imprimée fait 131 × 43,5 px, quelle que soit la largeur de l'image.
+   L'illustration étant posée en `cover` et toujours mise à l'échelle par la
+   largeur, cette boîte occupe donc une fraction fixe de la fenêtre — 131 / 642
+   pour un Plan Large, 131 / 421 pour un Plan Moyen, 131 / 202 pour un Gros
+   Plan. La hauteur suit le même facteur, rapportée à la hauteur de fenêtre. */
+.moitie.f-PL, .moitie.f-DEP { --bt-l: 20.40%; --bt-h: 15.13%; }
+.moitie.f-PM                { --bt-l: 31.12%; --bt-h: 15.18%; }
+.moitie.f-GP                { --bt-l: 64.85%; --bt-h: 16.34%; }
+.illus > .boite-tc {
+  position: absolute; top: 0; left: 0;
+  width: var(--bt-l, 20.40%); height: var(--bt-h, 15.13%);
+  background: #0b0b0b;
+  /* Un liseré très discret sur les deux seuls bords qui donnent sur le dessin :
+     en haut et à gauche, la boîte est contre l'arête de la carte. Il est tracé
+     à l'intérieur — la boîte garde ainsi la taille exacte de la boîte
+     imprimée, et se superpose au noir des visuels d'origine sans déborder. */
+  box-sizing: border-box;
+  border-right: 1px solid rgba(206, 208, 216, .34);
+  border-bottom: 1px solid rgba(206, 208, 216, .34);
+}
 /* La languette des icônes : la bande garde sa hauteur — c'est elle qui aligne
    le bas des deux moitiés d'une carte —, mais elle ne se peint plus. Le fond
    clair est porté par `.pastilles-fond`, qui n'entoure que les icônes : il
@@ -362,15 +392,20 @@ body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
   color: #ff3b30; font-weight: 700; font-size: .92em;
   line-height: 1; letter-spacing: .04em;
   font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
-  /* Aucun fond : le noir est celui de l'illustration, où l'extraction a
-     repeint la boîte du minutage imprimé. L'application en dessinait un
-     second, d'une autre taille et d'un autre calage — deux rectangles noirs
-     l'un sur l'autre, et le sien qui dépassait. Un halo sombre autour des
-     chiffres suffit à les tenir lisibles si jamais le noir manquait. */
+  /* Aucun fond propre : le noir vient de `.boite-tc`, posée juste au-dessous
+     et taillée sur la boîte imprimée. La leçon d'avant tient toujours — un
+     second rectangle d'une autre taille et d'un autre calage se voyait
+     dépasser —, mais elle porte désormais sur la boîte, pas sur le minutage :
+     c'est elle qui épouse le noir des visuels, et les chiffres gardent leur
+     propre calage, mesuré sur l'encre de la fonte. Le halo sombre reste, pour
+     les tenir lisibles si jamais le noir manquait. */
   background: transparent;
   text-shadow: 0 0 .28em #05050a, 0 0 .12em #05050a, 0 1px 1px #05050a;
 }
-/* Sans illustration il n'y a plus de noir derrière : la boîte se redessine. */
+/* Sans illustration, le minutage double de taille et n'a plus rien à épouser :
+   la boîte taillée sur l'imprimé n'aurait plus la bonne mesure. Elle s'efface,
+   et c'est le minutage lui-même qui reprend un fond, à sa taille à lui. */
+body.sans-illus .illus > .boite-tc { display: none; }
 body.sans-illus .moitie .tcode {
   background: #0d0d10; border-radius: .3em; text-shadow: none;
 }

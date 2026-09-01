@@ -1,18 +1,20 @@
 // ---------------------------------------------------------------------------
 // EDIT — rendu des cartes
 // ---------------------------------------------------------------------------
-// Une carte n'apporte que son illustration : le minutage, les pastilles, le
-// bandeau d'objectif et le libellé de cadrage sont entièrement redessinés par
-// l'application, à partir de ses propres données. Les images d'assets/ sont
-// recadrées au-dessus de la zone d'information et leur minutage imprimé est
-// effacé — voir outils/extraire-visuels.py.
+// Une carte n'apporte que son illustration : le minutage, sa boîte, les
+// pastilles, le bandeau d'objectif et le libellé de cadrage sont entièrement
+// redessinés par l'application, à partir de ses propres données. Les images
+// d'assets/ sont recadrées au-dessus de la zone d'information et leur minutage
+// imprimé est effacé — voir outils/extraire-visuels.py. La boîte noire du coin,
+// elle, y est restée peinte : l'application la redessine par-dessus, pour que
+// les plans habillés d'une image apportée l'aient eux aussi.
 //
 // Les proportions reprennent la carte réelle : illustration jusqu'à 69 % de la
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.82';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.82';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.83';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.83';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -388,6 +390,7 @@ export function renderPlan(h, opts = {}) {
     ${jeton}
     <div class="illus"${h.cle ? ` data-illus="${h.cle}"` : ''}>
       <div class="illus-image${h.miroir ? ' miroir' : ''}" style="${fond}"></div>
+      <div class="boite-tc"></div>
       <div class="tcode ${h.tc === 0 || h.transition ? 'bleu' : ''}">${tc(h.tc)}</div>
     </div>
     <div class="pastilles" style="--n:${Math.max(1, icones.length)}">${icones.length

@@ -67,12 +67,28 @@ ecrire('version.json', `${JSON.stringify({ version: VERSION, date: DATE }, null,
 // publication — déposer un visuel dans assets/ suffit donc à le rendre
 // choisissable, sans toucher au code.
 
-const IMAGES = ['pl', 'pm', 'gp'];
+// Les dossiers ne sont pas listés en dur : déposer `assets/nuit/` et y mettre
+// des visuels suffit à les rendre choisissables. Seul `icones` est écarté —
+// ce ne sont pas des illustrations de plan mais les symboles du jeu. Les trois
+// dossiers de la boîte viennent d'abord, dans l'ordre des cadrages ; les
+// dossiers apportés suivent, par ordre alphabétique.
+const IMAGES_HORS = new Set(['icones']);
+const ORDRE = ['pl', 'pm', 'gp'];
+const dossiersImages = readdirSync(join(racine, 'assets'), { withFileTypes: true })
+  .filter((e) => e.isDirectory() && !IMAGES_HORS.has(e.name))
+  .map((e) => e.name)
+  .sort((a, b) => {
+    const ia = ORDRE.indexOf(a); const ib = ORDRE.indexOf(b);
+    if (ia !== ib) return (ia < 0 ? ORDRE.length : ia) - (ib < 0 ? ORDRE.length : ib);
+    return a.localeCompare(b, 'fr', { numeric: true });
+  });
+
 const inventaire = {};
-for (const d of IMAGES) {
-  inventaire[d] = readdirSync(join(racine, 'assets', d))
+for (const d of dossiersImages) {
+  const fichiers = readdirSync(join(racine, 'assets', d))
     .filter((f) => /\.(webp|png|jpe?g|avif)$/i.test(f))
     .sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
+  if (fichiers.length) inventaire[d] = fichiers;
 }
 ecrire('assets/images.json', `${JSON.stringify(inventaire, null, 2)}\n`);
 const nbImages = Object.values(inventaire).reduce((s, l) => s + l.length, 0);

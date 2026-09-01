@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.82';
-export const BUILD_DATE = '2026-09-01 20:40';
+export const VERSION = '1.83';
+export const BUILD_DATE = '2026-09-01 21:35';
 
 export const CHANGELOG = [
+  {
+    v: '1.83',
+    date: '01/09/2026',
+    items: [
+      "<b>La boîte noire du minutage est toujours là.</b> Elle n'était pas dessinée : elle était <b>peinte dans les visuels de la boîte</b>, où l'extraction avait repeint en noir la boîte imprimée. Dès qu'on posait une image apportée — ou qu'on recadrait un visuel d'origine, ce qui la faisait glisser hors du coin —, les chiffres se retrouvaient posés à même le dessin. L'application la redessine maintenant elle-même, <b>à chaque plan</b>, avec un discret liseré gris sur ses deux bords intérieurs.",
+      "Elle est taillée sur l'imprimé, pas approchée à l'œil : la boîte des visuels mesure <b>131 × 43,5 px</b> dans les trois séries, quelle que soit la largeur de l'image, et l'illustration étant posée en <code>cover</code> à la largeur, elle occupe donc une fraction fixe de la fenêtre — un cinquième pour un Plan Large, un tiers pour un Plan Moyen, <b>les deux tiers</b> pour un Gros Plan. Sur un visuel d'origine, la boîte se superpose au noir déjà là : rien ne change que le liseré. <b>Le minutage, lui, n'a pas bougé d'un pixel</b> — c'est la boîte qui se glisse dessous.",
+      "<b>Deux visuels de plus dans le choix d'illustration</b>, sous leur propre rayon « Vos images ». Et le rayon n'est plus une liste écrite dans le code : déposer un dossier dans <code>assets/</code> et republier suffit désormais à le faire paraître, sous son nom, à la suite des trois séries de la boîte. Les images n'ont plus à être des <code>.webp</code> ni à porter un numéro de plan.",
+    ],
+  },
   {
     v: '1.82',
     date: '01/09/2026',
