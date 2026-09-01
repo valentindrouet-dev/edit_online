@@ -1182,6 +1182,13 @@ body .demi { transition: box-shadow .12s; }
 .demi-icones { display: flex; gap: 1px; align-items: center; margin-left: auto; }
 .demi-icones .pastille { width: 15px; height: 15px; }
 
+/* Le rang des ordres de lecture, sous un titre de section. Il ne change que
+   l'affichage : rien de ce qu'il montre n'est réordonné dans le jeu. */
+.tri-assemblage {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 2px;
+}
+.tri-assemblage > .aide { margin-right: 2px; }
+
 /* Le relevé : une case par moitié, son numéro et le nombre de cartes qui la
    portent. Le rouge dit « dessinée mais injouable », l'orange « en plusieurs
    exemplaires ». */

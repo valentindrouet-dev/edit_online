@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.84';
-export const BUILD_DATE = '2026-09-01 22:20';
+export const VERSION = '1.85';
+export const BUILD_DATE = '2026-09-01 22:55';
 
 export const CHANGELOG = [
+  {
+    v: '1.85',
+    date: '01/09/2026',
+    items: [
+      "<b>Les deux grilles de l'Assemblage se trient.</b> Chacune a son rang de boutons, juste au-dessus d'elle. Le tri ne touche à rien : il ne change que l'ordre d'affichage, jamais l'appariement — c'est le rang de la carte qui l'identifie, pas sa place à l'écran.",
+      "<b>Les cartes</b>, dans <b>l'ordre de la boîte</b> — D01, D02, D03… —, par <b>n° de Plan Moyen</b> ou par <b>n° de Gros Plan</b> croissant, ou <b>fautives d'abord</b> : les cartes qui ne tiennent pas les contraintes cochées passent en tête, et l'on répare sans avoir à les chercher dans cinquante vignettes.",
+      "<b>Le relevé des moitiés</b>, en <b>n° croissant</b> — désormais l'ordre par défaut, au lieu de celui des scènes —, ou par présence : <b>les moins présentes d'abord</b>, ce qui met en tête celles qui ne sont sur aucune carte, ou <b>les plus présentes d'abord</b>, ce qui met en tête celles qui reviennent — le Plan Moyen 290 et le Gros Plan 390, six fois chacun sur le jeu imprimé.",
+    ],
+  },
   {
     v: '1.84',
     date: '01/09/2026',

@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.84';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.85';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -11,28 +11,28 @@ import {
   ciblesSequence,
   CIBLES_COMPTE, CIBLE_IDS, libelleCibleCompte, porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte,
-} from './data.js?v=1.84';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.84';
-import { elIcon, numIcon } from './icons.js?v=1.84';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, reglerLectureNue } from './cards.js?v=1.84';
+} from './data.js?v=1.85';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.85';
+import { elIcon, numIcon } from './icons.js?v=1.85';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, reglerLectureNue } from './cards.js?v=1.85';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.84';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.84';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.84';
-import { releve, voler, stopperVols } from './anim.js?v=1.84';
-import { campagne } from './lab.js?v=1.84';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.84';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.84';
-import { Salon } from './net/salon.js?v=1.84';
-import { TransportLocal } from './net/local.js?v=1.84';
-import { TransportSupabase } from './net/supabase.js?v=1.84';
-import { enLigneDisponible } from './net/config.js?v=1.84';
-import { coupNu } from './net/protocole.js?v=1.84';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.84';
+} from './engine.js?v=1.85';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.85';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.85';
+import { releve, voler, stopperVols } from './anim.js?v=1.85';
+import { campagne } from './lab.js?v=1.85';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.85';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.85';
+import { Salon } from './net/salon.js?v=1.85';
+import { TransportLocal } from './net/local.js?v=1.85';
+import { TransportSupabase } from './net/supabase.js?v=1.85';
+import { enLigneDisponible } from './net/config.js?v=1.85';
+import { coupNu } from './net/protocole.js?v=1.85';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.85';
 
 const app = document.getElementById('app');
 
@@ -2083,7 +2083,8 @@ const mat = {
   triValeurs: { col: 'valeur', sens: 1 },
   // L'assemblage : les contraintes cochées, le dernier rapport de mélange, et
   // la moitié qu'on met en avant depuis le relevé.
-  assemblage: { contraintes: CONTRAINTES_PAR_DEFAUT.slice(), rapport: null, surligne: null, erreur: null },
+  assemblage: { contraintes: CONTRAINTES_PAR_DEFAUT.slice(), rapport: null, surligne: null,
+    erreur: null, triCartes: 'CARTE', triMoities: 'NUM' },
 };
 
 const VUES = [
@@ -3730,6 +3731,53 @@ function listeNumeros(cote) {
     .map((m) => `<option value="${m.num}">${m.titre || m.famille}</option>`).join('')}</datalist>`;
 }
 
+// Deux grilles, deux façons de les lire. Le tri ne touche à rien : il ne change
+// que l'ordre d'affichage. L'appariement, lui, reste rangé par le rang de la
+// carte — c'est lui qui identifie une carte, pas sa place à l'écran.
+
+const TRIS_CARTES = [
+  ['CARTE', 'Ordre des cartes', 'D01, D02, D03… — l’ordre de la boîte'],
+  ['PM', 'N° de Plan Moyen', 'du plus petit au plus grand'],
+  ['GP', 'N° de Gros Plan', 'du plus petit au plus grand'],
+  ['FAUTES', 'Fautives d’abord', 'les cartes qui ne tiennent pas les contraintes cochées, en tête'],
+];
+
+const TRIS_MOITIES = [
+  ['NUM', 'N° croissant', 'l’ordre des numéros'],
+  ['RARE', 'Les moins présentes d’abord', 'les moitiés qui ne sont sur aucune carte en tête'],
+  ['FREQ', 'Les plus présentes d’abord', 'celles qui reviennent le plus souvent en tête'],
+];
+
+/** Le rang de barres de tri : un bouton par ordre, celui en cours allumé. */
+function barreTri(cle, tris, actif) {
+  return `<span class="tri-assemblage"><span class="aide">Trier</span>${tris
+    .map(([id, label, aide]) => `<button class="pill mini ${id === actif ? 'on' : ''}"
+      data-${cle}="${id}" title="${aide}">${label}</button>`).join('')}</span>`;
+}
+
+/** Les cartes dans l'ordre demandé. Une copie : l'ordre du modèle ne bouge pas. */
+function trierCartesAssemblage(cartes, mode, actives) {
+  const l = cartes.slice();
+  // Une moitié manquante passe en dernier : elle n'a pas de numéro à comparer.
+  const num = (m) => (m ? m.num : Number.MAX_SAFE_INTEGER);
+  if (mode === 'PM') l.sort((a, b) => num(a.pm) - num(b.pm) || a.rang - b.rang);
+  else if (mode === 'GP') l.sort((a, b) => num(a.gp) - num(b.gp) || a.rang - b.rang);
+  else if (mode === 'FAUTES') {
+    const f = new Map(l.map((c) => [c.rang, fautes(c.pm, c.gp, actives).length]));
+    l.sort((a, b) => f.get(b.rang) - f.get(a.rang) || a.rang - b.rang);
+  }
+  return l;
+}
+
+/** Les moitiés d'un relevé dans l'ordre demandé, à égalité par leur numéro. */
+function trierMoities(lignes, mode) {
+  const l = lignes.slice();
+  if (mode === 'RARE') l.sort((a, b) => a.n - b.n || a.num - b.num);
+  else if (mode === 'FREQ') l.sort((a, b) => b.n - a.n || a.num - b.num);
+  else l.sort((a, b) => a.num - b.num);
+  return l;
+}
+
 /** Une carte de l'assemblage : ses deux moitiés, et ce qui cloche entre elles. */
 function carteAssemblage(c, actives) {
   const f = fautes(c.pm, c.gp, actives);
@@ -3747,7 +3795,7 @@ function carteAssemblage(c, actives) {
 function tableauRepartition(cote, cartes) {
   const rp = repartition(moitiesToutes(cote), cartes, cote);
   const sur = mat.assemblage.surligne;
-  const cases = rp.lignes.map((m) => {
+  const cases = trierMoities(rp.lignes, mat.assemblage.triMoities).map((m) => {
     const etat = m.n === 0 ? 'absente' : m.n > 1 ? 'repetee' : '';
     const vise = sur && sur.cote === cote && sur.num === m.num;
     return `<button class="case-moitie ${etat} ${vise ? 'vise' : ''}"
@@ -3808,12 +3856,15 @@ function vueAssemblage() {
       à la place de celle qui s'y trouve.` : ''}</p>
   ${mat.assemblage.erreur ? `<p class="encart attention refus-numero">${mat.assemblage.erreur}</p>` : ''}
   ${listeNumeros('PM')}${listeNumeros('GP')}
-  <div class="grille-assemblage">${cartes.map((c) => carteAssemblage(c, actives)).join('')}</div>
+  ${barreTri('tri-cartes', TRIS_CARTES, mat.assemblage.triCartes)}
+  <div class="grille-assemblage">${trierCartesAssemblage(cartes, mat.assemblage.triCartes, actives)
+    .map((c) => carteAssemblage(c, actives)).join('')}</div>
 
   <h3 style="margin-top:22px">Où sont les moitiés</h3>
   <p class="aide">Sur combien de cartes chaque moitié se trouve. <b class="lg-absente">En rouge</b>,
   celles qui ne paraissent <b>nulle part</b> — dessinées, mais injouables. <b class="lg-repetee">En
   orange</b>, celles qui reviennent plusieurs fois. Un clic met en avant les cartes concernées.</p>
+  ${barreTri('tri-moities', TRIS_MOITIES, mat.assemblage.triMoities)}
   ${tableauRepartition('PM', cartes)}
   ${tableauRepartition('GP', cartes)}`;
 }
@@ -4350,6 +4401,13 @@ function brancherAssemblage() {
     // Les contraintes ne se rangent pas dans la configuration : elles disent
     // comment on veut mélanger, pas ce que le jeu contient.
     refaire();
+  }));
+
+  app.querySelectorAll('[data-tri-cartes]').forEach((el) => el.addEventListener('click', () => {
+    mat.assemblage.triCartes = el.dataset.triCartes; refaire();
+  }));
+  app.querySelectorAll('[data-tri-moities]').forEach((el) => el.addEventListener('click', () => {
+    mat.assemblage.triMoities = el.dataset.triMoities; refaire();
   }));
 
   const mel = app.querySelector('#melanger');
