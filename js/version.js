@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.79';
-export const BUILD_DATE = '2026-09-01 11:05';
+export const VERSION = '1.80';
+export const BUILD_DATE = '2026-09-01 13:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.80',
+    date: '01/09/2026',
+    items: [
+      "<b>Une illustration se déplace sans qu'on ait à zoomer.</b> Le recadrage bougeait la <b>couche</b> de l'image, et non l'image dans sa couche : ce qui débordait était déjà rogné, si bien que glisser ne faisait que découvrir un bord de carte. Le déplacement était donc interdit tant qu'on n'avait pas zoomé — et un visuel de <b>Plan Large posé sur un Gros Plan</b>, qui déborde pourtant de près de trois fois la largeur utile, restait figé sur sa partie gauche.",
+      "<b>Le cadrage remplace le décalage.</b> Le réglage dit maintenant <b>quelle part du dessin on montre</b>, de 0 % — son bord gauche — à 100 % — son bord droit. À 100 % de zoom, une image faite pour un autre cadrage se parcourt donc d'un bout à l'autre ; une image taillée juste n'a rien à parcourir, et l'écran le dit au lieu de laisser cliquer dans le vide : les flèches sans effet s'éteignent, la <b>position se lit en chiffres</b>, et la marge disponible est annoncée — « il reste 85 % de marge de chaque côté ».",
+      "<b>Aucun réglage ne peut plus découvrir un bord.</b> C'est vrai par construction et non par prudence : le cadrage se joue dans le débordement de l'image, et le zoom est ancré sur le point de cadrage de telle sorte que la couche recouvre toujours la fenêtre. Vérifié aux deux bords, zoomé au maximum, et retourné en miroir.",
+      "Les flèches poussent l'image <b>dans le même sens que le glissé</b> : « ▶ » la fait aller vers la droite, ce qui montre ce qui était à gauche. Cliquer puis tirer ne se contredit plus.",
+      "Un recadrage réglé avant cette version est <b>converti exactement</b> : l'ancien décalage valait (0,5 − cadrage) × (zoom − 1), et c'est cette formule qu'on inverse. Rien à refaire à la main.",
+    ],
+  },
   {
     v: '1.79',
     date: '01/09/2026',

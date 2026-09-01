@@ -870,17 +870,84 @@ export function cadreDe(cle) {
   return normaliserCadre(s && s.cadre);
 }
 
-/** Le cadre neutre — l'image telle qu'elle vient — se dit `null`, pas `{z:1}`. */
+/**
+ * Le recadrage d'une illustration, tel qu'il se range :
+ *   z  le zoom, 1 étant l'image telle que la fenêtre du plan la reçoit
+ *   x  la position horizontale du dessin dans sa fenêtre, de 0 à 100 %
+ *   y  la position verticale, de même
+ *
+ * `x` et `y` ne sont pas un décalage mais un **cadrage** : 0 montre le bord
+ * gauche (ou haut) du dessin, 100 le bord droit (ou bas), 50 le milieu. C'est
+ * ce qui permet de faire glisser une image **sans zoomer** : posée en `cover`,
+ * une illustration faite pour un autre cadrage déborde de la fenêtre — un
+ * visuel de Plan Large sur un Gros Plan tient près de trois fois la largeur
+ * utile —, et l'on choisit alors la part qu'on montre. Une image taillée juste
+ * ne déborde pas : il n'y a rien à choisir tant qu'on n'a pas zoomé.
+ *
+ * 0, 0 est le cadrage d'origine — celui que la carte a toujours eu, coin haut
+ * gauche —, si bien qu'un cadre neutre ne change rien et se dit `null`.
+ */
 export function normaliserCadre(c) {
   if (!c) return null;
   const z = Math.max(0.5, Math.min(4, Math.round((Number(c.z) || 1) * 100) / 100));
-  // On ne glisse pas l'image plus loin que ce que le zoom permet : au-delà,
-  // un bord de la carte se retrouverait vide. À z = 1, elle ne bouge pas.
-  const max = Math.round((Math.abs(z - 1) / 2) * 100);
-  const borne = (v) => Math.max(-max, Math.min(max, Math.round(Number(v) || 0)));
-  const x = borne(c.x);
-  const y = borne(c.y);
-  return z === 1 && !x && !y ? null : { z, x, y };
+  const pos = (v) => Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
+  // Avant la v1.80, `x` et `y` étaient un décalage en pour-cent de la fenêtre,
+  // et l'on ne pouvait glisser qu'en ayant zoomé : le décalage valait alors
+  // exactement (0,5 − position) × (z − 1) × 100. La conversion est donc exacte,
+  // et un recadrage réglé hier retrouve le cadrage qu'on lui avait donné.
+  const depuisDecalage = (v) => (z === 1 ? 0 : pos((0.5 - (Number(v) || 0) / ((z - 1) * 100)) * 100));
+  const x = c.v === 2 ? pos(c.x) : depuisDecalage(c.x);
+  const y = c.v === 2 ? pos(c.y) : depuisDecalage(c.y);
+  return z === 1 && !x && !y ? null : { v: 2, z, x, y };
+}
+
+/**
+ * De combien l'illustration peut voyager dans sa fenêtre, en pour-cent de
+ * celle-ci, sur chaque axe — zéro voulant dire qu'elle n'a aucun jeu.
+ *
+ * L'illustration est posée en `cover` : agrandie jusqu'à remplir la fenêtre,
+ * elle **déborde d'un seul côté**, celui où elle est la plus généreuse. C'est
+ * ce débordement qui donne le jeu ; le zoom en ajoute sur les deux axes.
+ *
+ * Cela ne borne rien — le cadrage va toujours de 0 à 100 et ne découvre jamais
+ * un bord. Cela sert à le **dire** : quelles flèches ont un effet, et combien
+ * de marge il reste à parcourir.
+ */
+export function bornesCadre(boite, image, z = 1) {
+  if (!boite || !image || !boite.w || !boite.h || !image.w || !image.h) return { x: 0, y: 0 };
+  const cadre = boite.w / boite.h;
+  const dessin = image.w / image.h;
+  const jeu = (o) => Math.max(0, Math.round((((1 + o) * z - 1) / 2) * 100));
+  return {
+    x: jeu(dessin > cadre ? dessin / cadre - 1 : 0),
+    y: jeu(dessin < cadre ? cadre / dessin - 1 : 0),
+  };
+}
+
+/**
+ * La transformation à poser sur la couche d'illustration : le zoom, ancré sur
+ * le point de cadrage pour qu'il ne saute pas, et le miroir.
+ *
+ * Le zoom est pris **au centre** puis rattrapé par un déplacement, plutôt que
+ * pris sur le point de cadrage : les deux reviennent au même à l'écran, mais
+ * un `transform-origin` mobile se combinerait mal avec le miroir, qui a besoin
+ * du centre pour retomber sur la fenêtre. Ainsi la couche recouvre **toujours**
+ * la fenêtre, quel que soit le cadrage — c'est démontrable et c'est vérifié.
+ */
+export function transformeCadre(cadre, miroir) {
+  const t = [];
+  if (cadre && (cadre.z !== 1 || cadre.x || cadre.y)) {
+    const { z } = cadre;
+    // Le rattrapage : nul à z = 1, où seul le cadrage du fond joue.
+    const dec = (p) => Math.round((p / 100 - 0.5) * (1 - z) * 10000) / 100;
+    // Sur une image retournée, la droite est à gauche : le rattrapage suit.
+    const tx = dec(cadre.x) * (miroir ? -1 : 1);
+    const ty = dec(cadre.y);
+    if (tx || ty) t.push(`translate(${tx}%, ${ty}%)`);
+    if (z !== 1) t.push(`scale(${z})`);
+  }
+  if (miroir) t.push('scaleX(-1)');
+  return t.join(' ');
 }
 
 /** Le recadrage tel qu'il s'écrit dans une colonne de tableur : « 1.5|-10|4 ». */
@@ -890,7 +957,8 @@ export function cadreTexte(c) {
 
 export function cadreDepuisTexte(t) {
   const m = String(t || '').split('|');
-  return m.length === 3 ? normaliserCadre({ z: parseFloat(m[0]), x: m[1], y: m[2] }) : null;
+  // Le tableur écrit toujours la forme en vigueur : pas de conversion à faire.
+  return m.length === 3 ? normaliserCadre({ v: 2, z: parseFloat(m[0]), x: m[1], y: m[2] }) : null;
 }
 
 /**

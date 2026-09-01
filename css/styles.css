@@ -1069,7 +1069,11 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 /* Les quatre flèches en croix : le déplacement au clavier de la souris, pour
    régler au point près ce que le glissé approche. */
 .croix-cadre { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.croix-cadre > div { display: flex; gap: 28px; }
+.croix-cadre > div { display: flex; gap: 10px; align-items: center; }
+/* Où l'on en est dans le dessin : 0 % montre son bord gauche, 100 % le droit.
+   Sans ce chiffre, une flèche éteinte au bord passerait pour une panne. */
+.cadre-pos { font-size: .72rem; color: var(--gris); font-variant-numeric: tabular-nums;
+  min-width: 34px; text-align: center; }
 .croix-cadre .pill.mini { min-width: 34px; }
 
 .vignette-illus {

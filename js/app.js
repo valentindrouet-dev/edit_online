@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.79';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.80';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -10,28 +10,28 @@ import {
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
   ciblesSequence,
   CIBLES_COMPTE, CIBLE_IDS, libelleCibleCompte, porteeReglable, porteeFigee, CRITERES_DOUBLE,
-  normaliserCadre, cadreTexte, cadreDepuisTexte,
-} from './data.js?v=1.79';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.79';
-import { elIcon, numIcon } from './icons.js?v=1.79';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.79';
+  normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte,
+} from './data.js?v=1.80';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.80';
+import { elIcon, numIcon } from './icons.js?v=1.80';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi } from './cards.js?v=1.80';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.79';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.79';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.79';
-import { releve, voler, stopperVols } from './anim.js?v=1.79';
-import { campagne } from './lab.js?v=1.79';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.79';
-import { Salon } from './net/salon.js?v=1.79';
-import { TransportLocal } from './net/local.js?v=1.79';
-import { TransportSupabase } from './net/supabase.js?v=1.79';
-import { enLigneDisponible } from './net/config.js?v=1.79';
-import { coupNu } from './net/protocole.js?v=1.79';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.79';
+} from './engine.js?v=1.80';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.80';
+import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.80';
+import { releve, voler, stopperVols } from './anim.js?v=1.80';
+import { campagne } from './lab.js?v=1.80';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.80';
+import { Salon } from './net/salon.js?v=1.80';
+import { TransportLocal } from './net/local.js?v=1.80';
+import { TransportSupabase } from './net/supabase.js?v=1.80';
+import { enLigneDisponible } from './net/config.js?v=1.80';
+import { coupNu } from './net/protocole.js?v=1.80';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.80';
 
 const app = document.getElementById('app');
 
@@ -3042,6 +3042,13 @@ function poserImage(cles, url) {
 // que le cadrage soit celui qu'on voulait.
 
 const CADRE_PAS = 0.1;
+// Un cran de flèche : trois pour-cent de cadrage. Assez pour voir bouger,
+// assez fin pour viser — trente-trois clics traversent le dessin.
+const CADRE_PAS_POS = 3;
+// Le cadrage d'origine : le coin haut gauche, sans zoom. `v` marque la forme
+// en vigueur — un recadrage réglé avant la v1.80 rangeait un décalage, que le
+// modèle convertit.
+const CADRE_ZERO = { v: 2, z: 1, x: 0, y: 0 };
 
 /** Le recadrage commun à une sélection — rien s'ils ne l'ont pas tous. */
 function cadreCommun(cles) {
@@ -3052,11 +3059,32 @@ function cadreCommun(cles) {
   });
 }
 
-/** Pose un recadrage sur toute la sélection. `null` la remet à l'imprimé. */
+/**
+ * Pose un recadrage sur toute la sélection. `null` la remet à l'imprimé.
+ * Le cadrage va toujours de 0 à 100 % : il n'y a rien à borner, et aucun
+ * réglage ne peut découvrir un bord de la carte.
+ */
 function poserCadre(cles, cadre) {
   const c = normaliserCadre(cadre);
   surLeModifie(() => { for (const k of cles) retoucher(k, 'cadre', c || undefined); });
   sauverCfg();
+}
+
+// La taille d'un visuel, mesurée une fois pour toutes. Elle décide de tout le
+// jeu qu'on a pour le déplacer : une image faite pour un autre cadrage déborde
+// de la fenêtre et glisse librement ; une image taillée juste ne bouge pas.
+const TAILLES_IMAGES = new Map();
+
+function mesurerImage(url) {
+  if (!url) return Promise.resolve(null);
+  if (TAILLES_IMAGES.has(url)) return Promise.resolve(TAILLES_IMAGES.get(url));
+  return new Promise((r) => {
+    const im = new Image();
+    const fini = (t) => { TAILLES_IMAGES.set(url, t); r(t); };
+    im.onload = () => fini({ w: im.naturalWidth, h: im.naturalHeight });
+    im.onerror = () => fini(null);
+    im.src = url;
+  });
 }
 
 /**
@@ -3074,17 +3102,24 @@ function planApercuCadre(cles) {
  * voit tout de suite le résultat — minutage et bandeau compris, puisque c'est
  * la vraie carte qui est dessinée, pas une vignette approchée.
  */
-function blocRecadrage(cles) {
+function blocRecadrage(cles, bornes) {
   const plan = planApercuCadre(cles);
   if (!plan) return '';
-  const c = cadreCommun(cles) || { z: 1, x: 0, y: 0 };
+  const c = cadreCommun(cles) || CADRE_ZERO;
   const memeCadre = cles.length === 1 || cadreCommun(cles) !== null
     || cles.every((k) => !(planDeCle(k) || {}).cadre);
+  // Le jeu qu'on a pour glisser l'image, sur chaque axe. Nul des deux côtés,
+  // c'est que le visuel tombe pile dans la fenêtre : il faut zoomer pour
+  // gagner de la marge.
+  const b = bornes || { x: 0, y: 0 };
+  const libre = b.x > 0 || b.y > 0;
+  const sens = b.x > 0 && b.y > 0 ? 'dans tous les sens'
+    : b.x > 0 ? 'à gauche et à droite' : 'de haut en bas';
   return `<div class="recadrage">
     <div class="recadrage-vue">
       <div class="carte solo" id="cadre-carte">${surLeModifie(() => renderPlan(plan, { muet: true }))}</div>
-      <div class="aide">${c.z === 1 ? 'Zoomez, puis tirez l’image pour la déplacer.'
-    : 'Tirez l’image pour la déplacer ; la molette zoome.'}</div>
+      <div class="aide">${libre ? `Tirez l’image pour la déplacer <b>${sens}</b> ; la molette zoome.`
+    : 'Ce visuel tombe pile dans la fenêtre : zoomez pour pouvoir le déplacer.'}</div>
     </div>
     <div class="recadrage-reglages">
       <label class="champ-ligne">
@@ -3099,16 +3134,26 @@ function blocRecadrage(cles) {
         <button class="pill mini" id="cadre-reset" ${cadreCommun(cles) ? '' : 'disabled'}>↺ recadrage</button>
       </div>
       <div class="croix-cadre">
-        <button class="pill mini" data-cadre-pan="0,-1">▲</button>
+        <button class="pill mini" data-cadre-pan="0,-1"
+          ${b.y > 0 && c.y < 100 ? '' : 'disabled'}>▲</button>
         <div>
-          <button class="pill mini" data-cadre-pan="-1,0">◀</button>
-          <button class="pill mini" data-cadre-pan="1,0">▶</button>
+          <button class="pill mini" data-cadre-pan="-1,0"
+            ${b.x > 0 && c.x < 100 ? '' : 'disabled'}>◀</button>
+          <span class="cadre-pos">${b.x > 0 ? `${c.x} %` : '—'}</span>
+          <button class="pill mini" data-cadre-pan="1,0"
+            ${b.x > 0 && c.x > 0 ? '' : 'disabled'}>▶</button>
         </div>
-        <button class="pill mini" data-cadre-pan="0,1">▼</button>
+        <button class="pill mini" data-cadre-pan="0,1"
+          ${b.y > 0 && c.y > 0 ? '' : 'disabled'}>▼</button>
+        <span class="cadre-pos">${b.y > 0 ? `${c.y} % de haut en bas` : ''}</span>
       </div>
       <p class="aide">${memeCadre ? '' : '<b>Les plans choisis n’ont pas le même recadrage.</b> '}Le
         recadrage se pose sur ${cles.length > 1 ? 'toute la sélection' : 'ce plan'}, comme l’image.
-        À 100 % l’illustration tombe telle qu’elle vient : c’est en zoomant qu’on peut la déplacer.</p>
+        ${libre ? `Ce visuel <b>déborde</b> de la fenêtre du plan : il reste
+          ${b.x ? `<b>${b.x} %</b> de marge de chaque côté` : ''}${b.x && b.y ? ' et ' : ''}${b.y
+    ? `<b>${b.y} %</b> en haut et en bas` : ''} à parcourir — c'est ce qui permet de choisir ce
+          qu'on montre. Zoomer en donne davantage.`
+    : 'Il est taillé au format exact de son emplacement : à 100 % il n’a aucun jeu, et c’est en zoomant qu’on s’en fait.'}</p>
     </div>
   </div>`;
 }
@@ -3146,14 +3191,39 @@ async function ouvrirChoixImage(cles) {
   // Le recadrage se règle sans quitter la modale : chaque geste réécrit
   // l'aperçu, et la galerie du Matériel n'est refaite qu'à la fermeture.
   let touchee = false;
+  // La taille du visuel montré dans l'aperçu, une fois mesurée. C'est elle qui
+  // dit de combien il déborde de la fenêtre du plan, donc jusqu'où on peut le
+  // glisser sans découvrir un bord.
+  let tailleVisuel = null;
+
+  /** La fenêtre de l'aperçu, en pixels — le rectangle où l'illustration vit. */
+  const fenetreCadre = () => {
+    const el = fond.querySelector('#cadre-carte .illus');
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { w: r.width, h: r.height };
+  };
+
+  const bornes = (z) => bornesCadre(fenetreCadre(), tailleVisuel,
+    z === undefined ? (cadreCommun(cles) || { z: 1 }).z : z);
+
   const redessiner = () => {
     const hote = fond.querySelector('#bloc-recadrage');
-    if (hote) hote.innerHTML = blocRecadrage(cles);
+    if (!hote) return;
+    // Premier dessin sans borne : la fenêtre n'existe pas encore. On mesure le
+    // visuel, puis on redessine avec la marge exacte.
+    hote.innerHTML = blocRecadrage(cles, tailleVisuel ? bornes() : null);
     brancherRecadrage();
+    const img = surLeModifie(() => (planApercuCadre(cles) || {}).image);
+    if (img && !TAILLES_IMAGES.has(img)) {
+      mesurerImage(img).then((t) => { tailleVisuel = t; redessiner(); });
+    } else if (img) {
+      const t = TAILLES_IMAGES.get(img) || null;
+      if (JSON.stringify(t) !== JSON.stringify(tailleVisuel)) { tailleVisuel = t; redessiner(); }
+    } else if (tailleVisuel) { tailleVisuel = null; redessiner(); }
   };
   const regler = (f) => {
-    const c = cadreCommun(cles) || { z: 1, x: 0, y: 0 };
-    poserCadre(cles, f({ ...c }));
+    poserCadre(cles, f({ ...(cadreCommun(cles) || CADRE_ZERO) }));
     touchee = true;
     redessiner();
   };
@@ -3164,9 +3234,13 @@ async function ouvrirChoixImage(cles) {
     fond.querySelectorAll('[data-cadre-zoom]').forEach((b) => b.addEventListener('click', () => {
       regler((c) => ({ ...c, z: c.z + CADRE_PAS * Number(b.dataset.cadreZoom) }));
     }));
+    // Les flèches poussent l'IMAGE, comme le glissé : « ▶ » la fait aller vers
+    // la droite, ce qui montre ce qui était à gauche — donc fait baisser le
+    // cadrage. Les deux gestes vont dans le même sens ; l'inverse rendrait
+    // fou celui qui clique puis tire.
     fond.querySelectorAll('[data-cadre-pan]').forEach((b) => b.addEventListener('click', () => {
       const [dx, dy] = b.dataset.cadrePan.split(',').map(Number);
-      regler((c) => ({ ...c, x: c.x + dx * 2, y: c.y + dy * 2 }));
+      regler((c) => ({ ...c, x: c.x - dx * CADRE_PAS_POS, y: c.y - dy * CADRE_PAS_POS }));
     }));
     const reset = fond.querySelector('#cadre-reset');
     if (reset) reset.addEventListener('click', () => { poserCadre(cles, null); touchee = true; redessiner(); });
@@ -3185,20 +3259,28 @@ async function ouvrirChoixImage(cles) {
     vue.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       const r = vue.getBoundingClientRect();
-      const depart = cadreCommun(cles) || { z: 1, x: 0, y: 0 };
+      const depart = cadreCommun(cles) || CADRE_ZERO;
+      // Le dessin voyage, d'un bout à l'autre du cadrage, de deux fois sa
+      // marge. C'est ce chemin qu'on répartit sur les pixels parcourus, pour
+      // que l'image suive le pointeur au lieu de filer ou de traîner.
+      const jeu = bornes(depart.z);
+      const routeX = (2 * jeu.x / 100) * r.width;
+      const routeY = (2 * jeu.y / 100) * r.height;
+      // Tirer vers la droite montre ce qui est à gauche : le cadrage baisse.
+      const sens = planApercuCadre(cles).miroir ? -1 : 1;
       const x0 = e.clientX, y0 = e.clientY;
       const bouge = (ev) => {
         poserCadre(cles, { ...depart,
-          x: depart.x + ((ev.clientX - x0) / r.width) * 100,
-          y: depart.y + ((ev.clientY - y0) / r.height) * 100 });
+          x: routeX ? depart.x - ((ev.clientX - x0) * sens / routeX) * 100 : depart.x,
+          y: routeY ? depart.y - ((ev.clientY - y0) / routeY) * 100 : depart.y });
         touchee = true;
-        // Pendant le glissé on ne réécrit que la transformation : refaire tout
-        // le bloc à chaque pixel arracherait le pointeur de sa cible.
+        // Pendant le glissé on ne réécrit que le style : refaire tout le bloc à
+        // chaque pixel arracherait le pointeur de sa cible.
         const img = vue.querySelector('.illus-image');
         const c = cadreCommun(cles);
         if (img) {
-          img.style.transform = `${c ? `translate(${c.x}%, ${c.y}%) scale(${c.z})` : ''}${
-            planApercuCadre(cles).miroir ? ' scaleX(-1)' : ''}`.trim();
+          img.style.backgroundPosition = c ? `${c.x}% ${c.y}%` : '';
+          img.style.transform = transformeCadre(c, planApercuCadre(cles).miroir);
         }
       };
       const fini = () => {
@@ -3236,6 +3318,10 @@ async function ouvrirChoixImage(cles) {
   });
   document.body.appendChild(fond);
   brancherRecadrage();
+  // La fenêtre du plan existe enfin : on mesure le visuel et l'on redessine
+  // avec la marge exacte, qui décide des flèches et du texte d'aide.
+  const img0 = surLeModifie(() => (planApercuCadre(cles) || {}).image);
+  if (img0) mesurerImage(img0).then((t) => { tailleVisuel = t; redessiner(); });
 }
 
 /** Ajoute ou retire une icône, en gardant l'ordre canonique des éléments. */

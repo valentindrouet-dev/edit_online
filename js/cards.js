@@ -11,8 +11,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle } from './data.js?v=1.79';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.79';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.80';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.80';
 
 export function tc(min) {
   return `${String(Math.floor(min)).padStart(2, '0')}:00`;
@@ -242,14 +242,18 @@ export function renderPlan(h, opts = {}) {
   // résoudrait contre la feuille de style et non contre le document. Elle vit
   // dans sa propre couche sous le minutage, pour qu'un retournement en miroir
   // ne retourne que le dessin — des chiffres à l'envers ne se lisent pas.
-  // Le recadrage et le miroir sont une seule transformation : le miroir en
-  // premier — donc le plus à droite —, pour que déplacer l'image se fasse
-  // toujours dans le sens de l'écran, même sur un dessin retourné.
-  const t = [];
-  if (h.cadre) t.push(`translate(${h.cadre.x}%, ${h.cadre.y}%) scale(${h.cadre.z})`);
-  if (h.miroir) t.push('scaleX(-1)');
+  // Le recadrage se joue en deux temps. Le **cadrage** — quelle part du dessin
+  // on montre — est une position de fond : l'illustration est posée en `cover`
+  // et déborde de la fenêtre dès qu'elle n'a pas sa proportion, si bien qu'on
+  // la fait glisser sans rien agrandir. Le **zoom** et le **miroir**, eux, sont
+  // une transformation de la couche. Déplacer la couche elle-même ne marcherait
+  // pas : ce qui déborde est déjà rogné par elle, et on ne ferait que découvrir
+  // un bord de carte.
+  const cadre = h.cadre;
+  const transforme = transformeCadre(cadre, h.miroir);
   const fond = `${h.image ? `background-image:url('${h.image}');` : ''}${
-    t.length ? `transform:${t.join(' ')};` : ''}`;
+    cadre ? `background-position:${cadre.x}% ${cadre.y}%;` : ''}${
+    transforme ? `transform:${transforme};` : ''}`;
   // Le crâne se lit avec les autres : c'est une icône de la carte, pas un état.
   const icones = h.mort ? [...h.el, 'MORT'] : h.el;
   // Ce que ce plan-là rapporte, ici et maintenant : un jeton au coin, en face
