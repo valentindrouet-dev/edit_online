@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.92';
+import { ELEMENT_IDS } from './data.js?v=1.93';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -92,10 +92,10 @@ export const DEFAULTS = {
     // dans une portée, et ne se distinguent que par ce qu'ils en font.
     AILLEURS: true, CENTRE: true, LOT: true, SEUIL: true, ABSENTES: true, DOMINE: true,
     EXTREME: true, PLAN_ICONES: true, DOUBLE: true,
-    // Les pouvoirs de RÈGLE. Ils ne rapportent pas de points : les décocher
-    // n'annule pas un gain, cela retire un droit — plus de pioche au sommet,
-    // plus de séquence ni de plan supplémentaire, et les Raccords revalent ce
-    // que la variable dit.
+    // Les pouvoirs de RÈGLE. Ils ne rapportent pas de points là où ils sont
+    // posés : les décocher n'annule pas un gain, cela retire un droit — plus de
+    // pioche au sommet, plus de séquence ni de plan supplémentaire, et les
+    // Cartes Raccord gardent le bandeau qui leur est imprimé.
     PIOCHER: true, SEQ_PLUS: true, PLAN_PLUS: true, RACCORD_VAUT: true,
   },
   // Une carte peut porter deux fois la même icône. Par défaut chacune rapporte

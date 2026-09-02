@@ -13,8 +13,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.92';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.92';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.93';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.93';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -112,9 +112,10 @@ function objCoeur(obj, taille, compact) {
     // Sur un bandeau, la place manque : « avant / après » se lit « < » et « > ».
     // Le libellé en toutes lettres reste dans l'aperçu au survol.
     case 'MINUTAGE': return `${compact ? '' : '<span class="tag tag-blanc">Plan</span>'}
-      <span class="tc-seuil">${obj.sens === 'APRES' ? '&gt;' : '&lt;'}&nbsp;${tcTexte(obj.seuil)}</span>`;
+      <span class="tc-seuil minutage">${obj.sens === 'APRES' ? '&gt;' : '&lt;'}&nbsp;${
+        tcTexte(obj.seuil)}</span>`;
     case 'CHRONO':  return `<span class="tag tag-chrono">↗ ordre</span>`;
-    case 'SANS_TC': return `<span class="barre"><span class="tc-seuil">${
+    case 'SANS_TC': return `<span class="barre"><span class="tc-seuil minutage">${
       obj.sens === 'AVANT' ? '&lt;' : obj.sens === 'APRES' ? '&gt;' : '='
     }&nbsp;${tcTexte(obj.seuil)}</span>${croixNon()}</span>`;
     // Les bandeaux de séquence : la pastille violette dit qu'on compte des

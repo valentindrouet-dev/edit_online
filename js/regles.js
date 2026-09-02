@@ -14,13 +14,23 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.92';
-import { elIcon } from './icons.js?v=1.92';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.93';
+import { elIcon } from './icons.js?v=1.93';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.14.14',
+    date: '02/09/2026',
+    origine: 'Règle précisée par l’auteur',
+    corps: (c) => corps_0_14_14(c),
+    items: [
+      '<b>Une Carte Raccord n’est jamais un Gros Plan ni un Plan Moyen.</b> Elle occupe bien leur place sur le banc — c’est par là qu’on l’accroche —, mais elle relie sans rien raconter : aucun bandeau qui compte des <b>cadrages</b> ne la trouve. « n × Gros Plan », « si au moins 2 Plans Moyens », « lot de 3 Gros Plans », « séquence avec 2 Gros Plans » : elle n’y entre pour rien.',
+      'Elle compte en revanche toujours comme <b>Carte</b> et comme <b>Carte Raccord</b>, jamais comme <b>Plan</b>. Et elle n’apporte aucune <b>valeur de cadre</b> — ce qui était déjà le cas.',
+    ],
+  },
   {
     v: '0.14.13',
     date: '02/09/2026',
@@ -365,6 +375,20 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.14.14 --------------------------------------------------------------
+// Une Carte Raccord occupe la place d'un Gros Plan ou d'un Plan Moyen, mais
+// n'en est pas un. La note du cadrage le dit désormais.
+
+function corps_0_14_14(c) {
+  return corps_0_14_13(c)
+    .replace('Chaque plan porte un <b>cadrage</b>',
+      `${maj('0.14.14', `Une <b>Carte Raccord</b> occupe la place d'un Gros Plan ou d'un Plan Moyen
+      sur le banc — c'est par là qu'on l'accroche —, mais elle n'en est pas un : aucun bandeau qui
+      compte des <b>cadrages</b> ne la trouve. Elle compte comme <b>Carte</b> et comme <b>Carte
+      Raccord</b>, jamais comme <b>Plan</b>, et n'a pas de valeur de cadre.`)}
+      Chaque plan porte un <b>cadrage</b>`);
 }
 
 // --- v0.14.13 --------------------------------------------------------------

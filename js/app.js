@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.92';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.93';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,28 +12,28 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=1.92';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.92';
-import { elIcon, numIcon } from './icons.js?v=1.92';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.92';
+} from './data.js?v=1.93';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.93';
+import { elIcon, numIcon } from './icons.js?v=1.93';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.93';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.92';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.92';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.92';
-import { releve, voler, stopperVols } from './anim.js?v=1.92';
-import { campagne } from './lab.js?v=1.92';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.92';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.92';
-import { Salon } from './net/salon.js?v=1.92';
-import { TransportLocal } from './net/local.js?v=1.92';
-import { TransportSupabase } from './net/supabase.js?v=1.92';
-import { enLigneDisponible } from './net/config.js?v=1.92';
-import { coupNu } from './net/protocole.js?v=1.92';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.92';
+} from './engine.js?v=1.93';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.93';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.93';
+import { releve, voler, stopperVols } from './anim.js?v=1.93';
+import { campagne } from './lab.js?v=1.93';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.93';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.93';
+import { Salon } from './net/salon.js?v=1.93';
+import { TransportLocal } from './net/local.js?v=1.93';
+import { TransportSupabase } from './net/supabase.js?v=1.93';
+import { enLigneDisponible } from './net/config.js?v=1.93';
+import { coupNu } from './net/protocole.js?v=1.93';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.93';
 
 const app = document.getElementById('app');
 
@@ -216,7 +216,7 @@ function html(s, garderDefilement = false) {
   // Repeindre la table ne doit pas ramener la page en haut.
   if (garderDefilement && y) window.scrollTo({ top: y, behavior: 'instant' });
   app.querySelectorAll('[data-go]').forEach((el) => {
-    el.addEventListener('click', () => { location.hash = el.dataset.go; });
+    el.addEventListener('click', () => allerA(el.dataset.go));
   });
 }
 
@@ -489,6 +489,18 @@ function bandeauMateriel() {
 // PARTIE
 // ===========================================================================
 
+/**
+ * Aller à un écran. Poser le MÊME hash que celui où l'on se trouve ne déclenche
+ * pas `hashchange` : rien ne se redessine. C'est ce qui rendait « Rejouer »
+ * inopérant depuis la table des scores — elle vit sous `#/partie`, la partie
+ * neuve était bel et bien créée, mais l'écran restait sur l'ancienne. On rend
+ * donc explicitement quand l'adresse ne bouge pas.
+ */
+function allerA(hash) {
+  if (location.hash === hash) route();
+  else location.hash = hash;
+}
+
 function lancerPartie() {
   appliquerJeuActif();
   // Une partie précédente peut encore avoir un coup d'IA ou une carte en l'air.
@@ -500,7 +512,7 @@ function lancerPartie() {
   store.choixRiviere = null;
   store.undo = null;
   store.joueurVu = null;
-  location.hash = '#/partie';
+  allerA('#/partie');
 }
 
 // Les deux temps du tour restent ceux des règles — on dérushe, puis on monte —

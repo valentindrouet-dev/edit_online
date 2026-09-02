@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.92';
-export const BUILD_DATE = '2026-09-02 04:40';
+export const VERSION = '1.93';
+export const BUILD_DATE = '2026-09-02 05:25';
 
 export const CHANGELOG = [
+  {
+    v: '1.93',
+    date: '02/09/2026',
+    items: [
+      "<b>Une Carte Raccord n'est jamais un Gros Plan ni un Plan Moyen. Règles v0.14.14.</b> Elle occupe leur place sur le banc — c'est par là qu'on l'accroche —, et le décompte la prenait pour l'un d'eux. « n × Gros Plan », « si au moins 2 Plans Moyens », « lot de 3 Gros Plans », « séquence avec 2 Gros Plans », le relevé des cadrages : plus rien ne la compte. Elle reste une <b>Carte</b> et une <b>Carte Raccord</b>, jamais un <b>Plan</b>.",
+      "<b>« Rejouer » remarche.</b> La table des scores vit sous la même adresse que la partie : reposer cette adresse ne redessinait rien, et l'écran restait sur les scores — la partie neuve était pourtant bel et bien créée, invisible dessous. Tous les boutons de navigation passent désormais par le même chemin, qui redessine quand l'adresse ne bouge pas.",
+      "<b>Les cartouches noirs des bandeaux s'écrivent en blanc.</b> Ils portaient tous le rouge de l'afficheur de minutage — illisible pour un « 4 », un « MIN » ou un « MAX », qui n'ont rien d'un timecode. Le blanc devient la règle ; <b>seuls les vrais minutages</b> — « &lt; 30:00 », « = --:-- » — gardent le rouge.",
+    ],
+  },
   {
     v: '1.92',
     date: '02/09/2026',

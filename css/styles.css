@@ -1739,11 +1739,17 @@ table.tbl th.th-tri.num { text-align: right; }
 
 /* --- Bandeaux de minutage -------------------------------------------------- */
 
+/* Le cartouche noir d'un seuil. Il porte deux choses très différentes : un
+   MINUTAGE — « < 30:00 » —, qui imite l'afficheur d'une table de montage et se
+   lit donc en rouge ; et des NOMBRES ou des mots — « 4 », « MIN », « max » —,
+   qui n'ont rien d'un timecode. Le rouge y était illisible sur le noir. Le
+   blanc est donc la règle, et le rouge l'exception qu'on demande. */
 .tc-seuil {
-  background: #0d0d10; color: #ff3b30; font-weight: 700; font-size: .55em;
+  background: #0d0d10; color: #f4f5f8; font-weight: 700; font-size: .55em;
   padding: .14em .3em; border-radius: .22em; letter-spacing: .03em; border: 1px solid #3a3b44;
   font-family: "SFMono-Regular", "Consolas", "Menlo", monospace; white-space: nowrap;
 }
+.tc-seuil.minutage { color: #ff3b30; }
 .tag.tag-chrono {
   background: #1d3a2a; color: #7ee2a8; border: 1px solid #2f6b4a;
   font-size: .62em; font-weight: 800; padding: .2em .42em; border-radius: .22em;

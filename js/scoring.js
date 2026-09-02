@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, OBJ, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.92';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, OBJ, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.93';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -94,9 +94,19 @@ export function compteCible(plans, cible, banc) {
     case 'VALEUR':   return new Set(plans.filter((p) => !estRaccord(p)).map((p) => p.format)).size;
     case 'SEQUENCE': return banc ? banc.sequences.length : 0;
     default:
-      if (CADRAGES_POUVOIR.includes(cible)) return plans.filter((p) => p.format === cible).length;
+      if (CADRAGES_POUVOIR.includes(cible)) return plans.filter((p) => aCeCadrage(p, cible)).length;
       return compteIcone(plans, cible);
   }
+}
+
+/**
+ * Ce plan porte-t-il ce cadrage ? Une Carte Raccord occupe bien la place d'un
+ * Plan Moyen ou d'un Gros Plan sur le banc — c'est par là qu'on l'accroche —,
+ * mais elle n'en est pas un : elle relie, elle ne raconte rien. Aucun bandeau
+ * qui compte des Gros Plans ou des Plans Moyens ne doit donc la trouver.
+ */
+function aCeCadrage(p, cadrage) {
+  return !estRaccord(p) && p.format === cadrage;
 }
 
 /** La ligne du banc où se trouve ce plan — sa séquence. */
@@ -201,7 +211,7 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
     case 'FORMAT':
       // Un bandeau de cadrage peut en viser deux : un plan compte dès qu'il
       // porte l'un OU l'autre — il ne compte pas deux fois pour autant.
-      return n * portee.filter((p) => p.format === obj.format || p.format === obj.format2).length;
+      return n * portee.filter((p) => aCeCadrage(p, obj.format) || aCeCadrage(p, obj.format2)).length;
     case 'ELEMENT':
       // Une carte peut porter deux fois la même icône. Par défaut chacune
       // rapporte ; `elementParIcone: false` revient à compter les plans.
@@ -373,7 +383,7 @@ function plansDe(seq) {
  */
 function comptePorteurs(seq, cible) {
   if (cible === 'RACCORD') return seq.filter(estRaccord).length;
-  if (CADRAGES_VISABLES.includes(cible)) return seq.filter((p) => p.format === cible).length;
+  if (CADRAGES_VISABLES.includes(cible)) return seq.filter((p) => aCeCadrage(p, cible)).length;
   return seq.filter((p) => p.el.includes(cible)).length;
 }
 
@@ -590,7 +600,9 @@ export function recenser(banc) {
 
   for (const p of plans) {
     for (const e of p.el) if (elements[e] !== undefined) elements[e]++;
-    if (cadrages[p.format] !== undefined) cadrages[p.format]++;
+    // Le recensement compte ce que la table montre, et une Carte Raccord n'y
+    // est ni un Gros Plan ni un Plan Moyen : elle a sa propre ligne.
+    if (!estRaccord(p) && cadrages[p.format] !== undefined) cadrages[p.format]++;
     if (p.mort) morts++;
     if (!p.el.some((e) => PERSONNAGES.includes(e))) sansPersonnage++;
     if (estRaccord(p)) raccords++;
