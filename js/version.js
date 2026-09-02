@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.0';
+export const VERSION = '2.1';
 export const BUILD_DATE = '2026-09-03 03:40';
 
 export const CHANGELOG = [
+  {
+    v: '2.1',
+    date: '03/09/2026',
+    items: [
+      "<b>« 3 × Séquence ▼ 🚗 » vaut bien 9 points. Règles v0.21.</b> Le bandeau comptait les <b>véhicules</b> des lignes du dessous ; il compte désormais les <b>lignes</b> qui en portent un — c'est ce que dit son cartouche <b>SÉQUENCE</b>. Trois lignes font trois, qu'elles montrent six véhicules à elles trois ou trois, et une seule ligne bien fournie ne vaut plus autant que trois lignes. Le pouvoir du <b>centre</b>, lui, compte toujours les icônes : c'est un morceau de ligne qu'il regarde, pas une pile de lignes.",
+      "<b>On ne joue plus avant le plan à 01:00 ni après celui à 99:00.</b> Ce sont le premier et le dernier plan du film. La fermeture vaut pour tout ce qui vient <b>après</b> dans l'ordre de lecture, et pas seulement pour le bout de la ligne concernée : une ligne ouverte sous celle qui porte le 99:00 commencerait après la fin du film. La règle se décoche dans <b>Variables</b> ⚙.",
+      "<b>Et une borne se pose au bout qui lui revient</b> — le 01:00 tout au début, le 99:00 tout à la fin —, sans quoi elle tomberait au milieu et rendrait illégal d'un coup ce qui était déjà posé. Le <b>Générique de fin</b> marque d'ailleurs maintenant <b>99:00</b> : la moitié Générique se lit des deux façons, et son minutage suit son rôle. La variante <b>Chronologie</b> y gagne au passage — posé en queue de film, il marquait 01:00 et comptait donc systématiquement à contresens. Dans l'aide de jeu, la ligne <b>99:00</b> ne compte donc plus <b>0</b> carte mais <b>2</b> : les deux Génériques à double lecture, qui portent les deux bornes selon le bout où on les joue.",
+      "<b>La mise en place ne montre plus que vos deux plans.</b> Les Cartes Plan de Départ des autres joueuses défilaient l'une après l'autre, comme une distribution qu'on vous aurait fait regarder — on ne savait plus lesquels étaient les siens. La zone montre désormais, et tout de suite, les <b>deux plans de votre carte</b> ; une fois le vôtre posé, elle dit qu'on attend les autres.",
+    ],
+  },
   {
     v: '2.0',
     date: '03/09/2026',

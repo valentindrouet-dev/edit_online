@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=2.0';
+import { ELEMENT_IDS } from './data.js?v=2.1';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -77,6 +77,12 @@ export const DEFAULTS = {
   // elle redevient un plan ordinaire — variante hors règles.
   raccordConnecte: true,
   generiqueBloque: true,     // rien avant l'Ouverture, rien après les Crédits
+  // Le plan à 01:00 est le PREMIER plan du film, celui à 99:00 le DERNIER :
+  // rien ne se joue avant l'un, rien après l'autre. La règle se lit sur le
+  // minutage et non sur un drapeau — un Générique posé autrement que par son
+  // chemin propre n'en levait aucun, et l'on pouvait glisser une carte après la
+  // fin du film.
+  bornesBloquent: true,
   // Variante — pas de Plans de départ. Les quatre faces de départ rejoignent
   // la pioche des Plans Larges, dont elles prennent la couleur : ce sont des
   // Plans Larges comme les autres. Il n'y a alors plus de choix de départ au
@@ -336,6 +342,9 @@ export const SCHEMA = [
         + 'dans la même ligne. Sur une seule bande, elle se pose entre deux séquences et les '
         + 'raccorde. Sinon, c’est un plan ordinaire' },
     { k: 'generiqueBloque', l: 'Le Générique ferme le montage', t: 'bool' },
+    { k: 'bornesBloquent', l: 'Le minutage 01:00 / 99:00 ferme le montage', t: 'bool',
+      aide: 'le plan à 01:00 est le premier plan du film, celui à 99:00 le dernier : on ne joue '
+        + 'rien avant l’un ni après l’autre' },
     { k: 'sixCartesDepart', l: 'Variante — 6 Cartes Départ', t: 'bool',
       aide: 'les quatre plans de départ s’apparient de six façons — 1-2, 2-3, 3-4, 4-1, 2-4, 1-3 — '
         + 'et chaque joueuse pioche une seule de ces six cartes : deux faces au choix au lieu de '

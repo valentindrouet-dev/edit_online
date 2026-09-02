@@ -16,9 +16,9 @@
 import {
   FORMATS, ELEMENTS, ELEMENT_IDS, PORTEES, OBJ, objLabel, PAIRES_DEPART, PLANS_DEPART,
   buildCartesDoubles, buildPlansLarges, buildDeparts, SCENES, recenserBoite,
-} from './data.js?v=2.0';
-import { elIcon } from './icons.js?v=2.0';
-import { objHTML } from './cards.js?v=2.0';
+} from './data.js?v=2.1';
+import { elIcon } from './icons.js?v=2.1';
+import { objHTML } from './cards.js?v=2.1';
 
 // --- Les briques de mise en page -------------------------------------------
 
@@ -222,6 +222,12 @@ export function livret(cfg) {
       <li><b>Deux Raccords ne se touchent pas</b>, et le <b>bord libre d’un Raccord n’accepte qu’un
         Plan Large</b> — jamais un Plan Moyen ni un Gros Plan. C’est là tout l’office du Raccord :
         il ouvre un second côté, et ce côté commence par son propre climax.</li>
+      ${c.bornesBloquent === false ? '' : `<li><b>Rien avant le premier plan du film, rien après le
+        dernier.</b> Le plan à <span class="lv-tc-o">01:00</span> ouvre le film, celui à
+        <span class="lv-tc-o">99:00</span> le termine : on ne pose ni avant l’un ni après l’autre,
+        et le montage se lisant ligne après ligne, une ligne ouverte sous celle qui porte le 99:00
+        commencerait après la fin. Ces deux plans-là se posent donc <b>au bout qui leur revient</b>,
+        et nulle part ailleurs.</li>`}
     </ul>
     ${encart('Le Raccord, la seule façon d’étoffer', `Une ligne pleine n’accepte plus de plan, mais
       elle accepte toujours un <b>Raccord</b> — et, derrière lui, un nouveau Plan Large qui ouvre un

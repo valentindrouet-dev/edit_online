@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=2.0';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=2.1';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -108,6 +108,22 @@ function aCeCadrage(p, cadrage) {
   return !estRaccord(p) && p.format === cadrage;
 }
 
+/**
+ * Les LIGNES que regarde « n × séquence ▲ / ▼ » : celles posées au-dessus de la
+ * sienne, celles d'en dessous, ou toutes les autres. Sa propre ligne en est
+ * toujours exclue, sans quoi le bandeau ferait double emploi avec la portée
+ * « séquence ».
+ */
+function lignesAilleurs(obj, sequence, banc, porteur) {
+  const i = banc.sequences.indexOf(sequence) >= 0
+    ? banc.sequences.indexOf(sequence)
+    : banc.sequences.findIndex((s) => s.includes(porteur));
+  if (i < 0) return [];
+  if (obj.sens === 'DESSUS') return banc.sequences.slice(0, i);
+  if (obj.sens === 'DESSOUS') return banc.sequences.slice(i + 1);
+  return banc.sequences.filter((_, k) => k !== i);
+}
+
 /** La ligne du banc où se trouve ce plan — sa séquence. */
 function ligneDe(banc, plan) {
   return banc.sequences.find((s) => s.includes(plan)) || null;
@@ -139,15 +155,7 @@ export function porteeDe(obj, sequence, banc, cfg, porteur) {
   // « Ailleurs » regarde les AUTRES séquences — celles du dessus, celles du
   // dessous, ou les deux. Sa propre ligne en est exclue, sans quoi il ferait
   // double emploi avec la portée « séquence ».
-  if (obj.kind === 'AILLEURS') {
-    const i = banc.sequences.indexOf(sequence) >= 0
-      ? banc.sequences.indexOf(sequence)
-      : banc.sequences.findIndex((s) => s.includes(porteur));
-    if (i < 0) return [];
-    if (obj.sens === 'DESSUS') return banc.sequences.slice(0, i).flat();
-    if (obj.sens === 'DESSOUS') return banc.sequences.slice(i + 1).flat();
-    return banc.sequences.filter((_, k) => k !== i).flat();
-  }
+  if (obj.kind === 'AILLEURS') return lignesAilleurs(obj, sequence, banc, porteur).flat();
 
   // « D'un côté du centre » : le centre d'une ligne est son **ancre**, le plan
   // qui l'a ouverte et sur lequel elle est alignée. Il n'appartient à aucun
@@ -342,9 +350,16 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
     }
 
     // --- Les pouvoirs du vocabulaire commun --------------------------------
-    // Les deux premiers ont déjà leur portée : `porteeDe` la leur a donnée —
-    // les autres lignes, un côté du centre. Il ne reste qu'à compter.
+    // « n × SÉQUENCE ▼ 🚗 » compte des SÉQUENCES, pas des véhicules : le
+    // cartouche dit « Séquence », et c'est lui qui a raison. Trois lignes en
+    // dessous qui portent un véhicule font trois, qu'elles en portent six à
+    // elles trois ou trois. Il comptait les exemplaires, et une ligne riche
+    // valait alors autant que trois lignes.
     case 'AILLEURS':
+      return n * lignesAilleurs(obj, sequence, banc, porteur)
+        .filter((l) => compteCible(l, obj.cible, banc) > 0).length;
+    // Celui du centre, lui, compte bien ce que la portée porte : c'est un
+    // morceau de ligne qu'il regarde, pas une pile de lignes.
     case 'CENTRE':
       return n * compteCible(portee, obj.cible, banc);
     case 'LOT': {

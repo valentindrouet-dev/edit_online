@@ -2098,6 +2098,14 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 }
 .lv-entete .lv-n { min-width: 2.6em; display: flex; justify-content: flex-end; }
 
+/* Le choix de depart une fois fait : la zone dit qu'on attend, plutot que de
+   rester vide — un vide se lit comme un ecran qui n'a pas fini de charger. */
+.depart-attente {
+  display: flex; align-items: center; justify-content: center; min-height: 120px;
+  padding: 18px; text-align: center; border: 1px dashed var(--gris-clair);
+  border-radius: var(--r-s); background: #fff;
+}
+
 /* --- Retoucher les textes ------------------------------------------------- */
 /* La barre au-dessus du livret : elle ne prend de la place que quand on s'en
    sert, et reste discrète le reste du temps. */

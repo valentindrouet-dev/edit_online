@@ -6,8 +6,9 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, sceneDe, faceJouee,
-} from './data.js?v=2.0';
-import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=2.0';
+  TC_VIDE, TC_PREMIER, TC_DERNIER,
+} from './data.js?v=2.1';
+import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=2.1';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -110,8 +111,12 @@ export function planPose(carte, format, role, face) {
   const plan = carte.type === 'DOUBLE' ? moitiesDe(carte, face)[format] : plHalf(carte);
   const copie = { ...plan, el: plan.el.slice(), carteId: carte.id };
   // La moitié Générique à double lecture est une Ouverture à gauche, des
-  // Crédits à droite.
-  if (copie.dual && role) copie.transition = role;
+  // Crédits à droite — et son minutage suit son rôle : le premier plan du film
+  // marque 01:00, le dernier 99:00. Une seule moitié imprimée, deux bornes.
+  if (copie.dual && role) {
+    copie.transition = role;
+    copie.tc = role === 'CREDITS' ? TC_DERNIER : TC_PREMIER;
+  }
   return copie;
 }
 
@@ -518,6 +523,71 @@ function placeDuCote(cfg, seq, cote, plan) {
   return plansDuCote(seq, cote) < max;
 }
 
+/**
+ * Ce que les deux bouts du film interdisent.
+ *
+ * **Le Générique.** Rien avant l'Ouverture, rien après les Crédits. C'est le
+ * drapeau `banc.ouverture` / `banc.fermeture`, levé quand la carte est jouée
+ * par le chemin « Générique », et il ne ferme que les deux extrémités du banc.
+ *
+ * **Le minutage.** Le plan à **01:00** est le premier plan du film, celui à
+ * **99:00** le dernier : rien ne se joue avant l'un, rien après l'autre. Cette
+ * borne-ci ne se lit pas sur un drapeau mais sur le banc — un Générique posé
+ * autrement que par son chemin propre ne levait aucun drapeau, et l'on pouvait
+ * alors glisser une carte après la fin du film.
+ *
+ * Et elle ne ferme pas un bout : elle ferme **tout ce qui vient après**. Le
+ * montage se lit dans l'ordre — la première séquence ouvre le film, la
+ * dernière le termine —, donc une place se compare à la borne par son rang.
+ * Poser en queue de la ligne qui porte le 99:00, ou n'importe où dans une ligne
+ * d'après, c'est poser après la fin du film.
+ *
+ * Le pendant de la règle : le plan qui **porte** une borne ne se pose qu'au
+ * bout qui lui revient — le 01:00 tout au début, le 99:00 tout à la fin. Sans
+ * quoi la borne tomberait au milieu et rendrait d'un coup illégal ce qui était
+ * déjà posé.
+ */
+function bornes(banc, cfg) {
+  const n = banc.sequences.length;
+  const ouvert = cfg.generiqueBloque && banc.ouverture;
+  const clos = cfg.generiqueBloque && banc.fermeture;
+  const lit = cfg.bornesBloquent !== false;
+  const rang = (tc) => (lit ? banc.sequences.findIndex((s) => s.some((p) => p.tc === tc)) : -1);
+  const debut = rang(TC_PREMIER);
+  const fin = rang(TC_DERNIER);
+  return {
+    lit,
+    // Poser en tête de la ie ligne : avant tout ce qu'elle porte.
+    gauche: (i) => (ouvert && i === 0) || (debut >= 0 && debut >= i) || (fin >= 0 && fin < i),
+    // Poser en queue de la ie ligne : après tout ce qu'elle porte.
+    droite: (i) => (clos && i === n - 1) || (fin >= 0 && fin <= i) || (debut >= 0 && debut > i),
+    // Ouvrir une ligne au rang k, ou souder là : entre la k-1e et la ke.
+    entre: (k) => (ouvert && k === 0) || (clos && k === n)
+      || (debut >= 0 && debut >= k) || (fin >= 0 && fin < k),
+  };
+}
+
+/** Ce plan-là, avec sa borne s'il en porte une, peut-il se poser ici ? */
+function borneALaPlace(bo, tc, auDebut, aLaFin) {
+  if (!bo.lit) return true;
+  if (tc === TC_PREMIER) return auDebut;
+  if (tc === TC_DERNIER) return aLaFin;
+  return true;
+}
+
+/**
+ * Le minutage que ce coup poserait. Il ne se lit pas sur la carte : la face
+ * jouée dépend du côté de pose, et une moitié Générique à double lecture prend
+ * le minutage de son rôle — 01:00 en ouverture, 99:00 en fin de film.
+ */
+function tcDuCoup(cfg, carte, format, cote, role) {
+  if (carte.type !== 'DOUBLE') { const h = plHalf(carte); return h ? h.tc : TC_VIDE; }
+  const m = moitiesDe(carte, faceJouee(format, cote, cfg))[format];
+  if (!m) return TC_VIDE;
+  if (m.dual && role) return role === 'CREDITS' ? TC_DERNIER : TC_PREMIER;
+  return m.tc;
+}
+
 /** Une Carte Raccord — celle qui relie, ni l'Ouverture ni le Générique de fin. */
 const estRaccordPur = (p) => !!p && p.transition === 'RACCORD';
 
@@ -616,8 +686,8 @@ export function coupsPossibles(state, p, hypothese) {
   if (!carte) return [];
   const out = [];
 
-  const bloqueGauche = cfg.generiqueBloque && banc.ouverture;
-  const bloqueDroite = cfg.generiqueBloque && banc.fermeture;
+  const bo = bornes(banc, cfg);
+  const dernier = banc.sequences.length - 1;
 
   // Variante « banc en lignes » : chaque séquence tient sa propre ligne, et
   // une nouvelle séquence se glisse au-dessus ou en dessous des autres, jamais
@@ -644,8 +714,8 @@ export function coupsPossibles(state, p, hypothese) {
           ? [0, banc.sequences.length]   // au-dessus, ou en dessous : jamais entre
           : Array.from({ length: banc.sequences.length + 1 }, (_, i) => i);
       for (const i of places) {
-        if (i === 0 && bloqueGauche) continue;
-        if (i === banc.sequences.length && bloqueDroite) continue;
+        if (bo.entre(i)) continue;
+        if (!borneALaPlace(bo, tcDuCoup(cfg, carte, format), i === 0, i === banc.sequences.length)) continue;
         out.push({ carte, format, action: 'NOUVELLE_SEQUENCE', pos: i });
       }
       // Un Raccord posé au bout d'une ligne y fait **charnière** : un Plan
@@ -659,8 +729,9 @@ export function coupsPossibles(state, p, hypothese) {
         const cotes = cfg.sensPose === 'droite' ? ['droite'] : ['gauche', 'droite'];
         banc.sequences.forEach((seq, si) => {
           for (const cote of cotes) {
-            if (cote === 'gauche' && si === 0 && bloqueGauche) continue;
-            if (cote === 'droite' && si === banc.sequences.length - 1 && bloqueDroite) continue;
+            if (cote === 'gauche' ? bo.gauche(si) : bo.droite(si)) continue;
+            if (!borneALaPlace(bo, tcDuCoup(cfg, carte, format, cote),
+              cote === 'gauche' && si === 0, cote === 'droite' && si === dernier)) continue;
             const voisin = cote === 'gauche' ? seq[0] : seq[seq.length - 1];
             if (!voisin || voisin.transition !== 'RACCORD') continue;
             // Un second Plan Large devient l'ancre de son propre côté : il ne
@@ -676,11 +747,13 @@ export function coupsPossibles(state, p, hypothese) {
     if (brut.transition === 'OUVERTURE' || brut.transition === 'CREDITS' || brut.dual) {
       const roles = brut.dual ? ['OUVERTURE', 'CREDITS'] : [brut.transition];
       for (const role of roles) {
-        if (role === 'OUVERTURE' && !banc.ouverture && banc.sequences.length) {
+        // Le Générique se pose au bout du montage — encore faut-il que ce bout
+        // soit ouvert : une borne de minutage déjà posée l'a peut-être fermé.
+        if (role === 'OUVERTURE' && !banc.ouverture && banc.sequences.length && !bo.gauche(0)) {
           out.push({ carte, format, action: 'GENERIQUE', role, pos: 0 });
         }
-        if (role === 'CREDITS' && !banc.fermeture && banc.sequences.length) {
-          out.push({ carte, format, action: 'GENERIQUE', role, pos: banc.sequences.length - 1 });
+        if (role === 'CREDITS' && !banc.fermeture && banc.sequences.length && !bo.droite(dernier)) {
+          out.push({ carte, format, action: 'GENERIQUE', role, pos: dernier });
         }
       }
       if (!brut.dual) continue;
@@ -697,6 +770,7 @@ export function coupsPossibles(state, p, hypothese) {
     if (raccord) {
       for (let i = 0; i < banc.sequences.length - 1; i++) {
         const g = banc.sequences[i], d = banc.sequences[i + 1];
+        if (bo.entre(i + 1)) continue;
         if (!poseAutorisee(cfg, g[g.length - 1], brut) || !poseAutorisee(cfg, d[0], brut)) continue;
         out.push({ carte, format, action: 'SOUDER', pos: i });
       }
@@ -708,9 +782,10 @@ export function coupsPossibles(state, p, hypothese) {
     banc.sequences.forEach((seq, i) => {
       const cotes = cfg.sensPose === 'droite' ? ['droite'] : ['gauche', 'droite'];
       for (const cote of cotes) {
-        if (cote === 'gauche' && i === 0 && bloqueGauche) continue;
-        if (cote === 'droite' && i === banc.sequences.length - 1 && bloqueDroite) continue;
-        if (raccord && !(cote === 'gauche' ? i === 0 : i === banc.sequences.length - 1)) continue;
+        if (cote === 'gauche' ? bo.gauche(i) : bo.droite(i)) continue;
+        if (!borneALaPlace(bo, tcDuCoup(cfg, carte, format, cote),
+          cote === 'gauche' && i === 0, cote === 'droite' && i === dernier)) continue;
+        if (raccord && !(cote === 'gauche' ? i === 0 : i === dernier)) continue;
         const voisin = cote === 'gauche' ? seq[0] : seq[seq.length - 1];
         if (!poseAutorisee(cfg, voisin, brut)) continue;
         if (!placeDuCote(cfg, seq, cote, brut)) continue;

@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.0';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.1';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,29 +12,29 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=2.0';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.0';
-import { elIcon, numIcon } from './icons.js?v=2.0';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.0';
+} from './data.js?v=2.1';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.1';
+import { elIcon, numIcon } from './icons.js?v=2.1';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.1';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=2.0';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.0';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.0';
-import { releve, voler, stopperVols } from './anim.js?v=2.0';
-import { campagne } from './lab.js?v=2.0';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.0';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.0';
-import { Salon } from './net/salon.js?v=2.0';
-import { TransportLocal } from './net/local.js?v=2.0';
-import { TransportSupabase } from './net/supabase.js?v=2.0';
-import { enLigneDisponible } from './net/config.js?v=2.0';
-import { coupNu } from './net/protocole.js?v=2.0';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.0';
-import { livret, aideDeJeu } from './livret.js?v=2.0';
+} from './engine.js?v=2.1';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.1';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.1';
+import { releve, voler, stopperVols } from './anim.js?v=2.1';
+import { campagne } from './lab.js?v=2.1';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.1';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.1';
+import { Salon } from './net/salon.js?v=2.1';
+import { TransportLocal } from './net/local.js?v=2.1';
+import { TransportSupabase } from './net/supabase.js?v=2.1';
+import { enLigneDisponible } from './net/config.js?v=2.1';
+import { coupNu } from './net/protocole.js?v=2.1';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.1';
+import { livret, aideDeJeu } from './livret.js?v=2.1';
 
 const app = document.getElementById('app');
 
@@ -585,7 +585,11 @@ function vuePartie(enchainer = true) {
   // La zone garde toujours la même forme, quel que soit celui qui joue : seuls
   // les clics sont réservés à la joueuse humaine.
   let zone;
-  if (st.phase === 'DEPART') zone = zoneDepart(st, p, humaine);
+  // Pendant la mise en place, on montre TOUJOURS le choix de la joueuse qui
+  // regarde — jamais celui de l'IA qui joue. Sans quoi les Plans de départ des
+  // autres défilent sous ses yeux, comme une distribution qu'on lui ferait
+  // regarder : elle ne peut rien en faire, et ne voit pas les siens.
+  if (st.phase === 'DEPART') zone = zoneDepart(st, parDefaut, humaine);
   else if (st.phase === 'DERUSHAGE') zone = zoneDerushage(st, humaine);
   else zone = zoneMontage(st, p, humaine);
 
@@ -1068,11 +1072,18 @@ function zoneDepart(st, p, humaine = true) {
   // La rivière est déjà là pendant qu'on choisit son Plan de départ : on voit
   // ce qui attend au premier dérushage, et l'on choisit en connaissance de
   // cause. Elle ne se prend pas encore — seule la rotation y répond.
-  return `<div class="main-cartes">
-    ${options.map((o, k) => `<div class="item">
-      <div class="carte solo ${humaine ? 'clickable' : ''}" data-depart="${k}">${renderPlan(o.plan)}</div>
-    </div>`).join('')}
-  </div>
+  //
+  // Plus rien à choisir : on a posé, et l'on attend les autres. Une zone vide
+  // se lirait comme un écran qui n'a pas fini de charger.
+  const corps = options.length
+    ? `<div class="main-cartes">
+        ${options.map((o, k) => `<div class="item">
+          <div class="carte solo ${humaine ? 'clickable' : ''}" data-depart="${k}">${renderPlan(o.plan)}</div>
+        </div>`).join('')}
+      </div>`
+    : `<div class="depart-attente aide">Votre Plan de départ est posé.
+        On attend les autres joueuses.</div>`;
+  return `${corps}
   <div class="riviere-apercu">${zoneDerushage(st, humaine, true)}</div>`;
 }
 
@@ -1897,12 +1908,11 @@ async function coupIA(st) {
   const p = st.courant;
 
   if (st.phase === 'DEPART') {
-    const options = choixDepart(st, p);
-    const d = choisirDepart(st, p) || options[0];
-    // L'IA rend son propre relevé des choix : on retrouve la carte affichée
-    // par ce qu'elle désigne, pas par son identité d'objet.
-    const k = d ? options.findIndex((o) => o.carteIdx === d.carteIdx && o.face === d.face) : -1;
-    if (d) poserDepartAVue(st, p, Math.max(0, k), d);
+    const d = choisirDepart(st, p) || choixDepart(st, p)[0];
+    // Pas de vol : la carte de l'IA n'est plus à l'écran — c'est le choix de la
+    // joueuse qui REGARDE qu'on y montre. Une carte qui partirait de la sienne
+    // lui ferait croire qu'on lui prend la sienne.
+    if (d) poserDepart(st, p, d);
     return avancer(st);
   }
 

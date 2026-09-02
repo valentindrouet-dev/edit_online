@@ -14,13 +14,25 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=2.0';
-import { elIcon } from './icons.js?v=2.0';
+import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=2.1';
+import { elIcon } from './icons.js?v=2.1';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.21',
+    date: '03/09/2026',
+    origine: 'Deux corrections rapportées par l’auteur',
+    corps: (c) => corps_0_21(c),
+    items: [
+      '<b>« n × SÉQUENCE ▼ 🚗 » compte des LIGNES, pas des icônes.</b> Trois lignes en dessous qui montrent un Véhicule font <b>3 × 3 = 9 points</b>, qu’elles en montrent six à elles trois ou trois : c’est le cartouche <b>SÉQUENCE</b> du bandeau qui a raison. Il comptait les exemplaires — une seule ligne à quatre Véhicules valait alors autant que quatre lignes. Le bandeau reçoit au passage <b>sa propre ligne dans la table du décompte</b> : il s’y confondait avec « n × SÉQUENCE ▲ / ▼ », qui compte des lignes sans rien y chercher.',
+      '<b>Le minutage ferme le montage.</b> Le plan à <b>01:00</b> est le premier plan du film, celui à <b>99:00</b> le dernier : <b>rien ne se pose avant l’un ni après l’autre</b>. Et la fermeture vaut pour tout ce qui vient après dans l’ordre de lecture, pas seulement pour le bout de sa ligne — une ligne ouverte sous celle qui porte le 99:00 commencerait après la fin du film.',
+      '<b>Une borne ne se pose qu’au bout qui lui revient</b> — le 01:00 tout au début du montage, le 99:00 tout à la fin. Sans quoi elle tomberait au milieu et rendrait illégal d’un coup ce qui était déjà posé.',
+      '<b>Le Générique de fin marque 99:00.</b> La moitié Générique se lit des deux façons — Ouverture à gauche, Crédits à droite — et son minutage suit son rôle : 01:00 en tête de film, 99:00 en queue. Une seule moitié imprimée, deux bornes.',
+    ],
+  },
   {
     v: '0.20',
     date: '03/09/2026',
@@ -440,6 +452,35 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.21 -----------------------------------------------------------------
+// Ce que « n × SÉQUENCE ▼ 🚗 » compte — des lignes, et non ce qu'elles
+// portent —, et ce que les deux bornes du minutage ferment.
+
+function corps_0_21(c) {
+  return corps_0_20(c)
+    // Ce bandeau-là n'avait pas sa ligne dans la table : il se confondait avec
+    // « n × SÉQUENCE ▲ / ▼ », qui compte des lignes sans rien y chercher.
+    .replace('<tr><td><b>n × PLAN de la plus longue SÉQUENCE</b></td>',
+      `<tr><td><b>n × SÉQUENCE ▲ / ▼ + cible</b></td>
+      <td>${maj('0.21', `n points par <b>ligne</b> placée au-dessus — ou en dessous — de celle qui
+      porte le bandeau <b>et qui montre la cible</b>. On compte des <b>lignes</b> et non des
+      icônes : trois lignes qui montrent un Véhicule font trois, qu'elles en montrent six à elles
+      trois ou trois.`)}</td><td>Le montage entier</td></tr>
+      <tr><td><b>n × PLAN de la plus longue SÉQUENCE</b></td>`)
+    .replace('<h3>Le minutage</h3>', `<h3>Le minutage</h3>
+      ${c.bornesBloquent === false
+        ? majBloc('0.21', `Ici, les deux bornes du minutage ne ferment rien : on pose avant le
+          <b>01:00</b> et après le <b>99:00</b> comme ailleurs (réglable dans <b>Variables</b> ⚙).`)
+        : majBloc('0.21', `<b>Les deux bornes ferment le montage.</b> Le plan à <b>01:00</b> est le
+          premier plan du film, celui à <b>99:00</b> le dernier : <b>rien ne se pose avant l'un ni
+          après l'autre</b>. Le montage se lisant dans l'ordre — la première ligne ouvre le film, la
+          dernière le termine —, la fermeture vaut pour <b>tout ce qui vient après</b> : une ligne
+          ouverte sous celle qui porte le 99:00 commencerait après la fin du film.
+          <br><br>Et une borne ne se pose qu'<b>au bout qui lui revient</b> : le 01:00 tout au début
+          du montage, le 99:00 tout à la fin. Sans quoi elle tomberait au milieu et rendrait
+          illégal d'un coup ce qui était déjà posé.`)}`);
 }
 
 // --- v0.20 -----------------------------------------------------------------

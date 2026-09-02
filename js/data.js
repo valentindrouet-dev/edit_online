@@ -224,9 +224,13 @@ export const OBJ = {
   // portée dans leur définition même — les autres séquences, un côté du
   // centre —, les autres se règlent librement.
 
-  // Ce que les AUTRES séquences portent. `sens` : DESSUS — celles posées
-  // au-dessus de la sienne ; DESSOUS — celles d'en dessous ; AUTRES — les
-  // deux à la fois, c'est-à-dire tout le banc sauf sa propre ligne.
+  // Combien d'AUTRES SÉQUENCES portent la cible. On compte des lignes, pas ce
+  // qu'elles contiennent : trois lignes qui montrent un Véhicule font trois,
+  // qu'elles en montrent six à elles trois ou trois. C'est ce que dit le
+  // cartouche « SÉQUENCE » du bandeau.
+  // `sens` : DESSUS — les lignes posées au-dessus de la sienne ; DESSOUS —
+  // celles d'en dessous ; AUTRES — les deux à la fois, c'est-à-dire tout le
+  // banc sauf sa propre ligne.
   ailleurs: (n, cible, sens) => ({ kind: 'AILLEURS', n, cible, sens: sens || 'AUTRES' }),
 
   // De quel côté du CENTRE de sa ligne. Le centre est l'ancre — le plan qui a
@@ -580,10 +584,13 @@ function objQuoi(o) {
       return `séquence ${o.sens === 'SANS' ? 'sans' : 'avec'} ${libelleCible(o.cible)}`;
     }
     // --- Les pouvoirs du vocabulaire commun --------------------------------
-    case 'AILLEURS': return `${libelleCibleCompte(o.cible)} ${
-      o.sens === 'DESSUS' ? 'dans les séquences au-dessus de la sienne'
-        : o.sens === 'DESSOUS' ? 'dans les séquences en dessous de la sienne'
-          : 'dans les autres séquences'}`;
+    // Ce bandeau compte des SÉQUENCES et non ce qu'elles portent : « 3 × séquence
+    // en dessous qui porte un Véhicule » — trois lignes qui en portent font
+    // trois, qu'elles en montrent six à elles trois ou trois.
+    case 'AILLEURS': return `séquence ${
+      o.sens === 'DESSUS' ? 'au-dessus de la sienne'
+        : o.sens === 'DESSOUS' ? 'en dessous de la sienne'
+          : 'autre que la sienne'} qui porte ${libelleCible(o.cible)}`;
     case 'CENTRE': return `${libelleCibleCompte(o.cible)} à ${
       o.sens === 'DROITE' ? 'droite' : 'gauche'} du centre de sa ligne`;
     case 'LOT': return `lot de ${cibleNombre(o.cible, o.seuil)}`;
@@ -1069,9 +1076,12 @@ export function recenserBoite(cfg) {
       if (p.transition === 'RACCORD') raccord = true;
       else if (!p.transition) cadrages.add(p.format);
       // Le minutage se range en quatre : les deux bornes du film, l'absence de
-      // minutage, et tout le reste.
+      // minutage, et tout le reste. La moitié Générique à double lecture porte
+      // les DEUX bornes — 01:00 jouée en ouverture, 99:00 jouée en fin de film :
+      // sans cela, aucune carte de la boîte ne comptait pour le 99:00.
       tcs.add(p.tc === TC_VIDE ? 'VIDE' : p.tc === TC_PREMIER ? 'PREMIER'
         : p.tc === TC_DERNIER ? 'DERNIER' : 'ORDINAIRE');
+      if (p.dual) { tcs.add('PREMIER'); tcs.add('DERNIER'); }
       for (const o of objsDe(p)) {
         kinds.add(o.kind);
         for (const x of ciblesDe(o)) cibles.add(x);
