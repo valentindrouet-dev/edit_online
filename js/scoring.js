@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, OBJ, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.95';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, OBJ, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.96';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -285,10 +285,18 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
     case 'SEQ_AVEC': {
       // « Avec » compte les séquences qui portent la cible **au moins k fois**,
       // son contraire celles qui la portent moins de k fois — à k = 1, c'est
-      // bien « avec » et « sans ». Ce sont des PLANS que l'on compte, pas des
-      // icônes : un plan à deux armes reste un plan.
+      // bien « avec » et « sans ».
+      //
+      // Ce sont des EXEMPLAIRES que l'on compte, pas des plans porteurs : le
+      // bandeau écrit « 3+ 🚗 », et trois véhicules sont trois véhicules, qu'ils
+      // soient sur trois plans ou sur deux. Compter les porteurs faisait
+      // afficher zéro à une ligne qui montrait bien ses trois véhicules — le
+      // décompte disait autre chose que ce qui était imprimé. Les cibles qui ne
+      // sont pas des icônes ne connaissent pas la nuance : un plan n'a qu'un
+      // cadrage, et la valeur de cadre compte de toute façon les cadrages
+      // DIFFÉRENTS de la ligne.
       const k = Math.max(1, obj.seuil || 1);
-      const assez = (s) => comptePorteurs(s, obj.cible) >= k;
+      const assez = (s) => compteCible(s, obj.cible, banc) >= k;
       return n * banc.sequences.filter((s) => (obj.sens === 'SANS' ? !assez(s) : assez(s))).length;
     }
     case 'SEQ_TOUTES': {
@@ -374,21 +382,6 @@ function valeurPlan(plan, banc, cfg, profond) {
 /** Les plans d'une séquence — un Raccord relie, il ne raconte pas : il n'en est pas un. */
 function plansDe(seq) {
   return seq.filter((p) => !estRaccord(p));
-}
-
-/**
- * Combien de plans d'une séquence portent la cible visée — une icône, un
- * cadrage, un Raccord. On compte les plans porteurs et non les icônes : un
- * plan à deux armes est un plan à armes, pas deux.
- */
-function comptePorteurs(seq, cible) {
-  if (cible === 'RACCORD') return seq.filter(estRaccord).length;
-  if (cible === 'MORT') return seq.filter((p) => p.mort).length;
-  // La valeur de cadre ne compte pas des porteurs mais des cadrages
-  // DIFFÉRENTS : trois Gros Plans n'en font qu'une.
-  if (cible === 'VALEUR') return compteCible(seq, 'VALEUR');
-  if (CADRAGES_VISABLES.includes(cible)) return seq.filter((p) => aCeCadrage(p, cible)).length;
-  return seq.filter((p) => p.el.includes(cible)).length;
 }
 
 /**

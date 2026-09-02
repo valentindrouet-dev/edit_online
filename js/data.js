@@ -201,9 +201,11 @@ export const OBJ = {
     ...(sens === 'MAX' ? { sens: 'MAX' } : {}) }),
   seqVoisines: (n, sens) => ({ kind: 'SEQ_VOISINES', n, sens }),
   seqLongue:   (n) => ({ kind: 'SEQ_LONGUE', n }),
-  // `seuil` : combien de plans porteurs la séquence doit compter — « au moins
-  // 3 plans Arme ». Un seuil de 1 est le cas ordinaire et ne s'écrit pas, pour
-  // qu'un bandeau sans seuil reste identique à ce qui est imprimé.
+  // `seuil` : combien d'EXEMPLAIRES de la cible la séquence doit montrer —
+  // « au moins 3 Armes ». Trois armes sont trois armes, qu'elles soient sur
+  // trois plans ou sur deux : c'est ce que le bandeau écrit, « 3+ 🗡 ». Un
+  // seuil de 1 est le cas ordinaire et ne s'écrit pas, pour qu'un bandeau sans
+  // seuil reste identique à ce qui est imprimé.
   seqAvec:     (n, sens, cible, seuil) => ({ kind: 'SEQ_AVEC', n, sens, cible,
     ...(seuil > 1 ? { seuil: Math.min(20, Math.floor(seuil)) } : {}) }),
 
@@ -547,10 +549,12 @@ function objQuoi(o) {
     case 'SEQ_LONGUE': return 'Plan de votre plus longue séquence';
     case 'SEQ_AVEC': {
       // Sans seuil, la lecture d'origine : « avec » ou « sans ». Avec un seuil,
-      // c'est un compte de plans porteurs — et « sans » devient « moins de ».
+      // c'est un compte d'EXEMPLAIRES — et « sans » devient « moins de ». La
+      // phrase les met au pluriel plutôt que d'écrire « 3 × Véhicule » : trois
+      // véhicules, c'est ce que la ligne montre, sur autant de plans qu'elle veut.
       const k = Math.max(1, o.seuil || 1);
       if (k > 1) {
-        return `séquence avec ${o.sens === 'SANS' ? 'moins de' : 'au moins'} ${k} × ${libelleCible(o.cible)}`;
+        return `séquence montrant ${o.sens === 'SANS' ? 'moins de' : 'au moins'} ${cibleNombre(o.cible, k)}`;
       }
       return `séquence ${o.sens === 'SANS' ? 'sans' : 'avec'} ${libelleCible(o.cible)}`;
     }

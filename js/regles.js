@@ -14,13 +14,24 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=1.95';
-import { elIcon } from './icons.js?v=1.95';
+import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=1.96';
+import { elIcon } from './icons.js?v=1.96';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.17',
+    date: '02/09/2026',
+    origine: 'Règle corrigée par l’auteur',
+    corps: (c) => corps_0_17(c),
+    items: [
+      '<b>« n × Séquence avec 3+ ICÔNE » compte des exemplaires, pas des plans porteurs.</b> Une ligne qui montrait <b>trois véhicules</b> — un sur un plan, deux sur un autre — n’était pas comptée : le décompte cherchait <b>trois plans</b> porteurs et n’en trouvait que deux. Le bandeau écrit « 3+ 🚗 » : trois véhicules sont trois véhicules, sur autant de plans que la ligne veut. Trois sur un seul plan comptent donc aussi.',
+      'Rien ne change pour les autres cibles : un plan n’a qu’un <b>cadrage</b>, il est mort ou il ne l’est pas, et la <b>valeur de cadre</b> compte de toute façon les cadrages <b>différents</b> de la ligne. La phrase du pouvoir se lit désormais « séquence <b>montrant</b> au moins 3 Véhicules », au pluriel, pour ne plus laisser croire qu’on dénombre des plans.',
+      '<b>Le bandeau « séquence avec 3+ valeurs de cadre » montre enfin ce qu’il compte.</b> Il s’affichait « SÉQUENCE avec 3+ » — le seuil sans sa cible : le dessin de cette famille de bandeaux ne connaissait pas la valeur de cadre. Le cartouche <b>Valeur de cadre</b> paraît maintenant derrière le seuil, comme l’icône ou le cadrage des autres.',
+    ],
+  },
   {
     v: '0.16',
     date: '02/09/2026',
@@ -397,6 +408,30 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.17 -----------------------------------------------------------------
+// Ce que « 3+ » compte : des exemplaires, pas des plans porteurs. Le texte
+// disait « trois plans Arme » là où le bandeau écrit « 3+ 🗡 » — et le décompte
+// suivait le texte. C'est le bandeau qui a raison : c'est lui qui est imprimé.
+
+function corps_0_17(c) {
+  return corps_0_16(c)
+    .replace(/<tr><td><b>n × SÉQUENCE avec \/ sans …<\/b><\/td>[\s\S]*?<\/tr>/,
+      `<tr><td><b>n × SÉQUENCE avec / sans …</b></td>
+      <td>n points par ligne qui porte — ou ne porte pas — l'icône, le cadrage, le plan de mort, la
+      valeur de cadre ou la Carte Raccord visée. ${maj('0.17', `Le bandeau peut demander un
+      <b>nombre</b> : « 3+ » compte les lignes qui en montrent <b>trois ou plus</b>, et son
+      contraire celles qui en montrent <b>moins de trois</b>. Ce sont des <b>exemplaires</b> que
+      l'on compte, et non des plans porteurs : trois véhicules sont trois véhicules, qu'ils soient
+      sur trois plans ou sur deux — ou même sur un seul. Les cibles qui ne sont pas des icônes ne
+      connaissent pas la nuance : un plan n'a qu'un cadrage, il est mort ou il ne l'est pas, et la
+      valeur de cadre compte de toute façon les cadrages <b>différents</b> de la ligne.`)}</td>
+      <td>Le montage entier</td></tr>`)
+    .replace('<td>n points par plan portant cette icône</td>',
+      `<td>${maj('0.17', `n points par <b>exemplaire</b> de cette icône : un plan qui la porte deux
+      fois compte deux fois. Le texte disait « par plan portant cette icône » — ce que fait la
+      variante <b>« compter chaque plan »</b>, dans les Variables, et non la règle.`)}</td>`);
 }
 
 // --- v0.16 -----------------------------------------------------------------

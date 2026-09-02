@@ -2088,12 +2088,32 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 .lv-sym { flex: 0 0 auto; display: flex; align-items: center; }
 .lv-txt { flex: 1 1 0; min-width: 0; }
 
-/* Le bandeau d'un pouvoir, dessiné tel qu'il est imprimé sur la carte. */
+/* Le bandeau d'un pouvoir, dessiné tel qu'il est imprimé sur la carte — mais
+   sur un fond CLAIR. Sur la carte, la bande est noire parce qu'elle tranche sur
+   l'illustration ; dans une fiche qu'on lit page après page, autant de pavés
+   noirs alourdissent tout et écrasent les pastilles. Le gris clair les pose
+   sans les enfermer, et les pièces du bandeau — pastilles sombres, cartouches
+   de couleur, icônes — s'y lisent mieux qu'elles ne le faisaient sur le noir. */
 .lv-bandeau {
   display: inline-flex; align-items: center; min-width: 168px; min-height: 40px;
-  padding: 5px 12px; border-radius: 9px; background: #17171b; color: #fff;
+  padding: 6px 13px; border-radius: 9px;
+  background: #eeecf3; border: 1px solid #dcd8e6; color: var(--encre);
 }
 .lv-bandeau .obj-html { font-size: 1rem; }
+/* Ce qui, sur la carte, s'écrit en blanc sur le noir : la phrase d'un pouvoir
+   de règle, les mots de liaison, le « & » entre deux cadrages. Ils passent à
+   l'encre, et perdent l'ombre portée qui ne servait qu'à les détacher du fond
+   sombre. */
+.lv-bandeau .regle-mot, .lv-bandeau .mot, .lv-bandeau .et-cadrage {
+  color: var(--encre); text-shadow: none;
+}
+.lv-bandeau .regle-mot { font-size: .84rem; line-height: 1.2; }
+/* Les flèches de portée sont peintes clair, avec un halo blanc, pour se
+   détacher d'un bandeau sombre : sur le gris, elles s'effaçaient. Elles
+   reprennent l'encre quand rien ne leur donne de couleur, et perdent leur
+   halo. La flèche des séquences voisines, elle, passe du violet pâle au plein. */
+.lv-bandeau .fleche-pos { color: var(--fl, var(--encre)); text-shadow: none; }
+.lv-bandeau .fleche-seq { color: var(--violet); text-shadow: none; }
 
 @media (max-width: 640px) {
   .lv-bandeau { min-width: 0; width: 100%; }

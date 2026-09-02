@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.95';
-export const BUILD_DATE = '2026-09-02 09:10';
+export const VERSION = '1.96';
+export const BUILD_DATE = '2026-09-02 15:20';
 
 export const CHANGELOG = [
+  {
+    v: '1.96',
+    date: '02/09/2026',
+    items: [
+      "<b>« 4 × Séquence avec 3+ Véhicule » comptait des plans, pas des véhicules. Règles v0.17.</b> Une ligne qui montrait <b>trois véhicules</b> — un sur un plan, deux sur un autre — n'était pas trouvée : le décompte cherchait <b>trois plans</b> porteurs et n'en voyait que deux, et le bandeau affichait <b>0</b>. Le cartouche dit « 3+ 🚗 » : trois véhicules sont trois véhicules, sur autant de plans que la ligne veut. Trois sur un seul plan comptent donc aussi désormais.",
+      "Rien ne change pour les autres cibles : un plan n'a qu'un <b>cadrage</b>, il est mort ou il ne l'est pas, et la <b>valeur de cadre</b> compte de toute façon les cadrages <b>différents</b> de la ligne. La phrase du pouvoir se lit maintenant « séquence <b>montrant</b> au moins 3 Véhicules », au pluriel, pour ne plus laisser croire qu'on dénombre des plans. Le texte de référence disait déjà « n points par plan portant cette icône » pour le simple « n × ICÔNE » — c'était la <b>variante</b> qu'il décrivait, pas la règle : corrigé aussi.",
+      "<b>« Séquence avec 3+ valeurs de cadre » s'affichait sans sa cible.</b> Le bandeau montrait « SÉQUENCE avec 3+ » — le seuil, et rien derrière : le dessin de cette famille de bandeaux redessinait la cible pour son compte et ne connaissait ni la valeur de cadre ni le plan de mort. Il passe par le dessin commun, et chacune des douze cibles paraît maintenant derrière son seuil.",
+      "<b>Dans l'aide de jeu, les bandeaux reposent sur du gris clair.</b> Le noir de la carte, répété une trentaine de fois dans une fiche qu'on lit d'un bout à l'autre, alourdissait la page — et il effaçait le « × », les flèches de portée et la phrase des pouvoirs de règle, tous peints pour se détacher d'un fond sombre. Ils reprennent l'encre, perdent leur ombre portée, et les pastilles comme les cartouches se lisent mieux qu'avant.",
+    ],
+  },
   {
     v: '1.95',
     date: '02/09/2026',

@@ -13,8 +13,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.95';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.95';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.96';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.96';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -129,14 +129,16 @@ function objCoeur(obj, taille, compact) {
     case 'SEQ_LONGUE': return `<span class="tag tag-blanc">Plan</span>
       <span class="tag tag-seq">${compact ? 'séq. ⌀' : 'plus longue séq.'}</span>`;
     case 'SEQ_AVEC': {
-      const quoi = obj.cible === 'RACCORD' ? '<span class="tag tag-gris">Raccord</span>'
-        : FORMATS[obj.cible] ? `<span class="tag tag-fmt" style="--c:${FORMATS[obj.cible].color}">${
-          compact ? FORMATS[obj.cible].short : FORMATS[obj.cible].label}</span>`
-          : elIcon(obj.cible, taille);
+      // La cible se dessine comme partout ailleurs. Cette branche la redessinait
+      // pour son compte, et n'avait prévu ni la valeur de cadre ni le plan de
+      // mort : « séquence avec 3+ valeurs de cadre » s'affichait « SÉQUENCE avec
+      // 3+ » — le seuil sans ce qu'il compte.
+      const quoi = cibleHTML(obj.cible, taille, compact);
       // Sans seuil, la lecture d'origine : la cible seule, barrée d'une croix
-      // pour « sans ». Dès qu'un seuil est demandé, c'est un compte de plans
-      // porteurs qui se lit — « ≥ 3 » ou « < 3 » —, et la croix disparaît :
-      // elle dirait « aucun », ce qui n'est plus ce que le bandeau demande.
+      // pour « sans ». Dès qu'un seuil est demandé, c'est un compte
+      // d'exemplaires qui se lit — « 3+ » ou « moins de 3 » —, et la croix
+      // disparaît : elle dirait « aucun », ce qui n'est plus ce que le bandeau
+      // demande.
       const k = Math.max(1, obj.seuil || 1);
       if (k > 1) {
         return `${tagSeq(compact)}<span class="mot">avec</span><span class="tc-seuil">${
