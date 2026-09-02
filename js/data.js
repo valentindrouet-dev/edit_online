@@ -289,12 +289,13 @@ export const OBJ = {
   // `n` n'est pas un nombre de points mais un nombre de lignes, ou de plans.
   sequencePlus: (n) => ({ kind: 'SEQ_PLUS', n: Math.max(1, Math.min(9, Math.floor(n || 1))) }),
   planPlus: (n) => ({ kind: 'PLAN_PLUS', n: Math.max(1, Math.min(9, Math.floor(n || 1))) }),
-  // « Les cartes Raccord vous rapportent maintenant n × Raccord. » Le bandeau
-  // IMPRIMÉ des Cartes Raccord du montage — le « 1 × Plan » du Raccord — est
-  // remplacé par « n × Raccord ». La carte qui le dit ne gagne rien elle-même :
-  // ce sont les Raccords qui marquent, et qui l'affichent.
-  // L'Ouverture et le Générique de fin encadrent le film plutôt que de relier :
-  // ils gardent leur bandeau, quoi qu'il arrive.
+  // « Les cartes Raccord vous rapportent n × Raccord. » Le bandeau de COÛT d'un
+  // Raccord — « −2 × Raccord », celui qui lui fait perdre des points — est
+  // remplacé par « n × Raccord ». Lui seul : un Raccord qui porte autre chose
+  // garde son bandeau, et l'Ouverture comme le Générique de fin, qui encadrent
+  // le film plutôt que de relier, ne sont jamais touchés.
+  // La carte qui le dit ne gagne rien elle-même : ce sont les Raccords qui
+  // marquent, et qui l'affichent.
   raccordVaut: (n) => ({ kind: 'RACCORD_VAUT',
     n: Math.max(-20, Math.min(20, Math.floor(n === undefined ? 2 : n))) }),
 };
@@ -582,7 +583,7 @@ export function objLabel(o, cfg) {
       o.n > 1 ? 's' : ''} supplémentaire${o.n > 1 ? 's' : ''}${
       cfg && cfg.tours ? ` (${cfg.tours + o.n})` : ''}`;
     case 'RACCORD_VAUT':
-      return `Les cartes Raccord vous rapportent maintenant ${o.n} × Raccord`;
+      return `Les cartes Raccord vous rapportent ${o.n} × Raccord`;
     case 'ABSENT': {
       const c = cibleDe(o);
       return `${o.n} si ${libelleCibleCompte(c)} est absent${accordCible(c)}${ou}`;

@@ -14,13 +14,24 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.91';
-import { elIcon } from './icons.js?v=1.91';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.92';
+import { elIcon } from './icons.js?v=1.92';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.14.13',
+    date: '02/09/2026',
+    origine: 'Règle corrigée par l’auteur',
+    corps: (c) => corps_0_14_13(c),
+    items: [
+      '<b>Le coût d’une Carte Raccord est celui qui est imprimé dessus, et lui seul.</b> J’avais ajouté une variable de partie qui retirait deux points par Carte Raccord, en plus du « −2 × Raccord » que vos Raccords portent déjà. Deux malus pour un : une Ouverture à « 6 si dans l’ordre » n’affichait plus que <b>4</b>. La variable disparaît — <b>le décompte ne retire plus rien qui ne soit écrit sur une carte</b>.',
+      '<b>« Les cartes Raccord vous rapportent n × Raccord » ne remplace qu’un bandeau de coût.</b> Un Raccord dont le bandeau est « −2 × Raccord » le voit devenir « n × Raccord ». Un Raccord qui porte <b>autre chose</b> — « 1 × Plan », une icône, un minutage, ou même un « n × Raccord » qui rapporte déjà — <b>garde le sien</b>. Le pouvoir ne peut qu’améliorer, jamais rogner.',
+      'Le remplacement se fait <b>bandeau par bandeau</b> : un Raccord qui en porte deux ne voit changer que celui de coût. Et l’<b>Ouverture</b> comme le <b>Générique de fin</b> ne sont jamais touchés, quel que soit leur bandeau : ils encadrent le film plutôt que de relier.',
+    ],
+  },
   {
     v: '0.14.12',
     date: '02/09/2026',
@@ -356,6 +367,27 @@ export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
 }
 
+// --- v0.14.13 --------------------------------------------------------------
+// Le coût d'un Raccord redevient ce qui est imprimé sur lui : la variable de
+// partie qui doublait ce malus disparaît, et le remplacement ne vise plus que
+// le bandeau de coût.
+
+function corps_0_14_13(c) {
+  return corps_0_14_12(c)
+    .replace('<b>Les cartes Raccord vous rapportent maintenant n × Raccord</b>',
+      '<b>Les cartes Raccord vous rapportent n × Raccord</b>')
+    .replace(/<td>Le <b>bandeau imprimé<\/b> des Cartes Raccord[\s\S]*?<\/td>/,
+      `<td>${maj('0.14.13', `Le <b>bandeau de coût</b> d'un Raccord — « −2 × Raccord » — devient
+      « n × Raccord ». Lui seul : un Raccord qui porte <b>autre chose</b>, ou un « n × Raccord » qui
+      rapporte déjà, garde le sien — le pouvoir ne peut qu'améliorer. L'<b>Ouverture</b> et le
+      <b>Générique de fin</b> ne sont jamais touchés. La carte qui le dit ne gagne rien elle-même ;
+      entre deux, la plus généreuse l'emporte`)}</td>`)
+    .replace(/<td><b>Chaque Carte Raccord vaut[\s\S]*?<\/td>/,
+      `<td>${maj('0.14.13', `Ce qu'une Carte Raccord coûte est <b>écrit sur elle</b> — « −2 ×
+      Raccord » sur les Raccords du jeu. Le décompte ne retire rien de plus : il n'y a pas de malus
+      caché`)}</td>`);
+}
+
 // --- v0.14.12 --------------------------------------------------------------
 // Le pouvoir du Raccord change de nature : il ne fixe plus une valeur, il
 // remplace un bandeau. Une ligne du tableau à réécrire.
@@ -375,10 +407,9 @@ function corps_0_14_12(c) {
 // de la carte. Une phrase à réécrire dans le tableau, une note à ajouter.
 
 function corps_0_14_11(c) {
-  const val = c && c.pointsParRaccord !== undefined ? c.pointsParRaccord : -2;
   return corps_0_14_10(c)
     .replace(/<td>n points par Carte Raccord de votre montage[^<]*<\/td>/,
-      `<td>${maj('0.14.11', `<b>Chaque Carte Raccord vaut ${val} à qui la pose</b> — elle relie sans
+      `<td>${maj('0.14.11', `<b>Chaque Carte Raccord vaut −2 à qui la pose</b> — elle relie sans
       rien raconter, et l'étoffer coûte. Cette valeur se lit <b>au coin de la carte</b>, comme celle
       de tout plan ; ce bandeau la <b>remplace</b> pour toutes vos Cartes Raccord à la fois, et
       n'ajoute rien de son côté`)}</td>`);
@@ -415,7 +446,6 @@ function majTr(v) {
 // croire qu'ils rapportent des points.
 
 function corps_0_14_9(c) {
-  const raccord = c && c.pointsParRaccord !== undefined ? c.pointsParRaccord : -2;
   const signe = (v) => (v > 0 ? `+${v}` : `${v}`);
   return corps_0_14_8(c)
     // Les quatre pouvoirs de règle, à la fin du tableau des bandeaux.
@@ -436,14 +466,14 @@ function corps_0_14_9(c) {
       déclenche donc à <b>votre</b> limite, pas à celle des autres</td>
       <td>Tant que la carte est dans votre montage</td></tr>
     <tr class="maj-tr"><td><b>Les Raccords vous rapportent n</b></td>
-      <td>chaque Carte Raccord de votre montage vaut <b>n</b> au lieu de ${signe(raccord)}. C’est un
+      <td>chaque Carte Raccord de votre montage vaut <b>n</b> au lieu de −2. C’est un
       <b>remplacement</b> : deux cartes qui le portent ne cumulent pas, la plus généreuse vaut</td>
       <td>Tant que la carte est dans votre montage</td></tr>
   </table>`)
     // Ce que coûte une Carte Raccord, dit une fois pour toutes.
     .replace('<b>La cible d’un bandeau.</b>',
       `${maj('0.14.9', `<b>Ce que coûte un Raccord.</b> Une Carte Raccord posée dans votre montage
-      vous coûte <b>${Math.abs(raccord)} points</b> : elle relie, elle ne raconte rien. C’est ce
+      vous coûte <b>2 points</b> : elle relie, elle ne raconte rien. C’est ce
       montant que le pouvoir « Les Raccords vous rapportent +2 » retourne.`)}
     <b>La cible d’un bandeau.</b>`);
 }

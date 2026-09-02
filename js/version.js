@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.91';
-export const BUILD_DATE = '2026-09-02 03:55';
+export const VERSION = '1.92';
+export const BUILD_DATE = '2026-09-02 04:40';
 
 export const CHANGELOG = [
+  {
+    v: '1.92',
+    date: '02/09/2026',
+    items: [
+      "<b>Le décompte ne retire plus rien qui ne soit écrit sur une carte. Règles v0.14.13.</b> J'avais ajouté une variable de partie retirant deux points par Carte Raccord — <b>en plus</b> du « −2 × Raccord » que vos Raccords portent déjà imprimé. Deux malus pour un : une Ouverture à « 6 si dans l'ordre » n'affichait plus que <b>4</b>. La variable disparaît, et le 6 revient.",
+      "<b>« Les cartes Raccord vous rapportent n × Raccord » ne remplace qu'un bandeau de coût.</b> Un Raccord dont le bandeau est « −2 × Raccord » le voit devenir « n × Raccord ». Un Raccord qui porte <b>autre chose</b> — « 1 × Plan », une icône, un minutage, ou même un « n × Raccord » qui rapporte déjà — <b>garde le sien</b> : le pouvoir ne peut qu'améliorer, jamais rogner.",
+      "Le remplacement se fait <b>bandeau par bandeau</b> : un Raccord qui en porte deux ne voit changer que celui de coût, l'autre reste intact. L'<b>Ouverture</b> et le <b>Générique de fin</b> ne sont jamais touchés, quel que soit leur bandeau. Et le pouvoir perd son « maintenant » : il se lit désormais <b>« Les cartes Raccord vous rapportent 2 × Raccord »</b>.",
+    ],
+  },
   {
     v: '1.91',
     date: '02/09/2026',

@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.91';
+import { ELEMENT_IDS } from './data.js?v=1.92';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -108,12 +108,6 @@ export const DEFAULTS = {
   multiplicateurObjectif: 1,
   scorerDepart: true,           // le Plan de départ compte dans le décompte
   pointsParPlan: 0,
-  // Ce que chaque Carte Raccord du montage vaut à qui la pose. Un Raccord
-  // relie, il ne raconte rien : l'étoffer coûte deux points. C'est la valeur de
-  // la CARTE, affichée à son coin comme celle de tout plan — et non une ligne
-  // cachée du décompte. Le pouvoir « Les Raccords vous rapportent +2 » remplace
-  // ce montant sur TOUTES les Cartes Raccord du montage où il se trouve.
-  pointsParRaccord: -2,
 
   // --- Variante : raccord par élément partagé ------------------------------
   // Absente des règles officielles, proposée pour tester une autre économie.
@@ -333,10 +327,6 @@ export const SCHEMA = [
     { k: 'elementParIcone', l: 'Compter chaque icône, pas chaque plan', t: 'bool',
       aide: 'une carte à deux armes rapporte deux fois' },
     { k: 'pointsParPlan', l: 'Points fixes par plan visible', t: 'int', min: 0, max: 5 },
-    { k: 'pointsParRaccord', l: 'Points par Carte Raccord de votre montage', t: 'int', min: -10, max: 10,
-      aide: '−2 par les règles : un Raccord relie sans rien raconter. Chaque Carte Raccord affiche '
-        + 'cette valeur à son coin ; le pouvoir « Les Raccords vous rapportent +2 » la remplace sur '
-        + 'toutes celles du montage où il se trouve' },
   ] },
   { groupe: 'Variante — raccord par élément', champs: [
     { k: 'raccordElement', l: 'Activer', t: 'bool', aide: 'hors règles officielles' },

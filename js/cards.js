@@ -13,8 +13,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.91';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.91';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.92';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.92';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -81,7 +81,7 @@ export function phraseRegle(obj, compact) {
     // l'aperçu au survol, comme pour les autres pouvoirs de règle.
     case 'RACCORD_VAUT': return compact
       ? `Racc. = ${obj.n} × Racc.`
-      : `Les cartes Raccord vous rapportent maintenant ${obj.n} × Raccord`;
+      : `Les cartes Raccord vous rapportent ${obj.n} × Raccord`;
     default: return '';
   }
 }
@@ -459,7 +459,7 @@ function bandeau(objs, format, cfg) {
  * que sur un banc de montage : c'est ce que cette carte-là rapporte, ici et
  * maintenant.
  */
-function donneesApercu(h, label, points, detail, valeurCarte, objs) {
+function donneesApercu(h, label, points, detail, objs) {
   return encodeURIComponent(JSON.stringify({
     tc: h.tc, el: h.el, objs: objs || objsDe(h), format: h.format,
     // Le bandeau imprimé, quand une carte du montage l'a remplacé : l'aperçu
@@ -468,9 +468,6 @@ function donneesApercu(h, label, points, detail, valeurCarte, objs) {
     num: h.num, label, transition: h.transition || null,
     mort: !!h.mort,
     points: points === undefined ? null : points,
-    // Ce que la carte vaut par elle-même, hors bandeau : une Carte Raccord
-    // coûte — ou rapporte — sans qu'aucun bandeau ne le dise.
-    valeurCarte: valeurCarte === undefined ? null : valeurCarte,
     // Ce que chaque bandeau rapporte séparément : l'infobulle montre le calcul
     // plutôt qu'un total à croire sur parole.
     objsPts: detail || null,
@@ -520,7 +517,7 @@ export function renderPlan(h, opts = {}) {
   // `muet` : un plan qui n'est pas vraiment sur la table — un aperçu de pose —
   // n'ouvre pas d'infobulle et ne se donne pas pour une carte du banc.
   const bulle = opts.muet ? ''
-    : ` data-apercu="${donneesApercu(h, label, opts.points, opts.detail, opts.valeurCarte, opts.objs)}"`;
+    : ` data-apercu="${donneesApercu(h, label, opts.points, opts.detail, opts.objs)}"`;
   return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"${bulle}>
     ${jeton}
     <div class="illus"${h.cle ? ` data-illus="${h.cle}"` : ''}>

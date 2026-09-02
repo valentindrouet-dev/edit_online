@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.91';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.92';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,28 +12,28 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=1.91';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.91';
-import { elIcon, numIcon } from './icons.js?v=1.91';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.91';
+} from './data.js?v=1.92';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.92';
+import { elIcon, numIcon } from './icons.js?v=1.92';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.92';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.91';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.91';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.91';
-import { releve, voler, stopperVols } from './anim.js?v=1.91';
-import { campagne } from './lab.js?v=1.91';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.91';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.91';
-import { Salon } from './net/salon.js?v=1.91';
-import { TransportLocal } from './net/local.js?v=1.91';
-import { TransportSupabase } from './net/supabase.js?v=1.91';
-import { enLigneDisponible } from './net/config.js?v=1.91';
-import { coupNu } from './net/protocole.js?v=1.91';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.91';
+} from './engine.js?v=1.92';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.92';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.92';
+import { releve, voler, stopperVols } from './anim.js?v=1.92';
+import { campagne } from './lab.js?v=1.92';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.92';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.92';
+import { Salon } from './net/salon.js?v=1.92';
+import { TransportLocal } from './net/local.js?v=1.92';
+import { TransportSupabase } from './net/supabase.js?v=1.92';
+import { enLigneDisponible } from './net/config.js?v=1.92';
+import { coupNu } from './net/protocole.js?v=1.92';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.92';
 
 const app = document.getElementById('app');
 
@@ -719,14 +719,6 @@ function bancBloc(st, i, titre, interactif) {
     const a = detail.get(l.plan) || []; a.push(l.pts); detail.set(l.plan, a);
     if (ptsLigne[l.sequence] !== undefined) ptsLigne[l.sequence] += l.pts;
   }
-  // Ce qu'une carte vaut par elle-même, hors bandeau — une Carte Raccord coûte
-  // deux points, ou en rapporte deux si une carte du montage le dit. Cela
-  // compte comme le reste : au coin de la carte, et dans le compte de sa ligne.
-  for (const [p, v] of score.valeurCarte) {
-    points.set(p, (points.get(p) || 0) + v);
-    const si = banc.sequences.findIndex((sq) => sq.includes(p));
-    if (ptsLigne[si] !== undefined) ptsLigne[si] += v;
-  }
 
   // Le plan qui vient d'être posé : c'est là que la carte en vol atterrit.
   const neuf = st.dernierPose && st.dernierPose.p === i ? st.dernierPose : null;
@@ -814,9 +806,8 @@ function bancBloc(st, i, titre, interactif) {
     // de plus —, il n'y a rien à compter : un « 0 » y ferait croire à un
     // pouvoir qui a échoué. Une Carte Raccord en a toujours un : elle vaut
     // quelque chose par elle-même, en plus ou en moins.
-    points: planMarque(objsEffectifs(plan, banc, st.cfg)) || score.valeurCarte.has(plan)
+    points: planMarque(objsEffectifs(plan, banc, st.cfg))
       ? (points.get(plan) || 0) : undefined,
-    valeurCarte: score.valeurCarte.get(plan),
     // Un Raccord dont le bandeau a été remplacé se dessine avec le NOUVEAU :
     // on doit lire sur la carte ce qu'elle rapporte ici, pas ce qu'elle
     // rapporterait ailleurs. L'aperçu au survol garde l'imprimé à côté.
@@ -1642,10 +1633,6 @@ function contenuApercu(d) {
       Son bandeau imprimé — ${d.objsImprimes.map((o) => objLabel(o, store.cfg)).join(' et ')} —
       est <b>remplacé</b> : une carte de votre montage dit ce que les Raccords rapportent.
     </div>` : ''}
-    ${d.valeurCarte === null || d.valeurCarte === undefined ? '' : `<div class="ap-valeur-carte">
-      Une <b>Carte Raccord</b> vaut <b>${d.valeurCarte > 0 ? '+' : ''}${d.valeurCarte}</b> à qui la pose
-      ${d.valeurCarte > 0 ? '— une carte de votre montage le dit' : '— elle relie sans rien raconter'}
-    </div>`}
     ${d.points === null || d.points === undefined ? '' : `<div class="ap-points">
       Cette carte rapporte <b>${d.points}</b> point${Math.abs(d.points) > 1 ? 's' : ''} dans ce montage
     </div>`}`;
@@ -3566,7 +3553,7 @@ function blocPouvoir(o, ou, rang = 1) {
   } else if (kind === 'RACCORD_VAUT') {
     complement = `<input type="number" class="pts" min="-20" max="20" value="${o.n}"
         data-champ-obj="${ou}"${R} data-part="n">
-      <span class="plus">par Carte Raccord, au lieu de ${store.cfg.pointsParRaccord}</span>`;
+      <span class="plus">× Raccord, à la place du coût imprimé sur vos Raccords</span>`;
   } else if (kind === 'DOUBLE') {
     // `n` n'est plus un compte mais un nombre de fois : à 1 la carte compte
     // double, à 2 elle compte triple. Le libellé le rappelle.
