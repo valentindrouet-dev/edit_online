@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.99';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=2.0';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -74,7 +74,7 @@ export function compteGroupes(plans, els) {
  * variantes chacun.
  *
  * Deux cibles ne comptent pas des cartes mais ce qu'elles portent — `ICONE`,
- * toutes les icônes confondues, et `VALEUR`, la **valeur de cadre** : on
+ * toutes les icônes confondues, et `VALEUR`, la **Valeur de Plan** : on
  * compte les cadrages DIFFÉRENTS, une ligne qui alterne Plan Large, Plan Moyen
  * et Gros Plan en montrant trois. Une dernière ne regarde pas la portée du
  * tout : `SEQUENCE` compte les séquences du banc.
@@ -86,10 +86,10 @@ export function compteCible(plans, cible, banc) {
     case 'RACCORD':  return plans.filter(estRaccord).length;
     case 'MORT':     return plans.filter((p) => p.mort).length;
     case 'ICONE':    return plans.reduce((s, p) => s + p.el.length, 0);
-    // La **valeur de cadre** — le mot de cinéma pour le cadrage : Plan Large,
+    // La **Valeur de Plan** — le mot de cinéma pour le cadrage : Plan Large,
     // Plan Moyen, Gros Plan. On compte celles qui sont DIFFÉRENTES : une ligne
     // qui alterne les trois en montre trois, quel que soit le nombre de cartes.
-    // Un Raccord n'est pas un plan : il n'a pas de valeur de cadre.
+    // Un Raccord n'est pas un plan : il n'a pas de Valeur de Plan.
     case 'VALEUR':   return new Set(plans.filter((p) => !estRaccord(p)).map((p) => p.format)).size;
     case 'SEQUENCE': return banc ? banc.sequences.length : 0;
     default:
@@ -258,7 +258,7 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
       return n * portee.filter((p) => p.mort).length;
     case 'ABSENT':
       // « Absent » se dit de tout ce que le vocabulaire sait compter : une
-      // icône, mais aussi une valeur de cadre, un Raccord, un plan de mort.
+      // icône, mais aussi une Valeur de Plan, un Raccord, un plan de mort.
       return compteCible(portee, cibleDe(obj), banc) === 0 ? n : 0;
     case 'DOMINE': {
       // Une cible domine sa portée quand rien de sa famille n'y est plus
@@ -325,7 +325,7 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
       // afficher zéro à une ligne qui montrait bien ses trois véhicules — le
       // décompte disait autre chose que ce qui était imprimé. Les cibles qui ne
       // sont pas des icônes ne connaissent pas la nuance : un plan n'a qu'un
-      // cadrage, et la valeur de cadre compte de toute façon les cadrages
+      // cadrage, et la Valeur de Plan compte de toute façon les cadrages
       // DIFFÉRENTS de la ligne.
       const k = Math.max(1, obj.seuil || 1);
       const assez = (s) => compteCible(s, obj.cible, banc) >= k;

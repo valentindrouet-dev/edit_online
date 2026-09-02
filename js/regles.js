@@ -14,13 +14,23 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=1.99';
-import { elIcon } from './icons.js?v=1.99';
+import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=2.0';
+import { elIcon } from './icons.js?v=2.0';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.20',
+    date: '03/09/2026',
+    origine: 'Vocabulaire fixé par l’auteur',
+    corps: (c) => corps_0_20(c),
+    items: [
+      '<b>« Valeur de cadre » se dit désormais « Valeur de Plan ».</b> Le mot désigne toujours la même chose — un cadrage <b>différent</b> : une ligne qui alterne Plan Large, Plan Moyen et Gros Plan en montre trois, quel qu’y soit le nombre de cartes. Seul le nom change, partout : sur les cartes, dans l’éditeur, dans le décompte et dans l’aide de jeu. La forme courte reste <b>Val.</b>',
+      '<b>Les portées se nomment sans possessif dans l’aide de jeu</b> — « avant, dans la ligne », « dans toute la ligne » —, parce qu’on y décrit une portée <b>en soi</b>, sans carte sous les yeux. Dans la phrase d’un bandeau, où « sa » désigne la carte dont on parle, elles gardent leur forme d’avant : « 2 × Arme dans toute sa ligne ».',
+    ],
+  },
   {
     v: '0.19',
     date: '02/09/2026',
@@ -430,6 +440,24 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.20 -----------------------------------------------------------------
+// Deux mots changent. « Valeur de cadre » devient « Valeur de Plan » — c'est
+// ainsi que l'auteur l'écrit —, et les portées perdent leur possessif dans
+// l'aide, où l'on décrit une portée en soi plutôt qu'une carte posée.
+
+function corps_0_20(c) {
+  return corps_0_19(c)
+    .replace(/valeurs de cadre/g, 'Valeurs de Plan')
+    .replace(/valeur de cadre/g, 'Valeur de Plan')
+    .replace(/Valeur de cadre/g, 'Valeur de Plan')
+    .replace('<h3>Décompte des bandeaux</h3>',
+      `${majBloc('0.20', `<b>« Valeur de cadre » se dit désormais « Valeur de Plan ».</b> Le mot
+      désigne toujours la même chose — un cadrage <b>différent</b> : une ligne qui alterne Plan
+      Large, Plan Moyen et Gros Plan en montre trois, quel qu'y soit le nombre de cartes. Seul le
+      nom change, sur les cartes comme dans le décompte.`)}
+      <h3>Décompte des bandeaux</h3>`);
 }
 
 // --- v0.19 -----------------------------------------------------------------

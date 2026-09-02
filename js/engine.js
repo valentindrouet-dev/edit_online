@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, sceneDe, faceJouee,
-} from './data.js?v=1.99';
-import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=1.99';
+} from './data.js?v=2.0';
+import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=2.0';
 
 // --- Aléatoire reproductible ----------------------------------------------
 

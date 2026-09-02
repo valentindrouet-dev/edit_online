@@ -13,8 +13,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.99';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.99';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=2.0';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.0';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -132,8 +132,8 @@ function objCoeur(obj, taille, compact) {
       <span class="tag tag-seq">${compact ? 'séq. ⌀' : 'plus longue séq.'}</span>`;
     case 'SEQ_AVEC': {
       // La cible se dessine comme partout ailleurs. Cette branche la redessinait
-      // pour son compte, et n'avait prévu ni la valeur de cadre ni le plan de
-      // mort : « séquence avec 3+ valeurs de cadre » s'affichait « SÉQUENCE avec
+      // pour son compte, et n'avait prévu ni la Valeur de Plan ni le plan de
+      // mort : « séquence avec 3+ Valeurs de Plan » s'affichait « SÉQUENCE avec
       // 3+ » — le seuil sans ce qu'il compte.
       const quoi = cibleHTML(obj.cible, taille, compact);
       // Sans seuil, la lecture d'origine : la cible seule, barrée d'une croix
@@ -209,7 +209,7 @@ function cibleHTML(cible, taille, compact) {
     case 'MORT':     return elIcon('MORT', taille);
     case 'SEQUENCE': return tagSeq(compact);
     case 'ICONE':    return `<span class="tag tag-blanc">${compact ? 'Ic.' : 'Icône'}</span>`;
-    case 'VALEUR':   return `<span class="tag tag-blanc">${compact ? 'Val.' : 'Valeur de cadre'}</span>`;
+    case 'VALEUR':   return `<span class="tag tag-blanc">${compact ? 'Val.' : 'Valeur de Plan'}</span>`;
     default:         return FORMATS[cible] ? tagCadrage(cible, compact) : elIcon(cible, taille);
   }
 }
@@ -341,7 +341,7 @@ function coutCoeur(obj, compact, P) {
     if (c === 'MORT') return P.rond;
     if (c === 'SEQUENCE') return t('Séquence', 'Séq.');
     if (c === 'ICONE') return t('Icône', 'Ic.');
-    if (c === 'VALEUR') return t('Valeur de cadre', 'Val.');
+    if (c === 'VALEUR') return t('Valeur de Plan', 'Val.');
     return FORMATS[c] ? t(FORMATS[c].label, FORMATS[c].short) : P.rond;
   };
   const tt = (x) => P.tag0 + P.tag1 * String(x).length;

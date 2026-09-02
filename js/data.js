@@ -160,11 +160,20 @@ export const CADRAGES_POUVOIR = ['PL', 'PM', 'GP', 'DEP'];
 // Trois de ces quatre portées ne quittent pas la LIGNE du plan : « avant » et
 // « après » désignent une place dans la séquence, pas dans le film. Une ligne
 // posée au-dessus n'est pas « avant », elle est ailleurs.
+// Deux libellés, parce qu'ils ne servent pas au même endroit. `label` est celui
+// de l'AIDE : on y décrit une portée en soi, sans carte sous les yeux, et le
+// possessif y sonne creux — « avant, dans la ligne ». `phrase` est celui qui
+// entre dans une PHRASE de bandeau, où « sa » désigne la carte dont on parle —
+// « 2 × Arme dans toute sa ligne ».
 export const PORTEES = [
-  { id: 'AVANT',    label: 'avant elle dans sa ligne', court: 'avant',   gauche: true,  droite: false },
-  { id: 'APRES',    label: 'après elle dans sa ligne', court: 'après',   gauche: false, droite: true },
-  { id: 'SEQUENCE', label: 'dans toute sa ligne',      court: 'séquence', gauche: true,  droite: true },
-  { id: 'MONTAGE',  label: 'dans le montage entier',   court: 'montage', gauche: false, droite: false },
+  { id: 'AVANT',    label: 'avant, dans la ligne', phrase: 'avant elle dans sa ligne',
+    court: 'avant',    gauche: true,  droite: false },
+  { id: 'APRES',    label: 'après, dans la ligne', phrase: 'après elle dans sa ligne',
+    court: 'après',    gauche: false, droite: true },
+  { id: 'SEQUENCE', label: 'dans toute la ligne',  phrase: 'dans toute sa ligne',
+    court: 'séquence', gauche: true,  droite: true },
+  { id: 'MONTAGE',  label: 'dans le montage entier', phrase: 'dans le montage entier',
+    court: 'montage',  gauche: false, droite: false },
 ];
 
 export const PORTEE_IDS = PORTEES.map((p) => p.id);
@@ -184,7 +193,7 @@ export const OBJ = {
     ...(portee ? { portee } : {}) }),
   mort:    (n, portee) => ({ kind: 'MORT', n, ...(portee ? { portee } : {}) }),
   // « n si CIBLE est absente ». La cible n'est plus une icône seulement : une
-  // valeur de cadre, une Carte Raccord, un plan de mort peuvent manquer aussi.
+  // Valeur de Plan, une Carte Raccord, un plan de mort peuvent manquer aussi.
   // Le champ s'appelait `el` du temps où seule une icône s'y logeait ; les
   // configurations enregistrées avant ce jour le portent encore, et les
   // lecteurs acceptent les deux — voir `cibleDe`.
@@ -399,7 +408,7 @@ export function seuilTexte(sens, k) {
 //
 // Deux cibles ne désignent pas des cartes mais ce qu'elles portent :
 //   ICONE   toutes les icônes confondues — un plan à deux armes en porte deux
-//   VALEUR  la **valeur de cadre**, le mot de cinéma pour le cadrage, et l'on
+//   VALEUR  la **Valeur de Plan**, le mot de cinéma pour le cadrage, et l'on
 //           compte celles qui sont DIFFÉRENTES : une ligne qui alterne Plan
 //           Large, Plan Moyen et Gros Plan en montre trois, quel que soit le
 //           nombre de cartes. Un cadrage nommé — « Gros Plan » — se vise
@@ -421,8 +430,8 @@ export const CIBLES_COMPTE = [
   ...ELEMENT_IDS.map((e) => ({ id: e, label: ELEMENTS[e].label, court: ELEMENTS[e].label,
     pl: `${ELEMENTS[e].label}s`, f: e === 'HEROINE' || e === 'ARME' })),
   { id: 'ICONE',    label: 'Icône (toutes confondues)', court: 'icône',    pl: 'icônes', f: true },
-  { id: 'VALEUR',   label: 'Valeur de cadre (cadrage différent)',
-    court: 'valeur de cadre', pl: 'valeurs de cadre', f: true },
+  { id: 'VALEUR',   label: 'Valeur de Plan (cadrage différent)',
+    court: 'Valeur de Plan', pl: 'Valeurs de Plan', f: true },
   { id: 'SEQUENCE', label: 'Séquence du banc',          court: 'séquence', pl: 'séquences', f: true },
 ];
 
@@ -489,10 +498,10 @@ export function ciblesSequence() {
     ...CADRAGES_VISABLES.map((f) => ({ id: f, label: FORMATS[f].label })),
     { id: 'RACCORD', label: 'Carte Raccord' },
     { id: 'MORT', label: 'Plan de mort' },
-    // « Valeur de cadre » ne se compte pas comme les autres : ce ne sont pas
+    // « Valeur de Plan » ne se compte pas comme les autres : ce ne sont pas
     // les plans porteurs qu'on dénombre mais les cadrages DIFFÉRENTS de la
-    // ligne. « Une séquence avec 3 valeurs de cadre » demande donc les trois.
-    { id: 'VALEUR', label: 'Valeur de cadre' },
+    // ligne. « Une séquence avec 3 Valeurs de Plan » demande donc les trois.
+    { id: 'VALEUR', label: 'Valeur de Plan' },
   ];
 }
 
@@ -500,7 +509,7 @@ export function ciblesSequence() {
 export function libelleCible(cible) {
   if (cible === 'RACCORD') return 'Carte Raccord';
   if (cible === 'MORT') return 'Plan de mort';
-  if (cible === 'VALEUR') return 'valeur de cadre';
+  if (cible === 'VALEUR') return 'Valeur de Plan';
   if (FORMATS[cible]) return FORMATS[cible].label;
   return ELEMENTS[cible] ? ELEMENTS[cible].label : cible;
 }
@@ -603,10 +612,27 @@ export const CRITERES_DOUBLE = {
  */
 export const signe = (n) => (n < 0 ? `−${Math.abs(n)}` : `+${n}`);
 
-export function objLabel(o, cfg) {
+/**
+ * La phrase d'un bandeau, en toutes lettres.
+ *
+ * `opts.sansNombre` la met au service de l'AIDE DE JEU, où le bandeau est
+ * dessiné juste à côté : le nombre y est déjà sous les yeux, et le réécrire le
+ * dirait deux fois. « 2 × Raccord » devient donc « par Raccord ». En revanche
+ * la portée s'y écrit TOUJOURS, « dans le montage entier » compris — on
+ * l'omettait comme une évidence, mais une fiche décrit une famille de bandeaux
+ * et non une carte posée : l'évidence n'y est plus lisible.
+ */
+export function objLabel(o, cfg, opts = {}) {
   if (!o) return '';
+  const nu = !!opts.sansNombre;
   const p = PORTEES.find((x) => x.id === objPortee(o, cfg)) || PORTEES[3];
-  const ou = p.id === 'MONTAGE' ? '' : ` ${p.label}`;
+  // La portée s'écrit toujours dans l'aide — SAUF pour les bandeaux qui la
+  // portent déjà dans leur propre phrase : « à droite du centre de sa ligne »
+  // n'a pas besoin qu'on ajoute « dans le montage entier » derrière, et les
+  // deux ensemble se contredisent.
+  const ou = (nu && porteeReglable(o)) || p.id !== 'MONTAGE' ? ` ${p.phrase}` : '';
+  const fois = nu ? 'par' : `${o.n} ×`;
+  const si = nu ? 'si' : `${o.n} si`;
   switch (o.kind) {
     // --- Les pouvoirs de règle : une phrase, pas un compte ------------------
     case 'PIOCHER': return `Vous pouvez piocher sur la pioche ${
@@ -620,37 +646,37 @@ export function objLabel(o, cfg) {
       return `Les cartes Raccord vous rapportent ${signe(o.n)} par Raccord`;
     case 'ABSENT': {
       const c = cibleDe(o);
-      return `${o.n} si ${libelleCibleCompte(c)} est absent${accordCible(c)}${ou}`;
+      return `${si} ${libelleCibleCompte(c)} est absent${accordCible(c)}${ou}`;
     }
     case 'DOMINE': {
       // Un cadrage est masculin, une icône féminine : l'article, l'adverbe et
       // le participe s'accordent ensemble ou la phrase boite.
       const masc = familleDeCible(cibleDe(o)) === 'CADRAGE';
-      return `${o.n} si ${libelleCibleCompte(cibleDe(o))} est ${masc ? 'le cadrage' : 'l’icône'} ${
+      return `${si} ${libelleCibleCompte(cibleDe(o))} est ${masc ? 'le cadrage' : 'l’icône'} ${
         masc ? 'le' : 'la'} ${o.sens === 'MOINS' ? 'moins' : 'plus'} présent${masc ? '' : 'e'}${
-        ou || ' du montage'}`;
+        ou || ' dans le montage entier'}`;
     }
-    case 'CHRONO':  return `${o.n} si tout est dans l’ordre${ou || ' dans le montage'}`;
+    case 'CHRONO':  return `${si} tout est dans l’ordre${ou || ' dans le montage entier'}`;
     case 'SEUIL': {
       // « Au plus zéro » se dit « aucun » : c'est la lecture qui vient à
       // l'esprit, et celle qu'on écrirait sur la carte.
       const ou2 = o.cible === 'SEQUENCE' ? ' dans le banc' : ou;
-      if (o.sens === 'MAX' && o.seuil === 0) return `${o.n} si ${aucunCible(o.cible)}${ou2}`;
-      return `${o.n} si ${o.sens === 'MAX' ? 'au plus' : 'au moins'} ${
+      if (o.sens === 'MAX' && o.seuil === 0) return `${si} ${aucunCible(o.cible)}${ou2}`;
+      return `${si} ${o.sens === 'MAX' ? 'au plus' : 'au moins'} ${
         cibleNombre(o.cible, o.seuil)}${ou2}`;
     }
-    case 'SEQ_TOUTES': return `${o.n} si chaque séquence a ${
+    case 'SEQ_TOUTES': return `${si} chaque séquence a ${
       o.sens === 'MAX' ? 'au plus' : 'au moins'} ${o.seuil} plan${o.seuil > 1 ? 's' : ''}`;
     // « Compte double » se dit ainsi, pas « 1 × sa valeur » : c'est la même
     // chose, mais une seule des deux tournures se lit sur une carte.
     case 'DOUBLE': return `${o.sens === 'PLUS' ? 'La plus grosse' : 'La plus petite'} carte${ou} — ${
       CRITERES_DOUBLE[o.critere] || CRITERES_DOUBLE.POINTS} — compte ${
       o.n === 1 ? 'double' : `${o.n + 1} fois`}`;
-    case 'SANS_TC': return `${o.n} si aucun plan ${
+    case 'SANS_TC': return `${si} aucun plan ${
       o.sens === 'AVANT' ? `avant ${tcTexte(o.seuil)}`
         : o.sens === 'APRES' ? `après ${tcTexte(o.seuil)}`
-          : `à ${tcTexte(o.seuil)}`}${ou || ' dans le montage'}`;
-    default: return `${o.n} × ${objQuoi(o)}${ou}`;
+          : `à ${tcTexte(o.seuil)}`}${ou || ' dans le montage entier'}`;
+    default: return `${fois} ${objQuoi(o)}${ou}`;
   }
 }
 

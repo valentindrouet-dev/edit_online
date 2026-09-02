@@ -16,9 +16,9 @@
 import {
   FORMATS, ELEMENTS, ELEMENT_IDS, PORTEES, OBJ, objLabel, PAIRES_DEPART, PLANS_DEPART,
   buildCartesDoubles, buildPlansLarges, buildDeparts, SCENES, recenserBoite,
-} from './data.js?v=1.99';
-import { elIcon } from './icons.js?v=1.99';
-import { objHTML } from './cards.js?v=1.99';
+} from './data.js?v=2.0';
+import { elIcon } from './icons.js?v=2.0';
+import { objHTML } from './cards.js?v=2.0';
 
 // --- Les briques de mise en page -------------------------------------------
 
@@ -78,12 +78,23 @@ const ENTETE_CARTES = `<div class="lv-entete">
   </div>
 </div>`;
 
+/**
+ * La famille d'une icône, telle qu'on la nomme à la table. Le modèle la range
+ * sous PERSONNAGE ou ELEMENT ; le plan de mort n'en est pas une, c'est un état
+ * du plan — d'où « Statut ».
+ */
+const FAMILLES_ICONE = { PERSONNAGE: 'Personnage', ELEMENT: 'Élément' };
+
 /** Un cartouche de cadrage, tel qu'il paraît sur un bandeau. */
 const cadre = (f) => `<span class="tag tag-fmt" style="--c:${FORMATS[f].color}">${FORMATS[f].label}</span>`;
 
-/** Le bandeau d'un pouvoir, dessiné comme sur la carte, sa phrase, son compte. */
+/**
+ * Le bandeau d'un pouvoir, dessiné comme sur la carte, sa phrase, son compte.
+ * La phrase est SANS son nombre : il est dessiné dans le bandeau, juste à
+ * gauche — l'écrire une seconde fois ne l'explique pas mieux.
+ */
 const pouvoir = (o, cfg, n) => ligne(`<span class="lv-bandeau">${objHTML(o, 30, cfg)}</span>`,
-  objLabel(o, cfg), '', n);
+  objLabel(o, cfg, { sansNombre: true }), '', n);
 
 // Un pouvoir de RÈGLE est déjà écrit en toutes lettres sur la carte : le
 // traduire mot pour mot ne dirait rien de plus. On explique donc ce qu'il
@@ -239,7 +250,7 @@ export function livret(cfg) {
         portée comme les autres.</li>
       <li>Une <b>Carte Raccord</b> n’est ni un Plan, ni un Gros Plan, ni un Plan Moyen : aucun
         bandeau de cadrage ne la compte. Elle reste une <b>Carte</b>.</li>
-      <li>Une <b>valeur de cadre</b> est un cadrage <b>différent</b> : une ligne qui alterne les
+      <li>Une <b>Valeur de Plan</b> est un cadrage <b>différent</b> : une ligne qui alterne les
         trois en montre trois, quel qu’y soit le nombre de cartes.</li>
       <li>Un bandeau qui paie pour une <b>absence</b> — « n si telle icône est absente » — est la
         seule exception : celui-là <b>ne regarde pas sa propre carte</b>. Sans quoi un plan qui
@@ -308,9 +319,10 @@ export function aideDeJeu(cfg) {
     <div class="aj-bloc">
       <h3>Les icônes</h3>
       ${ENTETE_CARTES}
-      ${ELEMENT_IDS.map((e) => ligne(elIcon(e, 38), ELEMENTS[e].label, '', B.icones[e] || 0)).join('')}
-      ${ligne(elIcon('MORT', 38), 'Plan de mort — une icône comme une autre, qui se compte',
-    '', B.icones.MORT || 0)}
+      ${ELEMENT_IDS.map((e) => ligne(elIcon(e, 38),
+    `${FAMILLES_ICONE[ELEMENTS[e].famille]} - ${ELEMENTS[e].label}`,
+    '', B.icones[e] || 0)).join('')}
+      ${ligne(elIcon('MORT', 38), 'Statut - Mort', '', B.icones.MORT || 0)}
     </div>
 
     <div class="aj-bloc">
@@ -318,10 +330,9 @@ export function aideDeJeu(cfg) {
       ${ENTETE_CARTES}
       ${['PL', 'PM', 'GP', 'DEP'].map((f) => ligne(tagFmt(f),
     FORMATS[f].label, '', B.cadrages[f] || 0)).join('')}
-      ${ligne(tag('tag-gris', 'Raccord', 'Raccord'),
-    'Carte Raccord — elle relie sans rien raconter. Ni plan, ni cadrage', '', B.raccord)}
-      ${ligne(tag('tag-blanc', 'Valeur de cadre', 'Val.'),
-    'Un cadrage <b>différent</b> : trois Gros Plans n’en font qu’une', '', B.cibles.VALEUR || 0)}
+      ${ligne(tag('tag-gris', 'Raccord', 'Raccord'), 'Raccord (pas un Plan)', '', B.raccord)}
+      ${ligne(tag('tag-blanc', 'Valeur de Plan', 'Val.'), 'Valeur de Plan (cadrage différent)',
+    '', B.cibles.VALEUR || 0)}
     </div>
 
     </div>
@@ -331,35 +342,27 @@ export function aideDeJeu(cfg) {
     <div class="aj-bloc">
       <h3>Le minutage</h3>
       ${ENTETE_CARTES}
-      ${ligne('<span class="lv-tc-r">30:00</span>', 'Un instant du film', '', B.tc.ORDINAIRE || 0)}
+      ${ligne('<span class="lv-tc-r">30:00</span>', 'Minutage du Plan', '', B.tc.ORDINAIRE || 0)}
       ${ligne('<span class="lv-tc-b">--:--</span>',
-    'Pas de minutage : la carte se pose où l’on veut, et ne rompt jamais l’ordre',
-    '', B.tc.VIDE || 0)}
-      ${ligne('<span class="lv-tc-o">01:00</span>', 'Le premier plan du film', '', B.tc.PREMIER || 0)}
-      ${ligne('<span class="lv-tc-o">99:00</span>', 'Le dernier', '', B.tc.DERNIER || 0)}
+    'Pas de minutage : le Plan ne rompt jamais l’ordre', '', B.tc.VIDE || 0)}
+      ${ligne('<span class="lv-tc-o">01:00</span>', 'Minutage du premier plan', '', B.tc.PREMIER || 0)}
+      ${ligne('<span class="lv-tc-o">99:00</span>', 'Minutage du dernier plan', '', B.tc.DERNIER || 0)}
     </div>
 
     <div class="aj-bloc">
       <h3>Les mots-clés</h3>
       ${ENTETE_CARTES}
-      <p class="aide">Un bandeau ne montre pas toujours une icône : ces cartouches-là nomment ce
-      qu’il compte. Sur un Gros Plan, la place manque et l’écriture courte prend le relais — c’est
-      la même chose.</p>
       ${ligne(tag('tag-blanc', 'Plan', 'Plan'),
-    'Un <b>plan</b> : toute carte du montage <b>sauf</b> un Raccord — Plan Large, Plan Moyen, '
-    + 'Gros Plan, Plan de départ', '', B.cibles.PLAN || 0)}
+    'Un <b>plan</b> : toute carte du montage <b>sauf</b> un Raccord', '', B.cibles.PLAN || 0)}
       ${ligne(tag('tag-seq', 'Séquence', 'Séq.'),
-    'Une <b>ligne</b> du banc, avec tout ce qu’elle porte. Une séquence est tenue par son Plan '
-    + 'Large, et un Raccord peut lui ouvrir un second côté', '', B.cibles.SEQUENCE || 0)}
+    'Une <b>ligne</b> du banc de montage, incluant toutes ses cartes', '', B.cibles.SEQUENCE || 0)}
       ${ligne(tag('tag-blanc', 'Icône', 'Ic.'),
-    'N’importe quelle <b>icône</b>, toutes confondues : une carte à trois icônes en montre trois, '
-    + 'quelles qu’elles soient', '', B.cibles.ICONE || 0)}
+    'N’importe quelle <b>icône</b>', '', B.cibles.ICONE || 0)}
       ${ligne('<span class="tag tag-chrono">↗ ordre</span>',
-    'Le montage est <b>dans l’ordre</b> : lu d’un seul tenant, ligne après ligne, aucun minutage '
-    + 'ne revient en arrière. Les plans sans minutage sont retirés de la lecture',
+    'Le minutage est dans l’<b>ordre croissant</b> (de gauche à droite, ligne après ligne)',
     '', B.cibles.ORDRE || 0)}
       ${ligne(tag('tag-blanc', 'Carte', 'Carte'),
-    'Une <b>carte</b>, Raccords compris — là où « Plan » les écarte', '', B.cibles.CARTE || 0)}
+    'Une <b>carte</b> (Raccords compris)', '', B.cibles.CARTE || 0)}
     </div>
 
     <div class="aj-bloc">

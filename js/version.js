@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.99';
-export const BUILD_DATE = '2026-09-03 00:20';
+export const VERSION = '2.0';
+export const BUILD_DATE = '2026-09-03 03:40';
 
 export const CHANGELOG = [
+  {
+    v: '2.0',
+    date: '03/09/2026',
+    items: [
+      "<b>Vos 27 retouches sont gravées</b>, et le reste de l'aide est écrit dans la même voix. Le parti pris, qui se lit dans chacune : <b>l'aide nomme, elle n'explique pas</b>. « Carte Raccord — elle relie sans rien raconter. Ni plan, ni cadrage » devient <b>« Raccord (pas un Plan) »</b> ; « N'importe quelle icône, toutes confondues : une carte à trois icônes en montre trois » devient <b>« N'importe quelle icône »</b>. Le livret reste le lieu des explications ; la fiche, celui des définitions.",
+      "<b>Les icônes portent leur famille</b> : « Personnage - Héroïne », « Élément - Arme », et le plan de mort devient <b>« Statut - Mort »</b> — c'est un état du plan, pas une famille d'icône. Les minutages se nomment au lieu de se raconter : <b>« Minutage du Plan »</b>, « Minutage du premier plan ».",
+      "<b>La phrase d'un bandeau ne redit plus son nombre.</b> Il est dessiné à trois centimètres à gauche : « 2 × Raccord » se lit maintenant <b>« par Raccord dans le montage entier »</b>. En échange la <b>portée s'écrit toujours</b>, « dans le montage entier » compris — on l'omettait comme une évidence, mais une fiche décrit une famille de bandeaux et non une carte posée. Sauf pour les bandeaux qui portent déjà leur portée : « à droite du centre de sa ligne » n'en reçoit pas une seconde, les deux se contrediraient. Ailleurs — la table de jeu, l'éditeur —, la phrase garde son nombre.",
+      "<b>« Valeur de cadre » se dit désormais « Valeur de Plan ». Règles v0.20.</b> Le mot désigne toujours la même chose — un cadrage <b>différent</b> — mais c'est ainsi qu'il s'écrit. Le nom change partout : sur les cartes, dans l'éditeur, dans le décompte, dans l'aide et dans le livret. La forme courte reste <b>Val.</b>",
+      "<b>Les portées se nomment sans possessif dans la fiche</b> — « avant, dans la ligne », « dans toute la ligne » —, parce qu'on y décrit une portée <b>en soi</b>. Dans la phrase d'un bandeau, où « sa » désigne la carte dont on parle, elles gardent leur forme d'avant : « 2 × Arme dans toute sa ligne ». Deux libellés pour deux usages, plutôt qu'un compromis qui ne va nulle part.",
+    ],
+  },
   {
     v: '1.99',
     date: '03/09/2026',
