@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.96';
+import { ELEMENT_IDS } from './data.js?v=1.97';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -32,6 +32,14 @@ export const DEFAULTS = {
   sensPose: 'bords',         // 'bords' (les deux bouts d'une séquence) | 'droite'
   plNouvelleSequence: true,  // un Plan Large ouvre toujours une nouvelle séquence
   plContigu: false,          // autoriser deux Plans Larges côte à côte
+  // Deux Raccords ne se touchent pas : un Raccord relie deux plans, et collé à
+  // un autre Raccord il ne relierait qu'une jonction — c'est-à-dire rien.
+  raccordContigu: false,
+  // Le bord libre d'un Raccord n'accepte qu'un **Plan Large**. C'est là tout son
+  // office : il ouvre un second côté à sa ligne, et ce côté commence par son
+  // propre climax. Sans effet si le Raccord ne relie pas (`raccordConnecte`),
+  // puisqu'il n'est alors qu'un plan ordinaire.
+  raccordAppellePL: true,
   // Un banc ne porte que cinq séquences. Ce n'est pas le nombre de Plans Larges
   // qui est borné — une ligne peut en porter plusieurs, de part et d'autre d'un
   // Raccord —, c'est le nombre de lignes : un montage a plus de plans que de
@@ -306,6 +314,13 @@ export const SCHEMA = [
       aide: 'cinq par les règles ; passé ce compte, un Plan Large n’entre plus que par la '
         + 'charnière d’un Raccord. 0 = aucune limite' },
     { k: 'plContigu', l: 'Deux Plans Larges peuvent se toucher', t: 'bool' },
+    { k: 'raccordContigu', l: 'Deux Raccords peuvent se toucher', t: 'bool',
+      aide: 'la règle l’interdit : un Raccord relie deux plans, et collé à un autre Raccord '
+        + 'il ne relierait qu’une jonction' },
+    { k: 'raccordAppellePL', l: 'Le bord libre d’un Raccord n’accepte qu’un Plan Large', t: 'bool',
+      aide: 'c’est l’office du Raccord — il ouvre un second côté à sa ligne, et ce côté commence '
+        + 'par son climax. Décoché, un Plan Moyen ou un Gros Plan peut s’y accrocher. Sans effet '
+        + 'si « une Carte Raccord relie deux séquences » est décoché' },
     { k: 'planUnique', l: 'Variante — pas deux fois le même plan', t: 'choix', options: [
       ['AUCUNE', 'autorisé — un plan peut se répéter'],
       ['MONTAGE', 'jamais deux fois dans le banc'],

@@ -13,8 +13,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.96';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.96';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.97';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.97';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -67,6 +67,9 @@ function croixNon() {
  */
 export function phraseRegle(obj, compact) {
   const s = (n) => (n > 1 ? 's' : '');
+  // Un modificateur porte son signe : « +1 », « −2 ». Sans lui, « 1 par
+  // Raccord » se lirait comme une valeur et non comme un bonus.
+  const signeRegle = (n) => (n < 0 ? `−${Math.abs(n)}` : `+${n}`);
   switch (obj.kind) {
     case 'PIOCHER': return compact
       ? `Pioche ${obj.cible === 'PL' ? 'PL' : 'PM/GP'}`
@@ -80,8 +83,8 @@ export function phraseRegle(obj, compact) {
     // « n × Raccord » — en abrégeant le mot. La phrase entière reste dans
     // l'aperçu au survol, comme pour les autres pouvoirs de règle.
     case 'RACCORD_VAUT': return compact
-      ? `Racc. = ${obj.n} × Racc.`
-      : `Les cartes Raccord vous rapportent ${obj.n} × Raccord`;
+      ? `Racc. ${signeRegle(obj.n)}`
+      : `Les cartes Raccord vous rapportent ${signeRegle(obj.n)} par Raccord`;
     default: return '';
   }
 }
@@ -534,9 +537,15 @@ export function renderPlan(h, opts = {}) {
   // du minutage. Il n'apparaît qu'au montage, où le calcul a un sens.
   // Un plan peut coûter des points autant qu'il peut en rapporter : le jeton
   // passe alors au rouge, avec son signe.
+  // `bonifie` : ce Raccord rapporte AUTRE CHOSE que ce qui est imprimé dessus,
+  // parce qu'une carte du montage bonifie les Raccords. Le jeton passe au vert
+  // pour que la difference se voie sans avoir a relire le bandeau.
+  const teinteJeton = opts.bonifie ? 'bonifie'
+    : opts.points < 0 ? 'negatif' : (opts.points ? '' : 'nul');
   const jeton = opts.points === undefined ? ''
-    : `<div class="jeton-pts ${opts.points < 0 ? 'negatif' : (opts.points ? '' : 'nul')}"
-        title="Ce que ce plan rapporte">${opts.points}</div>`;
+    : `<div class="jeton-pts ${teinteJeton}" title="${opts.bonifie
+      ? 'Ce que ce plan rapporte — bonifie par une carte de votre montage'
+      : 'Ce que ce plan rapporte'}">${opts.points}</div>`;
   // `muet` : un plan qui n'est pas vraiment sur la table — un aperçu de pose —
   // n'ouvre pas d'infobulle et ne se donne pas pour une carte du banc.
   const bulle = opts.muet ? ''

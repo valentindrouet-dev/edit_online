@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, OBJ, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.96';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.97';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -185,6 +185,39 @@ export function porteeDe(obj, sequence, banc, cfg, porteur) {
 }
 
 /**
+ * **L'exception à « la carte compte pour elle-même ».**
+ *
+ * Un bandeau compte d'ordinaire ce que porte sa propre carte : « 2 × Héroïne ▶ »
+ * voit l'Héroïne de son plan comme celles d'après, et c'est ce qu'on attend
+ * d'une carte qui annonce une icône.
+ *
+ * Mais un bandeau qui paie pour une ABSENCE se retournerait contre lui-même :
+ * un Gros Plan qui montre une Héroïne et dit « 4 si Héroïne absente après »
+ * serait son propre démenti — le pouvoir ne pourrait JAMAIS se déclencher, quoi
+ * que fasse la joueuse. Un tel bandeau ne regarde donc pas la carte qui le
+ * porte : il parle de ce qu'il y a autour.
+ *
+ * Trois bandeaux disent cela, et à eux trois c'est la même phrase — « rien de
+ * cela ici » — qu'une seule carte suffit à démentir :
+ *   ABSENT      n si telle icône, tel cadrage, tel Raccord est absent
+ *   SANS_TC     n si aucun plan d'avant — ou d'après — tel minutage
+ *   SEUIL MAX 0 n si aucun de la cible : « aucun » s'écrit « au plus zéro »
+ *
+ * Deux voisins n'en sont pas, et se comptent donc normalement :
+ *   — un SEUIL au-dessus de zéro est un **plafond**, pas une absence. « 4 si au
+ *     plus 2 Armes » reste vrai avec l'arme de sa propre carte ; rien ne se
+ *     contredit, et la carte s'y compte comme partout ;
+ *   — « n × icône absente » (ABSENTES) **compte** les icônes manquantes au lieu
+ *     d'exiger qu'il n'y en ait aucune. Sa carte le diminue, elle ne l'annule
+ *     pas : il n'y a pas de démenti à écarter, et l'exempter reviendrait à lui
+ *     donner des points de plus sans qu'on l'ait demandé.
+ */
+function sansSonPorteur(obj) {
+  if (obj.kind === 'ABSENT' || obj.kind === 'SANS_TC') return true;
+  return obj.kind === 'SEUIL' && obj.sens === 'MAX' && (obj.seuil ?? 1) === 0;
+}
+
+/**
  * Valeur d'un bandeau porté par `porteur`, dans la portée qu'il déclare.
  *
  * `profond` marque un calcul fait **pour le compte d'un autre bandeau** — le
@@ -200,7 +233,9 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
   // moteur — qui le lisent, pas ce décompte carte par carte.
   if (estRegleKind(obj.kind)) return 0;
 
-  const portee = porteeDe(obj, sequence, banc, cfg, porteur);
+  const portee = sansSonPorteur(obj)
+    ? porteeDe(obj, sequence, banc, cfg, porteur).filter((p) => p !== porteur)
+    : porteeDe(obj, sequence, banc, cfg, porteur);
   const n = obj.n;
 
   switch (obj.kind) {
@@ -472,55 +507,63 @@ export function estRaccordSimple(p) {
 }
 
 /**
- * Une carte du montage dit-elle ce que les Raccords rapportent ?
+ * De combien le montage bonifie ses Cartes Raccord — la somme des
+ * « Les cartes Raccord vous rapportent +n par Raccord » qu'il porte.
  *
- * « Les cartes Raccord vous rapportent maintenant n × Raccord » ne donne pas de
- * points à qui la porte : elle **remplace le bandeau imprimé** des Cartes
- * Raccord du montage — leur « 1 × Plan » devient « n × Raccord ». Les points se
- * comptent donc là où on les lit, sur les Raccords eux-mêmes.
+ * C'est un **modificateur**, pas un remplacement : le « x × Raccord » d'une
+ * Carte Raccord devient « x+n × Raccord ». Il a longtemps remplacé le bandeau
+ * de coût, ce qui le rendait sans effet sur un Raccord qui rapportait déjà —
+ * c'est-à-dire, en pratique, sur presque tous.
  *
- * Deux cartes qui le disent ne se cumulent pas : la plus généreuse l'emporte.
+ * Deux cartes qui le disent **s'ajoutent** : ce sont deux bonus, et deux bonus
+ * se cumulent. Zéro veut dire qu'aucune ne le dit, et rien ne change.
  */
-export function pouvoirRaccordImpose(banc, cfg) {
-  if (!banc || !regleActive('RACCORD_VAUT', cfg)) return null;
-  let mieux = null;
+export function bonusRaccord(banc, cfg) {
+  if (!banc || !regleActive('RACCORD_VAUT', cfg)) return 0;
+  let total = 0;
   for (const p of tousLesPlans(banc)) {
-    for (const o of objsDe(p)) {
-      if (o.kind !== 'RACCORD_VAUT') continue;
-      if (!mieux || o.n > mieux.obj.n) mieux = { obj: o, plan: p };
-    }
+    for (const o of objsDe(p)) if (o.kind === 'RACCORD_VAUT') total += o.n;
   }
-  return mieux;
+  return total;
 }
 
 /**
- * Le bandeau qu'un pouvoir de Raccord vient remplacer : « n × Raccord » avec un
- * n **négatif**, c'est-à-dire un Raccord qui COÛTE. C'est de celui-là que parle
- * « Les cartes Raccord vous rapportent 2 × Raccord », et de lui seul.
+ * Le bandeau qu'un pouvoir de Raccord bonifie : « n × Raccord », quel que soit
+ * son signe. C'est de celui-là que parle « Les cartes Raccord vous rapportent
+ * +1 par Raccord », et de lui seul.
  *
  * Un Raccord qui porte autre chose — « 1 × Plan », une icône, un minutage —
- * garde son bandeau : le pouvoir ne dit rien de lui. Un Raccord qui rapporte
- * déjà le garde aussi ; le pouvoir ne peut qu'améliorer, jamais rogner.
+ * garde son bandeau : le pouvoir ne dit rien de lui.
  */
-function estCoutDeRaccord(o) {
-  return !!o && o.kind === 'RACCORD' && o.n < 0;
+function estCompteDeRaccord(o) {
+  return !!o && o.kind === 'RACCORD';
 }
 
 /**
  * Les bandeaux d'un plan **tels qu'ils comptent dans ce montage-ci**. Ce sont
- * ceux de la carte, sauf le bandeau de coût d'un Raccord quand une carte du
- * banc dit ce que les Raccords rapportent : celui-là — et lui seul — est
- * remplacé, et c'est le nouveau qui se compte, et qui se dessine.
+ * ceux de la carte, sauf le « n × Raccord » d'une Carte Raccord quand le banc
+ * porte de quoi le bonifier : celui-là — et lui seul — voit son n augmenter, et
+ * c'est le nouveau qui se compte, et qui se dessine.
  *
- * Le remplacement se fait bandeau par bandeau : un Raccord qui en porte deux
+ * La bonification se fait bandeau par bandeau : un Raccord qui en porte deux
  * garde l'autre intact.
  */
 export function objsEffectifs(plan, banc, cfg) {
   const objs = objsDe(plan);
-  if (!estRaccordSimple(plan) || !objs.some(estCoutDeRaccord)) return objs;
-  const impose = pouvoirRaccordImpose(banc, cfg);
-  if (!impose) return objs;
-  return objs.map((o) => (estCoutDeRaccord(o) ? OBJ.raccord(impose.obj.n) : o));
+  if (!estRaccordSimple(plan) || !objs.some(estCompteDeRaccord)) return objs;
+  const bonus = bonusRaccord(banc, cfg);
+  if (!bonus) return objs;
+  return objs.map((o) => (estCompteDeRaccord(o) ? { ...o, n: o.n + bonus } : o));
+}
+
+/**
+ * Ce plan-là voit-il son bandeau bonifié ? La table le montre — la pastille de
+ * points passe au vert : ce que la carte rapporte ici n'est pas ce qui est
+ * imprimé dessus.
+ */
+export function raccordBonifie(plan, banc, cfg) {
+  return estRaccordSimple(plan) && objsDe(plan).some(estCompteDeRaccord)
+    && bonusRaccord(banc, cfg) !== 0;
 }
 
 /** Décompte complet d'un banc, ventilé par source. */
@@ -648,7 +691,7 @@ export const SOURCES_LABEL = {
   PIOCHER: 'Droit de piocher au sommet',
   SEQ_PLUS: 'Séquences supplémentaires',
   PLAN_PLUS: 'Plans supplémentaires',
-  RACCORD_VAUT: 'Ce que valent vos Raccords',
+  RACCORD_VAUT: 'Le bonus de vos Raccords',
   CHRONOLOGIE: 'Variante — chronologie',
   POSE: 'Points de pose',
   JONCTION: 'Jonctions raccordées',

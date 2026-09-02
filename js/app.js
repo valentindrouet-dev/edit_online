@@ -2,9 +2,9 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.96';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.97';
 import {
-  ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
+  ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
   appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
   CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
@@ -12,29 +12,29 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=1.96';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.96';
-import { elIcon, numIcon } from './icons.js?v=1.96';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.96';
+} from './data.js?v=1.97';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.97';
+import { elIcon, numIcon } from './icons.js?v=1.97';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.97';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.96';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.96';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.96';
-import { releve, voler, stopperVols } from './anim.js?v=1.96';
-import { campagne } from './lab.js?v=1.96';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.96';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.96';
-import { Salon } from './net/salon.js?v=1.96';
-import { TransportLocal } from './net/local.js?v=1.96';
-import { TransportSupabase } from './net/supabase.js?v=1.96';
-import { enLigneDisponible } from './net/config.js?v=1.96';
-import { coupNu } from './net/protocole.js?v=1.96';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.96';
-import { livret, aideDeJeu } from './livret.js?v=1.96';
+} from './engine.js?v=1.97';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.97';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.97';
+import { releve, voler, stopperVols } from './anim.js?v=1.97';
+import { campagne } from './lab.js?v=1.97';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.97';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.97';
+import { Salon } from './net/salon.js?v=1.97';
+import { TransportLocal } from './net/local.js?v=1.97';
+import { TransportSupabase } from './net/supabase.js?v=1.97';
+import { enLigneDisponible } from './net/config.js?v=1.97';
+import { coupNu } from './net/protocole.js?v=1.97';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.97';
+import { livret, aideDeJeu } from './livret.js?v=1.97';
 
 const app = document.getElementById('app');
 
@@ -828,10 +828,12 @@ function bancBloc(st, i, titre, interactif) {
     // quelque chose par elle-même, en plus ou en moins.
     points: planMarque(objsEffectifs(plan, banc, st.cfg))
       ? (points.get(plan) || 0) : undefined,
-    // Un Raccord dont le bandeau a été remplacé se dessine avec le NOUVEAU :
+    // Un Raccord dont le bandeau a été bonifié se dessine avec le NOUVEAU :
     // on doit lire sur la carte ce qu'elle rapporte ici, pas ce qu'elle
-    // rapporterait ailleurs. L'aperçu au survol garde l'imprimé à côté.
+    // rapporterait ailleurs. L'aperçu au survol garde l'imprimé à côté, et le
+    // jeton de points passe au vert.
     objs: objsRemplaces(plan),
+    bonifie: raccordBonifie(plan, banc, st.cfg),
     detail: detail.get(plan) || [],
     neuf: !!(neuf && neuf.seq === si && neuf.idx === k),
   });
@@ -2191,7 +2193,7 @@ const KINDS = [
   ['PIOCHER',      'vous pouvez PIOCHER au sommet…'],
   ['SEQ_PLUS',     'vous pouvez monter n SÉQUENCES de plus…'],
   ['PLAN_PLUS',    'vous pouvez monter n PLANS de plus…'],
-  ['RACCORD_VAUT', 'les RACCORDS vous rapportent n…'],
+  ['RACCORD_VAUT', 'vos RACCORDS vous rapportent +n de plus…'],
 ];
 
 const KIND_LABEL = Object.fromEntries(KINDS.map(([k, l]) => [k, l]));
@@ -3571,9 +3573,12 @@ function blocPouvoir(o, ou, rang = 1) {
       <span class="plus">${kind === 'SEQ_PLUS' ? `séquence${o.n > 1 ? 's' : ''}`
     : `Plan${o.n > 1 ? 's' : ''}`} de plus</span>`;
   } else if (kind === 'RACCORD_VAUT') {
+    // `n` n'est pas une valeur mais un MODIFICATEUR : il s'ajoute au « x ×
+    // Raccord » imprimé sur vos Cartes Raccord. Le libellé le dit, sans quoi
+    // « 1 » se lirait comme « vos Raccords valent 1 ».
     complement = `<input type="number" class="pts" min="-20" max="20" value="${o.n}"
         data-champ-obj="${ou}"${R} data-part="n">
-      <span class="plus">× Raccord, à la place du coût imprimé sur vos Raccords</span>`;
+      <span class="plus">de plus par Raccord, ajouté au « n × Raccord » imprimé sur vos Raccords</span>`;
   } else if (kind === 'DOUBLE') {
     // `n` n'est plus un compte mais un nombre de fois : à 1 la carte compte
     // double, à 2 elle compte triple. Le libellé le rappelle.
@@ -5021,7 +5026,7 @@ function construireObj(kind, actuel) {
     PIOCHER:      () => OBJ.piocher(actuel && actuel.cible === 'PL' ? 'PL' : 'PMGP'),
     SEQ_PLUS:     () => OBJ.sequencePlus(actuel && actuel.kind === 'PLAN_PLUS' ? actuel.n : 1),
     PLAN_PLUS:    () => OBJ.planPlus(actuel && actuel.kind === 'SEQ_PLUS' ? actuel.n : 1),
-    RACCORD_VAUT: () => OBJ.raccordVaut(actuel && actuel.kind === 'RACCORD_VAUT' ? actuel.n : 2),
+    RACCORD_VAUT: () => OBJ.raccordVaut(actuel && actuel.kind === 'RACCORD_VAUT' ? actuel.n : 1),
   }[kind]();
   // Changer de type ne déplace pas le bandeau : il garde sa portée.
   if (actuel && PORTEE_IDS.includes(actuel.portee)) neuf.portee = actuel.portee;
@@ -5421,7 +5426,7 @@ function facesCartes() {
       if (!c.actif) return;
       faces.push({ nom: nomFichier(`plan-large-${plHalf(c).num}`), html: renderCarte(c, false) });
     });
-    DEPARTS().forEach((d) => d.faces.forEach((f, k) => {
+    departsAImprimer().forEach((d) => d.faces.forEach((f, k) => {
       const id = `S${d.type}f${f.num}`;
       if (estDesactivee(id)) return;
       const carte = { ...f, depart: true, type: 'DEPART', id };
@@ -5430,6 +5435,20 @@ function facesCartes() {
     }));
     return faces;
   });
+}
+
+/**
+ * Les cartes Plan de départ **telles qu'il faut les imprimer**. D'ordinaire les
+ * deux versions de la boîte — 1-2 et 3-4, en quatre exemplaires chacune ; sous
+ * la variante « 6 Cartes Départ », les six appariements des quatre plans, une
+ * carte par couple, chacune avec son recto et son verso propres.
+ *
+ * Seuls les EXPORTS suivent la variante. L'écran Matériel, lui, continue de
+ * montrer les deux versions : c'est là qu'on édite les quatre plans eux-mêmes,
+ * et les voir trois fois chacun n'y aiderait personne.
+ */
+function departsAImprimer() {
+  return store.cfg && store.cfg.sixCartesDepart ? DEPARTS_SIX() : DEPARTS();
 }
 
 // --- Les planches d'impression ----------------------------------------------
@@ -5456,7 +5475,12 @@ function couplesCartes() {
       // bien le verso imprimé de la carte.
       out.push({ recto: renderCarte(c, false), verso: renderDos('Plans Larges', 0, {}) });
     });
-    DEPARTS().forEach((d) => {
+    // Variante « 6 Cartes Départ » : ce ne sont plus les deux versions imprimées
+    // qu'on sort, mais les SIX appariements des quatre plans — chacun sa carte,
+    // chacun son recto et son verso propres. Les quatre plans sont donc tirés
+    // trois fois chacun, sur trois cartes différentes : c'est bien ce qu'il faut
+    // imprimer, et non quatre cartes de plus.
+    departsAImprimer().forEach((d) => {
       const faces = d.faces.filter((f) => !estDesactivee(`S${d.type}f${f.num}`));
       if (!faces.length) return;
       const carte = (f) => renderCarte({ ...f, depart: true, type: 'DEPART', id: `S${d.type}f${f.num}` }, false);

@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.96';
-export const BUILD_DATE = '2026-09-02 15:20';
+export const VERSION = '1.97';
+export const BUILD_DATE = '2026-09-02 18:40';
 
 export const CHANGELOG = [
+  {
+    v: '1.97',
+    date: '02/09/2026',
+    items: [
+      "<b>Deux règles de pose autour du Raccord. Règles v0.18.</b> <b>Deux Raccords ne se touchent pas</b> — un Raccord relie deux plans, collé à un autre il ne relierait qu'une jonction. Et le <b>bord libre d'un Raccord n'accepte qu'un Plan Large</b> : jamais un Plan Moyen ni un Gros Plan. C'est là tout son office — il ouvre un second côté à sa ligne, et ce côté commence par son propre climax. Les deux se règlent dans les Variables, et une carte qui n'aurait plus où se poser reste écartée au dérushage, comme avant.",
+      "<b>« Les cartes Raccord vous rapportent +n par Raccord » bonifie au lieu de remplacer.</b> Vous aviez raison : ça ne marchait pas. L'ancienne formule <b>remplaçait</b> le bandeau de <b>coût</b> d'un Raccord, et ne s'appliquait donc qu'aux « n × Raccord » <b>négatifs</b> — sur un Raccord qui rapportait déjà, elle ne faisait strictement rien. C'est un modificateur désormais : le « x × Raccord » imprimé devient « x+n × Raccord », quel que soit son signe. Un « −2 » à +1 se lit « −1 » ; un « 2 » se lit « 3 ».",
+      "Deux cartes qui le disent <b>s'ajoutent</b> — +1 et +2 font +3 —, là où l'ancienne gardait la plus généreuse : un remplacement devait choisir, deux bonus n'ont plus à le faire. Il ne touche toujours <b>que</b> le « n × Raccord » : un Raccord qui porte autre chose garde son bandeau, et l'Ouverture comme le Générique de fin ne sont pas des Cartes Raccord. Sur la table, le <b>jeton de points d'un Raccord bonifié passe au vert</b> — on voit d'un coup d'œil qu'il rapporte autre chose que ce qui est imprimé dessus.",
+      "<b>Un bandeau qui paie pour une absence ne regarde plus sa propre carte.</b> C'est la seule exception à « la carte qui porte le bandeau compte pour elle-même ». Sans elle, un Gros Plan qui <b>montre</b> une Héroïne et dit « 4 si Héroïne absente après » était son propre démenti : le pouvoir ne pouvait <b>jamais</b> se déclencher. Cela vaut aussi pour « n si aucun plan avant tel minutage » et « n si aucun de la cible ». Pas pour « n × icône absente », qui <b>compte</b> les manquantes au lieu d'exiger qu'il n'y en ait aucune : sa carte le diminue, elle ne l'annule pas — l'exempter lui aurait donné des points de plus sans qu'on l'ait demandé.",
+      "<b>Les six Cartes Départ s'impriment.</b> Quand la variante est cochée, les planches PDF et l'archive de faces sortent les <b>six</b> cartes avec leur recto et leur verso propres, au lieu des deux versions de la boîte. L'écran Matériel, lui, continue de montrer les deux versions : c'est là qu'on édite les quatre plans, et les voir trois fois chacun n'y aiderait personne.",
+    ],
+  },
   {
     v: '1.96',
     date: '02/09/2026',

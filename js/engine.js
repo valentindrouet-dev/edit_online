@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, sceneDe, faceJouee,
-} from './data.js?v=1.96';
-import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=1.96';
+} from './data.js?v=1.97';
+import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=1.97';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -518,10 +518,34 @@ function placeDuCote(cfg, seq, cote, plan) {
   return plansDuCote(seq, cote) < max;
 }
 
-/** Le Plan Large ne peut pas toucher un autre Plan Large. */
+/** Une Carte Raccord — celle qui relie, ni l'Ouverture ni le Générique de fin. */
+const estRaccordPur = (p) => !!p && p.transition === 'RACCORD';
+
+/**
+ * Ce plan-ci peut-il se poser contre ce voisin-là ? Trois interdits, chacun
+ * réglable.
+ *
+ * **Deux Plans Larges ne se touchent pas.** Un Plan Large est le climax d'une
+ * séquence ; deux climax collés n'en font pas un.
+ *
+ * **Deux Raccords ne se touchent pas non plus.** Un Raccord relie deux plans :
+ * collé à un autre Raccord, il ne relierait qu'une jonction, c'est-à-dire rien.
+ *
+ * **Le bord libre d'un Raccord n'accepte qu'un Plan Large.** C'est là tout
+ * l'office du Raccord : il ouvre un second côté à sa ligne, et ce côté commence
+ * par son propre climax. Un Plan Moyen ou un Gros Plan posé là s'accrocherait à
+ * une charnière qui ne tient rien. La règle ne vaut donc que si le Raccord
+ * relie vraiment — `raccordConnecte` éteint, c'est un plan ordinaire, et il
+ * n'appelle plus rien.
+ */
 function poseAutorisee(cfg, voisin, plan) {
+  if (!voisin) return true;
+  if (estRaccordPur(voisin)) {
+    if (estRaccordPur(plan) && !cfg.raccordContigu) return false;
+    if (cfg.raccordAppellePL && cfg.raccordConnecte && !estPL(plan)) return false;
+  }
   if (cfg.plContigu) return true;
-  return !(voisin && estPL(voisin) && estPL(plan));
+  return !(estPL(voisin) && estPL(plan));
 }
 
 // --- Variante : un plan ne se répète pas -----------------------------------

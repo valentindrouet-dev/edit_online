@@ -16,9 +16,9 @@
 import {
   FORMATS, ELEMENTS, ELEMENT_IDS, PORTEES, OBJ, objLabel, PAIRES_DEPART, PLANS_DEPART,
   buildCartesDoubles, buildPlansLarges, buildDeparts, SCENES,
-} from './data.js?v=1.96';
-import { elIcon } from './icons.js?v=1.96';
-import { objHTML } from './cards.js?v=1.96';
+} from './data.js?v=1.97';
+import { elIcon } from './icons.js?v=1.97';
+import { objHTML } from './cards.js?v=1.97';
 
 // --- Les briques de mise en page -------------------------------------------
 
@@ -175,10 +175,15 @@ export function livret(cfg) {
       <li>Une <b>Carte Raccord</b> n’est pas un plan : elle ne compte ni dans les ${tours} plans, ni
         dans la longueur d’une ligne. Posée au bout d’une ligne, elle y fait <b>charnière</b> — un
         second Plan Large peut alors se poser de l’autre côté d’elle, dans cette même ligne.</li>
+      <li><b>Deux Raccords ne se touchent pas</b>, et le <b>bord libre d’un Raccord n’accepte qu’un
+        Plan Large</b> — jamais un Plan Moyen ni un Gros Plan. C’est là tout l’office du Raccord :
+        il ouvre un second côté, et ce côté commence par son propre climax.</li>
     </ul>
     ${encart('Le Raccord, la seule façon d’étoffer', `Une ligne pleine n’accepte plus de plan, mais
       elle accepte toujours un <b>Raccord</b> — et, derrière lui, un nouveau Plan Large qui ouvre un
-      second côté. C’est par là qu’une séquence gagne en ampleur sans ouvrir une ligne de plus.`)}
+      second côté. C’est par là qu’une séquence gagne en ampleur sans ouvrir une ligne de plus.
+      Poser un Raccord, c’est donc <b>appeler un Plan Large</b> : rien d’autre ne s’accrochera à son
+      bord libre.`)}
   `)}
 
   ${section('Fin de la partie', `
@@ -203,8 +208,12 @@ export function livret(cfg) {
         bandeau de cadrage ne la compte. Elle reste une <b>Carte</b>.</li>
       <li>Une <b>valeur de cadre</b> est un cadrage <b>différent</b> : une ligne qui alterne les
         trois en montre trois, quel qu’y soit le nombre de cartes.</li>
+      <li>Un bandeau qui paie pour une <b>absence</b> — « n si telle icône est absente » — est la
+        seule exception : celui-là <b>ne regarde pas sa propre carte</b>. Sans quoi un plan qui
+        montre une Héroïne et dit « 4 si Héroïne absente après » serait son propre démenti.</li>
       <li>Les points se lisent au <b>coin de chaque carte</b> pendant la partie : c’est ce que ce
-        plan-là vous rapporte, ici et maintenant.</li>
+        plan-là vous rapporte, ici et maintenant. Un coin <b>vert</b> signale une Carte Raccord
+        <b>bonifiée</b> : elle rapporte autre chose que ce qui est imprimé dessus.</li>
     </ul>
   `)}
 
@@ -337,10 +346,12 @@ export function aideDeJeu(cfg) {
       ${regle(OBJ.planPlus(1), c, `La fin tombe au ${c.tours || 10}<sup>e</sup> plan <b>pour tout le
         monde</b> : ce pouvoir ne la retarde pas. Une fois le dernier tour joué, vous jouez
         <b>un tour de plus</b> — et vous y posez ce que vous voulez, un plan ou un Raccord.`)}
-      ${regle(OBJ.raccordVaut(2), c, `Le bandeau « <b>−2 × Raccord</b> » de <b>vos</b> Cartes
-        Raccord devient « 2 × Raccord » : elles rapportent au lieu de coûter, et l’affichent.
-        Un Raccord qui porte <b>autre chose</b> garde son bandeau, et l’Ouverture comme le Générique
-        de fin ne sont jamais touchés. La carte qui dit ce pouvoir ne gagne rien elle-même.`)}
+      ${regle(OBJ.raccordVaut(1), c, `Un <b>modificateur</b> : le « x × Raccord » imprimé sur
+        <b>vos</b> Cartes Raccord devient « x+1 × Raccord ». Un « −2 » se lit « −1 », un « 2 » se
+        lit « 3 ». Un Raccord qui porte <b>autre chose</b> garde son bandeau, et l’Ouverture comme
+        le Générique de fin ne sont pas des Cartes Raccord. Deux cartes qui le disent
+        <b>s’ajoutent</b>. La carte qui le porte ne gagne rien elle-même ; le Raccord bonifié, lui,
+        montre son coin de points en <b>vert</b>.`)}
     </div>
 
   </div>

@@ -432,6 +432,13 @@ body.sans-illus .moitie .tcode {
 /* Ce qui coûte des points se lit d'un coup d'œil : rouge, et jamais confondu
    avec un gain. Le signe moins fait partie du chiffre. */
 .moitie .jeton-pts.negatif { background: #b91c1c; border-color: rgba(255, 220, 220, .75); }
+/* Un Raccord bonifié rapporte autre chose que ce qui est imprimé dessus : le
+   vert le dit, en plus ou en moins. Sans lui, il faudrait relire le bandeau
+   pour savoir si le modificateur a joué. */
+.moitie .jeton-pts.bonifie {
+  background: #15803d; border-color: rgba(190, 245, 205, .8);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .35), 0 0 0 2px rgba(34, 197, 94, .3);
+}
 body.sans-points .jeton-pts { display: none; }
 
 /* Pendant le coup d'une IA ou le vol d'une carte, la table reste en place mais

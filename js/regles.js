@@ -14,13 +14,25 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=1.96';
-import { elIcon } from './icons.js?v=1.96';
+import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=1.97';
+import { elIcon } from './icons.js?v=1.97';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.18',
+    date: '02/09/2026',
+    origine: 'Règle étendue et corrigée par l’auteur',
+    corps: (c) => corps_0_18(c),
+    items: [
+      '<b>Deux Raccords ne se touchent pas.</b> Un Raccord relie deux plans ; collé à un autre Raccord, il ne relierait qu’une jonction — c’est-à-dire rien.',
+      '<b>Le bord libre d’un Raccord n’accepte qu’un Plan Large.</b> Jamais un Plan Moyen ni un Gros Plan : c’est là tout l’office du Raccord — il ouvre un second côté à sa ligne, et ce côté commence par son propre climax. Les deux interdits se règlent dans les Variables, et une carte qui n’aurait plus où se poser n’est plus proposée au dérushage.',
+      '<b>« Les cartes Raccord vous rapportent +n par Raccord » bonifie au lieu de remplacer.</b> Le « x × Raccord » imprimé sur <b>vos</b> Cartes Raccord devient « x+n × Raccord ». L’ancienne formule remplaçait le bandeau de <b>coût</b>, et ne s’appliquait donc qu’aux Raccords dont le « n × Raccord » était <b>négatif</b> : sur ceux qui rapportaient déjà, elle ne faisait rien du tout. Deux cartes qui le disent <b>s’ajoutent</b> désormais — +1 et +2 font +3 —, là où l’ancienne gardait la plus généreuse. Sur la table, le jeton de points d’un Raccord bonifié passe au <b>vert</b>.',
+      '<b>Un bandeau qui paie pour une ABSENCE ne regarde pas sa propre carte.</b> C’est la seule exception à « la carte qui porte le bandeau compte pour elle-même ». Sans elle, un Gros Plan qui <b>montre</b> une Héroïne et dit « 4 si Héroïne absente après » serait son propre démenti : le pouvoir ne pourrait jamais se déclencher, quoi que fasse la joueuse. Cela vaut pour « n si CIBLE absente », « n si aucun plan avant tel minutage » et « n si aucun de la cible ». Pas pour « n × icône absente », qui <b>compte</b> les manquantes au lieu d’exiger qu’il n’y en ait aucune : sa carte le diminue, elle ne l’annule pas.',
+    ],
+  },
   {
     v: '0.17',
     date: '02/09/2026',
@@ -408,6 +420,43 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.18 -----------------------------------------------------------------
+// Ce que le Raccord appelle à côté de lui, ce que le pouvoir de Raccord fait
+// désormais — bonifier plutôt que remplacer —, et la seule exception à « la
+// carte compte pour elle-même ».
+
+function corps_0_18(c) {
+  const bonus = c && c.raccordAppellePL !== false;
+  return corps_0_17(c)
+    // 1. Les deux règles de pose, à la suite de la charnière.
+    .replace(/La\s+ligne reste alors <b>une seule séquence<\/b>/,
+      `${maj('0.18', `<b>Deux Raccords ne se touchent pas</b>, et le <b>bord libre d'un Raccord
+      n'accepte qu'un Plan Large</b> — jamais un Plan Moyen ni un Gros Plan. C'est là tout l'office
+      du Raccord : il ouvre un second côté à sa ligne, et ce côté commence par son propre climax.
+      ${bonus ? '' : '(Réglage en cours : le bord accepte n’importe quel plan.)'}`)}
+      La ligne reste alors <b>une seule séquence</b>`)
+    // 2. L'exception à « la carte compte pour elle-même ».
+    .replace(/un plan compte toujours ce qu(?:’|')il porte\.<\/span>/,
+      `un plan compte toujours ce qu’il porte.</span>
+      ${maj('0.18', `<b>Sauf un bandeau qui paie pour une ABSENCE</b> — « n si telle icône est
+      absente », « n si aucun plan avant tel minutage », « n si aucune Arme ». Celui-là ne regarde
+      pas sa propre carte : sans quoi un Gros Plan qui montre une Héroïne et dit « 4 si Héroïne
+      absente après » serait son propre démenti, et ne pourrait <b>jamais</b> se déclencher.
+      « n × icône absente » n'en est pas un : il <b>compte</b> les manquantes au lieu d'exiger
+      qu'il n'y en ait aucune, et sa carte s'y compte comme partout.`)}`)
+    // 3. Le pouvoir de Raccord devient un modificateur.
+    .replace(/<tr><td><b>n × SÉQUENCE avec \/ sans …<\/b><\/td>/,
+      `<tr><td><b>Les Raccords vous rapportent +n</b></td>
+      <td>${maj('0.18', `Un <b>modificateur</b>, écrit en toutes lettres : le « x × Raccord »
+      imprimé sur <b>vos</b> Cartes Raccord devient « x+n × Raccord ». Un « −2 × Raccord » à +1 se
+      lit « −1 × Raccord » ; un « 2 × Raccord » se lit « 3 × Raccord ». Il ne touche <b>que</b> le
+      « n × Raccord » : un Raccord qui porte autre chose garde son bandeau, et l'Ouverture comme le
+      Générique de fin ne sont pas des Cartes Raccord. Deux cartes qui le disent <b>s'ajoutent</b>.
+      La carte qui le porte ne gagne rien elle-même ; le Raccord bonifié, lui, montre son jeton de
+      points en <b>vert</b>.`)}</td><td>Le montage entier</td></tr>
+      <tr><td><b>n × SÉQUENCE avec / sans …</b></td>`);
 }
 
 // --- v0.17 -----------------------------------------------------------------

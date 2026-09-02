@@ -295,15 +295,30 @@ export const OBJ = {
   // repoussée : la fin tombe au dixième plan pour tout le monde, et la porteuse
   // joue ensuite sa carte, plan ou Raccord.
   planPlus: (n) => ({ kind: 'PLAN_PLUS', n: Math.max(1, Math.min(9, Math.floor(n || 1))) }),
-  // « Les cartes Raccord vous rapportent n × Raccord. » Le bandeau de COÛT d'un
-  // Raccord — « −2 × Raccord », celui qui lui fait perdre des points — est
-  // remplacé par « n × Raccord ». Lui seul : un Raccord qui porte autre chose
-  // garde son bandeau, et l'Ouverture comme le Générique de fin, qui encadrent
-  // le film plutôt que de relier, ne sont jamais touchés.
+  // « Les cartes Raccord vous rapportent +n par Raccord. » Un MODIFICATEUR, et
+  // non un remplacement : le bandeau « x × Raccord » de vos Cartes Raccord
+  // devient « x+n × Raccord ». Un « −2 × Raccord » à +1 se lit « −1 × Raccord » ;
+  // un « 2 × Raccord » se lit « 3 × Raccord ».
+  //
+  // Il a longtemps REMPLACÉ le bandeau de coût — et ne s'appliquait donc qu'aux
+  // Raccords dont le « n × Raccord » était négatif : sur des cartes qui
+  // rapportaient déjà, il ne faisait rien du tout. Un modificateur n'a pas cette
+  // condition : il vaut pour tout Raccord qui compte des Raccords, quel que soit
+  // son signe.
+  //
+  // Ce qu'il ne touche pas : un Raccord qui porte AUTRE CHOSE — « 1 × Plan »,
+  // une icône, un minutage — garde son bandeau, le pouvoir ne dit rien de lui ;
+  // et l'Ouverture comme le Générique de fin, qui encadrent le film plutôt que
+  // de relier, ne sont jamais des Cartes Raccord.
+  //
+  // Deux cartes qui le disent s'AJOUTENT — +1 et +2 font +3 : ce sont deux
+  // bonus, et deux bonus se cumulent. Du temps où le pouvoir remplaçait, il
+  // fallait bien n'en garder qu'un ; un modificateur n'a plus à choisir.
+  //
   // La carte qui le dit ne gagne rien elle-même : ce sont les Raccords qui
   // marquent, et qui l'affichent.
   raccordVaut: (n) => ({ kind: 'RACCORD_VAUT',
-    n: Math.max(-20, Math.min(20, Math.floor(n === undefined ? 2 : n))) }),
+    n: Math.max(-20, Math.min(20, Math.floor(n === undefined ? 1 : n))) }),
 };
 
 /** Les bandeaux qui comptent des séquences : leur portée est le montage. */
@@ -583,6 +598,14 @@ export const CRITERES_DOUBLE = {
   CADRAGE: 'en taille de cadrage',
 };
 
+/**
+ * Un modificateur s'écrit avec son signe : « +1 », « −2 ». Le signe fait partie
+ * du nombre — sans lui, « 1 par Raccord » se lirait comme une valeur et non
+ * comme un bonus. Le moins est le vrai signe typographique, pas le trait
+ * d'union.
+ */
+export const signe = (n) => (n < 0 ? `−${Math.abs(n)}` : `+${n}`);
+
 export function objLabel(o, cfg) {
   if (!o) return '';
   const p = PORTEES.find((x) => x.id === objPortee(o, cfg)) || PORTEES[3];
@@ -597,7 +620,7 @@ export function objLabel(o, cfg) {
     case 'PLAN_PLUS': return `Après le dernier tour, vous pouvez jouer ${o.n} Carte${
       o.n > 1 ? 's' : ''} supplémentaire${o.n > 1 ? 's' : ''}`;
     case 'RACCORD_VAUT':
-      return `Les cartes Raccord vous rapportent ${o.n} × Raccord`;
+      return `Les cartes Raccord vous rapportent ${signe(o.n)} par Raccord`;
     case 'ABSENT': {
       const c = cibleDe(o);
       return `${o.n} si ${libelleCibleCompte(c)} est absent${accordCible(c)}${ou}`;
