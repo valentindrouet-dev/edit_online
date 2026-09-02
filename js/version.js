@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.90';
-export const BUILD_DATE = '2026-09-02 03:05';
+export const VERSION = '1.91';
+export const BUILD_DATE = '2026-09-02 03:55';
 
 export const CHANGELOG = [
+  {
+    v: '1.91',
+    date: '02/09/2026',
+    items: [
+      "<b>« Les cartes Raccord vous rapportent maintenant n × Raccord. » Règles v0.14.12.</b> Le pouvoir ne donne plus de points à qui le porte : il <b>remplace le bandeau imprimé</b> des Cartes Raccord de votre montage. Leur « 1 × Plan » devient « n × Raccord », et ce sont elles qui marquent — sur la carte, à l'endroit où on le lit. Plus de valeur qui change de signe dans un coin, plus de ligne cachée : un bandeau en remplace un autre.",
+      "<b>Il ne touche que le Raccord.</b> L'Ouverture et le Générique de fin encadrent le film plutôt que de relier : ils gardent leur bandeau, quoi qu'il arrive. Le Raccord, lui, <b>montre le nouveau</b> à la table — pas celui qui est imprimé dessus —, et l'aperçu au survol garde l'imprimé à côté pour qu'on voie ce qui a été remplacé.",
+      "<b>La carte qui le porte n'affiche plus de points</b>, comme les trois autres pouvoirs de règle : elle ne fait rien gagner par elle-même. Entre deux cartes qui le disent, la plus généreuse l'emporte ; elles ne se cumulent pas.",
+      "<b>Corrigé au passage, et il touchait les quatre pouvoirs de règle :</b> une phrase partageant sa bande avec un second pouvoir se disputait la largeur à parts égales avec lui. Une phrase se replie, une icône non — c'était donc l'icône qui débordait de la bande. La phrase cède désormais la place, et déclare au serrage la largeur minimale qu'il lui faut.",
+    ],
+  },
   {
     v: '1.90',
     date: '02/09/2026',

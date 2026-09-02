@@ -14,13 +14,24 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.90';
-import { elIcon } from './icons.js?v=1.90';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.91';
+import { elIcon } from './icons.js?v=1.91';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.14.12',
+    date: '02/09/2026',
+    origine: 'Règle reformulée par l’auteur',
+    corps: (c) => corps_0_14_12(c),
+    items: [
+      '<b>« Les cartes Raccord vous rapportent maintenant n × Raccord. »</b> Le pouvoir ne donne pas de points à qui le porte : il <b>remplace le bandeau imprimé</b> des Cartes Raccord de votre montage. Leur « 1 × Plan » devient « n × Raccord », et ce sont elles qui marquent — sur la carte, à l’endroit où on le lit.',
+      '<b>Il ne touche que le Raccord.</b> L’Ouverture et le Générique de fin encadrent le film plutôt que de relier : ils gardent leur bandeau, quoi qu’il arrive.',
+      'La carte qui porte ce pouvoir <b>n’affiche plus de points</b> : elle ne fait rien gagner par elle-même. Chaque Raccord, lui, montre son nouveau bandeau et ce qu’il rapporte. L’aperçu au survol garde le bandeau imprimé à côté du nouveau, pour qu’on voie ce qui a été remplacé. Entre deux cartes qui le disent, <b>la plus généreuse l’emporte</b> ; elles ne se cumulent pas.',
+    ],
+  },
   {
     v: '0.14.11',
     date: '02/09/2026',
@@ -343,6 +354,20 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.14.12 --------------------------------------------------------------
+// Le pouvoir du Raccord change de nature : il ne fixe plus une valeur, il
+// remplace un bandeau. Une ligne du tableau à réécrire.
+
+function corps_0_14_12(c) {
+  return corps_0_14_11(c)
+    .replace(/<td><b>Les Raccords vous rapportent n<\/b><\/td>\s*\n?\s*<td>[\s\S]*?<\/td>/,
+      `<td><b>Les cartes Raccord vous rapportent maintenant n × Raccord</b></td>
+      <td>${maj('0.14.12', `Le <b>bandeau imprimé</b> des Cartes Raccord de votre montage est
+      <b>remplacé</b> par « n × Raccord » — leur « 1 × Plan » disparaît. Seul le <b>Raccord</b> est
+      touché : l'Ouverture et le Générique de fin gardent le leur. La carte qui le dit ne gagne rien
+      elle-même ; ce sont les Raccords qui marquent. Entre deux, la plus généreuse l'emporte`)}</td>`);
 }
 
 // --- v0.14.11 --------------------------------------------------------------

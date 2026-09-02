@@ -289,9 +289,12 @@ export const OBJ = {
   // `n` n'est pas un nombre de points mais un nombre de lignes, ou de plans.
   sequencePlus: (n) => ({ kind: 'SEQ_PLUS', n: Math.max(1, Math.min(9, Math.floor(n || 1))) }),
   planPlus: (n) => ({ kind: 'PLAN_PLUS', n: Math.max(1, Math.min(9, Math.floor(n || 1))) }),
-  // Ce que chaque Carte Raccord du montage vaut à sa porteuse, à la place de ce
-  // que la variable de partie lui ferait valoir. `n` est ce montant — positif
-  // ou négatif : c'est un remplacement, pas un ajout.
+  // « Les cartes Raccord vous rapportent maintenant n × Raccord. » Le bandeau
+  // IMPRIMÉ des Cartes Raccord du montage — le « 1 × Plan » du Raccord — est
+  // remplacé par « n × Raccord ». La carte qui le dit ne gagne rien elle-même :
+  // ce sont les Raccords qui marquent, et qui l'affichent.
+  // L'Ouverture et le Générique de fin encadrent le film plutôt que de relier :
+  // ils gardent leur bandeau, quoi qu'il arrive.
   raccordVaut: (n) => ({ kind: 'RACCORD_VAUT',
     n: Math.max(-20, Math.min(20, Math.floor(n === undefined ? 2 : n))) }),
 };
@@ -312,10 +315,11 @@ export const estRegleKind = (k) => KINDS_REGLE.includes(k);
  * les porte n'a donc pas de compteur de points — un « 0 » y ferait croire à un
  * pouvoir qui a échoué, là où il n'y a rien à compter.
  *
- * `RACCORD_VAUT` n'en est pas : il dit ce que valent les Cartes Raccord du
- * montage, et ce qu'elles valent alors se compte sur lui.
+ * `RACCORD_VAUT` en est un aussi : il ne donne rien à qui le porte, il
+ * **remplace le bandeau imprimé** des Cartes Raccord du montage. Ce sont donc
+ * elles qui marquent, et elles seules qui l'affichent.
  */
-export const KINDS_SANS_POINTS = ['PIOCHER', 'SEQ_PLUS', 'PLAN_PLUS'];
+export const KINDS_SANS_POINTS = ['PIOCHER', 'SEQ_PLUS', 'PLAN_PLUS', 'RACCORD_VAUT'];
 
 /** Ce bandeau-là peut-il rapporter — ou coûter — des points ? */
 export const rapportePoints = (o) => !!o && !KINDS_SANS_POINTS.includes(o.kind);
@@ -577,12 +581,8 @@ export function objLabel(o, cfg) {
     case 'PLAN_PLUS': return `Vous pouvez monter ${o.n} Plan${
       o.n > 1 ? 's' : ''} supplémentaire${o.n > 1 ? 's' : ''}${
       cfg && cfg.tours ? ` (${cfg.tours + o.n})` : ''}`;
-    case 'RACCORD_VAUT': {
-      const signe = (v) => (v > 0 ? `+${v}` : `${v}`);
-      const base = cfg ? cfg.pointsParRaccord : undefined;
-      return `Les Raccords vous rapportent ${signe(o.n)}${
-        base !== undefined && base !== o.n ? ` au lieu de ${signe(base)}` : ''}`;
-    }
+    case 'RACCORD_VAUT':
+      return `Les cartes Raccord vous rapportent maintenant ${o.n} × Raccord`;
     case 'ABSENT': {
       const c = cibleDe(o);
       return `${o.n} si ${libelleCibleCompte(c)} est absent${accordCible(c)}${ou}`;

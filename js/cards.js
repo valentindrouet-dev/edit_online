@@ -13,8 +13,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.90';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.90';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.91';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.91';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -75,8 +75,13 @@ export function phraseRegle(obj, compact) {
       : `Vous pouvez monter ${obj.n} séquence${s(obj.n)} supplémentaire${s(obj.n)}`;
     case 'PLAN_PLUS': return compact ? `+${obj.n} Plan`
       : `Vous pouvez monter ${obj.n} Plan${s(obj.n)} supplémentaire${s(obj.n)}`;
-    case 'RACCORD_VAUT': return `${compact ? 'Raccords' : 'Les Raccords vous rapportent'} ${
-      obj.n > 0 ? '+' : ''}${obj.n}`;
+    // Un Gros Plan partagé à deux n'a de place que pour une douzaine de
+    // caractères : la forme courte garde le sens — les Raccords deviennent
+    // « n × Raccord » — en abrégeant le mot. La phrase entière reste dans
+    // l'aperçu au survol, comme pour les autres pouvoirs de règle.
+    case 'RACCORD_VAUT': return compact
+      ? `Racc. = ${obj.n} × Racc.`
+      : `Les cartes Raccord vous rapportent maintenant ${obj.n} × Raccord`;
     default: return '';
   }
 }
@@ -288,11 +293,19 @@ const PART_BANDEAU = { illustre: 0.18, nu: 0.3 };
  * Le corps est borné des deux côtés : une phrase de trois mots ne doit pas
  * devenir un titre, et une phrase longue reste lisible plutôt que de disparaître.
  */
+// Le plus petit corps qu'une phrase s'autorise, et la largeur d'un caractère
+// pour un corps de 1 em — mesurées sur le rendu réel, et partagées avec le
+// serrage, qui en déduit ce qu'une phrase réclame au minimum.
+const CORPS_PHRASE_MIN = 0.3;
+const CORPS_PHRASE_MAX = 0.86;
+const LARGEUR_CAR = 0.56;
+
 function corpsPhrase(texte, large, nu) {
   const H = HAUTEUR_MOITIE * (nu ? PART_BANDEAU.nu : PART_BANDEAU.illustre) * 0.86;
   const W = Math.max(1, large - 0.5);
   const C = Math.max(1, String(texte).length);
-  return Math.max(0.3, Math.min(0.86, Math.sqrt((H * W) / (0.56 * C))));
+  return Math.max(CORPS_PHRASE_MIN,
+    Math.min(CORPS_PHRASE_MAX, Math.sqrt((H * W) / (LARGEUR_CAR * C))));
 }
 
 /**
@@ -356,13 +369,18 @@ function coutCoeur(obj, compact, P) {
       const seuil = obj.sens === 'EXACT' || !obj.sens ? `= ${obj.seuil}` : seuilTexte(obj.sens, obj.seuil);
       return t('Plan') + g + tt(compact ? seuil : `${seuil} icônes`);
     }
-    // Une phrase entière : elle se replie sur plusieurs lignes, et c'est sa
-    // ligne la plus longue qui décide de la largeur. On compte donc le mot le
-    // plus long plutôt que la phrase entière — la hauteur, elle, est libre.
-    // Une phrase se replie sur plusieurs lignes et choisit elle-même son corps
-    // pour tenir dans la boîte — voir `corpsPhrase`. Elle ne réclame donc
-    // aucune largeur au serrage, qui n'a rien à resserrer pour elle.
-    case 'PIOCHER': case 'SEQ_PLUS': case 'PLAN_PLUS': case 'RACCORD_VAUT': return 0;
+    // Une phrase choisit son corps pour tenir dans sa boîte — voir
+    // `corpsPhrase` —, mais elle ne se replie pas À L'INTÉRIEUR d'un mot : sa
+    // largeur minimale est celle de son mot le plus long, au plus petit corps
+    // qu'elle s'autorise. C'est ce minimum-là qu'elle réclame au serrage.
+    // Elle ne réclamait rien du tout, et un bandeau qui la partageait avec un
+    // second pouvoir ne se resserrait donc jamais assez : la phrase tenait
+    // dans sa boîte, et c'est la boîte qui débordait de la bande.
+    case 'PIOCHER': case 'SEQ_PLUS': case 'PLAN_PLUS': case 'RACCORD_VAUT': {
+      const mots = phraseRegle(obj, compact).split(/\s+/);
+      const plusLong = mots.reduce((a, m) => (m.length > a.length ? m : a), '');
+      return CORPS_PHRASE_MIN * LARGEUR_CAR * plusLong.length;
+    }
     case 'DOUBLE': return t('plus petite carte', '+ petite')
       + (obj.critere === 'POINTS' ? 0 : g + tt(compact ? 'cadr.' : 'cadrage'));
     default: return P.rond;
@@ -441,9 +459,12 @@ function bandeau(objs, format, cfg) {
  * que sur un banc de montage : c'est ce que cette carte-là rapporte, ici et
  * maintenant.
  */
-function donneesApercu(h, label, points, detail, valeurCarte) {
+function donneesApercu(h, label, points, detail, valeurCarte, objs) {
   return encodeURIComponent(JSON.stringify({
-    tc: h.tc, el: h.el, objs: objsDe(h), format: h.format,
+    tc: h.tc, el: h.el, objs: objs || objsDe(h), format: h.format,
+    // Le bandeau imprimé, quand une carte du montage l'a remplacé : l'aperçu
+    // dit ce que la carte porte ET ce qu'elle compte ici.
+    objsImprimes: objs ? objsDe(h) : null,
     num: h.num, label, transition: h.transition || null,
     mort: !!h.mort,
     points: points === undefined ? null : points,
@@ -499,7 +520,7 @@ export function renderPlan(h, opts = {}) {
   // `muet` : un plan qui n'est pas vraiment sur la table — un aperçu de pose —
   // n'ouvre pas d'infobulle et ne se donne pas pour une carte du banc.
   const bulle = opts.muet ? ''
-    : ` data-apercu="${donneesApercu(h, label, opts.points, opts.detail, opts.valeurCarte)}"`;
+    : ` data-apercu="${donneesApercu(h, label, opts.points, opts.detail, opts.valeurCarte, opts.objs)}"`;
   return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"${bulle}>
     ${jeton}
     <div class="illus"${h.cle ? ` data-illus="${h.cle}"` : ''}>
@@ -509,7 +530,7 @@ export function renderPlan(h, opts = {}) {
     </div>
     <div class="pastilles" style="--n:${Math.max(1, icones.length)}">${icones.length
       ? `<span class="pastilles-fond">${icones.map((e) => elIcon(e)).join('')}</span>` : ''}</div>
-    ${bandeau(objsDe(h), h.format, opts.cfg)}
+    ${bandeau(opts.objs || objsDe(h), h.format, opts.cfg)}
     <div class="libelle" style="--c:${encreLibelle(h.format, !!h.transition)}">${label}</div>
   </div>`;
 }

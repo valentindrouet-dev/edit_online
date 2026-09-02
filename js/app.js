@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.90';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.91';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,28 +12,28 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=1.90';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.90';
-import { elIcon, numIcon } from './icons.js?v=1.90';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.90';
+} from './data.js?v=1.91';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.91';
+import { elIcon, numIcon } from './icons.js?v=1.91';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.91';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.90';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.90';
-import { compter, SOURCES_LABEL, estRaccord, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.90';
-import { releve, voler, stopperVols } from './anim.js?v=1.90';
-import { campagne } from './lab.js?v=1.90';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.90';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.90';
-import { Salon } from './net/salon.js?v=1.90';
-import { TransportLocal } from './net/local.js?v=1.90';
-import { TransportSupabase } from './net/supabase.js?v=1.90';
-import { enLigneDisponible } from './net/config.js?v=1.90';
-import { coupNu } from './net/protocole.js?v=1.90';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.90';
+} from './engine.js?v=1.91';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.91';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.91';
+import { releve, voler, stopperVols } from './anim.js?v=1.91';
+import { campagne } from './lab.js?v=1.91';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.91';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.91';
+import { Salon } from './net/salon.js?v=1.91';
+import { TransportLocal } from './net/local.js?v=1.91';
+import { TransportSupabase } from './net/supabase.js?v=1.91';
+import { enLigneDisponible } from './net/config.js?v=1.91';
+import { coupNu } from './net/protocole.js?v=1.91';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.91';
 
 const app = document.getElementById('app');
 
@@ -727,17 +727,7 @@ function bancBloc(st, i, titre, interactif) {
     const si = banc.sequences.findIndex((sq) => sq.includes(p));
     if (ptsLigne[si] !== undefined) ptsLigne[si] += v;
   }
-  // La carte qui DIT ce que valent les Raccords en montre le total, sans le
-  // rajouter : il est déjà compté sur les Raccords. Son bandeau, qui ne
-  // rapporte rien par lui-même, affiche donc ce qu'il a fait rapporter.
-  const echo = score.echoRaccord;
-  if (echo) {
-    points.set(echo.plan, (points.get(echo.plan) || 0) + echo.pts);
-    const a = detail.get(echo.plan) || [];
-    const i2 = objsDe(echo.plan).findIndex((o) => o === echo.obj);
-    if (i2 >= 0) a[i2] = echo.pts;
-    detail.set(echo.plan, a);
-  }
+
   // Le plan qui vient d'être posé : c'est là que la carte en vol atterrit.
   const neuf = st.dernierPose && st.dernierPose.p === i ? st.dernierPose : null;
   // Deux façons de viser un emplacement : depuis la rivière, avant même
@@ -810,15 +800,27 @@ function bancBloc(st, i, titre, interactif) {
     ? `<div class="ecart actif bande">${liste.map((c) => fenteChoix(c, true)).join('')}</div>`
     : '');
 
+  // Les bandeaux effectifs, quand ils diffèrent de l'imprimé — sinon rien, et
+  // le rendu reprend ceux de la carte.
+  const objsRemplaces = (plan) => {
+    const eff = objsEffectifs(plan, banc, st.cfg);
+    const imp = objsDe(plan);
+    return eff.length === imp.length && eff.every((o, j) => o === imp[j]) ? undefined : eff;
+  };
+
   const carte = (plan, si, k) => renderPlan(plan, {
     // Un compteur ne s'affiche que si le plan a de quoi marquer. Sans pouvoir,
     // ou avec un pouvoir qui n'ouvre qu'un droit — piocher, monter une séquence
     // de plus —, il n'y a rien à compter : un « 0 » y ferait croire à un
     // pouvoir qui a échoué. Une Carte Raccord en a toujours un : elle vaut
     // quelque chose par elle-même, en plus ou en moins.
-    points: planMarque(objsDe(plan)) || score.valeurCarte.has(plan)
+    points: planMarque(objsEffectifs(plan, banc, st.cfg)) || score.valeurCarte.has(plan)
       ? (points.get(plan) || 0) : undefined,
     valeurCarte: score.valeurCarte.get(plan),
+    // Un Raccord dont le bandeau a été remplacé se dessine avec le NOUVEAU :
+    // on doit lire sur la carte ce qu'elle rapporte ici, pas ce qu'elle
+    // rapporterait ailleurs. L'aperçu au survol garde l'imprimé à côté.
+    objs: objsRemplaces(plan),
     detail: detail.get(plan) || [],
     neuf: !!(neuf && neuf.seq === si && neuf.idx === k),
   });
@@ -1636,6 +1638,10 @@ function contenuApercu(d) {
         ${objHTML(o, 44, store.cfg)}${compteObj(o, (d.objsPts || [])[i])}
       </div>`).join('')}
     </div>` : '<div class="ap-vide">Aucun bandeau</div>'}
+    ${(d.objsImprimes || []).length ? `<div class="ap-remplace">
+      Son bandeau imprimé — ${d.objsImprimes.map((o) => objLabel(o, store.cfg)).join(' et ')} —
+      est <b>remplacé</b> : une carte de votre montage dit ce que les Raccords rapportent.
+    </div>` : ''}
     ${d.valeurCarte === null || d.valeurCarte === undefined ? '' : `<div class="ap-valeur-carte">
       Une <b>Carte Raccord</b> vaut <b>${d.valeurCarte > 0 ? '+' : ''}${d.valeurCarte}</b> à qui la pose
       ${d.valeurCarte > 0 ? '— une carte de votre montage le dit' : '— elle relie sans rien raconter'}
