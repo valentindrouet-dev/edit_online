@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.93';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.94';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,28 +12,28 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=1.93';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.93';
-import { elIcon, numIcon } from './icons.js?v=1.93';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.93';
+} from './data.js?v=1.94';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.94';
+import { elIcon, numIcon } from './icons.js?v=1.94';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.94';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.93';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.93';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.93';
-import { releve, voler, stopperVols } from './anim.js?v=1.93';
-import { campagne } from './lab.js?v=1.93';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.93';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.93';
-import { Salon } from './net/salon.js?v=1.93';
-import { TransportLocal } from './net/local.js?v=1.93';
-import { TransportSupabase } from './net/supabase.js?v=1.93';
-import { enLigneDisponible } from './net/config.js?v=1.93';
-import { coupNu } from './net/protocole.js?v=1.93';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.93';
+} from './engine.js?v=1.94';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.94';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.94';
+import { releve, voler, stopperVols } from './anim.js?v=1.94';
+import { campagne } from './lab.js?v=1.94';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.94';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.94';
+import { Salon } from './net/salon.js?v=1.94';
+import { TransportLocal } from './net/local.js?v=1.94';
+import { TransportSupabase } from './net/supabase.js?v=1.94';
+import { enLigneDisponible } from './net/config.js?v=1.94';
+import { coupNu } from './net/protocole.js?v=1.94';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.94';
 
 const app = document.getElementById('app');
 
@@ -604,7 +604,7 @@ function vuePartie(enchainer = true) {
               data-onglet-banc="${i}" style="--enc:${encreDe(jj.couleur)}">${jj.nom}
               <b class="onglet-pts">${sc[i].total}</b></button>`).join('')}
             <span class="banc-compte">Plan <b>${Math.min(compter(st.bancs[vuB], st.cfg).plans,
-    limitePlans(st.cfg, st.bancs[vuB]))} / ${limitePlans(st.cfg, st.bancs[vuB])}</b></span>
+    limitePlans(st.cfg))} / ${limitePlans(st.cfg)}</b></span>
           </h2>
           ${bancBloc(st, vuB, null, vuB === p && humaine && (st.phase === 'MONTAGE' || st.phase === 'DERUSHAGE'))}
         </div>
@@ -891,7 +891,7 @@ function bancBloc(st, i, titre, interactif) {
 
   // Le compte de plans se lit au-dessus du banc qu'il décrit, plutôt que dans
   // un bandeau commun où il fallait se souvenir de qui il parlait.
-  const max = limitePlans(st.cfg, banc);
+  const max = limitePlans(st.cfg);
   const faits = Math.min(compter(banc, st.cfg).plans, max);
   return `<div class="panneau">
     <h2>${titre}${titre ? `<span class="banc-compte">Plan <b>${faits} / ${max}</b></span>` : ''}</h2>
@@ -5911,7 +5911,7 @@ function vueBanc() {
 
     <div class="bac-2col">
       <div class="panneau">
-        <h2>Le montage<span class="banc-compte">Plan <b>${s.plans} / ${limitePlans(cfg, b.banc)}</b>
+        <h2>Le montage<span class="banc-compte">Plan <b>${s.plans} / ${limitePlans(cfg)}</b>
           · ${s.sequences} séquence${s.sequences > 1 ? 's' : ''}</span></h2>
         ${bancBloc(st, 0, null, vise)}
         ${b.banc.sequences.length ? '<p class="aide" style="margin-top:10px">Un clic sur un plan posé le reprend en main : on le remet où l’on veut.</p>' : ''}

@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.93';
-export const BUILD_DATE = '2026-09-02 05:25';
+export const VERSION = '1.94';
+export const BUILD_DATE = '2026-09-02 06:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.94',
+    date: '02/09/2026',
+    items: [
+      "<b>Une ligne s'étoffe, elle ne s'étire pas. Règles v0.15.</b> De part et d'autre du Plan Large — ou du Plan de départ — qui tient une ligne, on n'accroche pas plus de <b>quatre plans</b>. Les <b>Raccords ne comptent pas</b> : un Raccord n'est pas un plan, et c'est justement lui qui permet d'étoffer une ligne arrivée à sa longueur. Le nombre se règle dans les Variables, et <b>zéro le désactive</b>.",
+      "<b>« Après le dernier tour, vous pouvez jouer 1 Carte supplémentaire. »</b> L'ancienne formule repoussait la limite de plans de sa porteuse à onze — ce qui <b>retardait la fin pour tout le monde</b> au lieu de donner une carte à une seule. La fin tombe désormais au dixième plan pour tous ; la porteuse joue ensuite un <b>tour de plus</b>, et y pose ce qu'elle veut : un plan, ou un Raccord.",
+      "<b>Le pouvoir de séquence vise deux cibles de plus</b> : le <b>plan de mort</b> et la <b>valeur de cadre</b>. « n × séquence avec un plan de mort », « n × séquence sans plan de mort », « n × séquence avec au moins 3 valeurs de cadre ». La valeur de cadre s'y compte comme partout — les cadrages <b>différents</b> de la ligne, pas les plans qui les portent.",
+      "<b>Un bandeau court grandit désormais au lieu de rester petit.</b> Le calcul de mise à l'échelle ne savait que rétrécir : « 2 × Plan Large &amp; Plan de départ » restait minuscule au milieu d'une bande à moitié vide. Il peut maintenant agrandir, jusqu'à un plafond — et il tient compte du fait qu'un cartouche de cadrage <b>se replie sur deux lignes</b> : compté d'une seule, il réclamait deux fois trop de place et faisait rétrécir un bandeau qui avait tout l'espace voulu.",
+    ],
+  },
   {
     v: '1.93',
     date: '02/09/2026',

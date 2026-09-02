@@ -339,7 +339,7 @@ body.sans-illus .bandeau { flex: 0 0 30%; gap: .3em; }
    restaient à leur pleine taille pendant que le reste du bandeau se resserrait,
    et le contenu débordait. */
 body.sans-illus .bandeau .pastille, body.sans-illus .bandeau .pastille-num {
-  height: calc(68% * var(--ec, 1));
+  height: min(88%, calc(68% * var(--ec, 1)));
 }
 body.sans-illus .bandeau .x, body.sans-illus .bandeau .si { font-size: 2.1em; }
 body.sans-illus .bandeau .tag { font-size: .82em; padding: .28em .5em; }
@@ -500,7 +500,11 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    Avec une proportion imposée, les deux ont la même base, donc la même part
    de l'effort. */
 .bandeau .pastille, .bandeau .pastille-num {
-  height: calc(82% * var(--ec, 1)); aspect-ratio: 1 / 1; width: auto;
+  /* Le serrage peut désormais AGRANDIR un bandeau court, pas seulement le
+     rétrécir. Un rond à 82 % multiplié par ce facteur déborderait de la bande,
+     qui ne s'étire pas : on le borne donc à 94 % de sa hauteur. Le texte et les
+     étiquettes, eux, profitent du facteur en entier. */
+  height: min(94%, calc(82% * var(--ec, 1))); aspect-ratio: 1 / 1; width: auto;
   flex: 0 0 auto; object-fit: contain;
 }
 

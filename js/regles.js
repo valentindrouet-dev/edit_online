@@ -14,13 +14,24 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.93';
-import { elIcon } from './icons.js?v=1.93';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.94';
+import { elIcon } from './icons.js?v=1.94';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.15',
+    date: '02/09/2026',
+    origine: 'Règle étendue par l’auteur',
+    corps: (c) => corps_0_15(c),
+    items: [
+      '<b>Une ligne s’étoffe, elle ne s’étire pas.</b> De part et d’autre du Plan Large — ou du Plan de départ — qui tient une ligne, on n’accroche pas plus de <b>quatre plans</b>. Les <b>Raccords ne comptent pas</b> : un Raccord n’est pas un plan, et c’est justement lui qui permet d’étoffer une ligne arrivée à sa longueur. Le nombre se règle dans les Variables, et <b>zéro le désactive</b>.',
+      '<b>« Après le dernier tour, vous pouvez jouer 1 Carte supplémentaire. »</b> L’ancienne formule repoussait la limite de plans de sa porteuse à onze — ce qui retardait la fin <b>pour tout le monde</b>. La fin tombe désormais au dixième plan pour tous ; la porteuse joue ensuite un <b>tour de plus</b>, et y pose ce qu’elle veut : un plan, ou un Raccord.',
+      '<b>Le pouvoir de séquence vise deux cibles de plus : le plan de mort et la valeur de cadre.</b> « n × séquence avec un plan de mort », « n × séquence sans plan de mort », « n × séquence avec au moins 3 valeurs de cadre ». La valeur de cadre s’y compte comme partout : ce sont les cadrages <b>différents</b> de la ligne, pas les plans qui les portent.',
+    ],
+  },
   {
     v: '0.14.14',
     date: '02/09/2026',
@@ -375,6 +386,26 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.15 -----------------------------------------------------------------
+// Une limite de pose de plus, une carte supplémentaire qui change de moment, et
+// deux cibles de séquence.
+
+function corps_0_15(c) {
+  const k = c && c.plansParCote;
+  return corps_0_14_14(c)
+    .replace('<li>Un <b>Plan Large</b> est le climax',
+      `<li>${maj('0.15', k > 0
+        ? `De part et d'autre du <b>Plan Large</b> — ou du Plan de départ — qui tient une ligne, on
+           n'accroche pas plus de <b>${k} plans</b>. Les <b>Raccords ne comptent pas</b> : c'est par
+           eux qu'une ligne arrivée à sa longueur s'étoffe encore.`
+        : `La longueur d'une ligne n'est pas bornée (variante).`)}</li>
+      <li>Un <b>Plan Large</b> est le climax`)
+    .replace(/<td>votre montage compte <b>n plans de plus<\/b>[\s\S]*?<\/td>/,
+      `<td>${maj('0.15', `une fois la fin déclenchée et le dernier tour joué, vous jouez
+      <b>n tours de plus</b> — et vous y posez ce que vous voulez, un plan ou un Raccord. La fin,
+      elle, tombe au dixième plan pour tout le monde`)}</td>`);
 }
 
 // --- v0.14.14 --------------------------------------------------------------

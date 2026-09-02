@@ -13,8 +13,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.93';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.93';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.94';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.94';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -73,8 +73,8 @@ export function phraseRegle(obj, compact) {
       : `Vous pouvez piocher sur la pioche ${obj.cible === 'PL' ? 'Plans Larges' : 'PM / GP'}`;
     case 'SEQ_PLUS': return compact ? `+${obj.n} séquence`
       : `Vous pouvez monter ${obj.n} séquence${s(obj.n)} supplémentaire${s(obj.n)}`;
-    case 'PLAN_PLUS': return compact ? `+${obj.n} Plan`
-      : `Vous pouvez monter ${obj.n} Plan${s(obj.n)} supplémentaire${s(obj.n)}`;
+    case 'PLAN_PLUS': return compact ? `+${obj.n} Carte`
+      : `Après le dernier tour, vous pouvez jouer ${obj.n} Carte${s(obj.n)} supplémentaire${s(obj.n)}`;
     // Un Gros Plan partagé à deux n'a de place que pour une douzaine de
     // caractères : la forme courte garde le sens — les Raccords deviennent
     // « n × Raccord » — en abrégeant le mot. La phrase entière reste dans
@@ -264,6 +264,10 @@ const EM = { gap: 0.24, gapCoeur: 0.34, sep: 0.78, chevauche: 0.78 };
 
 // La plus petite pastille qu'on accepte de dessiner, en em de la carte.
 const ATOME_MIN = 1.05;
+// Jusqu'où un bandeau court s'autorise à grandir. Les ronds font 82 % de la
+// hauteur de la bande : au-delà de ce facteur ils la déborderaient, et la bande
+// ne s'étire pas — c'est elle qui aligne le bas des deux moitiés d'une carte.
+const PLAFOND_SERRAGE = 1.2;
 
 // Quel profil vaut en ce moment. L'application le dit — elle seule sait si la
 // lecture nue est demandée, et elle le sait AVANT de dessiner. Interroger le
@@ -317,6 +321,16 @@ function corpsPhrase(texte, large, nu) {
  */
 function coutCoeur(obj, compact, P) {
   const t = (long, court) => P.tag0 + P.tag1 * String(compact && court !== undefined ? court : long).length;
+  // Un cartouche de CADRAGE se replie : il est borné en largeur et coupe aux
+  // espaces — « PLAN DE DÉPART » tient sur deux lignes. Sa largeur minimale est
+  // donc celle de son mot le plus long, pas celle de la phrase entière. Compté
+  // d'une seule ligne, il réclamait deux fois trop de place, et le bandeau se
+  // resserrait sur une bande où il restait pourtant du vide des deux côtés.
+  const tw = (long, court) => {
+    const txt = String(compact && court !== undefined ? court : long);
+    const plusLong = txt.split(/\s+/).reduce((a, m) => (m.length > a.length ? m : a), '');
+    return P.tag0 + P.tag1 * plusLong.length;
+  };
   const cible = (c) => {
     if (c === 'CARTE') return t('Carte');
     if (c === 'PLAN') return t('Plan');
@@ -335,8 +349,8 @@ function coutCoeur(obj, compact, P) {
   switch (obj.kind) {
     case 'RACCORD': return t('Raccord');
     case 'PLAN': return t('Plan');
-    case 'FORMAT': return t(FORMATS[obj.format].label, FORMATS[obj.format].short)
-      + (obj.format2 ? g + 0.6 + g + t(FORMATS[obj.format2].label, FORMATS[obj.format2].short) : 0);
+    case 'FORMAT': return tw(FORMATS[obj.format].label, FORMATS[obj.format].short)
+      + (obj.format2 ? g + 0.6 + g + tw(FORMATS[obj.format2].label, FORMATS[obj.format2].short) : 0);
     case 'ELEMENT': case 'MORT': case 'NEANT': return P.rond;
     case 'ABSENT': return cible(cibleDe(obj));
     case 'DOMINE': return cible(cibleDe(obj)) + g + tt('max');
@@ -427,7 +441,13 @@ export function serrageBandeau(objs, format, cfg, nu) {
   // illisible. Le plancher se dit en taille de rond, pas en facteur — sans
   // quoi la lecture nue, qui part de ronds plus gros, s'arrêterait trop tôt.
   const plancher = ATOME_MIN / P.rond;
-  return Math.max(plancher, Math.min(1, Math.round((dispo / besoin) * 100) / 100));
+  // Et l'on ne s'arrête plus à 1 : un bandeau court — « 2 × Plan Large & Plan
+  // de départ » sur un Plan Moyen — laissait des deux côtés une place que rien
+  // n'occupait, pendant que sa valeur et ses étiquettes restaient minuscules.
+  // Le facteur peut donc dépasser 1, jusqu'à un plafond : au-delà, une pastille
+  // déborderait de la hauteur de la bande, qui, elle, ne grandit pas.
+  const facteur = Math.round((dispo / besoin) * 100) / 100;
+  return Math.max(plancher, Math.min(PLAFOND_SERRAGE, facteur));
 }
 
 /**

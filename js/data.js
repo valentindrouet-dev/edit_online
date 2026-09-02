@@ -288,6 +288,10 @@ export const OBJ = {
   // Une ligne de plus que les cinq de la règle, ou un plan de plus que les dix.
   // `n` n'est pas un nombre de points mais un nombre de lignes, ou de plans.
   sequencePlus: (n) => ({ kind: 'SEQ_PLUS', n: Math.max(1, Math.min(9, Math.floor(n || 1))) }),
+  // « Après le dernier tour, vous pouvez jouer n Cartes supplémentaires. » Un
+  // TOUR de plus, une fois la fin déclenchée — pas une limite de plans
+  // repoussée : la fin tombe au dixième plan pour tout le monde, et la porteuse
+  // joue ensuite sa carte, plan ou Raccord.
   planPlus: (n) => ({ kind: 'PLAN_PLUS', n: Math.max(1, Math.min(9, Math.floor(n || 1))) }),
   // « Les cartes Raccord vous rapportent n × Raccord. » Le bandeau de COÛT d'un
   // Raccord — « −2 × Raccord », celui qui lui fait perdre des points — est
@@ -469,12 +473,19 @@ export function ciblesSequence() {
     ...ELEMENT_IDS.map((e) => ({ id: e, label: ELEMENTS[e].label })),
     ...CADRAGES_VISABLES.map((f) => ({ id: f, label: FORMATS[f].label })),
     { id: 'RACCORD', label: 'Carte Raccord' },
+    { id: 'MORT', label: 'Plan de mort' },
+    // « Valeur de cadre » ne se compte pas comme les autres : ce ne sont pas
+    // les plans porteurs qu'on dénombre mais les cadrages DIFFÉRENTS de la
+    // ligne. « Une séquence avec 3 valeurs de cadre » demande donc les trois.
+    { id: 'VALEUR', label: 'Valeur de cadre' },
   ];
 }
 
 /** Le libellé d'une cible de séquence — icône, cadrage ou Raccord. */
 export function libelleCible(cible) {
   if (cible === 'RACCORD') return 'Carte Raccord';
+  if (cible === 'MORT') return 'Plan de mort';
+  if (cible === 'VALEUR') return 'valeur de cadre';
   if (FORMATS[cible]) return FORMATS[cible].label;
   return ELEMENTS[cible] ? ELEMENTS[cible].label : cible;
 }
@@ -579,9 +590,8 @@ export function objLabel(o, cfg) {
     case 'SEQ_PLUS': return `Vous pouvez monter ${o.n} séquence${
       o.n > 1 ? 's' : ''} supplémentaire${o.n > 1 ? 's' : ''}${
       cfg && cfg.sequencesMax > 0 ? ` (${cfg.sequencesMax + o.n})` : ''}`;
-    case 'PLAN_PLUS': return `Vous pouvez monter ${o.n} Plan${
-      o.n > 1 ? 's' : ''} supplémentaire${o.n > 1 ? 's' : ''}${
-      cfg && cfg.tours ? ` (${cfg.tours + o.n})` : ''}`;
+    case 'PLAN_PLUS': return `Après le dernier tour, vous pouvez jouer ${o.n} Carte${
+      o.n > 1 ? 's' : ''} supplémentaire${o.n > 1 ? 's' : ''}`;
     case 'RACCORD_VAUT':
       return `Les cartes Raccord vous rapportent ${o.n} × Raccord`;
     case 'ABSENT': {

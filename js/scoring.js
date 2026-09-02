@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, OBJ, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.93';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, OBJ, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.94';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -383,6 +383,10 @@ function plansDe(seq) {
  */
 function comptePorteurs(seq, cible) {
   if (cible === 'RACCORD') return seq.filter(estRaccord).length;
+  if (cible === 'MORT') return seq.filter((p) => p.mort).length;
+  // La valeur de cadre ne compte pas des porteurs mais des cadrages
+  // DIFFÉRENTS : trois Gros Plans n'en font qu'une.
+  if (cible === 'VALEUR') return compteCible(seq, 'VALEUR');
   if (CADRAGES_VISABLES.includes(cible)) return seq.filter((p) => aCeCadrage(p, cible)).length;
   return seq.filter((p) => p.el.includes(cible)).length;
 }

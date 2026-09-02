@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.93';
+import { ELEMENT_IDS } from './data.js?v=1.94';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -38,6 +38,12 @@ export const DEFAULTS = {
   // séquences, et c'est le Raccord qui permet d'étoffer une ligne plutôt que
   // d'en ouvrir une de plus. 0 = aucune limite (variante).
   sequencesMax: 5,
+  // Une ligne s'étoffe, elle ne s'étire pas indéfiniment : de part et d'autre du
+  // Plan Large — ou du Plan de départ — qui la tient, on n'accroche pas plus de
+  // ce nombre de plans. Les Raccords ne comptent pas : un Raccord n'est pas un
+  // plan, et c'est justement lui qui permet d'étoffer sans allonger.
+  // 0 = aucune limite (variante).
+  plansParCote: 4,
   // Variante — un même plan ne se répète pas. Un film ne montre pas deux fois
   // le même plan : on peut l'interdire, et choisir jusqu'où porte l'interdit.
   //   AUCUNE   un plan peut se répéter — la règle officielle
@@ -293,6 +299,9 @@ export const SCHEMA = [
       ['bords', 'Aux deux bouts d’une séquence'], ['droite', 'À droite seulement'],
     ] },
     { k: 'plNouvelleSequence', l: 'Un Plan Large ouvre une séquence', t: 'bool' },
+    { k: 'plansParCote', l: 'Plans de chaque côté d’un Plan Large', t: 'int', min: 0, max: 12,
+      aide: 'de part et d’autre du Plan Large — ou du Plan de départ — qui tient la ligne. Les '
+        + 'Raccords ne comptent pas : un Raccord n’est pas un plan. 0 = aucune limite' },
     { k: 'sequencesMax', l: 'Séquences maximum dans un banc', t: 'int', min: 0, max: 12,
       aide: 'cinq par les règles ; passé ce compte, un Plan Large n’entre plus que par la '
         + 'charnière d’un Raccord. 0 = aucune limite' },

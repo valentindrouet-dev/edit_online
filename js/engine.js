@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, sceneDe, faceJouee,
-} from './data.js?v=1.93';
-import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=1.93';
+} from './data.js?v=1.94';
+import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=1.94';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -452,13 +452,57 @@ export function limiteSequences(cfg, banc) {
 }
 
 /**
- * Combien de plans ce banc-là peut monter. La règle en fixe dix, Plan de départ
- * compris ; un pouvoir « Vous pouvez monter 1 Plan supplémentaire » les porte à
- * onze pour sa seule porteuse — la fin de partie se déclenche donc plan par
- * plan, banc par banc, et non à un compte unique.
+ * Combien de plans arrêtent la partie. La règle en fixe dix, Plan de départ
+ * compris — le même compte pour tout le monde : c'est la première joueuse à
+ * poser son dixième plan qui déclenche la fin.
+ *
+ * « Après le dernier tour, vous pouvez jouer 1 Carte supplémentaire » ne
+ * repousse pas cette limite : le pouvoir donne un TOUR de plus, une fois la
+ * fin venue — voir `toursDus`. Il l'a repoussée pendant deux versions, ce qui
+ * retardait la fin pour tout le monde au lieu de donner une carte à une seule.
  */
-export function limitePlans(cfg, banc) {
-  return (cfg && cfg.tours ? cfg.tours : 0) + bonusRegle(banc, cfg, 'PLAN_PLUS');
+export function limitePlans(cfg) {
+  return cfg && cfg.tours ? cfg.tours : 0;
+}
+
+/**
+ * Combien de tours de montage cette joueuse-là a encore le droit de jouer une
+ * fois la fin déclenchée, ce tour-là compris. Un pour tout le monde — le
+ * dernier —, plus un par « Carte supplémentaire » que son banc lui donne.
+ */
+function toursDus(state, i) {
+  return 1 + bonusRegle(state.bancs[i], state.cfg, 'PLAN_PLUS');
+}
+
+/**
+ * Combien de plans une ligne porte d'un côté de son **ancre** — le Plan Large ou
+ * le Plan de départ qui la tient. À gauche, ce sont les plans posés avant la
+ * première ancre ; à droite, ceux posés après la dernière. Les Raccords ne
+ * comptent pas : un Raccord n'est pas un plan, et c'est justement lui qui
+ * permet d'étoffer une ligne sans l'allonger.
+ *
+ * Une ligne sans ancre — cela n'arrive qu'en mode Classique, où les séquences
+ * ne sont pas tenues par un Plan Large — n'est bornée par rien.
+ */
+export function plansDuCote(seq, cote) {
+  const ancres = seq.map((p, i) => (estPL(p) || p.depart ? i : -1)).filter((i) => i >= 0);
+  if (!ancres.length) return 0;
+  const part = cote === 'gauche'
+    ? seq.slice(0, ancres[0])
+    : seq.slice(ancres[ancres.length - 1] + 1);
+  return part.filter((p) => !p.transition).length;
+}
+
+/**
+ * La ligne accepte-t-elle un plan de plus de ce côté-ci ? Un Raccord passe
+ * toujours : il n'est pas un plan, et il est le moyen même d'étoffer une ligne
+ * arrivée à sa longueur.
+ */
+function placeDuCote(cfg, seq, cote, plan) {
+  const max = cfg && cfg.plansParCote;
+  if (!max || max <= 0) return true;
+  if (plan && plan.transition) return true;
+  return plansDuCote(seq, cote) < max;
 }
 
 /** Le Plan Large ne peut pas toucher un autre Plan Large. */
@@ -582,6 +626,8 @@ export function coupsPossibles(state, p, hypothese) {
             if (cote === 'droite' && si === banc.sequences.length - 1 && bloqueDroite) continue;
             const voisin = cote === 'gauche' ? seq[0] : seq[seq.length - 1];
             if (!voisin || voisin.transition !== 'RACCORD') continue;
+            // Un second Plan Large devient l'ancre de son propre côté : il ne
+            // s'ajoute pas aux plans de l'ancre d'en face, il en ouvre un autre.
             out.push({ carte, format, action: 'ETENDRE', seq: si, cote });
           }
         });
@@ -630,6 +676,7 @@ export function coupsPossibles(state, p, hypothese) {
         if (raccord && !(cote === 'gauche' ? i === 0 : i === banc.sequences.length - 1)) continue;
         const voisin = cote === 'gauche' ? seq[0] : seq[seq.length - 1];
         if (!poseAutorisee(cfg, voisin, brut)) continue;
+        if (!placeDuCote(cfg, seq, cote, brut)) continue;
         out.push({ carte, format, action: 'ETENDRE', seq: i, cote });
       }
     });
@@ -756,17 +803,21 @@ export function poser(state, p, coup) {
  */
 function declencherFin(state, p) {
   if (state.finDeclenchee != null) return;
-  const limite = limitePlans(state.cfg, state.bancs[p]);
+  const limite = limitePlans(state.cfg);
   if (plansComptes(state.bancs[p]) < limite) return;
   state.finDeclenchee = p;
   state.toursApresFin = 0;
+  // Ce que chacune a joué de tours de montage depuis que la fin est tombée. Le
+  // tour où elle tombe compte : c'est le dernier de celle qui l'a déclenchée.
+  state.apresFin = {};
   journal(state, `${state.joueurs[p].nom} pose son ${limite}e plan — un dernier tour pour les autres`, p);
 }
 
 /** Le tour de la dernière joueuse est joué : on arrête. */
 function finirSiTourBoucle(state) {
   if (state.finDeclenchee == null) return;
-  if (state.toursApresFin < state.joueurs.length - 1) return;
+  const apres = state.apresFin || {};
+  if (state.joueurs.some((_, i) => (apres[i] || 0) < toursDus(state, i))) return;
   state.finie = true;
   state.duree = Date.now() - state.debut;
   journal(state, 'Fin du montage — décompte');
@@ -793,8 +844,10 @@ export function avancer(state) {
 
   // Un tour de montage s'achève : s'il appartient à une autre que celle qui a
   // déclenché la fin, c'est un des derniers tours.
-  if (state.phase === 'MONTAGE' && state.finDeclenchee != null && state.courant !== state.finDeclenchee) {
-    state.toursApresFin = (state.toursApresFin || 0) + 1;
+  if (state.phase === 'MONTAGE' && state.finDeclenchee != null) {
+    if (!state.apresFin) state.apresFin = {};
+    state.apresFin[state.courant] = (state.apresFin[state.courant] || 0) + 1;
+    if (state.courant !== state.finDeclenchee) state.toursApresFin = (state.toursApresFin || 0) + 1;
   }
 
   state.courant = (state.courant + 1) % n;
