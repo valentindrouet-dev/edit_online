@@ -1916,3 +1916,188 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 .bandeau-ligne .tour-ligne { color: var(--enc, var(--encre)); font-size: .95rem; }
 .bandeau-ligne .tour-ligne.a-moi::before { content: '▶ '; }
 .bandeau-ligne .aide { margin-left: auto; }
+
+/* ===========================================================================
+   LE LIVRET DE RÈGLES ET L'AIDE DE JEU
+   ===========================================================================
+   Une page qui se lit comme un livret imprimé : un ruban par section, des
+   étapes numérotées, des encarts en marge. Le fond reste clair — c'est du
+   texte qu'on lit longtemps —, et le violet ne sert qu'à baliser : les rubans,
+   les pastilles, les filets. Les bandeaux, eux, gardent leur noir de carte :
+   ce qu'on montre là, c'est exactement ce qui est imprimé. */
+
+.livret, .aide-jeu { color: var(--encre-doux); line-height: 1.75; }
+.livret b, .aide-jeu b { color: var(--encre); font-weight: 650; }
+
+/* Le titre du jeu, en tête, comme la couverture. */
+.lv-hero {
+  text-align: center; padding: 26px 20px 30px; margin-bottom: 8px;
+  border-radius: var(--r);
+  background: linear-gradient(135deg, var(--violet-pale), var(--orange-pale));
+}
+.lv-hero-titre {
+  font-size: clamp(2.4rem, 8vw, 3.6rem); font-weight: 800; letter-spacing: .16em;
+  color: var(--violet); line-height: 1;
+}
+.lv-accroche {
+  max-width: 34em; margin: 14px auto 6px; font-style: italic;
+  font-size: 1.05rem; color: var(--encre);
+}
+.lv-sous { margin: 0; font-size: .92rem; color: var(--encre-doux); }
+
+/* Le ruban d'une section : un filet plein qui traverse, le titre posé dessus. */
+.lv-section { margin-top: 34px; }
+.lv-titre {
+  position: relative; margin: 0 0 16px; font-size: 1.05rem; text-align: center;
+}
+.lv-titre::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px;
+  background: var(--gris-clair);
+}
+.lv-titre span {
+  position: relative; display: inline-block; padding: 7px 22px;
+  border-radius: 999px; background: var(--violet); color: #fff;
+  font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  font-size: .82rem;
+}
+.lv-section > p { margin: 0 0 12px; }
+.lv-chapeau { font-size: 1.02rem; color: var(--encre); }
+.lv-sous-titre {
+  margin: 22px 0 12px; font-size: .82rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--violet);
+}
+
+/* Une étape : la pastille à gauche, ce qu'on fait à droite. */
+.lv-etape { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
+.lv-etape > div { flex: 1 1 0; min-width: 0; }
+.lv-etape h3 { margin: 0 0 3px; font-size: 1rem; color: var(--encre); }
+.lv-etape h3 i { font-weight: 400; color: var(--gris); font-size: .88rem; }
+.lv-etape p { margin: 0; }
+.lv-num {
+  flex: 0 0 auto; width: 32px; height: 32px; border-radius: 999px;
+  display: grid; place-items: center; font-weight: 800; font-size: 1rem;
+  background: var(--orange); color: #fff;
+}
+.lv-etapes .lv-etape:nth-child(even) .lv-num { background: var(--violet); }
+
+/* Un encart : une précision qui se lit à part, en marge du texte. */
+.lv-encart {
+  margin: 14px 0; padding: 12px 16px; border-radius: var(--r-s);
+  background: var(--violet-pale); border-left: 4px solid var(--violet-clair);
+  font-size: .95rem; line-height: 1.65;
+}
+.lv-encart h4 {
+  margin: 0 0 5px; font-size: .93rem; color: var(--violet);
+  letter-spacing: .02em;
+}
+.lv-encart p:last-child { margin-bottom: 0; }
+
+/* Le matériel : un chiffre, ce qu'il compte. */
+.lv-materiel { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+.lv-mat {
+  flex: 1 1 190px; display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: var(--r-s); background: #fff;
+  border: 1px solid var(--gris-clair); box-shadow: var(--ombre);
+}
+.lv-mat > b { font-size: 1.9rem; color: var(--violet); line-height: 1; }
+.lv-mat span { display: block; font-size: .92rem; }
+.lv-mat i { display: block; font-size: .82rem; color: var(--gris); font-style: normal; }
+
+/* Les repères d'une carte, et la planche d'icônes. */
+.lv-callouts, .lv-liste { padding-left: 20px; margin: 0 0 12px; }
+.lv-callouts li, .lv-liste li { margin-bottom: 9px; }
+.lv-icones { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.lv-icones span {
+  display: inline-flex; align-items: center; gap: 7px; font-size: .9rem;
+  color: var(--encre);
+}
+
+/* Les cartouches de cadrage, hors bandeau. Leur mise en forme est écrite pour
+   l'intérieur d'une carte (`.bandeau .tag`) : posés dans une page, ils
+   n'auraient ni marge ni taille. On les redit ici, en plus lisible — on n'est
+   plus à l'étroit sur un tiers de carte. */
+.livret .tag, .aide-jeu .tag {
+  display: inline-block; padding: .3em .6em; border-radius: .35em;
+  font-size: .78rem; font-weight: 800; letter-spacing: .03em;
+  text-transform: uppercase; line-height: 1.2; white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* Les minutages, écrits comme sur la boîte noire de la carte. */
+.lv-tc-b, .lv-tc-o, .lv-tc-r {
+  display: inline-block; padding: 1px 7px; border-radius: 5px;
+  background: #111114; font-variant-numeric: tabular-nums;
+  font-weight: 700; font-size: .88rem; letter-spacing: .02em;
+}
+.lv-tc-b { color: #7fc4ff; }
+.lv-tc-o { color: #ffa24d; }
+.lv-tc-r { color: #f5f5f7; }
+
+/* Les portées : la flèche, et ce qu'elle embrasse. */
+.lv-portees { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.lv-portee {
+  flex: 1 1 160px; display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; border-radius: var(--r-s); background: #fff;
+  border: 1px solid var(--gris-clair); font-size: .9rem;
+}
+.lv-portee b { color: var(--encre); font-weight: 600; }
+.lv-fleches {
+  display: inline-grid; place-items: center; min-width: 34px; padding: 2px 7px;
+  border-radius: 6px; background: #17171b; color: #fff; font-size: .82rem;
+  letter-spacing: .06em;
+}
+
+.lv-variantes { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.lv-variantes .lv-encart { margin: 0; }
+.lv-fin { margin-top: 16px; font-size: .93rem; }
+
+/* --- L'aide de jeu : une fiche en colonnes, pas un texte suivi. ---------- */
+
+.aj-hero { text-align: center; margin-bottom: 22px; }
+.aj-hero h2 { margin: 0 0 4px; color: var(--violet); letter-spacing: .04em; }
+.aj-hero p { margin: 0; font-size: .93rem; }
+
+/* Les blocs de glossaire n'ont pas la même hauteur : une grille laisserait un
+   trou sous les plus courts. Ils COULENT donc en colonnes, et se remplissent. */
+.aj-fiche { columns: 3 280px; column-gap: 14px; margin-bottom: 14px; }
+.aj-fiche .aj-bloc { break-inside: avoid; margin-bottom: 14px; }
+/* Les bandeaux, eux, sont longs à lire : une seule colonne, pleine largeur. */
+.aj-bandeaux { display: flex; flex-direction: column; gap: 14px; }
+.aj-bloc {
+  padding: 14px 16px; border-radius: var(--r-s); background: #fff;
+  border: 1px solid var(--gris-clair); box-shadow: var(--ombre);
+}
+.aj-bloc h3 {
+  margin: 0 0 10px; font-size: .8rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--violet);
+  padding-bottom: 7px; border-bottom: 2px solid var(--violet-pale);
+}
+.aj-bloc .aide { margin: -4px 0 10px; }
+/* Un pouvoir de règle s'écrit en toutes lettres : son bandeau est large, et
+   l'effet qu'on explique à côté l'est aussi. On leur donne chacun leur moitié. */
+.lv-ligne.lv-regle { align-items: flex-start; padding: 9px 0; }
+.lv-ligne.lv-regle .lv-sym { flex: 0 1 46%; min-width: 0; }
+.lv-ligne.lv-regle .lv-bandeau { min-width: 0; width: 100%; }
+
+/* Une ligne de glossaire : le symbole calé à gauche, sa traduction à droite. */
+.lv-ligne {
+  display: flex; align-items: center; gap: 12px; padding: 6px 0;
+  border-top: 1px solid var(--gris-clair); font-size: .92rem; line-height: 1.5;
+}
+.lv-ligne:first-of-type { border-top: 0; }
+.lv-sym { flex: 0 0 auto; display: flex; align-items: center; }
+.lv-txt { flex: 1 1 0; min-width: 0; }
+
+/* Le bandeau d'un pouvoir, dessiné tel qu'il est imprimé sur la carte. */
+.lv-bandeau {
+  display: inline-flex; align-items: center; min-width: 168px; min-height: 40px;
+  padding: 5px 12px; border-radius: 9px; background: #17171b; color: #fff;
+}
+.lv-bandeau .obj-html { font-size: 1rem; }
+
+@media (max-width: 640px) {
+  .lv-bandeau { min-width: 0; width: 100%; }
+  .lv-ligne { align-items: flex-start; flex-wrap: wrap; }
+  .aj-bandeaux .lv-sym { flex: 1 1 100%; }
+  .lv-ligne.lv-regle .lv-sym { flex: 1 1 100%; }
+}

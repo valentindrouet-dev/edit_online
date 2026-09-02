@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.94';
+import { ELEMENT_IDS } from './data.js?v=1.95';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -321,6 +321,10 @@ export const SCHEMA = [
         + 'dans la même ligne. Sur une seule bande, elle se pose entre deux séquences et les '
         + 'raccorde. Sinon, c’est un plan ordinaire' },
     { k: 'generiqueBloque', l: 'Le Générique ferme le montage', t: 'bool' },
+    { k: 'sixCartesDepart', l: 'Variante — 6 Cartes Départ', t: 'bool',
+      aide: 'les quatre plans de départ s’apparient de six façons — 1-2, 2-3, 3-4, 4-1, 2-4, 1-3 — '
+        + 'et chaque joueuse pioche une seule de ces six cartes : deux faces au choix au lieu de '
+        + 'quatre, et jamais le même couple que sa voisine' },
     { k: 'sansPlanDepart', l: 'Variante — pas de Plans de départ', t: 'bool',
       aide: 'ils rejoignent la pioche des Plans Larges et en prennent la couleur ; '
         + 'plus de choix de départ, on ouvre son banc en dérushant un Plan Large' },

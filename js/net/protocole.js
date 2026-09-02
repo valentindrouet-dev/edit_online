@@ -17,7 +17,7 @@
 //   — personne n'écrit d'état, donc il n'y a aucun conflit d'écriture.
 
 import { creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
-  coupsPossibles, poser, avancer, retourner } from '../engine.js?v=1.94';
+  coupsPossibles, poser, avancer, retourner } from '../engine.js?v=1.95';
 
 /** Combien de temps un salon sans activité reste dans la liste. */
 export const PEREMPTION_MS = 10 * 60 * 1000;

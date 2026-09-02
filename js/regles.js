@@ -14,13 +14,24 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.94';
-import { elIcon } from './icons.js?v=1.94';
+import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=1.95';
+import { elIcon } from './icons.js?v=1.95';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.16',
+    date: '02/09/2026',
+    origine: 'Règle précisée et variante ajoutée par l’auteur',
+    corps: (c) => corps_0_16(c),
+    items: [
+      '<b>La boîte contient quatre plans de départ, numérotés 1 à 4.</b> Le matériel parlait de « 8 cartes Plan de départ » : ce sont bien huit cartes, mais elles ne montrent que <b>quatre plans</b> — une carte en porte deux, un par face. Les deux cartes imprimées apparient <b>1-2</b> et <b>3-4</b>, en quatre exemplaires chacune, et chaque joueuse reçoit les deux : quatre faces au choix.',
+      '<b>Nouvelle variante « 6 Cartes Départ ».</b> Quatre plans s’apparient de six façons — <b>1-2, 2-3, 3-4, 4-1, 2-4, 1-3</b> — et la boîte les contient toutes. On mélange les six cartes et l’on en donne <b>une</b> à chaque joueuse : elle a <b>deux faces</b> au choix au lieu de quatre, et deux joueuses n’ouvrent jamais sur le même couple. Chacun des quatre plans est sur trois cartes, donc également accessible.',
+      'La variante <b>ne va pas avec « pas de Plans de départ »</b> : celle-là verse les faces de départ dans la pioche des Plans Larges, et il n’y a plus rien à distribuer. Elle se règle dans les Variables et se désactive par défaut.',
+    ],
+  },
   {
     v: '0.15',
     date: '02/09/2026',
@@ -386,6 +397,40 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.16 -----------------------------------------------------------------
+// La boîte contient QUATRE plans de départ, pas huit cartes distinctes : une
+// carte en porte deux, un par face. La variante ouvre les six appariements que
+// quatre plans permettent, et n'en donne qu'un par joueuse.
+
+function corps_0_16(c) {
+  const six = !!(c && c.sixCartesDepart);
+  const couples = PAIRES_DEPART
+    .map(([a, b]) => `${PLANS_DEPART.indexOf(a) + 1}-${PLANS_DEPART.indexOf(b) + 1}`).join(', ');
+  return corps_0_15(c)
+    .replace(/<li>8 cartes <b>Plan de départ<\/b>[\s\S]*?<\/li>/,
+      `<li>${maj('0.16', `<b>4 plans de départ</b> — numérotés 1 à 4 —, portés par des cartes
+      recto-verso : une carte montre deux de ces quatre plans, un par face.
+      ${six
+    ? `<b>Variante « 6 Cartes Départ »</b> : les <b>six</b> appariements possibles
+             (${couples}) sont dans la boîte.`
+    : 'Les deux cartes imprimées apparient 1-2 et 3-4, en quatre exemplaires chacune.'}`)}</li>`)
+    .replace(/<li>Chaque joueuse reçoit ses <b>deux<\/b> cartes Plan de départ[\s\S]*?<\/li>/,
+      `<li>${maj('0.16', six
+        ? `<b>Variante « 6 Cartes Départ ».</b> On mélange les <b>six</b> cartes de départ et l'on
+           en donne <b>une</b> à chaque joueuse. Chacune a donc <b>deux faces</b> au choix — et
+           jamais le même couple que sa voisine. Elle en pose une : c'est la première ligne de son
+           montage.`
+        : `Chaque joueuse reçoit ses <b>deux</b> cartes Plan de départ — les couples 1-2 et 3-4,
+           soit <b>quatre faces</b> au choix. Aucun tirage. Elle en pose une face dans son banc et
+           écarte le reste : c'est la première ligne de son montage.`)}</li>`)
+    .replace('<li class=""><b>Pas de Plans de départ</b>',
+      `${variante('6 Cartes Départ', six, maj('0.16', `les quatre plans de départ s'apparient de
+      <b>six</b> façons (${couples}), et la boîte les contient toutes. Chaque joueuse en <b>pioche
+      une seule</b> : deux faces au choix au lieu de quatre, et deux joueuses n'ouvrent jamais sur
+      le même couple. Sans effet si l'on joue « pas de Plans de départ ».`))}
+      <li class=""><b>Pas de Plans de départ</b>`);
 }
 
 // --- v0.15 -----------------------------------------------------------------

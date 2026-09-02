@@ -6,8 +6,8 @@
 
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, sceneDe, faceJouee,
-} from './data.js?v=1.94';
-import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=1.94';
+} from './data.js?v=1.95';
+import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=1.95';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -68,7 +68,8 @@ export function construirePaquet(cfg) {
 
   // Variante « pas de Plans de départ » : les faces de départ sont déjà dans
   // la pioche des Plans Larges, il n'en reste aucune à proposer.
-  return { doubles, larges, departs: cfg.sansPlanDepart ? [] : buildDeparts() };
+  return { doubles, larges,
+    departs: cfg.sansPlanDepart ? [] : buildDeparts(!!cfg.sixCartesDepart) };
 }
 
 /**
@@ -165,14 +166,26 @@ export function creerPartie(joueurs, cfg, graine) {
   // Les Plans de départ ne se tirent pas : la boîte contient quatre
   // exemplaires de la version A et quatre de la version B, donc chaque joueuse
   // reçoit une carte de chaque — ses quatre faces sont toujours au choix.
-  const versions = [...new Set(departs.map((d) => d.version))];
-  if (!cfg.sansPlanDepart) joueurs.forEach((_, i) => {
-    for (const v of versions) {
-      const exemplaires = departs.filter((d) => d.version === v);
-      const carte = exemplaires[i] || exemplaires[0];
-      if (carte) state.departsProposes[i].push(carte);
-    }
-  });
+  //
+  // Variante « 6 Cartes Départ » : les six appariements des quatre plans sont
+  // mélangés, et chaque joueuse en PIOCHE UN. Elle a donc deux faces au choix
+  // et non quatre, et deux joueuses n'ont jamais le même couple — c'est tout
+  // l'objet de la variante.
+  if (!cfg.sansPlanDepart && cfg.sixCartesDepart) {
+    const paquet = melanger(departs, rand);
+    joueurs.forEach((_, i) => {
+      if (paquet[i]) state.departsProposes[i].push(paquet[i]);
+    });
+  } else if (!cfg.sansPlanDepart) {
+    const versions = [...new Set(departs.map((d) => d.version))];
+    joueurs.forEach((_, i) => {
+      for (const v of versions) {
+        const exemplaires = departs.filter((d) => d.version === v);
+        const carte = exemplaires[i] || exemplaires[0];
+        if (carte) state.departsProposes[i].push(carte);
+      }
+    });
+  }
 
   journal(state, `Partie lancée — graine ${seed} · ${n} joueuse${n > 1 ? 's' : ''}`);
   return state;

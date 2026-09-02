@@ -796,6 +796,34 @@ const DEPARTS_IMPRIMES = [
   ] },
 ];
 
+// La boîte contient QUATRE plans de départ — 115, 116, 117, 118 —, et une carte
+// en porte deux, un par face. Les deux cartes imprimées les apparient 115/116 et
+// 117/118 ; la variante « 6 Cartes Départ » ouvre les six appariements que
+// quatre plans permettent, et chaque joueuse en pioche un seul. Elle a donc deux
+// faces au choix, et non quatre — et deux joueuses n'ont jamais le même couple.
+export const PLANS_DEPART = [115, 116, 117, 118];
+export const PAIRES_DEPART = [
+  [115, 116], [116, 117], [117, 118], [118, 115], [116, 118], [115, 117],
+];
+
+/**
+ * Les six cartes de la variante, faites des mêmes quatre plans. Chacune porte
+ * son couple, et son identité dit lequel : « S1-2 » apparie le premier et le
+ * deuxième plan de la boîte.
+ */
+export function DEPARTS_SIX() {
+  const faces = new Map();
+  for (const d of DEPARTS()) for (const f of d.faces) faces.set(f.num, f);
+  return PAIRES_DEPART
+    .map(([a2, b2], i) => {
+      const fa = faces.get(a2); const fb = faces.get(b2);
+      if (!fa || !fb) return null;
+      const rang = (x) => PLANS_DEPART.indexOf(x) + 1;
+      return { type: `${rang(a2)}-${rang(b2)}`, six: true, rang: i, faces: [fa, fb] };
+    })
+    .filter(Boolean);
+}
+
 /** Les versions de Plan de départ en vigueur. Une version = une carte, deux faces. */
 export function DEPARTS() {
   const ajoutes = (SURCHARGES.ajouts.departs || []).map((d) => ({
@@ -883,8 +911,19 @@ export function buildPlansLarges(avecDeparts) {
   return out;
 }
 
-export function buildDeparts() {
-  // Deux exemplaires de chaque version, soit les 8 cartes de la boîte.
+export function buildDeparts(six) {
+  // Variante « 6 Cartes Départ » : six cartes distinctes, une par appariement
+  // des quatre plans. Elles ne sont pas en plusieurs exemplaires — c'est tout
+  // l'objet de la variante : chaque joueuse en pioche une, et deux joueuses
+  // n'ont jamais le même couple.
+  if (six) {
+    return DEPARTS_SIX().map((d) => {
+      const faces = d.faces.filter((f) => carteActive(`S${d.type}f${f.num}`));
+      return faces.length ? { id: `S${d.type}`, type: 'DEPART', version: d.type, six: true, faces } : null;
+    }).filter(Boolean);
+  }
+  // Sinon, la boîte imprimée : quatre exemplaires de chaque version, soit les
+  // 8 cartes, et chaque joueuse reçoit une carte de chaque.
   const out = [];
   DEPARTS().forEach((d) => {
     const faces = d.faces.filter((f) => carteActive(`S${d.type}f${f.num}`));

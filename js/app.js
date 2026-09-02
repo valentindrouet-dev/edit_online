@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.94';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.95';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,28 +12,29 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=1.94';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.94';
-import { elIcon, numIcon } from './icons.js?v=1.94';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.94';
+} from './data.js?v=1.95';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.95';
+import { elIcon, numIcon } from './icons.js?v=1.95';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.95';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.94';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.94';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.94';
-import { releve, voler, stopperVols } from './anim.js?v=1.94';
-import { campagne } from './lab.js?v=1.94';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.94';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.94';
-import { Salon } from './net/salon.js?v=1.94';
-import { TransportLocal } from './net/local.js?v=1.94';
-import { TransportSupabase } from './net/supabase.js?v=1.94';
-import { enLigneDisponible } from './net/config.js?v=1.94';
-import { coupNu } from './net/protocole.js?v=1.94';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.94';
+} from './engine.js?v=1.95';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.95';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.95';
+import { releve, voler, stopperVols } from './anim.js?v=1.95';
+import { campagne } from './lab.js?v=1.95';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.95';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.95';
+import { Salon } from './net/salon.js?v=1.95';
+import { TransportLocal } from './net/local.js?v=1.95';
+import { TransportSupabase } from './net/supabase.js?v=1.95';
+import { enLigneDisponible } from './net/config.js?v=1.95';
+import { coupNu } from './net/protocole.js?v=1.95';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.95';
+import { livret, aideDeJeu } from './livret.js?v=1.95';
 
 const app = document.getElementById('app');
 
@@ -271,9 +272,16 @@ function vueAccueil() {
         <div class="panneau">
           <h2>Variantes</h2>
           <div class="chips">
+            ${chip('sixCartesDepart', '6 Cartes Départ')}
             ${chip('sansPlanDepart', 'Pas de Plans de départ')}
             ${chip('piochesMelangees', 'Pioches mélangées')}
           </div>
+          <p class="aide"><b>6 Cartes Départ</b> — les quatre plans de départ s’apparient de
+          <b>six</b> façons — 1-2, 2-3, 3-4, 4-1, 2-4, 1-3 — et la boîte les contient toutes. Chaque
+          joueuse en <b>pioche une seule</b> : deux faces au choix au lieu de quatre, et deux
+          joueuses n’ouvrent jamais sur le même couple.${store.cfg.sansPlanDepart
+    ? ' <b>Sans effet</b> tant que « pas de Plans de départ » est coché : il n’y a plus rien à distribuer.'
+    : ''}</p>
           <p class="aide"><b>Pas de Plans de départ</b> — les quatre faces de départ rejoignent la
           pioche des Plans Larges, dont elles prennent la couleur : ce sont des Plans Larges comme
           les autres. Plus de choix de départ — chacune ouvre son banc en dérushant un Plan Large,
@@ -5534,14 +5542,19 @@ function telecharger(blob, nom) {
 // RÈGLES
 // ===========================================================================
 
-let reglesOnglet = 'texte';
+// Quatre lectures d'une même règle, de la plus lisible à la plus précise : le
+// LIVRET, qu'on lit avant de jouer ; l'AIDE de jeu, qu'on pose à côté du banc ;
+// le TEXTE de référence, qui tranche ; et les VERSIONS, qui disent ce qui a
+// changé. Le livret ouvre la page — c'est par lui qu'on arrive au jeu.
+let reglesOnglet = 'livret';
 let regleDepliee = null;   // version dont on affiche le texte intégral
 
 function vueRegles() {
   const c = store.cfg;
-  const corps = reglesOnglet === 'texte'
-    ? `<div class="regles">${corpsRegles(c)}</div>`
-    : versionsRegles();
+  const corps = reglesOnglet === 'livret' ? livret(c)
+    : reglesOnglet === 'aide' ? aideDeJeu(c)
+      : reglesOnglet === 'texte' ? `<div class="regles">${corpsRegles(c)}</div>`
+        : versionsRegles();
 
   html(`${topbar('#/regles')}
   <div class="wrap">
@@ -5551,8 +5564,9 @@ function vueRegles() {
         <span class="version-pill">v${REGLES_VERSION}</span>
       </div>
       <div class="filtre-barre" style="margin-bottom:20px">
-        ${[['texte', 'Les règles'], ['versions', `Versions des règles (${REGLES_HISTORIQUE.length})`]]
-          .map(([k, l]) => `<button class="pill" data-onglet="${k}"
+        ${[['livret', 'Livret'], ['aide', 'Aide de jeu'], ['texte', 'Texte de référence'],
+    ['versions', `Versions (${REGLES_HISTORIQUE.length})`]]
+    .map(([k, l]) => `<button class="pill" data-onglet="${k}"
             style="${reglesOnglet === k ? 'background:var(--violet);color:#fff;border-color:var(--violet)' : ''}">${l}</button>`).join('')}
       </div>
       ${corps}

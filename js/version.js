@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.94';
-export const BUILD_DATE = '2026-09-02 06:30';
+export const VERSION = '1.95';
+export const BUILD_DATE = '2026-09-02 09:10';
 
 export const CHANGELOG = [
+  {
+    v: '1.95',
+    date: '02/09/2026',
+    items: [
+      "<b>Le livret de règles, en une page.</b> Les règles s'ouvrent désormais sur un <b>livret</b> — le but, le matériel, une carte en détail, la mise en place en cinq étapes, le tour de jeu, où poser une carte, la fin, le décompte, les variantes. Une mise en page de livret imprimé : un ruban par section, des étapes numérotées, des encarts en marge. <b>Chaque chiffre y est lu dans le modèle</b> — le nombre de cartes, les portées, les bandeaux : une carte ajoutée dans l'éditeur ou une variable changée, et le livret suit.",
+      "<b>Une aide de jeu, à poser à côté du banc.</b> Un second onglet, en colonnes : les icônes, les cadrages, le minutage, les portées, et <b>tous les bandeaux dessinés comme ils sont imprimés</b>, chacun avec sa traduction en français. Le texte de référence et l'historique des versions restent où ils étaient, dans les deux onglets suivants.",
+      "<b>Nouvelle variante « 6 Cartes Départ ». Règles v0.16.</b> La boîte contient <b>quatre plans de départ</b>, numérotés 1 à 4 — et non huit, comme le matériel le laissait croire : une carte en porte deux, un par face. Ces quatre plans s'apparient de <b>six</b> façons — 1-2, 2-3, 3-4, 4-1, 2-4, 1-3. La variante les met toutes dans la boîte et n'en donne <b>qu'une</b> à chaque joueuse : deux faces au choix au lieu de quatre, et jamais le même couple que sa voisine. Chaque plan étant sur trois cartes, aucun n'est plus rare qu'un autre.",
+    ],
+  },
   {
     v: '1.94',
     date: '02/09/2026',

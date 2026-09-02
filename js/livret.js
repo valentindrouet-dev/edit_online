@@ -1,0 +1,348 @@
+// ---------------------------------------------------------------------------
+// EDIT — le livret de règles et l'aide de jeu
+// ---------------------------------------------------------------------------
+// Deux pages écrites pour être LUES, là où `regles.js` tient l'historique — le
+// texte exact de chaque version, avec ce qui a changé d'une à l'autre. Le
+// livret, lui, ne dit que la règle en vigueur, dans l'ordre où l'on en a besoin
+// à la table : le but, le matériel, la mise en place, le tour, la fin, le
+// décompte. Sa mise en page reprend celle d'un livret imprimé — un bandeau par
+// section, des étapes numérotées, des encarts pour les cas particuliers.
+//
+// Tout ce qui se compte vient du MODÈLE et non d'un chiffre recopié : le
+// nombre de cartes, les portées, les libellés des bandeaux. Une carte ajoutée
+// dans l'éditeur, une variable changée, et le livret suit — il ne peut pas
+// mentir sur un jeu qu'il décrit à côté.
+
+import {
+  FORMATS, ELEMENTS, ELEMENT_IDS, PORTEES, OBJ, objLabel, PAIRES_DEPART, PLANS_DEPART,
+  buildCartesDoubles, buildPlansLarges, buildDeparts, SCENES,
+} from './data.js?v=1.95';
+import { elIcon } from './icons.js?v=1.95';
+import { objHTML } from './cards.js?v=1.95';
+
+// --- Les briques de mise en page -------------------------------------------
+
+/** Le bandeau d'une section — le titre sur son ruban. */
+const section = (titre, corps, cls = '') => `<section class="lv-section ${cls}">
+  <h2 class="lv-titre"><span>${titre}</span></h2>
+  ${corps}
+</section>`;
+
+/** Une étape numérotée : la pastille, le titre, ce qu'on fait. */
+const etape = (n, titre, corps) => `<div class="lv-etape">
+  <span class="lv-num">${n}</span>
+  <div><h3>${titre}</h3>${corps}</div>
+</div>`;
+
+/** Un encart : un cas particulier, une précision, une variante. */
+const encart = (titre, corps, cls = '') => `<aside class="lv-encart ${cls}">
+  ${titre ? `<h4>${titre}</h4>` : ''}${corps}
+</aside>`;
+
+/** Une ligne de glossaire : le symbole à gauche, ce qu'il veut dire à droite. */
+const ligne = (symbole, texte, cls = '') => `<div class="lv-ligne ${cls}">
+  <div class="lv-sym">${symbole}</div><div class="lv-txt">${texte}</div>
+</div>`;
+
+/** Un cartouche de cadrage, tel qu'il paraît sur un bandeau. */
+const cadre = (f) => `<span class="tag tag-fmt" style="--c:${FORMATS[f].color}">${FORMATS[f].label}</span>`;
+
+/** Le bandeau d'un pouvoir, dessiné comme sur la carte, et sa phrase. */
+const pouvoir = (o, cfg) => ligne(`<span class="lv-bandeau">${objHTML(o, 30, cfg)}</span>`,
+  objLabel(o, cfg));
+
+// Un pouvoir de RÈGLE est déjà écrit en toutes lettres sur la carte : le
+// traduire mot pour mot ne dirait rien de plus. On explique donc ce qu'il
+// CHANGE, à côté de la phrase telle qu'elle est imprimée.
+const regle = (o, cfg, effet) => ligne(
+  `<span class="lv-bandeau">${objHTML(o, 26, cfg)}</span>`, effet, 'lv-regle');
+
+// --- Le livret --------------------------------------------------------------
+
+export function livret(cfg) {
+  const c = cfg || {};
+  const nbPL = buildPlansLarges(false).length;
+  const nbDouble = buildCartesDoubles().length;
+  const nbDepart = buildDeparts(!!c.sixCartesDepart).length;
+  const nbScenes = SCENES().length;
+  const tours = c.tours || 10;
+  const seqMax = c.sequencesMax || 0;
+  const parCote = c.plansParCote || 0;
+  const riviere = c.chutierPL || 3;
+
+  return `<article class="livret">
+
+  <header class="lv-hero">
+    <div class="lv-hero-titre">EDIT</div>
+    <p class="lv-accroche">« Le film n’existe pas au tournage. Il naît au montage,
+      quand deux plans se touchent. »</p>
+    <p class="lv-sous">Un jeu de montage, de 2 à 4 joueuses</p>
+  </header>
+
+  ${section('Résumé et but du jeu', `
+    <p>Chacune monte <b>son</b> film sur son <b>banc de montage</b>. À votre tour vous
+    <b>dérushez</b> — vous prenez une carte — puis vous <b>montez</b> : vous l’accrochez à votre banc,
+    d’un côté ou de l’autre d’une séquence.</p>
+    <p>Une carte porte un <b>plan</b> : un cadrage, un minutage, des icônes, et souvent un
+    <b>bandeau</b> qui dit ce qu’il vous rapportera. Ce bandeau ne compte pas la carte où il est
+    écrit : il regarde <b>autour de lui</b> — sa ligne, ou le montage entier.</p>
+    <p>Quand une joueuse a posé son <b>${tours}<sup>e</sup> plan</b>, la partie s’achève après un
+    dernier tour. On compte alors ce que chaque bandeau a trouvé. <b>Le plus beau montage
+    l’emporte</b> — c’est-à-dire celui qui marque le plus.</p>
+  `, 'lv-resume')}
+
+  ${section('Matériel', `
+    <div class="lv-materiel">
+      <div class="lv-mat"><b>${nbPL}</b><span>cartes <b>Plan Large</b><i>une carte entière</i></span></div>
+      <div class="lv-mat"><b>${nbDouble}</b><span>cartes <b>Plan Moyen / Gros Plan</b>
+        <i>deux moitiés, deux faces</i></span></div>
+      <div class="lv-mat"><b>${nbDepart}</b><span>cartes <b>Plan de départ</b>
+        <i>${c.sixCartesDepart ? 'variante « 6 Cartes Départ »' : 'deux versions, quatre exemplaires'}</i></span></div>
+    </div>
+    <p>Les ${nbDouble} cartes doubles sont faites de <b>${nbScenes} scènes</b>. Une scène existe en deux
+    moitiés — un <b>Plan Moyen</b>, qui occupe les deux tiers d’une carte, et un <b>Gros Plan</b>, qui
+    en occupe le tiers. Une carte assemble <b>deux moitiés de scènes différentes</b> : c’est ce qui
+    fait qu’on choisit toujours entre deux plans en la posant.</p>
+    ${encart('Recto et verso', `Une carte double se joue <b>par un bout</b> : le Plan Moyen à
+      gauche et le Gros Plan à droite, ou l’inverse. Ce sont deux plans différents, avec chacun son
+      minutage et son bandeau. Le côté où vous l’accrochez décide donc de ce que vous jouez.`)}
+  `)}
+
+  ${section('Une carte, en détail', `
+    <div class="lv-anatomie">
+      <ul class="lv-callouts">
+        <li><b>Le minutage</b>, en haut à gauche, sur sa boîte noire. Il dit où le plan se place dans
+          le film. <span class="lv-tc-b">--:--</span> se lit « pas de minutage » : la carte se pose
+          où l’on veut. <span class="lv-tc-o">01:00</span> et <span class="lv-tc-o">99:00</span> sont
+          les deux bornes — le premier et le dernier plan.</li>
+        <li><b>Les icônes</b>, sur la languette claire : ce que le plan montre. Une carte peut porter
+          plusieurs fois la même.</li>
+        <li><b>Le bandeau</b>, la bande colorée du bas : ce que le plan vous rapporte. Il se lit
+          « <b>n ×</b> quelque chose » — n points par chose trouvée — ou « <b>n si</b> » — n points,
+          une seule fois, si la condition est remplie.</li>
+        <li><b>Le cadrage</b>, écrit tout en bas et donné par la couleur de la carte :
+          ${cadre('PL')} ${cadre('PM')} ${cadre('GP')} ${cadre('DEP')}.</li>
+      </ul>
+    </div>
+    ${encart('Les icônes du jeu', `<div class="lv-icones">${ELEMENT_IDS
+    .map((e) => `<span>${elIcon(e, 34)}${ELEMENTS[e].label}</span>`).join('')}
+      <span>${elIcon('MORT', 34)}Plan de mort</span>
+      <span>${elIcon('NEANT', 34)}Sans personnage</span></div>`)}
+  `)}
+
+  ${section('Mise en place', `
+    ${etape('A', 'Les pioches', `Mélangez les <b>${nbDouble} cartes Plan Moyen / Gros Plan</b> en une
+      pioche, et les <b>${nbPL} Plans Larges</b> en une autre. Posez-les au centre.`)}
+    ${etape('B', 'Les rivières', `Révélez <b>${riviere} cartes</b> de chaque pioche, en ligne à côté
+      d’elle. Ce sont les <b>rivières</b> : c’est là qu’on dérushe.`)}
+    ${etape('C', 'Les Plans de départ', c.sixCartesDepart
+    ? `<b>Variante « 6 Cartes Départ ».</b> Mélangez les <b>6 cartes de départ</b> et donnez-en
+         <b>une</b> à chaque joueuse. Chacune a donc <b>deux faces</b> au choix — et jamais le même
+         couple que sa voisine.`
+    : `Chaque joueuse prend <b>les deux versions</b> devant elle : elle a donc <b>quatre faces</b>
+         au choix pour ouvrir son film.`)}
+    ${etape('D', 'La première joueuse', `La dernière à avoir vu un bon film commence. À défaut,
+      tirez au sort.`)}
+    ${etape('E', 'Le premier plan', `Chacune choisit une face de son Plan de départ et la pose :
+      c’est le premier plan de son montage, et le centre de sa première ligne.`)}
+  `, 'lv-etapes')}
+
+  ${section('Déroulement du jeu', `
+    <p class="lv-chapeau">En commençant par la première joueuse, puis dans le sens des aiguilles
+    d’une montre, chacune joue son tour jusqu’à ce que l’une ait posé son ${tours}<sup>e</sup> plan.</p>
+    <h3 class="lv-sous-titre">À votre tour</h3>
+    ${etape(1, 'Dérusher <i>(obligatoire)</i>', `Prenez <b>une carte</b> : dans la rivière des Plans
+      Larges, dans celle des Plans Moyens / Gros Plans, ou — si une carte de votre montage vous en
+      donne le droit — au <b>sommet d’une pioche</b>, sans la voir.`)}
+    ${etape(2, 'Monter <i>(obligatoire)</i>', `Accrochez cette carte à votre banc. Une carte double
+      se pose <b>par un bout</b> : choisissez lequel, et donc lequel de ses deux plans vous jouez.`)}
+    ${etape(3, 'Passer la main', `La rivière se recomplète, et c’est au tour de la suivante.`)}
+  `, 'lv-etapes')}
+
+  ${section('Où poser une carte', `
+    <p>Le banc se lit <b>comme une page</b> : chaque <b>séquence</b> occupe sa propre <b>ligne</b>,
+    et les lignes s’empilent de haut en bas. Le montage se lit d’un seul tenant, ligne après ligne.</p>
+    <ul class="lv-liste">
+      <li>Un <b>Plan Large</b> est le climax d’une séquence : il <b>ouvre toujours une ligne</b>, à
+        lui seul, et en tient le centre. Le <b>Plan de départ</b> fait de même. Deux Plans Larges ne
+        peuvent jamais se toucher.</li>
+      <li>Les <b>Plans Moyens</b> et les <b>Gros Plans</b> s’accrochent aux <b>deux bouts</b> d’une
+        ligne, de part et d’autre de son Plan Large.</li>
+      ${parCote > 0 ? `<li>De chaque côté du Plan Large qui tient la ligne, on n’accroche pas plus de
+        <b>${parCote} plans</b>. Une ligne s’étoffe, elle ne s’étire pas.</li>` : ''}
+      ${seqMax > 0 ? `<li>Un banc ne porte que <b>${seqMax} lignes</b>. Une nouvelle séquence se pose
+        au-dessus ou en dessous des autres, <b>jamais entre deux</b>.</li>` : ''}
+      <li>Une <b>Carte Raccord</b> n’est pas un plan : elle ne compte ni dans les ${tours} plans, ni
+        dans la longueur d’une ligne. Posée au bout d’une ligne, elle y fait <b>charnière</b> — un
+        second Plan Large peut alors se poser de l’autre côté d’elle, dans cette même ligne.</li>
+    </ul>
+    ${encart('Le Raccord, la seule façon d’étoffer', `Une ligne pleine n’accepte plus de plan, mais
+      elle accepte toujours un <b>Raccord</b> — et, derrière lui, un nouveau Plan Large qui ouvre un
+      second côté. C’est par là qu’une séquence gagne en ampleur sans ouvrir une ligne de plus.`)}
+  `)}
+
+  ${section('Fin de la partie', `
+    <p>Dès qu’une joueuse pose son <b>${tours}<sup>e</sup> plan</b>, la fin est déclenchée : chaque
+    autre joueuse joue <b>un dernier tour</b>, puis on compte.</p>
+    ${encart('La carte supplémentaire', `Une carte de votre montage peut dire :
+      « <b>Après le dernier tour, vous pouvez jouer 1 Carte supplémentaire</b> ». Vous jouez alors un
+      tour de plus que les autres, et vous y posez ce que vous voulez — un plan, ou un Raccord.`)}
+  `)}
+
+  ${section('Le décompte', `
+    <p>On lit les <b>bandeaux</b>, un par un. Chacun regarde une <b>portée</b> — la part du montage
+    qu’il compte — et rapporte ce qu’il y trouve.</p>
+    <div class="lv-portees">${PORTEES.map((p) => `<div class="lv-portee">
+      <span class="lv-fleches">${p.gauche ? '◀' : ''}${p.droite ? '▶' : ''}${
+  !p.gauche && !p.droite ? '⬚' : ''}</span>
+      <b>${p.label}</b></div>`).join('')}</div>
+    <ul class="lv-liste">
+      <li>Un bandeau ne compte <b>pas la carte où il est écrit</b> à part : elle fait partie de sa
+        portée comme les autres.</li>
+      <li>Une <b>Carte Raccord</b> n’est ni un Plan, ni un Gros Plan, ni un Plan Moyen : aucun
+        bandeau de cadrage ne la compte. Elle reste une <b>Carte</b>.</li>
+      <li>Une <b>valeur de cadre</b> est un cadrage <b>différent</b> : une ligne qui alterne les
+        trois en montre trois, quel qu’y soit le nombre de cartes.</li>
+      <li>Les points se lisent au <b>coin de chaque carte</b> pendant la partie : c’est ce que ce
+        plan-là vous rapporte, ici et maintenant.</li>
+    </ul>
+  `)}
+
+  ${section('Variantes', `
+    <div class="lv-variantes">
+      ${encart('6 Cartes Départ', `Les quatre plans de départ s’apparient de <b>six façons</b> —
+        ${PAIRES_DEPART.map(([a, b]) => `${PLANS_DEPART.indexOf(a) + 1}-${PLANS_DEPART.indexOf(b) + 1}`).join(', ')}.
+        Chaque joueuse en pioche <b>une seule</b> : deux faces au choix au lieu de quatre, et jamais
+        le même couple que sa voisine.`)}
+      ${encart('Pas de Plans de départ', `Les quatre faces de départ rejoignent la pioche des Plans
+        Larges. Plus de choix d’ouverture : on ouvre son banc en dérushant un Plan Large.`)}
+      ${encart('Pioches mêlées', `Une seule pioche, une seule rivière, où les Plans Larges sont mêlés
+        aux cartes doubles. On ne choisit plus sa famille : on prend ce qui vient.`)}
+      ${encart('Pas deux fois le même plan', `Un film ne montre pas deux fois le même plan. L’interdit
+        se règle : sur tout le banc, sur une même ligne, ou seulement entre voisins.`)}
+      ${encart('Chronologie', `Un bonus par paire de plans dans l’ordre, un malus par paire à
+        contresens. Les plans <b>sans minutage</b> sont retirés de la lecture : ils ne la coupent pas.`)}
+    </div>
+    <p class="lv-fin">Toutes ces variantes — et chaque nombre de ce livret — se règlent dans
+    l’onglet <b>Variables</b>. Le livret suit ce qui y est réglé : ce que vous lisez ici est la règle
+    de <b>votre</b> partie.</p>
+  `)}
+
+  </article>`;
+}
+
+// --- L'aide de jeu ----------------------------------------------------------
+// Une fiche, pas un texte : ce qu'on pose à côté du banc pour retrouver d'un
+// coup d'œil ce que dit un symbole. Les bandeaux y sont DESSINÉS comme sur la
+// carte, puis traduits — c'est ce qu'on cherche quand on la consulte.
+
+export function aideDeJeu(cfg) {
+  const c = cfg || {};
+  const g = (o) => pouvoir(o, c);
+
+  return `<article class="aide-jeu">
+  <header class="aj-hero"><h2>Aide de jeu</h2>
+    <p>Ce que chaque symbole veut dire, à côté du banc.</p></header>
+
+  <div class="aj-fiche">
+
+    <div class="aj-bloc">
+      <h3>Les icônes</h3>
+      ${ELEMENT_IDS.map((e) => ligne(elIcon(e, 38), ELEMENTS[e].label)).join('')}
+      ${ligne(elIcon('MORT', 38), 'Plan de mort — une icône comme une autre, qui se compte')}
+      ${ligne(elIcon('NEANT', 38), 'Plan sans personnage — ni Héroïne, ni Ennemi, ni Allié')}
+    </div>
+
+    <div class="aj-bloc">
+      <h3>Les cadrages</h3>
+      ${['PL', 'PM', 'GP', 'DEP'].map((f) => ligne(
+    `<span class="tag tag-fmt" style="--c:${FORMATS[f].color}">${FORMATS[f].short}</span>`,
+    FORMATS[f].label)).join('')}
+      ${ligne('<span class="tag tag-gris">Raccord</span>',
+    'Carte Raccord — elle relie sans rien raconter. Ni plan, ni cadrage')}
+      ${ligne('<span class="tag tag-blanc">Valeur de cadre</span>',
+    'Un cadrage <b>différent</b> : trois Gros Plans n’en font qu’une')}
+    </div>
+
+    <div class="aj-bloc">
+      <h3>Le minutage</h3>
+      ${ligne('<span class="lv-tc-r">30:00</span>', 'Un instant du film')}
+      ${ligne('<span class="lv-tc-b">--:--</span>',
+    'Pas de minutage : la carte se pose où l’on veut, et ne rompt jamais l’ordre')}
+      ${ligne('<span class="lv-tc-o">01:00</span>', 'Le premier plan du film')}
+      ${ligne('<span class="lv-tc-o">99:00</span>', 'Le dernier')}
+    </div>
+
+    <div class="aj-bloc">
+      <h3>Les portées</h3>
+      ${PORTEES.map((p) => ligne(
+    `<span class="lv-fleches">${p.gauche ? '◀' : ''}${p.droite ? '▶' : ''}${
+      !p.gauche && !p.droite ? '⬚' : ''}</span>`, p.label)).join('')}
+    </div>
+
+  </div>
+
+  <div class="aj-bandeaux">
+
+    <div class="aj-bloc">
+      <h3>Les bandeaux qui comptent</h3>
+      ${g(OBJ.plan(1, 'SEQUENCE'))}
+      ${g(OBJ.raccord(2))}
+      ${g(OBJ.format(2, 'GP'))}
+      ${g(OBJ.element(1, 'ARME'))}
+      ${g(OBJ.paire(2, 'ARME', 'HEROINE'))}
+      ${g(OBJ.mort(3))}
+      ${g(OBJ.neant(3))}
+      ${g(OBJ.minutage(2, 'AVANT', 30))}
+      ${g(OBJ.lot(2, 'ARME', 3))}
+      ${g(OBJ.planIcones(1, 3, 'EXACT'))}
+      ${g(OBJ.extreme(2, 'PLUS'))}
+      ${g(OBJ.absentes(2))}
+      ${g(OBJ.centre(1, 'PLAN', 'DROITE'))}
+      ${g(OBJ.ailleurs(1, 'ARME', 'DESSOUS'))}
+      ${g(OBJ.doubleCarte(1, 'PLUS', 'POINTS'))}
+    </div>
+
+    <div class="aj-bloc">
+      <h3>Les bandeaux qui se déclenchent</h3>
+      ${g(OBJ.chrono(6))}
+      ${g(OBJ.absent(5, 'ALLIE'))}
+      ${g(OBJ.domine(4, 'ARME', 'PLUS'))}
+      ${g(OBJ.seuilCible(3, 'ARME', 'MIN', 4))}
+      ${g(OBJ.sansTc(3, 'AVANT', 30))}
+      ${g(OBJ.seqToutes(4, 3, 'MIN'))}
+    </div>
+
+    <div class="aj-bloc">
+      <h3>Les bandeaux qui lisent les lignes</h3>
+      ${g(OBJ.seqTaille(2, 3))}
+      ${g(OBJ.seqAvec(2, 'AVEC', 'ARME', 2))}
+      ${g(OBJ.seqAvec(2, 'SANS', 'MORT'))}
+      ${g(OBJ.seqAvec(2, 'AVEC', 'VALEUR', 3))}
+      ${g(OBJ.seqVoisines(2, 'APRES'))}
+      ${g(OBJ.seqLongue(2))}
+    </div>
+
+    <div class="aj-bloc">
+      <h3>Les pouvoirs de règle</h3>
+      <p class="aide">Ceux-là ne rapportent pas de points : ils changent une règle pour vous, tant
+      que la carte est dans votre montage. Ils s’écrivent en toutes lettres, et leur carte n’a pas
+      de compteur. En voici l’effet exact — la phrase, elle, est sur la carte.</p>
+      ${regle(OBJ.piocher('PMGP'), c, `Au moment de dérusher, vous pouvez prendre la carte du
+        <b>sommet de la pioche</b> plutôt qu’une de la rivière. Vous ne la voyez pas avant de la
+        prendre, et personne d’autre ne l’a vue.`)}
+      ${regle(OBJ.sequencePlus(1), c, `Votre banc porte <b>une ligne de plus</b> que les
+        ${c.sequencesMax || 5} de la règle. Elle s’ouvre comme les autres : au-dessus ou en dessous
+        de la pile, jamais entre deux.`)}
+      ${regle(OBJ.planPlus(1), c, `La fin tombe au ${c.tours || 10}<sup>e</sup> plan <b>pour tout le
+        monde</b> : ce pouvoir ne la retarde pas. Une fois le dernier tour joué, vous jouez
+        <b>un tour de plus</b> — et vous y posez ce que vous voulez, un plan ou un Raccord.`)}
+      ${regle(OBJ.raccordVaut(2), c, `Le bandeau « <b>−2 × Raccord</b> » de <b>vos</b> Cartes
+        Raccord devient « 2 × Raccord » : elles rapportent au lieu de coûter, et l’affichent.
+        Un Raccord qui porte <b>autre chose</b> garde son bandeau, et l’Ouverture comme le Générique
+        de fin ne sont jamais touchés. La carte qui dit ce pouvoir ne gagne rien elle-même.`)}
+    </div>
+
+  </div>
+  </article>`;
+}
