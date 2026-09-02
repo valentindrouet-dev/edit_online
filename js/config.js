@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=1.97';
+import { ELEMENT_IDS } from './data.js?v=1.98';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -98,7 +98,7 @@ export const DEFAULTS = {
   // --- Décompte ------------------------------------------------------------
   objectifsActifs: {
     RACCORD: true, PLAN: true, FORMAT: true, ELEMENT: true,
-    PAIRE: true, MORT: true, NEANT: true, ABSENT: true,
+    PAIRE: true, MORT: true, ABSENT: true,
     MINUTAGE: true, CHRONO: true, SANS_TC: true,
     // Les bandeaux qui comptent des séquences plutôt que des plans.
     SEQ_TAILLE: true, SEQ_VOISINES: true, SEQ_LONGUE: true, SEQ_AVEC: true, SEQ_TOUTES: true,

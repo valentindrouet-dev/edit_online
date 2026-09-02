@@ -13,8 +13,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.97';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.97';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.98';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.98';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -104,7 +104,6 @@ function objCoeur(obj, taille, compact) {
     case 'PAIRE':   return `<span class="paire ${obj.els.length > 2 ? 'trio' : ''}">${
       obj.els.map((e) => elIcon(e, taille)).join('')}</span>`;
     case 'MORT':    return elIcon('MORT', taille);
-    case 'NEANT':   return elIcon('NEANT', taille);
     case 'ABSENT':  return `<span class="barre">${
       cibleHTML(cibleDe(obj), taille, compact)}${croixNon()}</span>`;
     // « n si l'Arme domine » : la cible, puis le mot qui dit lequel des deux
@@ -208,7 +207,6 @@ function cibleHTML(cible, taille, compact) {
     case 'PLAN':     return '<span class="tag tag-blanc">Plan</span>';
     case 'RACCORD':  return '<span class="tag tag-gris">Raccord</span>';
     case 'MORT':     return elIcon('MORT', taille);
-    case 'NEANT':    return elIcon('NEANT', taille);
     case 'SEQUENCE': return tagSeq(compact);
     case 'ICONE':    return `<span class="tag tag-blanc">${compact ? 'Ic.' : 'Icône'}</span>`;
     case 'VALEUR':   return `<span class="tag tag-blanc">${compact ? 'Val.' : 'Valeur de cadre'}</span>`;
@@ -340,7 +338,7 @@ function coutCoeur(obj, compact, P) {
     if (c === 'CARTE') return t('Carte');
     if (c === 'PLAN') return t('Plan');
     if (c === 'RACCORD') return t('Raccord');
-    if (c === 'MORT' || c === 'NEANT') return P.rond;
+    if (c === 'MORT') return P.rond;
     if (c === 'SEQUENCE') return t('Séquence', 'Séq.');
     if (c === 'ICONE') return t('Icône', 'Ic.');
     if (c === 'VALEUR') return t('Valeur de cadre', 'Val.');
@@ -356,7 +354,7 @@ function coutCoeur(obj, compact, P) {
     case 'PLAN': return t('Plan');
     case 'FORMAT': return tw(FORMATS[obj.format].label, FORMATS[obj.format].short)
       + (obj.format2 ? g + 0.6 + g + tw(FORMATS[obj.format2].label, FORMATS[obj.format2].short) : 0);
-    case 'ELEMENT': case 'MORT': case 'NEANT': return P.rond;
+    case 'ELEMENT': case 'MORT': return P.rond;
     case 'ABSENT': return cible(cibleDe(obj));
     case 'DOMINE': return cible(cibleDe(obj)) + g + tt('max');
     // Les icônes d'un groupe se chevauchent : chacune après la première ne

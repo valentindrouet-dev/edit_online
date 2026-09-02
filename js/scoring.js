@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.97';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.98';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -85,7 +85,6 @@ export function compteCible(plans, cible, banc) {
     case 'PLAN':     return plans.filter((p) => !estRaccord(p)).length;
     case 'RACCORD':  return plans.filter(estRaccord).length;
     case 'MORT':     return plans.filter((p) => p.mort).length;
-    case 'NEANT':    return plans.filter((p) => !p.el.some((e) => PERSONNAGES.includes(e))).length;
     case 'ICONE':    return plans.reduce((s, p) => s + p.el.length, 0);
     // La **valeur de cadre** — le mot de cinéma pour le cadrage : Plan Large,
     // Plan Moyen, Gros Plan. On compte celles qui sont DIFFÉRENTES : une ligne
@@ -257,8 +256,6 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
       return n * compteGroupes(portee, obj.els);
     case 'MORT':
       return n * portee.filter((p) => p.mort).length;
-    case 'NEANT':
-      return n * portee.filter((p) => !p.el.some((e) => PERSONNAGES.includes(e))).length;
     case 'ABSENT':
       // « Absent » se dit de tout ce que le vocabulaire sait compter : une
       // icône, mais aussi une valeur de cadre, un Raccord, un plan de mort.
@@ -573,7 +570,7 @@ export function compter(banc, cfg) {
 
   const detail = {
     RACCORD: 0, PLAN: 0, FORMAT: 0, ELEMENT: 0, PAIRE: 0,
-    MORT: 0, NEANT: 0, ABSENT: 0, MINUTAGE: 0, CHRONO: 0, SANS_TC: 0,
+    MORT: 0, ABSENT: 0, MINUTAGE: 0, CHRONO: 0, SANS_TC: 0,
     SEQ_TAILLE: 0, SEQ_VOISINES: 0, SEQ_LONGUE: 0, SEQ_AVEC: 0, SEQ_TOUTES: 0,
     AILLEURS: 0, CENTRE: 0, LOT: 0, SEUIL: 0, ABSENTES: 0, DOMINE: 0,
     EXTREME: 0, PLAN_ICONES: 0, DOUBLE: 0,
@@ -669,7 +666,6 @@ export const SOURCES_LABEL = {
   ELEMENT: 'Objectifs d’élément',
   PAIRE: 'Objectifs de groupe d’icônes',
   MORT: 'Objectifs Mort',
-  NEANT: 'Objectifs Plan sans personnage',
   ABSENT: 'Objectifs d’absence',
   MINUTAGE: 'Objectifs de minutage',
   SANS_TC: 'Objectifs de minutage absent',

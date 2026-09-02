@@ -28,8 +28,11 @@ export const ELEMENT_IDS = Object.keys(ELEMENTS);
 export const ENCRES = {
   HEROINE: '#14520d', ENNEMI: '#6e1010', ALLIE: '#0e3454',
   OBJET: '#7d5400', ARME: '#31363c', VEHICULE: '#5f3c18',
-  MORT: '#141418', NEANT: '#26262e',
+  MORT: '#141418',
 };
+
+/** L'encre d'un bandeau qui ne montre aucune icône : neutre, presque noire. */
+export const ENCRE_NEUTRE = '#26262e';
 
 // Les cadrages, assombris de la même façon. Cette encre sert aussi au libellé
 // du bas d'un plan, qui s'écrit désormais sur la carte et non plus sur une
@@ -52,18 +55,17 @@ export function encreLibelle(format, transition) {
  * un plan, un raccord, un minutage — reste dans l'encre neutre.
  */
 export function teinteObj(o) {
-  if (!o) return ENCRES.NEANT;
+  if (!o) return ENCRE_NEUTRE;
   switch (o.kind) {
-    case 'ELEMENT': case 'ABSENT': return ENCRES[o.el] || ENCRES.NEANT;
-    case 'PAIRE':   return ENCRES[o.els[0]] || ENCRES.NEANT;
+    case 'ELEMENT': case 'ABSENT': return ENCRES[o.el] || ENCRE_NEUTRE;
+    case 'PAIRE':   return ENCRES[o.els[0]] || ENCRE_NEUTRE;
     case 'MORT':    return ENCRES.MORT;
-    case 'NEANT':   return ENCRES.NEANT;
-    case 'FORMAT':  return ENCRES_FORMAT[o.format] || ENCRES.NEANT;
+    case 'FORMAT':  return ENCRES_FORMAT[o.format] || ENCRE_NEUTRE;
     // Les pouvoirs du vocabulaire commun prennent la teinte de leur cible :
     // une icône a la sienne, un cadrage la sienne, le reste reste neutre.
     case 'AILLEURS': case 'CENTRE': case 'LOT': case 'SEUIL':
-      return ENCRES[o.cible] || ENCRES_FORMAT[o.cible] || ENCRES.NEANT;
-    default:        return ENCRES.NEANT;
+      return ENCRES[o.cible] || ENCRES_FORMAT[o.cible] || ENCRE_NEUTRE;
+    default:        return ENCRE_NEUTRE;
   }
 }
 export const PERSONNAGES = ELEMENT_IDS.filter((e) => ELEMENTS[e].famille === 'PERSONNAGE');
@@ -100,7 +102,6 @@ export const CADRAGES_POUVOIR = ['PL', 'PM', 'GP', 'DEP'];
 //             c'est un appariement, pas une adjacence. Un groupe qui demande
 //             deux fois la même icône en demande deux exemplaires
 //   MORT      n points par plan de mort
-//   NEANT     n points par plan sans aucun personnage
 //   ABSENT    n points si l'élément visé n'apparaît nulle part
 //   MINUTAGE  n points par plan du montage dont le minutage est strictement
 //             avant (ou après) le seuil visé
@@ -182,7 +183,6 @@ export const OBJ = {
   paire:   (n, a, b, portee, c) => ({ kind: 'PAIRE', n, els: c ? [a, b, c] : [a, b],
     ...(portee ? { portee } : {}) }),
   mort:    (n, portee) => ({ kind: 'MORT', n, ...(portee ? { portee } : {}) }),
-  neant:   (n, portee) => ({ kind: 'NEANT', n, ...(portee ? { portee } : {}) }),
   // « n si CIBLE est absente ». La cible n'est plus une icône seulement : une
   // valeur de cadre, une Carte Raccord, un plan de mort peuvent manquer aussi.
   // Le champ s'appelait `el` du temps où seule une icône s'y logeait ; les
@@ -416,8 +416,6 @@ export const CIBLES_COMPTE = [
   { id: 'PLAN',     label: 'Plan (hors Raccord)',      court: 'Plan',    pl: 'Plans' },
   { id: 'RACCORD',  label: 'Carte Raccord',            court: 'Raccord', pl: 'Raccords' },
   { id: 'MORT',     label: 'Plan de mort',             court: 'Plan de mort', pl: 'Plans de mort' },
-  { id: 'NEANT',    label: 'Plan sans personnage',     court: 'Plan sans personnage',
-    pl: 'Plans sans personnage' },
   ...CADRAGES_POUVOIR.map((f) => ({ id: f, label: FORMATS[f].label, court: FORMATS[f].label,
     pl: PLURIELS_CADRAGE[f] })),
   ...ELEMENT_IDS.map((e) => ({ id: e, label: ELEMENTS[e].label, court: ELEMENTS[e].label,
@@ -557,7 +555,6 @@ function objQuoi(o) {
     }
     case 'MORT':    return 'Mort';
     case 'DOMINE': return `${libelleCibleCompte(cibleDe(o))} ${o.sens === 'MOINS' ? 'min' : 'max'}`;
-    case 'NEANT':   return 'Plan sans personnage';
     case 'MINUTAGE': return `Plan ${o.sens === 'APRES' ? 'après' : 'avant'} ${tcTexte(o.seuil)}`;
     case 'SEQ_TAILLE': return `séquence de ${o.seuil} plan${o.seuil > 1 ? 's' : ''} ou ${o.sens === 'MAX' ? 'moins' : 'plus'}`;
     case 'SEQ_VOISINES': return `séquence ${o.sens === 'APRES' ? 'en dessous' : 'au-dessus'} de celle-ci`;
@@ -702,11 +699,11 @@ const SCENES_IMPRIMEES = [
 
   // Famille MORT ------------------------------------------------------------
   S(4,  94, 'MORT', 207, 307, ['HEROINE', 'ARME'],     ['HEROINE', 'ARME'], OBJ.mort(3),  { mort: true }),
-  S(5,  93, 'MORT', 208, 308, ['HEROINE', 'VEHICULE'], ['HEROINE'],         OBJ.neant(3), { mort: true }),
+  S(5,  93, 'MORT', 208, 308, ['HEROINE', 'VEHICULE'], ['HEROINE'],         null        , { mort: true }),
   S(6,  91, 'MORT', 209, 309, ['ENNEMI', 'OBJET'],     ['ENNEMI'],          OBJ.mort(3),  { mort: true }),
-  S(7,  80, 'MORT', 210, 310, ['ENNEMI', 'ARME'],      ['ENNEMI'],          OBJ.neant(3), { mort: true }),
+  S(7,  80, 'MORT', 210, 310, ['ENNEMI', 'ARME'],      ['ENNEMI'],          null        , { mort: true }),
   S(8,  69, 'MORT', 211, 311, ['VEHICULE', 'ENNEMI'],  ['VEHICULE'],        OBJ.mort(3),  { mort: true }),
-  S(9,  92, 'MORT', 212, 312, ['ALLIE', 'OBJET'],      ['ALLIE'],           OBJ.neant(3), { mort: true }),
+  S(9,  92, 'MORT', 212, 312, ['ALLIE', 'OBJET'],      ['ALLIE'],           null        , { mort: true }),
 
   // Famille ARME ------------------------------------------------------------
   S(10, 66, 'ARME', 213, 313, ['HEROINE', 'ARME'], ['HEROINE', 'ARME'], OBJ.absent(5, 'ALLIE')),
@@ -960,6 +957,110 @@ export function buildDeparts(six) {
     }
   });
   return out;
+}
+
+/**
+ * Toutes les CARTES de la boîte, chacune avec les plans qu'elle porte.
+ *
+ * Une carte double montre quatre plans — deux moitiés, deux faces — mais reste
+ * **une carte** : c'est ce qu'on compte quand on demande « combien de cartes
+ * portent une Arme ». Un Plan Large en porte un ; un Plan de départ, deux.
+ */
+export function cartesDeLaBoite(six) {
+  const out = [];
+  for (const c of buildCartesDoubles()) {
+    if (!c.actif) continue;
+    const r = moitiesDe(c, 'R'); const v = moitiesDe(c, 'V');
+    out.push({ id: c.id, famille: 'DOUBLE', plans: [r.GP, r.PM, v.GP, v.PM] });
+  }
+  for (const c of buildPlansLarges(false)) {
+    if (!c.actif) continue;
+    out.push({ id: c.id, famille: 'PL', plans: [plHalf(c)] });
+  }
+  // Les faces d'un Plan de départ sont des plans bruts : elles n'ont pas encore
+  // de cadrage. `plHalf` le leur donne — DÉP — comme partout où on les joue.
+  for (const d of buildDeparts(six)) {
+    out.push({ id: d.id, famille: 'DEP',
+      plans: d.faces.map((f) => plHalf({ ...f, depart: true })) });
+  }
+  return out;
+}
+
+/**
+ * Ce qu'un bandeau NOMME — sa cible, ou ses cibles. Deux bandeaux de familles
+ * différentes peuvent viser la même chose : « 2 × Arme » et « 4 si au moins 3
+ * Armes » parlent tous deux de l'Arme. C'est par là qu'on répond à « combien de
+ * cartes parlent de la séquence », qui ne se lit dans aucun `kind`.
+ */
+export function ciblesDe(o) {
+  if (!o) return [];
+  switch (o.kind) {
+    case 'PLAN':      return ['PLAN'];
+    case 'RACCORD':   return ['RACCORD'];
+    case 'MORT':      return ['MORT'];
+    case 'CHRONO':    return ['ORDRE'];
+    case 'DOUBLE':    return ['CARTE'];
+    case 'ABSENTES': case 'EXTREME': return ['ICONE'];
+    case 'PLAN_ICONES': return ['PLAN', 'ICONE'];
+    case 'MINUTAGE': case 'SANS_TC': return ['MINUTAGE'];
+    case 'FORMAT':    return [o.format, o.format2].filter(Boolean);
+    case 'PAIRE':     return [...new Set(o.els || [])];
+    case 'ELEMENT': case 'ABSENT': return [cibleDe(o)].filter(Boolean);
+    default:
+      // Les bandeaux de séquence parlent tous de la ligne, et la plupart
+      // nomment en plus ce qu'elle doit porter.
+      if (KINDS_SEQUENCE.includes(o.kind)) {
+        return ['SEQUENCE', ...(o.cible ? [o.cible] : [])];
+      }
+      return o.cible ? [o.cible] : [];
+  }
+}
+
+/**
+ * Combien de cartes de la boîte portent quoi. Une carte ne se compte qu'**une
+ * fois** par entrée, même si deux de ses plans portent la même chose : la
+ * question est « combien de cartes », pas « combien de plans ».
+ *
+ * Un Raccord n'a pas de cadrage — il occupe la place d'un Gros Plan sans en
+ * être un —, et il ne se compte donc que dans `raccord`.
+ */
+export function recenserBoite(cfg) {
+  const c = cfg || {};
+  const vide = () => Object.create(null);
+  const r = { cartes: 0, icones: vide(), cadrages: vide(), raccord: 0,
+    kinds: vide(), cibles: vide(), portees: vide(), tc: vide() };
+  const pousse = (bac, cle) => { if (cle !== undefined && cle !== null) bac[cle] = (bac[cle] || 0) + 1; };
+
+  for (const carte of cartesDeLaBoite(!!c.sixCartesDepart)) {
+    r.cartes++;
+    const icones = new Set(); const cadrages = new Set(); const kinds = new Set();
+    const cibles = new Set(); const portees = new Set(); const tcs = new Set();
+    let raccord = false;
+    for (const p of carte.plans) {
+      if (!p) continue;
+      for (const e of p.el || []) icones.add(e);
+      if (p.mort) icones.add('MORT');
+      if (p.transition === 'RACCORD') raccord = true;
+      else if (!p.transition) cadrages.add(p.format);
+      // Le minutage se range en quatre : les deux bornes du film, l'absence de
+      // minutage, et tout le reste.
+      tcs.add(p.tc === TC_VIDE ? 'VIDE' : p.tc === TC_PREMIER ? 'PREMIER'
+        : p.tc === TC_DERNIER ? 'DERNIER' : 'ORDINAIRE');
+      for (const o of objsDe(p)) {
+        kinds.add(o.kind);
+        for (const x of ciblesDe(o)) cibles.add(x);
+        if (!estRegleKind(o.kind)) portees.add(objPortee(o, c));
+      }
+    }
+    for (const e of icones) pousse(r.icones, e);
+    for (const f of cadrages) pousse(r.cadrages, f);
+    for (const k of kinds) pousse(r.kinds, k);
+    for (const x of cibles) pousse(r.cibles, x);
+    for (const p of portees) pousse(r.portees, p);
+    for (const t of tcs) pousse(r.tc, t);
+    if (raccord) r.raccord++;
+  }
+  return r;
 }
 
 // --- Matériel ajustable ----------------------------------------------------

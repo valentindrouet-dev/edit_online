@@ -15,10 +15,10 @@
 
 import {
   FORMATS, ELEMENTS, ELEMENT_IDS, PORTEES, OBJ, objLabel, PAIRES_DEPART, PLANS_DEPART,
-  buildCartesDoubles, buildPlansLarges, buildDeparts, SCENES,
-} from './data.js?v=1.97';
-import { elIcon } from './icons.js?v=1.97';
-import { objHTML } from './cards.js?v=1.97';
+  buildCartesDoubles, buildPlansLarges, buildDeparts, SCENES, recenserBoite,
+} from './data.js?v=1.98';
+import { elIcon } from './icons.js?v=1.98';
+import { objHTML } from './cards.js?v=1.98';
 
 // --- Les briques de mise en page -------------------------------------------
 
@@ -39,17 +39,32 @@ const encart = (titre, corps, cls = '') => `<aside class="lv-encart ${cls}">
   ${titre ? `<h4>${titre}</h4>` : ''}${corps}
 </aside>`;
 
-/** Une ligne de glossaire : le symbole à gauche, ce qu'il veut dire à droite. */
-const ligne = (symbole, texte, cls = '') => `<div class="lv-ligne ${cls}">
+/**
+ * Une ligne de glossaire : le symbole à gauche, ce qu'il veut dire à droite —
+ * et, tout à droite, **combien de cartes de la boîte** le portent. Ce compte
+ * est celui des CARTES et non des plans : une carte double montre quatre plans
+ * et ne se compte qu'une fois.
+ */
+const ligne = (symbole, texte, cls = '', n) => `<div class="lv-ligne ${cls}">
   <div class="lv-sym">${symbole}</div><div class="lv-txt">${texte}</div>
+  ${n === undefined ? '' : `<div class="lv-n${n ? '' : ' zero'}"
+    title="${n} carte${n > 1 ? 's' : ''} de la boîte ${n > 1 ? 'portent' : 'porte'} ceci"><b>${n}</b></div>`}
 </div>`;
+
+/**
+ * Les deux écritures d'un même mot, telles qu'elles paraissent sur les cartes :
+ * la longue quand la place le permet, la courte sur un Gros Plan. L'aide montre
+ * les deux — c'est l'une OU l'autre qu'on aura sous les yeux.
+ */
+const deuxEcritures = (long, court) => (long === court ? long
+  : `${long}<span class="lv-ou">/</span>${court}`);
 
 /** Un cartouche de cadrage, tel qu'il paraît sur un bandeau. */
 const cadre = (f) => `<span class="tag tag-fmt" style="--c:${FORMATS[f].color}">${FORMATS[f].label}</span>`;
 
-/** Le bandeau d'un pouvoir, dessiné comme sur la carte, et sa phrase. */
-const pouvoir = (o, cfg) => ligne(`<span class="lv-bandeau">${objHTML(o, 30, cfg)}</span>`,
-  objLabel(o, cfg));
+/** Le bandeau d'un pouvoir, dessiné comme sur la carte, sa phrase, son compte. */
+const pouvoir = (o, cfg, n) => ligne(`<span class="lv-bandeau">${objHTML(o, 30, cfg)}</span>`,
+  objLabel(o, cfg), '', n);
 
 // Un pouvoir de RÈGLE est déjà écrit en toutes lettres sur la carte : le
 // traduire mot pour mot ne dirait rien de plus. On explique donc ce qu'il
@@ -126,8 +141,7 @@ export function livret(cfg) {
     </div>
     ${encart('Les icônes du jeu', `<div class="lv-icones">${ELEMENT_IDS
     .map((e) => `<span>${elIcon(e, 34)}${ELEMENTS[e].label}</span>`).join('')}
-      <span>${elIcon('MORT', 34)}Plan de mort</span>
-      <span>${elIcon('NEANT', 34)}Sans personnage</span></div>`)}
+      <span>${elIcon('MORT', 34)}Plan de mort</span></div>`)}
   `)}
 
   ${section('Mise en place', `
@@ -247,46 +261,81 @@ export function livret(cfg) {
 
 export function aideDeJeu(cfg) {
   const c = cfg || {};
-  const g = (o) => pouvoir(o, c);
+  // Combien de CARTES de la boîte portent quoi. Le compte se lit à droite de
+  // chaque ligne : c'est ce qu'on veut savoir en préparant une partie ou en
+  // équilibrant le jeu — « combien de cartes ont une Arme », pas « combien de
+  // plans ».
+  const B = recenserBoite(c);
+  const g = (o) => pouvoir(o, c, B.kinds[o.kind] || 0);
+  const tag = (cls, long, court) => `<span class="tag ${cls}">${deuxEcritures(long, court)}</span>`;
 
   return `<article class="aide-jeu">
   <header class="aj-hero"><h2>Aide de jeu</h2>
-    <p>Ce que chaque symbole veut dire, à côté du banc.</p></header>
+    <p>Ce que chaque symbole veut dire, à côté du banc.</p>
+    <p class="aj-note">Le chiffre de droite compte les <b>cartes de la boîte</b> — jamais les
+    faces : une carte double montre quatre plans et ne compte qu’une fois. Pour une icône, un
+    cadrage ou un minutage, c’est le nombre de cartes qui le <b>portent</b> ; pour un cartouche ou
+    un bandeau, le nombre de cartes qui en <b>parlent</b>. Il suit votre matériel : une carte
+    retouchée dans l’éditeur change le compte.</p></header>
 
   <div class="aj-fiche">
 
     <div class="aj-bloc">
       <h3>Les icônes</h3>
-      ${ELEMENT_IDS.map((e) => ligne(elIcon(e, 38), ELEMENTS[e].label)).join('')}
-      ${ligne(elIcon('MORT', 38), 'Plan de mort — une icône comme une autre, qui se compte')}
-      ${ligne(elIcon('NEANT', 38), 'Plan sans personnage — ni Héroïne, ni Ennemi, ni Allié')}
+      ${ELEMENT_IDS.map((e) => ligne(elIcon(e, 38), ELEMENTS[e].label, '', B.icones[e] || 0)).join('')}
+      ${ligne(elIcon('MORT', 38), 'Plan de mort — une icône comme une autre, qui se compte',
+    '', B.icones.MORT || 0)}
     </div>
 
     <div class="aj-bloc">
       <h3>Les cadrages</h3>
       ${['PL', 'PM', 'GP', 'DEP'].map((f) => ligne(
-    `<span class="tag tag-fmt" style="--c:${FORMATS[f].color}">${FORMATS[f].short}</span>`,
-    FORMATS[f].label)).join('')}
-      ${ligne('<span class="tag tag-gris">Raccord</span>',
-    'Carte Raccord — elle relie sans rien raconter. Ni plan, ni cadrage')}
-      ${ligne('<span class="tag tag-blanc">Valeur de cadre</span>',
-    'Un cadrage <b>différent</b> : trois Gros Plans n’en font qu’une')}
+    `<span class="tag tag-fmt" style="--c:${FORMATS[f].color}">${
+      deuxEcritures(FORMATS[f].label, FORMATS[f].short)}</span>`,
+    FORMATS[f].label, '', B.cadrages[f] || 0)).join('')}
+      ${ligne(tag('tag-gris', 'Raccord', 'Raccord'),
+    'Carte Raccord — elle relie sans rien raconter. Ni plan, ni cadrage', '', B.raccord)}
+      ${ligne(tag('tag-blanc', 'Valeur de cadre', 'Val.'),
+    'Un cadrage <b>différent</b> : trois Gros Plans n’en font qu’une', '', B.cibles.VALEUR || 0)}
     </div>
 
     <div class="aj-bloc">
       <h3>Le minutage</h3>
-      ${ligne('<span class="lv-tc-r">30:00</span>', 'Un instant du film')}
+      ${ligne('<span class="lv-tc-r">30:00</span>', 'Un instant du film', '', B.tc.ORDINAIRE || 0)}
       ${ligne('<span class="lv-tc-b">--:--</span>',
-    'Pas de minutage : la carte se pose où l’on veut, et ne rompt jamais l’ordre')}
-      ${ligne('<span class="lv-tc-o">01:00</span>', 'Le premier plan du film')}
-      ${ligne('<span class="lv-tc-o">99:00</span>', 'Le dernier')}
+    'Pas de minutage : la carte se pose où l’on veut, et ne rompt jamais l’ordre',
+    '', B.tc.VIDE || 0)}
+      ${ligne('<span class="lv-tc-o">01:00</span>', 'Le premier plan du film', '', B.tc.PREMIER || 0)}
+      ${ligne('<span class="lv-tc-o">99:00</span>', 'Le dernier', '', B.tc.DERNIER || 0)}
+    </div>
+
+    <div class="aj-bloc">
+      <h3>Les mots des bandeaux</h3>
+      <p class="aide">Un bandeau ne montre pas toujours une icône : ces cartouches-là nomment ce
+      qu’il compte. Sur un Gros Plan, la place manque et l’écriture courte prend le relais — c’est
+      la même chose.</p>
+      ${ligne(tag('tag-blanc', 'Plan', 'Plan'),
+    'Un <b>plan</b> : toute carte du montage <b>sauf</b> un Raccord — Plan Large, Plan Moyen, '
+    + 'Gros Plan, Plan de départ', '', B.cibles.PLAN || 0)}
+      ${ligne(tag('tag-seq', 'Séquence', 'Séq.'),
+    'Une <b>ligne</b> du banc, avec tout ce qu’elle porte. Une séquence est tenue par son Plan '
+    + 'Large, et un Raccord peut lui ouvrir un second côté', '', B.cibles.SEQUENCE || 0)}
+      ${ligne(tag('tag-blanc', 'Icône', 'Ic.'),
+    'N’importe quelle <b>icône</b>, toutes confondues : une carte à trois icônes en montre trois, '
+    + 'quelles qu’elles soient', '', B.cibles.ICONE || 0)}
+      ${ligne('<span class="tag tag-chrono">↗ ordre</span>',
+    'Le montage est <b>dans l’ordre</b> : lu d’un seul tenant, ligne après ligne, aucun minutage '
+    + 'ne revient en arrière. Les plans sans minutage sont retirés de la lecture',
+    '', B.cibles.ORDRE || 0)}
+      ${ligne(tag('tag-blanc', 'Carte', 'Carte'),
+    'Une <b>carte</b>, Raccords compris — là où « Plan » les écarte', '', B.cibles.CARTE || 0)}
     </div>
 
     <div class="aj-bloc">
       <h3>Les portées</h3>
       ${PORTEES.map((p) => ligne(
     `<span class="lv-fleches">${p.gauche ? '◀' : ''}${p.droite ? '▶' : ''}${
-      !p.gauche && !p.droite ? '⬚' : ''}</span>`, p.label)).join('')}
+      !p.gauche && !p.droite ? '⬚' : ''}</span>`, p.label, '', B.portees[p.id] || 0)).join('')}
     </div>
 
   </div>
@@ -301,7 +350,6 @@ export function aideDeJeu(cfg) {
       ${g(OBJ.element(1, 'ARME'))}
       ${g(OBJ.paire(2, 'ARME', 'HEROINE'))}
       ${g(OBJ.mort(3))}
-      ${g(OBJ.neant(3))}
       ${g(OBJ.minutage(2, 'AVANT', 30))}
       ${g(OBJ.lot(2, 'ARME', 3))}
       ${g(OBJ.planIcones(1, 3, 'EXACT'))}

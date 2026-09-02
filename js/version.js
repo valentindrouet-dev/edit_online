@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.97';
-export const BUILD_DATE = '2026-09-02 18:40';
+export const VERSION = '1.98';
+export const BUILD_DATE = '2026-09-02 21:30';
 
 export const CHANGELOG = [
+  {
+    v: '1.98',
+    date: '02/09/2026',
+    items: [
+      "<b>L'aide de jeu dit combien de cartes portent quoi.</b> À droite de chaque ligne — chaque icône, chaque cadrage, chaque minutage, chaque bandeau — le nombre de <b>cartes de la boîte</b> concernées. Ce sont bien des <b>cartes</b> et jamais des faces : une carte double montre quatre plans et ne compte qu'une fois, même si deux d'entre eux portent la même Arme. Et le compte suit <b>votre</b> matériel : une carte retouchée ou écartée dans l'éditeur le change aussitôt.",
+      "Deux comptes différents, selon ce que la ligne montre. Pour une <b>icône</b>, un <b>cadrage</b> ou un <b>minutage</b>, c'est le nombre de cartes qui le <b>portent</b>. Pour un <b>cartouche</b> ou un <b>bandeau</b>, celui des cartes qui en <b>parlent</b> — « 2 × Arme » et « 4 si au moins 3 Armes » comptent tous deux pour l'Arme.",
+      "<b>Quatre mots de plus dans l'aide, dans leur propre bloc.</b> <b>PLAN</b> — toute carte du montage sauf un Raccord ; <b>SÉQUENCE</b> — une ligne du banc ; <b>ICÔNE</b> — n'importe laquelle, toutes confondues ; <b>ORDRE</b> — le montage lu d'un seul tenant sans qu'aucun minutage revienne en arrière. Plus <b>CARTE</b>, qui compte les Raccords là où « Plan » les écarte.",
+      "<b>Les cartouches montrent leurs deux écritures.</b> « PLAN MOYEN / PM », « SÉQUENCE / SÉQ. », « ICÔNE / IC. », « VALEUR DE CADRE / VAL. » : sur un Gros Plan la place manque et c'est la forme courte qui est imprimée — l'aide montre les deux, puisque c'est l'une ou l'autre qu'on aura sous les yeux.",
+      "<b>Le pouvoir « n × plan sans personnage » quitte le jeu. Règles v0.19.</b> Son symbole — le rond barré — n'était pas le bon, et le pouvoir venait d'une version ancienne. L'icône disparaît du matériel, de l'éditeur, de l'aide et du livret. <b>Trois scènes le portaient</b> — les plans de mort 208 / 308, 210 / 310 et 212 / 312 : leur bandeau est désormais <b>vide</b>, en attendant celui qui leur revient. Le tableau des pouvoirs garde la ligne, barrée, pour qu'on sache qu'elle a existé.",
+    ],
+  },
   {
     v: '1.97',
     date: '02/09/2026',

@@ -14,13 +14,23 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=1.97';
-import { elIcon } from './icons.js?v=1.97';
+import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=1.98';
+import { elIcon } from './icons.js?v=1.98';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.19',
+    date: '02/09/2026',
+    origine: 'Pouvoir retiré par l’auteur',
+    corps: (c) => corps_0_19(c),
+    items: [
+      '<b>« n × plan sans personnage » quitte le jeu.</b> Son symbole — un rond barré — n’était pas le bon, et le pouvoir venait d’une version ancienne : il ne se lisait plus nulle part. Le vocabulaire perd donc une cible, et l’icône disparaît du matériel comme de l’aide de jeu.',
+      '<b>Trois scènes le portaient</b> — les plans de mort <b>208 / 308</b>, <b>210 / 310</b> et <b>212 / 312</b>. Leur bandeau est désormais <b>vide</b> : c’est le pouvoir qui était faux, et il attend celui qui lui revient. Elles restent jouables entre-temps, sans rien rapporter par elles-mêmes.',
+    ],
+  },
   {
     v: '0.18',
     date: '02/09/2026',
@@ -420,6 +430,21 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.19 -----------------------------------------------------------------
+// Le pouvoir « n × plan sans personnage » quitte le jeu : son symbole n'était
+// pas le bon, et il ne restait que d'une version ancienne.
+
+function corps_0_19(c) {
+  return corps_0_18(c)
+    .replace(/<tr><td><b>n × PLAN SANS PERSONNAGE<\/b><\/td>[\s\S]*?<\/tr>/,
+      `<tr class="regle-retiree"><td><b><s>n × PLAN SANS PERSONNAGE</s></b></td>
+      <td>${maj('0.19', `<b>Retiré du jeu.</b> Le symbole qui le disait — un rond barré — n'était
+      pas le bon, et le pouvoir venait d'une version ancienne. Les trois scènes qui le portaient
+      attendent le bandeau qui leur revient.`)}</td><td>—</td></tr>`)
+    .replace(/un <b>Plan de mort<\/b>, un <b>plan sans personnage<\/b>, /,
+      'un <b>Plan de mort</b>, ');
 }
 
 // --- v0.18 -----------------------------------------------------------------

@@ -57,7 +57,6 @@ SOURCES_ICONES = {
     'OBJET':    ('pl', 6, 1),
     'VEHICULE': ('pl', 6, 2),
     'MORT':     ('gp', 4, 'bandeau'),
-    'NEANT':    ('gp', 5, 'bandeau'),
 }
 
 

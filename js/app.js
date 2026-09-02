@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.97';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.98';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,29 +12,29 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=1.97';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.97';
-import { elIcon, numIcon } from './icons.js?v=1.97';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.97';
+} from './data.js?v=1.98';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.98';
+import { elIcon, numIcon } from './icons.js?v=1.98';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.98';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.97';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.97';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.97';
-import { releve, voler, stopperVols } from './anim.js?v=1.97';
-import { campagne } from './lab.js?v=1.97';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.97';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.97';
-import { Salon } from './net/salon.js?v=1.97';
-import { TransportLocal } from './net/local.js?v=1.97';
-import { TransportSupabase } from './net/supabase.js?v=1.97';
-import { enLigneDisponible } from './net/config.js?v=1.97';
-import { coupNu } from './net/protocole.js?v=1.97';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.97';
-import { livret, aideDeJeu } from './livret.js?v=1.97';
+} from './engine.js?v=1.98';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.98';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.98';
+import { releve, voler, stopperVols } from './anim.js?v=1.98';
+import { campagne } from './lab.js?v=1.98';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.98';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.98';
+import { Salon } from './net/salon.js?v=1.98';
+import { TransportLocal } from './net/local.js?v=1.98';
+import { TransportSupabase } from './net/supabase.js?v=1.98';
+import { enLigneDisponible } from './net/config.js?v=1.98';
+import { coupNu } from './net/protocole.js?v=1.98';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.98';
+import { livret, aideDeJeu } from './livret.js?v=1.98';
 
 const app = document.getElementById('app');
 
@@ -1399,7 +1399,11 @@ function blocRecensement(s) {
     + rangee(['PL', 'PM', 'GP', 'DEP'].map((f) => compte(cadrageIcon(f), r.cadrages[f], FORMATS[f].label)).join('')
       + compte(cadrageIcon('TR'), r.raccords, 'Cartes Raccord'))
     + rangee(compte(elIcon('MORT', 22), r.morts, 'Plans de mort')
-      + compte(elIcon('NEANT', 22), r.sansPersonnage, 'Plans sans personnage'));
+      // Les plans sans aucun personnage restent une statistique utile — c'est le
+      // POUVOIR qui les comptait qui a disparu, pas le fait lui-même. Faute de
+      // symbole, le compte s'écrit en toutes lettres.
+      + compte('<span class="compte-mot">sans perso.</span>', r.sansPersonnage,
+        'Plans sans aucun personnage'));
   return tout || '<p class="aide">Rien encore sur le banc</p>';
 }
 
@@ -2161,7 +2165,6 @@ const KINDS = [
   ['ELEMENT', 'par ICONE…'],
   ['PAIRE',   'par 2 ou 3 ICONES…'],
   ['MORT',    'par MORT'],
-  ['NEANT',   'par PLAN SANS PERSONNAGE'],
   ['RACCORD', 'par RACCORD'],
   ['PLAN',    'par PLAN'],
   ['MINUTAGE', 'par MINUTAGE avant / après…'],
@@ -4062,7 +4065,7 @@ function statsJeu(modifie) {
       // Ce que les bandeaux réclament, par icône : une autre grandeur que ce
       // que les cartes portent, et qu'on ne doit pas y mélanger.
       demandes: Object.fromEntries(ELEMENT_IDS.map((e) => [e, 0])),
-      demandeMort: 0, demandeNeant: 0,
+      demandeMort: 0,
       morts: 0, sansIcone: 0, sansPouvoir: 0,
       pouvoirs: Object.fromEntries(KINDS.filter(([k]) => k).map(([k]) => [k, 0])),
       tcMin: 99, tcMax: 0, tcSomme: 0,
@@ -4082,7 +4085,6 @@ function statsJeu(modifie) {
         if (o.kind === 'ELEMENT' || o.kind === 'ABSENT') { if (s.demandes[o.el] !== undefined) s.demandes[o.el]++; }
         else if (o.kind === 'PAIRE') for (const e of o.els) { if (s.demandes[e] !== undefined) s.demandes[e]++; }
         else if (o.kind === 'MORT') s.demandeMort++;
-        else if (o.kind === 'NEANT') s.demandeNeant++;
       }
       s.tcMin = Math.min(s.tcMin, h.tc); s.tcMax = Math.max(s.tcMax, h.tc);
       s.tcSomme += h.tc;
@@ -4171,7 +4173,6 @@ function vueStats() {
   ${tableau('Les icônes réclamées par les bandeaux', [
     ...ELEMENT_IDS.map((e) => ligne(ELEMENTS[e].label, imp.demandes[e], mod.demandes[e], elIcon(e, 20))),
     ligne('Mort', imp.demandeMort, mod.demandeMort, elIcon('MORT', 20)),
-    ligne('Plan sans personnage', imp.demandeNeant, mod.demandeNeant, elIcon('NEANT', 20)),
   ].join(''), 'Ce que les pouvoirs cherchent à compter — l’offre du tableau précédent, ici la demande. Un couple réclame ses deux icônes ; une absence réclame la sienne, en creux.')}
 
   ${tableau('Les pouvoirs', [
@@ -4222,7 +4223,6 @@ function declencheurs(obj, plans) {
     // le décompte qui sait le faire — il n'y a pas deux façons de compter.
     case 'PAIRE': return compteGroupes(plans, obj.els);
     case 'MORT':    return plans.filter((p) => p.mort).length;
-    case 'NEANT':   return plans.filter((p) => !p.el.some((e) => PERSONNAGES.includes(e))).length;
     case 'MINUTAGE': return plans.filter((p) => (obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
     // Les « si » : le pouvoir se déclenche, ou pas — jamais plusieurs fois.
     case 'ABSENT': case 'CHRONO': case 'SANS_TC': case 'SEUIL': return 1;
@@ -4986,7 +4986,6 @@ function construireObj(kind, actuel) {
     PAIRE:   () => OBJ.paire(n, e0, actuel && actuel.els ? actuel.els[1] : e0,
       undefined, actuel && actuel.els ? actuel.els[2] : undefined),
     MORT:    () => OBJ.mort(n),
-    NEANT:   () => OBJ.neant(n),
     RACCORD: () => OBJ.raccord(n),
     PLAN:    () => OBJ.plan(n),
     MINUTAGE: () => OBJ.minutage(n, actuel && actuel.sens ? actuel.sens : 'AVANT',
@@ -5213,7 +5212,6 @@ function objDepuisCSV(r, suf = '') {
     case 'RACCORD': return OBJ.raccord(n, portee);
     case 'PLAN':    return OBJ.plan(n, portee);
     case 'MORT':    return OBJ.mort(n, portee);
-    case 'NEANT':   return OBJ.neant(n, portee);
     case 'CHRONO':  return OBJ.chrono(n, portee);
     case 'SANS_TC': return OBJ.sansTc(n, ['AVANT', 'APRES'].includes(sens0) ? sens0 : 'EGAL', seuil, portee);
     case 'FORMAT': {

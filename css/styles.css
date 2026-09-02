@@ -686,6 +686,15 @@ body.sans-illus .barre .tc-seuil + .croix-non { height: .8em; bottom: 30%; }
 }
 .recensement .compte.zero { opacity: .38; }
 .recensement .compte .pastille { width: 22px; height: 22px; }
+/* Un pouvoir retire du jeu : la ligne reste au tableau, barree, pour qu'on
+   sache qu'il a existe plutot que de le chercher en vain. */
+.regles .tbl tr.regle-retiree td:first-child { opacity: .55; }
+
+/* Un compte sans symbole : le mot tient la place de la pastille. */
+.recensement .compte .compte-mot {
+  font-size: .74rem; font-weight: 800; letter-spacing: .02em; text-transform: uppercase;
+  color: var(--encre-doux); padding-left: 5px;
+}
 
 
 /* --- Partie --------------------------------------------------------------- */
@@ -2063,6 +2072,11 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 .aj-hero { text-align: center; margin-bottom: 22px; }
 .aj-hero h2 { margin: 0 0 4px; color: var(--violet); letter-spacing: .04em; }
 .aj-hero p { margin: 0; font-size: .93rem; }
+.aj-note {
+  max-width: 62em; margin: 8px auto 0 !important; font-size: .86rem;
+  color: var(--gris); line-height: 1.55;
+}
+.aj-note b { color: var(--encre-doux); }
 
 /* Les blocs de glossaire n'ont pas la même hauteur : une grille laisserait un
    trou sous les plus courts. Ils COULENT donc en colonnes, et se remplissent. */
@@ -2094,6 +2108,26 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 .lv-ligne:first-of-type { border-top: 0; }
 .lv-sym { flex: 0 0 auto; display: flex; align-items: center; }
 .lv-txt { flex: 1 1 0; min-width: 0; }
+/* Combien de CARTES de la boîte portent ceci. Calé tout à droite, en colonne
+   fixe : les comptes s'alignent d'une ligne à l'autre et se lisent en balayant
+   la marge, sans avoir à suivre le texte jusqu'au bout. */
+.lv-n {
+  flex: 0 0 auto; min-width: 2.6em; text-align: right;
+  font-variant-numeric: tabular-nums; font-weight: 800; font-size: 1.02rem;
+  color: var(--violet); line-height: 1;
+}
+.lv-n.zero { color: var(--gris); font-weight: 600; }
+/* La barre qui sépare les deux écritures d'un même mot — « PLAN MOYEN / PM ».
+   Plus légère que ce qu'elle sépare : c'est une alternative, pas un ajout. */
+.lv-ou { opacity: .5; font-weight: 500; padding: 0 .35em; }
+
+/* Un cartouche à deux écritures — « VALEUR DE CADRE / VAL. » — est large. Sans
+   borne, il mangeait la ligne et laissait au texte une colonne de trois mots.
+   On lui donne un plafond, et il se replie plutôt que d'écraser ce qu'il
+   explique. Les pastilles d'icônes, elles, restent à leur taille : elles sont
+   loin du plafond. */
+.aj-fiche .lv-sym { max-width: 42%; }
+.aj-fiche .lv-sym .tag { white-space: normal; text-align: center; }
 
 /* Le bandeau d'un pouvoir, dessiné tel qu'il est imprimé sur la carte — mais
    sur un fond CLAIR. Sur la carte, la bande est noire parce qu'elle tranche sur
