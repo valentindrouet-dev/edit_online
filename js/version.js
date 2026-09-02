@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.1';
+export const VERSION = '2.2';
 export const BUILD_DATE = '2026-09-03 03:40';
 
 export const CHANGELOG = [
+  {
+    v: '2.2',
+    date: '03/09/2026',
+    items: [
+      "<b>Quatre CARTES de chaque côté du Plan Large, et non quatre plans. Règles v0.22.</b> Un Raccord, une Ouverture, un Générique de fin s'exemptaient de la limite — « un Raccord n'est pas un plan » —, et une ligne s'étirait alors bien au-delà : sept, huit, neuf cartes de suite. Ils comptent maintenant, parce qu'ils occupent une place sur le banc comme les autres. La limite porte sur la <b>place</b>, pas sur ce qui rapporte des points.",
+      "<b>Le Raccord reste la façon d'étoffer une ligne</b> — derrière lui vient un second Plan Large, qui ouvre son propre côté et repart à zéro —, mais il faut désormais lui <b>garder la place</b> : il ne s'ajoute plus par-dessus une ligne déjà pleine. Ce qui se trouve <b>entre deux ancres</b> n'appartient à aucun des deux côtés : c'est la jointure, et elle est figée, puisqu'on ne pose qu'aux deux bouts d'une ligne.",
+    ],
+  },
   {
     v: '2.1',
     date: '03/09/2026',

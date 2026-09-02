@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=2.1';
+import { ELEMENT_IDS } from './data.js?v=2.2';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -313,9 +313,10 @@ export const SCHEMA = [
       ['bords', 'Aux deux bouts d’une séquence'], ['droite', 'À droite seulement'],
     ] },
     { k: 'plNouvelleSequence', l: 'Un Plan Large ouvre une séquence', t: 'bool' },
-    { k: 'plansParCote', l: 'Plans de chaque côté d’un Plan Large', t: 'int', min: 0, max: 12,
-      aide: 'de part et d’autre du Plan Large — ou du Plan de départ — qui tient la ligne. Les '
-        + 'Raccords ne comptent pas : un Raccord n’est pas un plan. 0 = aucune limite' },
+    { k: 'plansParCote', l: 'Cartes de chaque côté d’un Plan Large', t: 'int', min: 0, max: 12,
+      aide: 'de part et d’autre du Plan Large — ou du Plan de départ — qui tient la ligne. Ce sont '
+        + 'des CARTES : les Raccords et les Génériques y comptent, ils prennent une place comme '
+        + 'les autres. 0 = aucune limite' },
     { k: 'sequencesMax', l: 'Séquences maximum dans un banc', t: 'int', min: 0, max: 12,
       aide: 'cinq par les règles ; passé ce compte, un Plan Large n’entre plus que par la '
         + 'charnière d’un Raccord. 0 = aucune limite' },

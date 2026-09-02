@@ -7,8 +7,8 @@
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, sceneDe, faceJouee,
   TC_VIDE, TC_PREMIER, TC_DERNIER,
-} from './data.js?v=2.1';
-import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=2.1';
+} from './data.js?v=2.2';
+import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=2.2';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -493,11 +493,19 @@ function toursDus(state, i) {
 }
 
 /**
- * Combien de plans une ligne porte d'un côté de son **ancre** — le Plan Large ou
- * le Plan de départ qui la tient. À gauche, ce sont les plans posés avant la
- * première ancre ; à droite, ceux posés après la dernière. Les Raccords ne
- * comptent pas : un Raccord n'est pas un plan, et c'est justement lui qui
- * permet d'étoffer une ligne sans l'allonger.
+ * Combien de **cartes** une ligne porte d'un côté de son **ancre** — le Plan
+ * Large ou le Plan de départ qui la tient. À gauche, ce sont les cartes posées
+ * avant la première ancre ; à droite, celles posées après la dernière.
+ *
+ * **Tout compte.** Un Raccord, une Ouverture, un Générique de fin occupent une
+ * place sur le banc comme les autres : ce sont des cartes. Ils ne comptaient
+ * pas — « un Raccord n'est pas un plan » —, et une ligne pouvait alors s'étirer
+ * bien au-delà de ses quatre cartes de chaque côté. La limite porte sur la
+ * PLACE, pas sur ce qui rapporte des points.
+ *
+ * Ce qui se trouve **entre deux ancres** — le Raccord charnière et ce qu'il
+ * relie — n'est d'aucun des deux côtés : c'est la jointure, et elle est figée,
+ * puisqu'on ne pose qu'aux deux bouts d'une ligne.
  *
  * Une ligne sans ancre — cela n'arrive qu'en mode Classique, où les séquences
  * ne sont pas tenues par un Plan Large — n'est bornée par rien.
@@ -505,21 +513,18 @@ function toursDus(state, i) {
 export function plansDuCote(seq, cote) {
   const ancres = seq.map((p, i) => (estPL(p) || p.depart ? i : -1)).filter((i) => i >= 0);
   if (!ancres.length) return 0;
-  const part = cote === 'gauche'
-    ? seq.slice(0, ancres[0])
-    : seq.slice(ancres[ancres.length - 1] + 1);
-  return part.filter((p) => !p.transition).length;
+  return cote === 'gauche' ? ancres[0] : seq.length - 1 - ancres[ancres.length - 1];
 }
 
 /**
- * La ligne accepte-t-elle un plan de plus de ce côté-ci ? Un Raccord passe
- * toujours : il n'est pas un plan, et il est le moyen même d'étoffer une ligne
- * arrivée à sa longueur.
+ * La ligne accepte-t-elle une carte de plus de ce côté-ci ? Un Raccord ne passe
+ * plus en force : il prend une place comme les autres. Il reste le moyen
+ * d'étoffer une ligne — derrière lui vient un second Plan Large, qui ouvre son
+ * propre côté —, mais il faut lui garder la place avant de la remplir.
  */
-function placeDuCote(cfg, seq, cote, plan) {
+function placeDuCote(cfg, seq, cote) {
   const max = cfg && cfg.plansParCote;
   if (!max || max <= 0) return true;
-  if (plan && plan.transition) return true;
   return plansDuCote(seq, cote) < max;
 }
 
@@ -748,11 +753,15 @@ export function coupsPossibles(state, p, hypothese) {
       const roles = brut.dual ? ['OUVERTURE', 'CREDITS'] : [brut.transition];
       for (const role of roles) {
         // Le Générique se pose au bout du montage — encore faut-il que ce bout
-        // soit ouvert : une borne de minutage déjà posée l'a peut-être fermé.
-        if (role === 'OUVERTURE' && !banc.ouverture && banc.sequences.length && !bo.gauche(0)) {
+        // soit ouvert : une borne de minutage déjà posée l'a peut-être fermé, ou
+        // la ligne de ce bout-là porte déjà ses cartes. Un Générique prend une
+        // place comme les autres ; il ne s'ajoute pas par-dessus.
+        if (role === 'OUVERTURE' && !banc.ouverture && banc.sequences.length
+          && !bo.gauche(0) && placeDuCote(cfg, banc.sequences[0], 'gauche')) {
           out.push({ carte, format, action: 'GENERIQUE', role, pos: 0 });
         }
-        if (role === 'CREDITS' && !banc.fermeture && banc.sequences.length && !bo.droite(dernier)) {
+        if (role === 'CREDITS' && !banc.fermeture && banc.sequences.length
+          && !bo.droite(dernier) && placeDuCote(cfg, banc.sequences[dernier], 'droite')) {
           out.push({ carte, format, action: 'GENERIQUE', role, pos: dernier });
         }
       }
@@ -788,7 +797,7 @@ export function coupsPossibles(state, p, hypothese) {
         if (raccord && !(cote === 'gauche' ? i === 0 : i === dernier)) continue;
         const voisin = cote === 'gauche' ? seq[0] : seq[seq.length - 1];
         if (!poseAutorisee(cfg, voisin, brut)) continue;
-        if (!placeDuCote(cfg, seq, cote, brut)) continue;
+        if (!placeDuCote(cfg, seq, cote)) continue;
         out.push({ carte, format, action: 'ETENDRE', seq: i, cote });
       }
     });

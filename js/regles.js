@@ -14,13 +14,24 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=2.1';
-import { elIcon } from './icons.js?v=2.1';
+import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=2.2';
+import { elIcon } from './icons.js?v=2.2';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.22',
+    date: '03/09/2026',
+    origine: 'Limite de ligne corrigée par l’auteur',
+    corps: (c) => corps_0_22(c),
+    items: [
+      '<b>Quatre CARTES de chaque côté du Plan Large, et non quatre plans.</b> Un Raccord, une Ouverture, un Générique de fin occupent une place sur le banc comme les autres : ils comptent. Ils ne comptaient pas — « un Raccord n’est pas un plan » —, et une ligne s’étirait alors bien au-delà de ses quatre cartes. La limite porte sur la <b>place</b>, pas sur ce qui rapporte des points.',
+      '<b>Le Raccord reste la façon d’étoffer une ligne</b> — derrière lui vient un second Plan Large, qui ouvre son propre côté et repart à zéro —, mais il faut désormais lui <b>garder la place</b> : il ne s’ajoute plus par-dessus une ligne déjà pleine.',
+      'Ce qui se trouve <b>entre deux ancres</b> — le Raccord charnière et ce qu’il relie — n’appartient à aucun des deux côtés : c’est la jointure, et elle est figée, puisqu’on ne pose qu’aux <b>deux bouts</b> d’une ligne.',
+    ],
+  },
   {
     v: '0.21',
     date: '03/09/2026',
@@ -452,6 +463,29 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.22 -----------------------------------------------------------------
+// La limite d'une ligne se compte en CARTES : le Raccord et les Génériques y
+// prennent une place, comme les autres. Ils s'en exemptaient, et une ligne
+// s'étirait alors sans fin.
+
+function corps_0_22(c) {
+  const k = c && c.plansParCote;
+  return corps_0_21(c)
+    .replace(/De part et d'autre du <b>Plan Large<\/b>[\s\S]*?s'étoffe encore\./,
+      `De part et d'autre du <b>Plan Large</b> — ou du Plan de départ — qui tient une ligne, on
+       n'accroche pas plus de ${maj('0.22', `<b>${k} cartes</b>. Un <b>Raccord</b>, une
+       <b>Ouverture</b>, un <b>Générique de fin</b> y comptent : ils occupent une place comme les
+       autres. La limite porte sur la place, pas sur ce qui rapporte des points.`)}`)
+    .replace('<h3>Les Raccords et les Génériques</h3>',
+      `${majBloc('0.22', `<b>Le Raccord reste la façon d'étoffer une ligne</b> — derrière lui vient
+        un second Plan Large, qui ouvre son propre côté et repart à zéro —, mais il faut lui
+        <b>garder la place</b> : il ne s'ajoute plus par-dessus une ligne déjà pleine. Ce qui se
+        trouve <b>entre deux ancres</b> — le Raccord charnière et ce qu'il relie — n'appartient à
+        aucun des deux côtés : c'est la jointure, et elle est figée, puisqu'on ne pose qu'aux deux
+        bouts d'une ligne.`)}
+      <h3>Les Raccords et les Génériques</h3>`);
 }
 
 // --- v0.21 -----------------------------------------------------------------
