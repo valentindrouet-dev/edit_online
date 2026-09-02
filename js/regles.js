@@ -14,13 +14,24 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.89';
-import { elIcon } from './icons.js?v=1.89';
+import { ELEMENTS, ELEMENT_IDS } from './data.js?v=1.90';
+import { elIcon } from './icons.js?v=1.90';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.14.11',
+    date: '02/09/2026',
+    origine: 'Règle précisée par l’auteur',
+    corps: (c) => corps_0_14_11(c),
+    items: [
+      '<b>Ce que coûte une Carte Raccord est la valeur de la carte, pas une ligne du montage.</b> Une Carte Raccord relie sans rien raconter : l’étoffer <b>coûte deux points</b>. Ce coût se lisait dans une ligne du décompte que rien n’annonçait, pendant que l’Ouverture et le Générique de fin portaient, eux, un « 2 × Raccord » bien visible — la même quantité comptée deux fois, une fois en moins sans le dire, une fois en plus en le disant.',
+      '<b>Chaque Carte Raccord affiche donc ce qu’elle vaut</b>, à son coin, comme toute autre carte : <b>−2</b> en rouge d’ordinaire. Il n’y a plus rien de caché à retrancher au décompte.',
+      '<b>Et « Les Raccords vous rapportent +2 » retourne ce signe sur toutes vos Cartes Raccord à la fois.</b> Elles passent de −2 à +2, chacune : sur trois Raccords, le montage passe de −6 à +6, soit <b>douze points</b> d’écart. La carte qui le dit n’ajoute rien elle-même — elle en montre le total à son coin, pour qu’on voie ce que son pouvoir a fait, mais les points sont comptés sur les Raccords. Entre deux cartes qui le disent, <b>la plus généreuse l’emporte</b> ; elles ne se cumulent pas.',
+    ],
+  },
   {
     v: '0.14.10',
     date: '02/09/2026',
@@ -332,6 +343,20 @@ export function maj(v, html) {
 /** Bloc entier modifié : liseré violet et pastille de version. */
 export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
+}
+
+// --- v0.14.11 --------------------------------------------------------------
+// Le coût d'un Raccord quitte la ligne cachée du montage pour devenir la valeur
+// de la carte. Une phrase à réécrire dans le tableau, une note à ajouter.
+
+function corps_0_14_11(c) {
+  const val = c && c.pointsParRaccord !== undefined ? c.pointsParRaccord : -2;
+  return corps_0_14_10(c)
+    .replace(/<td>n points par Carte Raccord de votre montage[^<]*<\/td>/,
+      `<td>${maj('0.14.11', `<b>Chaque Carte Raccord vaut ${val} à qui la pose</b> — elle relie sans
+      rien raconter, et l'étoffer coûte. Cette valeur se lit <b>au coin de la carte</b>, comme celle
+      de tout plan ; ce bandeau la <b>remplace</b> pour toutes vos Cartes Raccord à la fois, et
+      n'ajoute rien de son côté`)}</td>`);
 }
 
 // --- v0.14.10 --------------------------------------------------------------

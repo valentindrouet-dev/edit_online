@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.89';
-export const BUILD_DATE = '2026-09-02 02:10';
+export const VERSION = '1.90';
+export const BUILD_DATE = '2026-09-02 03:05';
 
 export const CHANGELOG = [
+  {
+    v: '1.90',
+    date: '02/09/2026',
+    items: [
+      "<b>Ce que coûte une Carte Raccord devient la valeur de la carte. Règles v0.14.11.</b> Le problème était plus profond que l'affichage : l'Ouverture et le Générique de fin portent, à l'impression, un « <b>2 × Raccord</b> » bien visible — soit +2 par Carte Raccord du montage —, et j'avais ajouté par-dessus un <b>−2 par Carte Raccord</b> qui ne paraissait sur aucune carte. La même quantité était donc comptée deux fois : une fois en moins sans le dire, une fois en plus en le disant. C'est la soustraction contre l'addition.",
+      "<b>Chaque Carte Raccord affiche désormais ce qu'elle vaut, à son coin</b>, comme toute autre carte : <b>−2</b> en rouge. Plus rien de caché à retrancher au décompte, et l'on voit sur la carte ce qu'elle coûte au moment de la poser.",
+      "<b>« Les Raccords vous rapportent +2 » retourne ce signe sur toutes vos Cartes Raccord à la fois.</b> Elles passent de −2 à +2, chacune : sur trois Raccords, le montage passe de −6 à +6, <b>douze points d'écart</b>. La carte qui le dit n'ajoute rien elle-même — elle en montre le <b>total</b> à son coin, pour qu'on voie ce que son pouvoir a fait, mais les points sont comptés sur les Raccords, une seule fois. Entre deux cartes qui le disent, la plus généreuse l'emporte ; elles ne se cumulent pas.",
+    ],
+  },
   {
     v: '1.89',
     date: '02/09/2026',

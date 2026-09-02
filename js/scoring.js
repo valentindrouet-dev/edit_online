@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.89';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_VISABLES, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=1.90';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -497,9 +497,9 @@ export function compter(banc, cfg) {
     SEQ_TAILLE: 0, SEQ_VOISINES: 0, SEQ_LONGUE: 0, SEQ_AVEC: 0, SEQ_TOUTES: 0,
     AILLEURS: 0, CENTRE: 0, LOT: 0, SEUIL: 0, ABSENTES: 0, DOMINE: 0,
     EXTREME: 0, PLAN_ICONES: 0, DOUBLE: 0,
-    // Trois pouvoirs de règle restent à zéro : ils n'ouvrent qu'un droit, et
-    // leur effet se lit dans le moteur. Le quatrième, lui, compte : ce que
-    // valent les Cartes Raccord se pose sur la carte qui le dit.
+    // Les pouvoirs de règle restent à zéro : aucun ne rapporte là où il est
+    // posé. Trois ouvrent un droit, que le moteur lit ; le quatrième dit ce que
+    // valent les Cartes Raccord, et ce sont ELLES qui portent alors les points.
     PIOCHER: 0, SEQ_PLUS: 0, PLAN_PLUS: 0, RACCORD_VAUT: 0,
     CHRONOLOGIE: 0, POSE: 0, JONCTION: 0, COUT_RACCORD: 0,
   };
@@ -523,14 +523,20 @@ export function compter(banc, cfg) {
   // gain pour qui porte le pouvoir qui le retourne. Et quand c'est une carte
   // qui le dit, la ligne lui revient : elle se compte sur elle, comme tout
   // pouvoir se compte sur la carte qui le porte.
+  // Ce que vaut chaque Carte Raccord à qui la pose. C'est la valeur de LA CARTE,
+  // pas un bandeau : une Carte Raccord relie sans rien raconter, et l'étoffer
+  // coûte deux points. Elle ne passe donc pas par `lignes`, qui ne porte que
+  // des bandeaux — elle se compte au total, et s'affiche au coin de chaque
+  // Raccord, là où une joueuse la cherche.
   const rac = sourceRaccord(banc, cfg);
-  const ptsRac = Math.round(montage.filter(estRaccord).length * rac.valeur * mult);
-  if (rac.plan) {
-    detail.RACCORD_VAUT = ptsRac;
-    lignes.push({ sequence: rac.sequence, obj: rac.obj, pts: ptsRac, plan: rac.plan });
-  } else {
-    detail.COUT_RACCORD = montage.filter(estRaccord).length * rac.valeur;
-  }
+  const raccords = montage.filter(estRaccord);
+  detail.COUT_RACCORD = raccords.length * rac.valeur;
+  const valeurCarte = new Map();
+  for (const r of raccords) valeurCarte.set(r, (valeurCarte.get(r) || 0) + rac.valeur);
+  // Et la carte qui DIT cette valeur en montre le total — sans le rajouter :
+  // les points sont déjà comptés sur les Raccords eux-mêmes. C'est un écho,
+  // pas une seconde source.
+  const echoRaccord = rac.plan ? { plan: rac.plan, obj: rac.obj, pts: detail.COUT_RACCORD } : null;
   const jr = jonctionsRaccordees(banc, cfg);
   detail.JONCTION = jr * (cfg.raccordElementPoints || 0);
   const ch = chrono(banc, cfg);
@@ -548,7 +554,12 @@ export function compter(banc, cfg) {
     plans: montage.filter((p) => !estRaccord(p)).length,
     cartes: montage.length,
     sequences: banc.sequences.length,
-    cartesRaccord: montage.filter(estRaccord).length,
+    cartesRaccord: raccords.length,
+    // Ce que chaque carte vaut en dehors de ses bandeaux, et l'écho du total
+    // sur la carte qui le dicte. L'affichage s'en sert pour les compteurs ;
+    // le total, lui, est déjà dans `detail`.
+    valeurCarte,
+    echoRaccord,
     plusLongue: banc.sequences.reduce((m, s) => Math.max(m, s.length), 0),
     jonctions: jr,
     chronoOrdre: ch.ordre,

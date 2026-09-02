@@ -13,8 +13,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.89';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.89';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=1.90';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=1.90';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -441,12 +441,15 @@ function bandeau(objs, format, cfg) {
  * que sur un banc de montage : c'est ce que cette carte-là rapporte, ici et
  * maintenant.
  */
-function donneesApercu(h, label, points, detail) {
+function donneesApercu(h, label, points, detail, valeurCarte) {
   return encodeURIComponent(JSON.stringify({
     tc: h.tc, el: h.el, objs: objsDe(h), format: h.format,
     num: h.num, label, transition: h.transition || null,
     mort: !!h.mort,
     points: points === undefined ? null : points,
+    // Ce que la carte vaut par elle-même, hors bandeau : une Carte Raccord
+    // coûte — ou rapporte — sans qu'aucun bandeau ne le dise.
+    valeurCarte: valeurCarte === undefined ? null : valeurCarte,
     // Ce que chaque bandeau rapporte séparément : l'infobulle montre le calcul
     // plutôt qu'un total à croire sur parole.
     objsPts: detail || null,
@@ -495,7 +498,8 @@ export function renderPlan(h, opts = {}) {
         title="Ce que ce plan rapporte">${opts.points}</div>`;
   // `muet` : un plan qui n'est pas vraiment sur la table — un aperçu de pose —
   // n'ouvre pas d'infobulle et ne se donne pas pour une carte du banc.
-  const bulle = opts.muet ? '' : ` data-apercu="${donneesApercu(h, label, opts.points, opts.detail)}"`;
+  const bulle = opts.muet ? ''
+    : ` data-apercu="${donneesApercu(h, label, opts.points, opts.detail, opts.valeurCarte)}"`;
   return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"${bulle}>
     ${jeton}
     <div class="illus"${h.cle ? ` data-illus="${h.cle}"` : ''}>
