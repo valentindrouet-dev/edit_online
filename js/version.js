@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.2';
+export const VERSION = '2.3';
 export const BUILD_DATE = '2026-09-03 03:40';
 
 export const CHANGELOG = [
+  {
+    v: '2.3',
+    date: '03/09/2026',
+    items: [
+      "<b>Variante — un Raccord resté OUVERT coûte 2 points au lieu d'en rapporter. Règles v0.23.</b> Un Raccord promet une suite : il fait charnière au bout d'une ligne, et un <b>Plan Large</b> vient de l'autre côté ouvrir un second versant. Tant qu'il n'est pas venu, il ne raccorde rien — il pend. Son « x × Raccord » vaut alors <b>−2</b>, à plat. C'est ce qui décourage la stratégie qui consistait à poser des Raccords partout sans jamais les fermer : chacun comptait tous les autres, et rien n'obligeait à leur donner leur suite.",
+      "<b>Fermé</b> veut dire : ses <b>deux bords portent une carte</b>, et un <b>Plan Large</b> — ou le Plan de départ, qui en tient lieu — se trouve de l'un des deux côtés. Un bord qui donne sur le vide, ou deux plans ordinaires de part et d'autre, et le Raccord est ouvert. Le jeton de points passe alors au <b>rouge</b> plutôt qu'au vert, et une carte qui bonifie les Raccords ne le rattrape pas — le malus est à plat, il remplace tout.",
+      "La variante s'éteint et se règle dans <b>Variables</b> ⚙, sous « <b>Ce que vaut un Raccord resté ouvert</b> » : à <b>0</b>, un Raccord ouvert rapporte de nouveau comme un autre.",
+      "<b>Une ligne n'a qu'UN centre</b>, et c'est le <b>premier plan</b> qu'on y a posé. La v2.2 comptait les quatre cartes depuis le premier Plan Large à gauche et le dernier à droite : un second Plan Large, venu par une charnière de Raccord, ouvrait alors un compte tout neuf et l'on repartait pour quatre — six cartes d'un même côté du Plan de départ. Le centre est désormais l'<b>ancre</b> de la ligne, celle-là même que lit le pouvoir « d'un côté du centre de sa ligne » : une seule notion de centre dans tout le jeu. Un second Plan Large prend donc une place comme les autres cartes de son côté.",
+    ],
+  },
   {
     v: '2.2',
     date: '03/09/2026',

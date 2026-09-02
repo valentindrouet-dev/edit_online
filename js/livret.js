@@ -16,9 +16,9 @@
 import {
   FORMATS, ELEMENTS, ELEMENT_IDS, PORTEES, OBJ, objLabel, PAIRES_DEPART, PLANS_DEPART,
   buildCartesDoubles, buildPlansLarges, buildDeparts, SCENES, recenserBoite,
-} from './data.js?v=2.2';
-import { elIcon } from './icons.js?v=2.2';
-import { objHTML } from './cards.js?v=2.2';
+} from './data.js?v=2.3';
+import { elIcon } from './icons.js?v=2.3';
+import { objHTML } from './cards.js?v=2.3';
 
 // --- Les briques de mise en page -------------------------------------------
 
@@ -212,16 +212,18 @@ export function livret(cfg) {
         peuvent jamais se toucher.</li>
       <li>Les <b>Plans Moyens</b> et les <b>Gros Plans</b> s’accrochent aux <b>deux bouts</b> d’une
         ligne, de part et d’autre de son Plan Large.</li>
-      ${parCote > 0 ? `<li>De chaque côté du Plan Large qui tient la ligne, on n’accroche pas plus de
-        <b>${parCote} cartes</b> — <b>Raccords et Génériques compris</b> : ils prennent une place
-        comme les autres. Une ligne s’étoffe, elle ne s’étire pas.</li>` : ''}
+      ${parCote > 0 ? `<li>Le <b>centre</b> d’une ligne est le <b>premier plan</b> qu’on y a posé —
+        le Plan Large, ou le Plan de départ — et il n’y en a <b>qu’un</b>. De chaque côté de lui, on
+        n’accroche pas plus de <b>${parCote} cartes</b>, <b>Raccords et Génériques compris</b> : ils
+        prennent une place comme les autres. Une ligne s’étoffe, elle ne s’étire pas.</li>` : ''}
       ${seqMax > 0 ? `<li>Un banc ne porte que <b>${seqMax} lignes</b>. Une nouvelle séquence se pose
         au-dessus ou en dessous des autres, <b>jamais entre deux</b>.</li>` : ''}
       <li>Une <b>Carte Raccord</b> n’est pas un plan : elle ne compte pas dans les ${tours} plans qui
         arrêtent la partie. Elle occupe en revanche une <b>place</b> sur la ligne, comme toute carte.
         Posée au bout d’une ligne, elle y fait <b>charnière</b> — un second Plan Large peut alors se
-        poser de l’autre côté d’elle, et ce Plan Large ouvre <b>son propre côté</b>, avec ses
-        ${parCote > 0 ? `${parCote} cartes` : 'cartes'} à lui.</li>
+        poser de l’autre côté d’elle. Ce second Plan Large ne devient pas un second centre : il est
+        du côté du premier, et prend une place${parCote > 0 ? ` parmi les ${parCote}` : ''} comme
+        toute carte.</li>
       <li><b>Deux Raccords ne se touchent pas</b>, et le <b>bord libre d’un Raccord n’accepte qu’un
         Plan Large</b> — jamais un Plan Moyen ni un Gros Plan. C’est là tout l’office du Raccord :
         il ouvre un second côté, et ce côté commence par son propre climax.</li>
@@ -235,10 +237,17 @@ export function livret(cfg) {
     ${encart('Le Raccord, la seule façon d’étoffer', `Un <b>Raccord</b> posé au bout d’une ligne
       appelle derrière lui un nouveau <b>Plan Large</b>, qui ouvre un second côté et repart à zéro.
       C’est par là qu’une séquence gagne en ampleur sans ouvrir une ligne de plus — mais il faut
-      lui <b>garder la place</b> : le Raccord occupe l’une des cartes du côté, il ne s’ajoute pas
-      par-dessus une ligne déjà pleine.
+      lui <b>garder la place</b> : le Raccord et le Plan Large qui le suit occupent chacun l’une des
+      cartes du côté, ils ne s’ajoutent pas par-dessus une ligne déjà pleine.
       Poser un Raccord, c’est donc <b>appeler un Plan Large</b> : rien d’autre ne s’accrochera à son
       bord libre.`)}
+    ${c.raccordOuvertMalus ? encart('Un Raccord qu’on n’a pas fermé',
+    `Un Raccord promet une suite. Tant que le <b>Plan Large</b> n’est pas venu à son bord libre, il
+      ne raccorde rien — il pend. Son « <b>x × Raccord</b> » vaut alors
+      <b>${c.raccordOuvertMalus}</b>, à plat, quel que soit le nombre imprimé dessus et quoi qu’en
+      dise une carte qui bonifie les Raccords. Un Raccord est <b>fermé</b> quand ses deux bords
+      portent une carte et qu’un Plan Large — ou le Plan de départ — se trouve de l’un des deux
+      côtés.`, 'attention') : ''}
   `)}
 
   ${section('Fin de la partie', `

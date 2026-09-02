@@ -7,8 +7,8 @@
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, sceneDe, faceJouee,
   TC_VIDE, TC_PREMIER, TC_DERNIER,
-} from './data.js?v=2.2';
-import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=2.2';
+} from './data.js?v=2.3';
+import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=2.3';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -493,9 +493,25 @@ function toursDus(state, i) {
 }
 
 /**
- * Combien de **cartes** une ligne porte d'un côté de son **ancre** — le Plan
- * Large ou le Plan de départ qui la tient. À gauche, ce sont les cartes posées
- * avant la première ancre ; à droite, celles posées après la dernière.
+ * Le **centre** d'une ligne : le premier plan qu'on y a posé, celui qui l'a
+ * ouverte. C'est lui l'**ancre** — un Plan Large, ou le Plan de départ —, et la
+ * ligne s'aligne sur lui. Il n'y en a **qu'un par ligne**, quel que soit le
+ * nombre de Plans Larges qu'elle finit par porter : un second Plan Large venu
+ * par une charnière de Raccord n'ouvre pas un second centre, il s'ajoute d'un
+ * côté du premier.
+ *
+ * C'est la même ancre que lit le pouvoir « d'un côté du centre de sa ligne » —
+ * une seule notion de centre dans tout le jeu. Faute de marque, on retombe sur
+ * le premier Plan Large de la ligne : un banc chargé d'une version ancienne,
+ * ou monté à la main dans le bac à sable, reste lisible.
+ */
+function centreDe(seq) {
+  const marque = seq.findIndex((p) => p.ancre);
+  return marque >= 0 ? marque : seq.findIndex((p) => estPL(p) || p.depart);
+}
+
+/**
+ * Combien de **cartes** une ligne porte d'un côté de son centre.
  *
  * **Tout compte.** Un Raccord, une Ouverture, un Générique de fin occupent une
  * place sur le banc comme les autres : ce sont des cartes. Ils ne comptaient
@@ -503,17 +519,18 @@ function toursDus(state, i) {
  * bien au-delà de ses quatre cartes de chaque côté. La limite porte sur la
  * PLACE, pas sur ce qui rapporte des points.
  *
- * Ce qui se trouve **entre deux ancres** — le Raccord charnière et ce qu'il
- * relie — n'est d'aucun des deux côtés : c'est la jointure, et elle est figée,
- * puisqu'on ne pose qu'aux deux bouts d'une ligne.
+ * Et l'on compte de part et d'autre du **seul** centre. Compter depuis le
+ * premier Plan Large à gauche et le dernier à droite laissait une ligne pousser
+ * de six cartes d'un côté : le second Plan Large, venu par un Raccord, ouvrait
+ * un compte tout neuf et l'on repartait pour quatre.
  *
- * Une ligne sans ancre — cela n'arrive qu'en mode Classique, où les séquences
+ * Une ligne sans centre — cela n'arrive qu'en mode Classique, où les séquences
  * ne sont pas tenues par un Plan Large — n'est bornée par rien.
  */
 export function plansDuCote(seq, cote) {
-  const ancres = seq.map((p, i) => (estPL(p) || p.depart ? i : -1)).filter((i) => i >= 0);
-  if (!ancres.length) return 0;
-  return cote === 'gauche' ? ancres[0] : seq.length - 1 - ancres[ancres.length - 1];
+  const c = centreDe(seq);
+  if (c < 0) return 0;
+  return cote === 'gauche' ? c : seq.length - 1 - c;
 }
 
 /**
@@ -739,8 +756,10 @@ export function coupsPossibles(state, p, hypothese) {
               cote === 'gauche' && si === 0, cote === 'droite' && si === dernier)) continue;
             const voisin = cote === 'gauche' ? seq[0] : seq[seq.length - 1];
             if (!voisin || voisin.transition !== 'RACCORD') continue;
-            // Un second Plan Large devient l'ancre de son propre côté : il ne
-            // s'ajoute pas aux plans de l'ancre d'en face, il en ouvre un autre.
+            // Un second Plan Large ne fonde pas un second centre : il vient
+            // s'ajouter d'un côté du seul centre de la ligne, et prend une
+            // place comme les autres cartes de ce côté-là.
+            if (!placeDuCote(cfg, seq, cote)) continue;
             out.push({ carte, format, action: 'ETENDRE', seq: si, cote });
           }
         });

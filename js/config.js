@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=2.2';
+import { ELEMENT_IDS } from './data.js?v=2.3';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -76,6 +76,13 @@ export const DEFAULTS = {
   // d'elle, si bien qu'une ligne porte deux Plans Larges, ou plus. À false,
   // elle redevient un plan ordinaire — variante hors règles.
   raccordConnecte: true,
+  // Variante — un Raccord resté OUVERT coûte au lieu de rapporter. Un Raccord
+  // promet une suite : il fait charnière au bout d'une ligne, et un Plan Large
+  // vient de l'autre côté ouvrir un second versant. Tant qu'il n'est pas venu,
+  // le Raccord ne raccorde rien — il pend. Son « x × Raccord » vaut alors ce
+  // malus, à plat. Sans lui, poser des Raccords partout sans jamais les fermer
+  // était la stratégie la plus payante du jeu. 0 = variante éteinte.
+  raccordOuvertMalus: -2,
   generiqueBloque: true,     // rien avant l'Ouverture, rien après les Crédits
   // Le plan à 01:00 est le PREMIER plan du film, celui à 99:00 le DERNIER :
   // rien ne se joue avant l'un, rien après l'autre. La règle se lit sur le
@@ -342,6 +349,10 @@ export const SCHEMA = [
       aide: 'en lignes, elle fait charnière : un Plan Large se pose de l’autre côté d’elle, '
         + 'dans la même ligne. Sur une seule bande, elle se pose entre deux séquences et les '
         + 'raccorde. Sinon, c’est un plan ordinaire' },
+    { k: 'raccordOuvertMalus', l: 'Ce que vaut un Raccord resté ouvert', t: 'int', min: -20, max: 0,
+      aide: 'variante — un Raccord qui n’a pas de Plan Large à côté de lui, ou dont un bord donne '
+        + 'sur le vide, ne raccorde rien : son « x × Raccord » vaut ce malus, à plat. 0 = variante '
+        + 'éteinte, un Raccord ouvert rapporte comme un autre' },
     { k: 'generiqueBloque', l: 'Le Générique ferme le montage', t: 'bool' },
     { k: 'bornesBloquent', l: 'Le minutage 01:00 / 99:00 ferme le montage', t: 'bool',
       aide: 'le plan à 01:00 est le premier plan du film, celui à 99:00 le dernier : on ne joue '

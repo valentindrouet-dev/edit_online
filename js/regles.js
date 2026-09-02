@@ -14,13 +14,25 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=2.2';
-import { elIcon } from './icons.js?v=2.2';
+import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=2.3';
+import { elIcon } from './icons.js?v=2.3';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.23',
+    date: '03/09/2026',
+    origine: 'Variante proposee par l’auteur',
+    corps: (c) => corps_0_23(c),
+    items: [
+      '<b>Variante — un Raccord resté OUVERT coûte au lieu de rapporter.</b> Un Raccord promet une suite : il fait charnière au bout d’une ligne, et un <b>Plan Large</b> vient de l’autre côté ouvrir un second versant. Tant qu’il n’est pas venu, le Raccord ne raccorde rien — il pend. Son « x × Raccord » vaut alors <b>−2</b>, à plat.',
+      '<b>Ce qu’elle empêche :</b> poser des Raccords partout sans jamais les fermer. Chacun comptait tous les autres — trois Raccords à « 2 × Raccord » faisaient dix-huit points — et rien n’obligeait à leur donner la suite qu’ils annoncent.',
+      'Un Raccord est <b>fermé</b> quand ses <b>deux bords portent une carte</b> et qu’un <b>Plan Large</b> — ou le Plan de départ, qui en tient lieu — se trouve de l’un des deux côtés. Un bord qui donne sur le vide, ou deux plans ordinaires de part et d’autre, et il est ouvert.',
+      'Le malus est <b>à plat</b> : il ne se multiplie pas par le nombre de Raccords du montage, et une carte qui dit « les cartes Raccord vous rapportent +y par Raccord » ne le rattrape pas. Le jeton de points passe au <b>rouge</b> plutôt qu’au vert. Réglable dans <b>Variables</b> ⚙ — zéro éteint la variante.',
+    ],
+  },
   {
     v: '0.22',
     date: '03/09/2026',
@@ -29,7 +41,7 @@ export const REGLES_HISTORIQUE = [
     items: [
       '<b>Quatre CARTES de chaque côté du Plan Large, et non quatre plans.</b> Un Raccord, une Ouverture, un Générique de fin occupent une place sur le banc comme les autres : ils comptent. Ils ne comptaient pas — « un Raccord n’est pas un plan » —, et une ligne s’étirait alors bien au-delà de ses quatre cartes. La limite porte sur la <b>place</b>, pas sur ce qui rapporte des points.',
       '<b>Le Raccord reste la façon d’étoffer une ligne</b> — derrière lui vient un second Plan Large, qui ouvre son propre côté et repart à zéro —, mais il faut désormais lui <b>garder la place</b> : il ne s’ajoute plus par-dessus une ligne déjà pleine.',
-      'Ce qui se trouve <b>entre deux ancres</b> — le Raccord charnière et ce qu’il relie — n’appartient à aucun des deux côtés : c’est la jointure, et elle est figée, puisqu’on ne pose qu’aux <b>deux bouts</b> d’une ligne.',
+      '<b>Une ligne n’a qu’un centre</b> : le <b>premier plan</b> qu’on y a posé — le Plan Large ou le Plan de départ qui l’a ouverte. Un second Plan Large venu par une charnière de Raccord ne fonde pas un second centre : il vient d’un côté du premier, et prend une place comme les autres cartes de ce côté-là. C’est le même centre que lit le pouvoir « d’un côté du centre de sa ligne » — une seule notion de centre dans tout le jeu.',
     ],
   },
   {
@@ -465,6 +477,26 @@ export function majBloc(v, html) {
   return `<div class="regle-maj-bloc" data-v="v${v}">${html}</div>`;
 }
 
+// --- v0.23 -----------------------------------------------------------------
+// Variante : un Raccord qu'on n'a pas ferme ne raccorde rien, et coute.
+
+function corps_0_23(c) {
+  const m = c && c.raccordOuvertMalus;
+  return corps_0_22(c)
+    .replace('<h3>Le minutage</h3>', `${majBloc('0.23', m
+    ? `<b>Variante — un Raccord resté OUVERT coûte au lieu de rapporter.</b> Un Raccord promet
+       une suite : il fait charnière au bout d'une ligne, et un <b>Plan Large</b> vient de l'autre
+       côté ouvrir un second versant. Tant qu'il n'est pas venu, le Raccord ne raccorde rien — il
+       pend, et son « x × Raccord » vaut <b>${m}</b>, à plat.
+       <br><br>Il est <b>fermé</b> quand ses <b>deux bords portent une carte</b> et qu'un Plan Large
+       — ou le Plan de départ, qui en tient lieu — se trouve de l'un des deux côtés. Le malus ne
+       se multiplie pas par le nombre de Raccords, et une carte qui bonifie les Raccords ne le
+       rattrape pas.`
+    : `Ici, un Raccord resté <b>ouvert</b> rapporte comme un autre : la variante est éteinte
+       (réglable dans <b>Variables</b> ⚙).`)}
+      <h3>Le minutage</h3>`);
+}
+
 // --- v0.22 -----------------------------------------------------------------
 // La limite d'une ligne se compte en CARTES : le Raccord et les Génériques y
 // prennent une place, comme les autres. Ils s'en exemptaient, et une ligne
@@ -480,11 +512,12 @@ function corps_0_22(c) {
        autres. La limite porte sur la place, pas sur ce qui rapporte des points.`)}`)
     .replace('<h3>Les Raccords et les Génériques</h3>',
       `${majBloc('0.22', `<b>Le Raccord reste la façon d'étoffer une ligne</b> — derrière lui vient
-        un second Plan Large, qui ouvre son propre côté et repart à zéro —, mais il faut lui
-        <b>garder la place</b> : il ne s'ajoute plus par-dessus une ligne déjà pleine. Ce qui se
-        trouve <b>entre deux ancres</b> — le Raccord charnière et ce qu'il relie — n'appartient à
-        aucun des deux côtés : c'est la jointure, et elle est figée, puisqu'on ne pose qu'aux deux
-        bouts d'une ligne.`)}
+        un second Plan Large, qui ouvre un second versant —, mais il faut lui <b>garder la
+        place</b> : il ne s'ajoute plus par-dessus une ligne déjà pleine.
+        <br><br>Une ligne n'a d'ailleurs <b>qu'un centre</b> : le <b>premier plan</b> qu'on y a
+        posé, celui qui l'a ouverte. Un second Plan Large ne fonde pas un second centre — il vient
+        d'un côté du premier, et prend une place comme les autres cartes de ce côté-là. C'est le
+        même centre que lit le pouvoir « d'un côté du centre de sa ligne ».`)}
       <h3>Les Raccords et les Génériques</h3>`);
 }
 

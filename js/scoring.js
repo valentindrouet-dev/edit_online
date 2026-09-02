@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=2.2';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=2.3';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -247,6 +247,11 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
 
   switch (obj.kind) {
     case 'RACCORD':
+      // Variante — un Raccord resté OUVERT ne rapporte plus, il coûte. Poser
+      // des Raccords partout sans jamais les fermer était devenu la stratégie
+      // la plus payante du jeu : chacun comptait tous les autres, et rien
+      // n'obligeait à leur donner la suite qu'ils promettent.
+      if (raccordOuvert(porteur, banc, cfg)) return cfg.raccordOuvertMalus;
       return n * portee.filter(estRaccord).length;
     case 'PLAN':
       return n * portee.length;
@@ -518,6 +523,34 @@ export function estRaccordSimple(p) {
   return !!p && p.transition === 'RACCORD';
 }
 
+/** Ce qui tient une ligne : un Plan Large, ou le Plan de départ qui en fait office. */
+const estAncre = (p) => !!p && !p.transition && (p.format === 'PL' || !!p.depart);
+
+/**
+ * Variante — cette Carte Raccord est-elle restée **ouverte** ?
+ *
+ * Un Raccord promet une suite : posé au bout d'une ligne il y fait charnière, et
+ * un **Plan Large** vient de l'autre côté ouvrir un second versant. Tant que ce
+ * Plan Large n'est pas venu, le Raccord ne raccorde rien — il pend.
+ *
+ * Il est donc **fermé** quand ses deux bords portent une carte et qu'un Plan
+ * Large — ou un Plan de départ, qui en tient lieu — se trouve de l'un des deux
+ * côtés. Sinon il est ouvert, et son « x × Raccord » devient un coût.
+ *
+ * Sans cette variante — `raccordOuvertMalus` à zéro —, aucun Raccord n'est
+ * jamais ouvert : la question ne se pose pas.
+ */
+export function raccordOuvert(plan, banc, cfg) {
+  if (!cfg || !cfg.raccordOuvertMalus) return false;
+  if (!estRaccordSimple(plan) || !banc) return false;
+  const seq = ligneDe(banc, plan);
+  if (!seq) return false;
+  const i = seq.indexOf(plan);
+  const g = seq[i - 1]; const d = seq[i + 1];
+  if (!g || !d) return true;                   // un bord dans le vide
+  return !estAncre(g) && !estAncre(d);         // ou personne à qui mener
+}
+
 /**
  * De combien le montage bonifie ses Cartes Raccord — la somme des
  * « Les cartes Raccord vous rapportent +n par Raccord » qu'il porte.
@@ -563,6 +596,10 @@ function estCompteDeRaccord(o) {
 export function objsEffectifs(plan, banc, cfg) {
   const objs = objsDe(plan);
   if (!estRaccordSimple(plan) || !objs.some(estCompteDeRaccord)) return objs;
+  // Un Raccord resté ouvert ne rapporte rien à bonifier : son bandeau vaut le
+  // malus, quel que soit son nombre. Le bonifier afficherait un chiffre qui ne
+  // se compte nulle part.
+  if (raccordOuvert(plan, banc, cfg)) return objs;
   const bonus = bonusRaccord(banc, cfg);
   if (!bonus) return objs;
   return objs.map((o) => (estCompteDeRaccord(o) ? { ...o, n: o.n + bonus } : o));
@@ -575,6 +612,7 @@ export function objsEffectifs(plan, banc, cfg) {
  */
 export function raccordBonifie(plan, banc, cfg) {
   return estRaccordSimple(plan) && objsDe(plan).some(estCompteDeRaccord)
+    && !raccordOuvert(plan, banc, cfg)
     && bonusRaccord(banc, cfg) !== 0;
 }
 
