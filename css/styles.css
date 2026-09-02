@@ -2080,8 +2080,50 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 
 /* Les blocs de glossaire n'ont pas la même hauteur : une grille laisserait un
    trou sous les plus courts. Ils COULENT donc en colonnes, et se remplissent. */
-.aj-fiche { columns: 3 280px; column-gap: 14px; margin-bottom: 14px; }
-.aj-fiche .aj-bloc { break-inside: avoid; margin-bottom: 14px; }
+/* Deux colonnes, et le contenu de chacune est CHOISI — les icônes avec les
+   cadrages, le minutage avec les mots-clés. Un flux libre les aurait réparties
+   au gré des hauteurs, et deux blocs qui se répondent se seraient retrouvés
+   éloignés. */
+.aj-fiche {
+  display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  align-items: start; margin-bottom: 14px;
+}
+.aj-colonne { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+/* Le dos de carte qui coiffe la colonne des comptes, calé sur la même largeur
+   qu'eux : le symbole tombe pile au-dessus des chiffres. */
+.lv-entete {
+  display: flex; justify-content: flex-end; padding-bottom: 4px;
+  color: var(--gris); line-height: 0;
+}
+.lv-entete .lv-n { min-width: 2.6em; display: flex; justify-content: flex-end; }
+
+/* --- Retoucher les textes ------------------------------------------------- */
+/* La barre au-dessus du livret : elle ne prend de la place que quand on s'en
+   sert, et reste discrète le reste du temps. */
+.barre-retouche {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 14px; padding: 8px 12px; border-radius: var(--r-s);
+  background: #fff; border: 1px dashed var(--gris-clair);
+}
+.barre-retouche.ouverte { border-color: var(--violet-clair); background: var(--violet-pale); }
+.barre-retouche .pill.on { background: var(--violet); color: #fff; border-color: var(--violet); }
+.barre-retouche .pill.danger { color: #b91c1c; border-color: #f0c6c6; }
+.barre-retouche .aide { font-size: .84rem; }
+
+/* Un passage ouvert à la retouche : un liseré qui dit « on peut écrire ici »,
+   sans repeindre la page. Le curseur fait le reste. */
+.retouchable {
+  outline: 1px dashed var(--violet-clair); outline-offset: 3px; border-radius: 3px;
+}
+.retouchable:focus { outline: 2px solid var(--violet); background: #fff; }
+/* Un passage EFFECTIVEMENT retouché se voit, même la retouche refermée : c'est
+   ce qui reste à graver dans le code. */
+.retouche { box-shadow: inset 3px 0 0 var(--orange); padding-left: 8px; }
+
+/* Les deux écritures d'un mot font DEUX cartouches — c'est ce qui est imprimé :
+   aucune carte ne porte « PLAN LARGE / PL » dans une seule étiquette. */
+.lv-paire-tag { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 /* Les bandeaux, eux, sont longs à lire : une seule colonne, pleine largeur. */
 .aj-bandeaux { display: flex; flex-direction: column; gap: 14px; }
 .aj-bloc {

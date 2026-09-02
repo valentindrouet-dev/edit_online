@@ -1,8 +1,20 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '1.98';
-export const BUILD_DATE = '2026-09-02 21:30';
+export const VERSION = '1.99';
+export const BUILD_DATE = '2026-09-03 00:20';
 
 export const CHANGELOG = [
+  {
+    v: '1.99',
+    date: '03/09/2026',
+    items: [
+      "<b>Le livret et l'aide se retouchent à même la page.</b> Un bouton <b>« ✎ Modifier les textes »</b> ouvre chaque paragraphe, chaque titre, chaque ligne de glossaire à l'écriture — 57 passages dans le livret, 70 dans l'aide. On clique dedans, on écrit. Les retouches restent sur l'appareil et survivent au rechargement ; un liseré orange marque les passages changés, même une fois la retouche refermée.",
+      "<b>Et elles se recopient d'un bouton</b> : « ⧉ Copier mes retouches » met dans le presse-papier un rapport <b>AVANT / APRÈS</b> passage par passage — de quoi me l'envoyer pour que je le grave dans le code. Si le presse-papier est refusé, le rapport part en fichier. « ↺ Tout remettre » rend les textes du code.",
+      "Ce qui est retenu n'est pas la page mais un couple <b>texte d'origine → texte retouché</b>, rangé sous l'empreinte de l'original. Trois conséquences voulues : le livret continue de suivre le modèle partout où l'on n'a rien touché ; une retouche survit à un déplacement de section ; et le jour où la correction est <b>gravée dans le code</b>, l'original change, l'empreinte ne correspond plus, et la retouche s'efface d'elle-même — pas de doublon à nettoyer.",
+      "<b>Un dos de carte coiffe la colonne des comptes</b> dans l'aide de jeu : un chiffre nu ne disait pas ce qu'il comptait, et le répéter à chaque ligne aurait alourdi la fiche.",
+      "<b>Les deux écritures d'un mot font deux cartouches.</b> « PLAN LARGE / PL » écrit dans une seule étiquette n'existe sur aucune carte : ce sont bien <b>deux</b> cartouches distincts, et l'aide les pose désormais côte à côte — pour les cadrages comme pour SÉQUENCE, ICÔNE et VALEUR DE CADRE.",
+      "<b>La fiche tient en deux colonnes choisies</b> : les icônes avec les cadrages, le minutage avec les mots-clés et les portées. Un flux libre les répartissait au gré des hauteurs, et deux blocs qui se répondent se retrouvaient éloignés. Le bloc « Les mots des bandeaux » s'appelle maintenant <b>« Les mots-clés »</b>.",
+    ],
+  },
   {
     v: '1.98',
     date: '02/09/2026',

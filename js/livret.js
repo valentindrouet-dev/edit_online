@@ -16,9 +16,9 @@
 import {
   FORMATS, ELEMENTS, ELEMENT_IDS, PORTEES, OBJ, objLabel, PAIRES_DEPART, PLANS_DEPART,
   buildCartesDoubles, buildPlansLarges, buildDeparts, SCENES, recenserBoite,
-} from './data.js?v=1.98';
-import { elIcon } from './icons.js?v=1.98';
-import { objHTML } from './cards.js?v=1.98';
+} from './data.js?v=1.99';
+import { elIcon } from './icons.js?v=1.99';
+import { objHTML } from './cards.js?v=1.99';
 
 // --- Les briques de mise en page -------------------------------------------
 
@@ -53,11 +53,30 @@ const ligne = (symbole, texte, cls = '', n) => `<div class="lv-ligne ${cls}">
 
 /**
  * Les deux écritures d'un même mot, telles qu'elles paraissent sur les cartes :
- * la longue quand la place le permet, la courte sur un Gros Plan. L'aide montre
- * les deux — c'est l'une OU l'autre qu'on aura sous les yeux.
+ * la longue quand la place le permet, la courte sur un Gros Plan.
+ *
+ * **Deux cartouches, jamais un seul.** « PLAN LARGE / PL » écrit dans une même
+ * étiquette n'existe sur aucune carte : ce sont deux cartouches distincts, et
+ * l'aide doit montrer ce qui est imprimé. On les pose donc côte à côte.
  */
-const deuxEcritures = (long, court) => (long === court ? long
-  : `${long}<span class="lv-ou">/</span>${court}`);
+const deuxCartouches = (dessine, long, court) => (long === court ? dessine(long)
+  : `<span class="lv-paire-tag">${dessine(long)}${dessine(court)}</span>`);
+
+/**
+ * Le petit dos de carte qui coiffe la colonne des comptes. Un chiffre nu ne dit
+ * pas ce qu'il compte ; ce symbole-là le dit une fois par bloc, sans répéter
+ * « cartes » à chaque ligne.
+ */
+const ENTETE_CARTES = `<div class="lv-entete">
+  <div class="lv-n" title="Combien de cartes de la boîte">
+    <svg viewBox="0 0 20 24" width="15" height="18" aria-label="cartes" role="img">
+      <rect x="4.5" y="1.5" width="14" height="19" rx="2.5" fill="none"
+        stroke="currentColor" stroke-width="1.6" opacity=".45"/>
+      <rect x="1.5" y="3.5" width="14" height="19" rx="2.5" fill="#fff"
+        stroke="currentColor" stroke-width="1.6"/>
+    </svg>
+  </div>
+</div>`;
 
 /** Un cartouche de cadrage, tel qu'il paraît sur un bandeau. */
 const cadre = (f) => `<span class="tag tag-fmt" style="--c:${FORMATS[f].color}">${FORMATS[f].label}</span>`;
@@ -267,7 +286,11 @@ export function aideDeJeu(cfg) {
   // plans ».
   const B = recenserBoite(c);
   const g = (o) => pouvoir(o, c, B.kinds[o.kind] || 0);
-  const tag = (cls, long, court) => `<span class="tag ${cls}">${deuxEcritures(long, court)}</span>`;
+  const tag = (cls, long, court) => deuxCartouches(
+    (t) => `<span class="tag ${cls}">${t}</span>`, long, court);
+  const tagFmt = (f) => deuxCartouches(
+    (t) => `<span class="tag tag-fmt" style="--c:${FORMATS[f].color}">${t}</span>`,
+    FORMATS[f].label, FORMATS[f].short);
 
   return `<article class="aide-jeu">
   <header class="aj-hero"><h2>Aide de jeu</h2>
@@ -280,8 +303,11 @@ export function aideDeJeu(cfg) {
 
   <div class="aj-fiche">
 
+    <div class="aj-colonne">
+
     <div class="aj-bloc">
       <h3>Les icônes</h3>
+      ${ENTETE_CARTES}
       ${ELEMENT_IDS.map((e) => ligne(elIcon(e, 38), ELEMENTS[e].label, '', B.icones[e] || 0)).join('')}
       ${ligne(elIcon('MORT', 38), 'Plan de mort — une icône comme une autre, qui se compte',
     '', B.icones.MORT || 0)}
@@ -289,9 +315,8 @@ export function aideDeJeu(cfg) {
 
     <div class="aj-bloc">
       <h3>Les cadrages</h3>
-      ${['PL', 'PM', 'GP', 'DEP'].map((f) => ligne(
-    `<span class="tag tag-fmt" style="--c:${FORMATS[f].color}">${
-      deuxEcritures(FORMATS[f].label, FORMATS[f].short)}</span>`,
+      ${ENTETE_CARTES}
+      ${['PL', 'PM', 'GP', 'DEP'].map((f) => ligne(tagFmt(f),
     FORMATS[f].label, '', B.cadrages[f] || 0)).join('')}
       ${ligne(tag('tag-gris', 'Raccord', 'Raccord'),
     'Carte Raccord — elle relie sans rien raconter. Ni plan, ni cadrage', '', B.raccord)}
@@ -299,8 +324,13 @@ export function aideDeJeu(cfg) {
     'Un cadrage <b>différent</b> : trois Gros Plans n’en font qu’une', '', B.cibles.VALEUR || 0)}
     </div>
 
+    </div>
+
+    <div class="aj-colonne">
+
     <div class="aj-bloc">
       <h3>Le minutage</h3>
+      ${ENTETE_CARTES}
       ${ligne('<span class="lv-tc-r">30:00</span>', 'Un instant du film', '', B.tc.ORDINAIRE || 0)}
       ${ligne('<span class="lv-tc-b">--:--</span>',
     'Pas de minutage : la carte se pose où l’on veut, et ne rompt jamais l’ordre',
@@ -310,7 +340,8 @@ export function aideDeJeu(cfg) {
     </div>
 
     <div class="aj-bloc">
-      <h3>Les mots des bandeaux</h3>
+      <h3>Les mots-clés</h3>
+      ${ENTETE_CARTES}
       <p class="aide">Un bandeau ne montre pas toujours une icône : ces cartouches-là nomment ce
       qu’il compte. Sur un Gros Plan, la place manque et l’écriture courte prend le relais — c’est
       la même chose.</p>
@@ -333,9 +364,12 @@ export function aideDeJeu(cfg) {
 
     <div class="aj-bloc">
       <h3>Les portées</h3>
+      ${ENTETE_CARTES}
       ${PORTEES.map((p) => ligne(
     `<span class="lv-fleches">${p.gauche ? '◀' : ''}${p.droite ? '▶' : ''}${
       !p.gauche && !p.droite ? '⬚' : ''}</span>`, p.label, '', B.portees[p.id] || 0)).join('')}
+    </div>
+
     </div>
 
   </div>
@@ -344,6 +378,7 @@ export function aideDeJeu(cfg) {
 
     <div class="aj-bloc">
       <h3>Les bandeaux qui comptent</h3>
+      ${ENTETE_CARTES}
       ${g(OBJ.plan(1, 'SEQUENCE'))}
       ${g(OBJ.raccord(2))}
       ${g(OBJ.format(2, 'GP'))}
@@ -362,6 +397,7 @@ export function aideDeJeu(cfg) {
 
     <div class="aj-bloc">
       <h3>Les bandeaux qui se déclenchent</h3>
+      ${ENTETE_CARTES}
       ${g(OBJ.chrono(6))}
       ${g(OBJ.absent(5, 'ALLIE'))}
       ${g(OBJ.domine(4, 'ARME', 'PLUS'))}
@@ -372,6 +408,7 @@ export function aideDeJeu(cfg) {
 
     <div class="aj-bloc">
       <h3>Les bandeaux qui lisent les lignes</h3>
+      ${ENTETE_CARTES}
       ${g(OBJ.seqTaille(2, 3))}
       ${g(OBJ.seqAvec(2, 'AVEC', 'ARME', 2))}
       ${g(OBJ.seqAvec(2, 'SANS', 'MORT'))}

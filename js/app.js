@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.98';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=1.99';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,29 +12,29 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=1.98';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.98';
-import { elIcon, numIcon } from './icons.js?v=1.98';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.98';
+} from './data.js?v=1.99';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=1.99';
+import { elIcon, numIcon } from './icons.js?v=1.99';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=1.99';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=1.98';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.98';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.98';
-import { releve, voler, stopperVols } from './anim.js?v=1.98';
-import { campagne } from './lab.js?v=1.98';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.98';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.98';
-import { Salon } from './net/salon.js?v=1.98';
-import { TransportLocal } from './net/local.js?v=1.98';
-import { TransportSupabase } from './net/supabase.js?v=1.98';
-import { enLigneDisponible } from './net/config.js?v=1.98';
-import { coupNu } from './net/protocole.js?v=1.98';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.98';
-import { livret, aideDeJeu } from './livret.js?v=1.98';
+} from './engine.js?v=1.99';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=1.99';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=1.99';
+import { releve, voler, stopperVols } from './anim.js?v=1.99';
+import { campagne } from './lab.js?v=1.99';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=1.99';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=1.99';
+import { Salon } from './net/salon.js?v=1.99';
+import { TransportLocal } from './net/local.js?v=1.99';
+import { TransportSupabase } from './net/supabase.js?v=1.99';
+import { enLigneDisponible } from './net/config.js?v=1.99';
+import { coupNu } from './net/protocole.js?v=1.99';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=1.99';
+import { livret, aideDeJeu } from './livret.js?v=1.99';
 
 const app = document.getElementById('app');
 
@@ -5571,12 +5571,202 @@ function telecharger(blob, nom) {
 let reglesOnglet = 'livret';
 let regleDepliee = null;   // version dont on affiche le texte intégral
 
+// --- Retoucher les textes du livret et de l'aide ---------------------------
+// Le livret et l'aide sont écrits ici, dans le code. L'auteur, lui, les relit à
+// la table et veut les corriger AU MOMENT où la formule le gêne — pas noter la
+// correction pour plus tard. Un bouton ouvre donc la page à la retouche, et un
+// autre recopie ce qui a changé, pour qu'on vienne le graver dans le code.
+//
+// Ce que l'on retient n'est PAS la page : c'est un couple **texte d'origine →
+// texte retouché**, rangé sous l'empreinte de l'original. Trois conséquences,
+// toutes voulues :
+//   — un livret dont les chiffres viennent du modèle continue de les suivre :
+//     seuls les passages effectivement retouchés sont remplacés ;
+//   — une retouche survit à un déplacement de section, puisqu'elle ne dépend
+//     pas de la place ;
+//   — le jour où l'on GRAVE la correction dans le code, l'original change,
+//     l'empreinte ne correspond plus, et la retouche s'efface d'elle-même.
+//     C'est exactement ce qu'on veut : plus de doublon à nettoyer à la main.
+
+/** Les éléments dont le texte se retouche. Les plus fins d'abord. */
+const SEL_RETOUCHE = [
+  '.livret .lv-hero-titre', '.livret .lv-accroche', '.livret .lv-sous',
+  '.livret .lv-titre span', '.livret h3', '.livret h4',
+  '.livret p', '.livret li', '.livret .lv-mat span',
+  '.aide-jeu .aj-hero h2', '.aide-jeu .aj-note', '.aide-jeu .aj-hero p',
+  '.aide-jeu h3', '.aide-jeu .aide', '.aide-jeu .lv-txt',
+].join(',');
+
+/** L'empreinte d'un texte. FNV-1a : courte, stable, et suffisante ici. */
+function empreinte(texte) {
+  let h = 2166136261 >>> 0;
+  const t = String(texte).replace(/\s+/g, ' ').trim();
+  for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0).toString(36);
+}
+
+let retoucheOuverte = false;
+
+const retouches = () => LS.get('regles.textes', {});
+
+/**
+ * Les éléments retouchables de la page, l'original de chacun sous la main. On
+ * écarte ceux qui en contiennent un autre — un `li` qui enveloppe un `p` n'est
+ * pas un texte, c'est un bloc : le retoucher d'un bloc écraserait le fin.
+ */
+function morceauxRetouchables() {
+  const tous = [...app.querySelectorAll(SEL_RETOUCHE)];
+  return tous.filter((el) => !tous.some((autre) => autre !== el && el.contains(autre)));
+}
+
+/**
+ * Pose les empreintes sur la page et applique les retouches enregistrées.
+ * À faire AVANT que l'écran ne s'affiche : on ne montre jamais le texte du code
+ * là où l'auteur a écrit le sien.
+ */
+function appliquerRetouches() {
+  const table = retouches();
+  let posees = 0;
+  for (const el of morceauxRetouchables()) {
+    const cle = empreinte(el.innerHTML);
+    el.dataset.cle = cle;
+    // L'original reste attaché à l'élément : c'est lui qu'on remettra si l'on
+    // annule, et lui qu'on montrera dans le rapport de copie.
+    el.dataset.origine = el.innerHTML;
+    if (table[cle] !== undefined && table[cle] !== el.innerHTML) {
+      el.innerHTML = table[cle];
+      el.classList.add('retouche');
+      posees++;
+    }
+  }
+  return posees;
+}
+
+/**
+ * La barre de retouche, au-dessus du livret ou de l'aide. Son contenu dépend de
+ * ce qu'on a déjà retouché : elle se redessine donc à chaque frappe — sans quoi
+ * « Copier mes retouches » n'apparaîtrait qu'au rechargement suivant, ce qui est
+ * précisément le moment où l'on n'y pense plus.
+ */
+function barreRetouche(quoi) {
+  const n = Object.keys(retouches()).length;
+  return `<div class="barre-retouche ${retoucheOuverte ? 'ouverte' : ''}" data-barre="${quoi}">
+    <button class="pill ${retoucheOuverte ? 'on' : ''}" data-retouche="bascule">
+      ${retoucheOuverte ? '✓ Terminer' : '✎ Modifier les textes'}</button>
+    ${retoucheOuverte ? `<span class="aide">Cliquez dans un paragraphe et écrivez.
+      Vos retouches restent sur cet appareil.</span>` : ''}
+    ${n ? `<button class="pill" data-retouche="copier">⧉ Copier mes retouches (${n})</button>
+      <button class="pill danger" data-retouche="vider">↺ Tout remettre</button>` : ''}
+    <span class="aide" style="margin-left:auto">${quoi}</span>
+  </div>`;
+}
+
+/** Le rapport à me recopier : chaque passage, avant et après. */
+function rapportRetouches() {
+  const table = retouches();
+  const lignes = [];
+  // On repasse par la page pour retrouver les ORIGINAUX : la table ne garde que
+  // les empreintes, et une empreinte ne se relit pas.
+  const vus = new Set();
+  for (const el of morceauxRetouchables()) {
+    const cle = el.dataset.cle;
+    if (!cle || table[cle] === undefined || vus.has(cle)) continue;
+    vus.add(cle);
+    lignes.push({ avant: el.dataset.origine, apres: table[cle] });
+  }
+  const nu = (h) => String(h).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  const entete = `EDIT v${VERSION} — retouches de texte (${lignes.length})`;
+  return `${entete}\n${'='.repeat(entete.length)}\n\n${lignes.map((l, i) => `── ${i + 1} ${'─'.repeat(40)}
+AVANT : ${nu(l.avant)}
+APRÈS : ${nu(l.apres)}
+`).join('\n')}`;
+}
+
+async function copierRetouches(bouton) {
+  const texte = rapportRetouches();
+  const libelle = bouton.textContent;
+  try {
+    await navigator.clipboard.writeText(texte);
+    bouton.textContent = '✓ Copié';
+  } catch {
+    // Pas de presse-papier — page non sécurisée, permission refusée : le
+    // fichier fait aussi bien l'affaire, et ne se perd pas.
+    telecharger(new Blob([texte], { type: 'text/plain' }), 'edit-retouches.txt');
+    bouton.textContent = '✓ Fichier';
+  }
+  setTimeout(() => { bouton.textContent = libelle; }, 1800);
+}
+
+/**
+ * Redessine la seule barre, en laissant la page — et le curseur — où ils sont.
+ * Repasser par `vueRegles` couperait la frappe en cours.
+ */
+function rafraichirBarre() {
+  const barre = app.querySelector('[data-barre]');
+  if (!barre) return;
+  const neuve = document.createElement('div');
+  neuve.innerHTML = barreRetouche(barre.dataset.barre);
+  barre.replaceWith(neuve.firstElementChild);
+  brancherBoutonsRetouche();
+}
+
+/** Les boutons de la barre. Séparés du reste : ils se rebranchent seuls. */
+function brancherBoutonsRetouche() {
+  app.querySelectorAll('[data-retouche]').forEach((b) => b.addEventListener('click', async () => {
+    const quoi = b.dataset.retouche;
+    if (quoi === 'bascule') { retoucheOuverte = !retoucheOuverte; vueRegles(); return; }
+    if (quoi === 'copier') { await copierRetouches(b); return; }
+    if (quoi === 'vider') {
+      if (!confirm('Remettre tous les textes tels qu’ils sont écrits dans le code ?')) return;
+      LS.set('regles.textes', {});
+      vueRegles();
+    }
+  }));
+}
+
+/** Branche la retouche sur l'écran qui vient d'être dessiné. */
+function brancherRetouche() {
+  brancherBoutonsRetouche();
+
+  if (!retoucheOuverte) return;
+  for (const el of morceauxRetouchables()) {
+    // `contenteditable="true"` et non `plaintext-only` : ce dernier n'est pas
+    // partout, et là où il manque il ne rend pas la page moins éditable — il ne
+    // la rend PAS éditable du tout, sans rien dire. On prend donc l'attribut
+    // universel, et l'on nettoie le collage à la main juste en dessous.
+    el.setAttribute('contenteditable', 'true');
+    el.classList.add('retouchable');
+    // Un texte collé arrive avec sa mise en forme — polices, couleurs, balises
+    // d'un traitement de texte. On ne garde que les mots : ce qu'on enregistre
+    // doit rester recopiable dans le code.
+    el.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const brut = (e.clipboardData || window.clipboardData).getData('text/plain');
+      document.execCommand('insertText', false, brut);
+    });
+    // À chaque frappe : si le texte a bougé, on le garde ; s'il est revenu à
+    // l'original, on retire l'entrée plutôt que d'enregistrer un doublon.
+    el.addEventListener('input', () => {
+      const table = retouches();
+      const cle = el.dataset.cle;
+      if (el.innerHTML === el.dataset.origine) delete table[cle];
+      else table[cle] = el.innerHTML;
+      LS.set('regles.textes', table);
+      el.classList.toggle('retouche', table[cle] !== undefined);
+      rafraichirBarre();
+    });
+  }
+}
+
 function vueRegles() {
   const c = store.cfg;
   const corps = reglesOnglet === 'livret' ? livret(c)
     : reglesOnglet === 'aide' ? aideDeJeu(c)
       : reglesOnglet === 'texte' ? `<div class="regles">${corpsRegles(c)}</div>`
         : versionsRegles();
+  // Seuls le livret et l'aide se retouchent : le texte de référence et
+  // l'historique sont des ARCHIVES — leur mot à mot est ce qui fait leur usage.
+  const retouchable = reglesOnglet === 'livret' || reglesOnglet === 'aide';
 
   html(`${topbar('#/regles')}
   <div class="wrap">
@@ -5591,10 +5781,16 @@ function vueRegles() {
     .map(([k, l]) => `<button class="pill" data-onglet="${k}"
             style="${reglesOnglet === k ? 'background:var(--violet);color:#fff;border-color:var(--violet)' : ''}">${l}</button>`).join('')}
       </div>
+      ${retouchable ? barreRetouche(reglesOnglet === 'livret'
+    ? 'Livret de règles' : 'Aide de jeu') : ''}
       ${corps}
     </div>
   </div>
   ${pied()}`);
+
+  // Les retouches se posent AVANT toute autre lecture de la page : le reste du
+  // branchement doit voir le texte tel que l'auteur l'a écrit.
+  if (retouchable) { appliquerRetouches(); brancherRetouche(); }
 
   app.querySelectorAll('[data-onglet]').forEach((b) => b.addEventListener('click', () => {
     reglesOnglet = b.dataset.onglet; vueRegles();
