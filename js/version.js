@@ -1,8 +1,20 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.3';
+export const VERSION = '2.4';
 export const BUILD_DATE = '2026-09-03 03:40';
 
 export const CHANGELOG = [
+  {
+    v: '2.4',
+    date: '03/09/2026',
+    items: [
+      "<b>Un seuil sur une icône se DESSINE.</b> « 2+ 🛞 » devient <b>deux roues empilées suivies d'un +</b> — les mêmes pastilles chevauchées que le couple d'icônes. On lit ce qu'il faut trouver au lieu de le déchiffrer dans un chiffre suivi d'une image. Le « + » est un mot du bandeau, blanc et sans fond : il n'est pas une étiquette de plus.",
+      "<b>Les bandeaux de séquence se replient sur DEUX LIGNES</b> : « SÉQUENCE avec » au-dessus, ce qu'il faut y trouver en dessous, aligné sous le cartouche. Tout tenait sur une ligne, et le bandeau devait se resserrer jusqu'à l'illisible pour caser « SÉQ avec 3+ PLAN » dans un tiers de carte. Replié, il regagne de la hauteur — et donc du corps : cartouches et mots y sont un cinquième plus gros.",
+      "<b>« 3+ » prend la couleur de ce qu'il compte.</b> « 3+ » et « PLAN » disent une seule chose — trois plans —, et deux cartouches de couleurs différentes les donnaient pour deux. Le seuil passe donc en blanc, comme la cible qu'il chiffre.",
+      "<b>Le nombre de tête d'un seuil est lisible.</b> Dans « 1 💀 MAX », le 1 se lisait à la taille du mot « MAX », dans la même petite pastille noire : un chiffre seul y disparaissait. C'est une <b>quantité</b>, pas une étiquette — il s'écrit maintenant à la taille de la valeur du bandeau.",
+      "<b>« n × icône absente » s'écrit.</b> La croix posée sur le cartouche ICÔNE en rognait les lettres, et l'on n'y lisait ni le mot ni l'interdit. Le bandeau compte des icônes <b>absentes</b> — celles qui ne paraissent nulle part —, et c'est un compte, pas une négation : il se lit désormais <b>« ICÔNE absente »</b>.",
+      "<b>Le cartouche perd son point</b> : <b>SÉQ</b>, et non « SÉQ. ». Idem pour « CHAQUE SÉQ » et « PLUS LONGUE SÉQ ».",
+    ],
+  },
   {
     v: '2.3',
     date: '03/09/2026',

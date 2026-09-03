@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=2.3';
+import { ELEMENT_IDS } from './data.js?v=2.4';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -47,10 +47,11 @@ export const DEFAULTS = {
   // d'en ouvrir une de plus. 0 = aucune limite (variante).
   sequencesMax: 5,
   // Une ligne s'étoffe, elle ne s'étire pas indéfiniment : de part et d'autre du
-  // Plan Large — ou du Plan de départ — qui la tient, on n'accroche pas plus de
-  // ce nombre de plans. Les Raccords ne comptent pas : un Raccord n'est pas un
-  // plan, et c'est justement lui qui permet d'étoffer sans allonger.
-  // 0 = aucune limite (variante).
+  // CENTRE de la ligne — le premier plan qu'on y a posé, Plan Large ou Plan de
+  // départ, et il n'y en a qu'un —, on n'accroche pas plus de ce nombre de
+  // CARTES. Les Raccords et les Génériques y comptent : ils occupent une place
+  // comme les autres. La limite porte sur la place, pas sur ce qui rapporte des
+  // points. 0 = aucune limite (variante).
   plansParCote: 4,
   // Variante — un même plan ne se répète pas. Un film ne montre pas deux fois
   // le même plan : on peut l'interdire, et choisir jusqu'où porte l'interdit.

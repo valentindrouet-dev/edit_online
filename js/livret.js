@@ -16,9 +16,9 @@
 import {
   FORMATS, ELEMENTS, ELEMENT_IDS, PORTEES, OBJ, objLabel, PAIRES_DEPART, PLANS_DEPART,
   buildCartesDoubles, buildPlansLarges, buildDeparts, SCENES, recenserBoite,
-} from './data.js?v=2.3';
-import { elIcon } from './icons.js?v=2.3';
-import { objHTML } from './cards.js?v=2.3';
+} from './data.js?v=2.4';
+import { elIcon } from './icons.js?v=2.4';
+import { objHTML } from './cards.js?v=2.4';
 
 // --- Les briques de mise en page -------------------------------------------
 
@@ -374,7 +374,7 @@ export function aideDeJeu(cfg) {
       ${ENTETE_CARTES}
       ${ligne(tag('tag-blanc', 'Plan', 'Plan'),
     'Un <b>plan</b> : toute carte du montage <b>sauf</b> un Raccord', '', B.cibles.PLAN || 0)}
-      ${ligne(tag('tag-seq', 'Séquence', 'Séq.'),
+      ${ligne(tag('tag-seq', 'Séquence', 'Séq'),
     'Une <b>ligne</b> du banc de montage, incluant toutes ses cartes', '', B.cibles.SEQUENCE || 0)}
       ${ligne(tag('tag-blanc', 'Icône', 'Ic.'),
     'N’importe quelle <b>icône</b>', '', B.cibles.ICONE || 0)}

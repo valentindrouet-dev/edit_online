@@ -602,6 +602,29 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
   filter: drop-shadow(-.055em 0 0 rgba(255, 255, 255, .92))
           drop-shadow(0 0 .045em rgba(0, 0, 0, .45));
 }
+/* Un bandeau de séquence replié sur DEUX LIGNES : « SÉQ avec » au-dessus, ce
+   qu'il faut y trouver en dessous — aligné sous le cartouche, pas centré : on
+   lit la seconde ligne comme la suite de la première.
+   Tout tenait sur une ligne, et le bandeau devait alors se resserrer jusqu'à
+   l'illisible pour caser « SÉQ avec 3+ PLAN » dans un tiers de carte. */
+.seq-bloc {
+  display: inline-flex; flex-direction: column; align-items: flex-start;
+  justify-content: center; gap: .12em; min-width: 0;
+}
+.seq-ligne { display: inline-flex; align-items: center; gap: .22em; min-width: 0; }
+/* La hauteur regagnée se rend en corps : les deux lignes sont plus grosses que
+   ne l'était la ligne unique. */
+.bandeau .seq-bloc .tag { font-size: .76em; }
+.bandeau .seq-bloc .mot { font-size: .8em; }
+.moitie.f-GP .bandeau .seq-bloc .tag { font-size: .72em; }
+.obj-html .seq-ligne { gap: 5px; }
+/* Le « + » qui suit des pastilles empilées : « deux roues ou plus ». Un mot du
+   bandeau, pas une étiquette — il n'a donc pas de fond. */
+.plus-seuil {
+  font-weight: 800; font-size: 1.2em; line-height: 1; color: #fff; flex: 0 0 auto;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+}
+.obj-html .plus-seuil { color: var(--encre); text-shadow: none; font-size: 1.1em; }
 .barre { position: relative; display: inline-flex; align-items: center; height: 100%; min-width: 0; }
 /* L'icône barrée : la croix doit se voir avant l'icône, sinon on lit
    « compte cet élément » là où il faut lire « cet élément doit être absent ».
@@ -1770,6 +1793,15 @@ table.tbl th.th-tri.num { text-align: right; }
   font-family: "SFMono-Regular", "Consolas", "Menlo", monospace; white-space: nowrap;
 }
 .tc-seuil.minutage { color: #ff3b30; }
+/* Le nombre de tête d'un seuil — « 1 ◼ MAX » — est une QUANTITÉ : il se lit à
+   la taille de la valeur du bandeau, pas à celle du mot « MAX » qui le suit.
+   Dans sa pastille de cartouche, un chiffre seul était illisible. */
+.tc-seuil.nombre {
+  font-size: 1.05em; font-weight: 800; padding: .06em .3em; min-width: 1.15em;
+  text-align: center; font-family: inherit; letter-spacing: 0;
+}
+.bandeau .tc-seuil.nombre { font-size: 1.15em; }
+.obj-html .tc-seuil.nombre { font-size: .95rem; }
 .tag.tag-chrono {
   background: #1d3a2a; color: #7ee2a8; border: 1px solid #2f6b4a;
   font-size: .62em; font-weight: 800; padding: .2em .42em; border-radius: .22em;
