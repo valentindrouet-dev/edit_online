@@ -612,6 +612,9 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
   justify-content: center; gap: .12em; min-width: 0;
 }
 .seq-ligne { display: inline-flex; align-items: center; gap: .22em; min-width: 0; }
+/* Une ligne repliée n'a pas de hauteur de référence : une pastille dimensionnée
+   en pourcentage y reprendrait sa taille naturelle. On l'ancre donc en em. */
+.bandeau .seq-bloc .pastille, .bandeau .seq-bloc .pastille-num { height: 1.5em; }
 /* La hauteur regagnée se rend en corps : les deux lignes sont plus grosses que
    ne l'était la ligne unique. */
 .bandeau .seq-bloc .tag { font-size: .76em; }
@@ -1793,6 +1796,11 @@ table.tbl th.th-tri.num { text-align: right; }
   font-family: "SFMono-Regular", "Consolas", "Menlo", monospace; white-space: nowrap;
 }
 .tc-seuil.minutage { color: #ff3b30; }
+/* Le minutage d'un bandeau garde la couleur qu'il a sur la carte : bleue quand
+   il n'y en a pas — « --:-- » n'est pas un instant, c'est l'absence —, orangée
+   pour les deux bornes du film, rouge partout ailleurs. */
+.tc-seuil.minutage.bleu { color: #38bdf8; }
+.tc-seuil.minutage.borne { color: #ff9f0a; }
 /* Le nombre de tête d'un seuil — « 1 ◼ MAX » — est une QUANTITÉ : il se lit à
    la taille de la valeur du bandeau, pas à celle du mot « MAX » qui le suit.
    Dans sa pastille de cartouche, un chiffre seul était illisible. */

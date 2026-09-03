@@ -13,8 +13,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=2.4';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.4';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=2.5';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.5';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -117,9 +117,17 @@ function objCoeur(obj, taille, compact) {
       <span class="tc-seuil minutage">${obj.sens === 'APRES' ? '&gt;' : '&lt;'}&nbsp;${
         tcTexte(obj.seuil)}</span>`;
     case 'CHRONO':  return `<span class="tag tag-chrono">↗ ordre</span>`;
-    case 'SANS_TC': return `<span class="barre"><span class="tc-seuil minutage">${
-      obj.sens === 'AVANT' ? '&lt;' : obj.sens === 'APRES' ? '&gt;' : '='
-    }&nbsp;${tcTexte(obj.seuil)}</span>${croixNon()}</span>`;
+    // « n si aucun plan à --:-- » : le mot dit l'absence, et il la dit mieux
+    // qu'une croix posée sur l'afficheur — elle en recouvrait les chiffres.
+    // Le minutage garde sa couleur propre : bleue quand il n'y en a pas,
+    // orangée pour les deux bornes du film, rouge partout ailleurs. Et le
+    // « = » disparaît : « aucun --:-- » se lit tout seul, le signe ne servait
+    // qu'à distinguer un sens qui n'a pas de flèche.
+    case 'SANS_TC': return `<span class="mot">aucun</span>
+      <span class="tc-seuil minutage ${teinteTc(obj.seuil)}">${
+  obj.sens === 'AVANT' ? `&lt;&nbsp;${tcTexte(obj.seuil)}`
+    : obj.sens === 'APRES' ? `&gt;&nbsp;${tcTexte(obj.seuil)}`
+      : tcTexte(obj.seuil)}</span>`;
     // Les bandeaux de séquence : la pastille violette dit qu'on compte des
     // séquences et non des plans, et ce qui la suit dit lesquelles.
     // Le seuil prend la couleur de ce qu'il compte : « 3+ » et « PLAN » disent
@@ -159,6 +167,10 @@ function objCoeur(obj, taille, compact) {
         return `${tagSeq(compact)}<span class="mot">avec</span>
           <span class="paire ${k > 2 ? 'trio' : ''}">${pile}</span><span class="plus-seuil">+</span>`;
       }
+      // Une icône seule tient sur la ligne : « SÉQ avec 🔫 » n'a pas besoin de
+      // se replier, et une pastille dans une ligne repliée n'a plus de hauteur
+      // de référence — elle reprenait sa taille naturelle et débordait.
+      if (cibleEstIcone(obj.cible)) return `${tagSeq(compact)}<span class="mot">avec</span>${quoi}`;
       // Sur un mot, le seuil s'écrit — et dans la couleur de ce qu'il compte.
       const seuil = k > 1
         ? `<span class="tag tag-blanc">${seuilTexte(obj.sens === 'SANS' ? 'MOINS' : 'MIN', k)}</span>`
@@ -185,20 +197,30 @@ function objCoeur(obj, taille, compact) {
     }
     case 'LOT': return `<span class="tag tag-lot">${compact ? `×${obj.seuil}` : `lot de ${obj.seuil}`}</span>${
       cibleHTML(obj.cible, taille, compact)}`;
-    // Le nombre de tête est une QUANTITÉ, pas une étiquette : il se lit comme la
-    // valeur du bandeau, pas comme le mot « MAX » qui le suit. À la taille des
-    // cartouches, un chiffre seul dans sa pastille noire était illisible.
-    case 'SEUIL': return `<span class="tc-seuil nombre">${obj.seuil}</span>${
-      cibleHTML(obj.cible, taille, compact)}<span class="tc-seuil">${
-      obj.sens === 'MAX' ? 'MAX' : 'MIN'}</span>`;
+    // Le seuil s'écrit comme il se dit : « au moins 5 🔑 », « au plus 1 💀 ».
+    // Les mots sont ceux du bandeau — blancs, dans la police du « si » —, et
+    // « MIN » / « MAX », posés en fin de formule, ne disaient rien de plus.
+    // Le nombre est une QUANTITÉ : il prend la couleur de ce qu'il compte, et
+    // se lit à la taille de la valeur du bandeau. Dans sa pastille noire de
+    // cartouche, un chiffre seul était illisible.
+    case 'SEUIL': {
+      const q = cibleHTML(obj.cible, taille, compact);
+      // « Au plus zéro » se dit « aucun » : le nombre s'en va avec le mot.
+      if (obj.sens === 'MAX' && obj.seuil === 0) return `<span class="mot">aucun</span>${q}`;
+      return `<span class="mot">${obj.sens === 'MAX' ? 'au plus' : 'au moins'}</span>${
+        nombreCible(obj.seuil, obj.cible)}${q}`;
+    }
     // « n × icône absente » : la croix posée sur le cartouche ICÔNE en rognait
     // les lettres, et l'on n'y lisait ni le mot ni l'interdit. Le bandeau
     // compte des icônes ABSENTES — celles qui ne paraissent nulle part —, et
     // c'est un compte, pas une négation : il s'écrit donc, comme « avec ».
     case 'ABSENTES': return `<span class="tag tag-blanc">${compact ? 'Ic.' : 'Icône'}</span>
       <span class="mot">absente</span>`;
+    // Celui-ci garde ses « MIN » / « MAX » : écrits en toutes lettres, ils ne
+    // tiendraient pas dans le tiers de carte d'un Gros Plan — le bandeau porte
+    // déjà deux cartouches et un nombre.
     case 'SEQ_TOUTES': return `<span class="tag tag-seq">${compact ? 'toutes' : 'chaque séq'}</span>
-      <span class="tc-seuil nombre">${obj.seuil}</span><span class="tag tag-blanc">Plan</span>
+      ${nombreCible(obj.seuil, 'PLAN')}<span class="tag tag-blanc">Plan</span>
       <span class="tc-seuil">${obj.sens === 'MAX' ? 'MAX' : 'MIN'}</span>`;
     case 'EXTREME': return `<span class="tag tag-blanc">${compact ? 'Ic.' : 'Icône'}</span>
       <span class="tc-seuil">${obj.sens === 'MOINS' ? 'min' : 'max'}</span>`;
@@ -241,6 +263,18 @@ function cibleHTML(cible, taille, compact) {
 function tagCadrage(f, compact) {
   return `<span class="tag tag-fmt" style="--c:${FORMATS[f].color}">${
     compact ? FORMATS[f].short : FORMATS[f].label}</span>`;
+}
+
+/**
+ * Le nombre d'un seuil, dans la couleur de ce qu'il compte : « 5 » sur le doré
+ * de l'Objet, « 1 » sur le noir du plan de mort. C'est une QUANTITÉ, pas une
+ * étiquette — elle se lit à la taille de la valeur du bandeau, et sa couleur la
+ * rattache à l'icône qui la suit.
+ */
+function nombreCible(n, cible) {
+  const fond = teinteObj({ kind: 'SEUIL', cible });
+  const bord = ELEMENTS[cible] ? ELEMENTS[cible].ring : '#3a3b44';
+  return `<span class="tc-seuil nombre" style="background:${fond};border-color:${bord}">${n}</span>`;
 }
 
 /** La pastille « Séquence » des bandeaux qui comptent des séquences. */
@@ -413,7 +447,7 @@ function coutCoeur(obj, compact, P) {
     case 'PAIRE': return P.rond + (obj.els.length - 1) * (P.rond - EM.chevauche);
     case 'MINUTAGE': return (compact ? 0 : t('Plan') + g) + tt(`< ${tcTexte(obj.seuil)}`);
     case 'CHRONO': return tt('↗ ordre');
-    case 'SANS_TC': return tt(`= ${tcTexte(obj.seuil)}`);
+    case 'SANS_TC': return mot('aucun') + g + tt(`< ${tcTexte(obj.seuil)}`);
     // Replié sur deux lignes, un bandeau de séquence ne réclame que sa ligne la
     // plus large — et un cran de plus, puisqu'il en profite pour grossir.
     case 'SEQ_TAILLE': return BLOC_SEQ * Math.max(
@@ -429,10 +463,10 @@ function coutCoeur(obj, compact, P) {
       if (obj.sens === 'SANS' && k === 1) return seq + g + cible(obj.cible);
       // Un seuil sur une icône empile ses pastilles, comme un couple, et ajoute
       // un « + » : tout tient sur une ligne.
-      if (k > 1 && cibleEstIcone(obj.cible)) {
-        const n = Math.min(k, 4);
+      if (cibleEstIcone(obj.cible)) {
+        const n = Math.min(Math.max(k, 1), 4);
         return seq + g + mot('avec') + g
-          + P.rond + (n - 1) * (P.rond - EM.chevauche) + g + 0.5;
+          + P.rond + (n - 1) * (P.rond - EM.chevauche) + (k > 1 ? g + 0.5 : 0);
       }
       return BLOC_SEQ * Math.max(seq + g + mot('avec'),
         (k > 1 ? t(seuilTexte(obj.sens === 'SANS' ? 'MOINS' : 'MIN', k)) + g : 0) + cible(obj.cible));
@@ -442,7 +476,9 @@ function coutCoeur(obj, compact, P) {
     case 'AILLEURS': return (compact ? 0 : t('Séquence') + g) + 0.9 + g + cible(obj.cible);
     case 'CENTRE': return cible(obj.cible) + g + 0.9 + g + t('centre', 'ctr');
     case 'LOT': return tt(compact ? `×${obj.seuil}` : `lot de ${obj.seuil}`) + g + cible(obj.cible);
-    case 'SEUIL': return NOMBRE_SEUIL * tt(String(obj.seuil)) + g + cible(obj.cible) + g + tt('MIN');
+    case 'SEUIL': return obj.sens === 'MAX' && obj.seuil === 0
+      ? mot('aucun') + g + cible(obj.cible)
+      : mot('au moins') + g + NOMBRE_SEUIL * tt(String(obj.seuil)) + g + cible(obj.cible);
     case 'ABSENTES': return t('Icône', 'Ic.') + g + mot('absente');
     case 'EXTREME': return t('Icône', 'Ic.') + g + tt('max');
     case 'PLAN_ICONES': {

@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.4';
+export const VERSION = '2.5';
 export const BUILD_DATE = '2026-09-03 03:40';
 
 export const CHANGELOG = [
+  {
+    v: '2.5',
+    date: '03/09/2026',
+    items: [
+      "<b>Un seuil s'écrit comme il se dit</b> : « 8 si <b>au moins</b> 5 🔑 », « 6 si <b>au plus</b> 1 💀 », « 2 si <b>aucune</b> 🔫 ». Les mots sont ceux du bandeau — blancs, dans la police du « si » —, et « MIN » / « MAX », posés en fin de formule, ne disaient rien de plus. Le <b>nombre prend la couleur de ce qu'il compte</b> : doré sur l'Objet, gris sur l'Arme, noir sur le plan de mort — il se rattache à l'icône qui le suit au lieu de flotter dans une pastille anonyme.",
+      "<b>« n si aucun --:-- »</b> remplace « = --:-- » barré d'une croix. La croix recouvrait les chiffres de l'afficheur, et le « = » ne servait qu'à distinguer un sens qui n'a pas de flèche. Le mot dit l'absence, et le minutage <b>garde sa couleur propre</b> : <b>bleue</b> quand il n'y en a pas, orangée pour les deux bornes du film, rouge partout ailleurs.",
+      "<b>« SÉQ avec 🔫 » reste sur une ligne.</b> Le repli à deux lignes de la v2.4 emportait aussi la cible d'une seule icône — et une pastille dans une ligne repliée n'a plus de hauteur de référence : elle reprenait sa taille naturelle et débordait du bandeau. Seules les cibles écrites en toutes lettres se replient désormais.",
+      "<b>« CHAQUE SÉQ » garde ses MIN / MAX.</b> Écrits en toutes lettres, ils ne tenaient pas dans le tiers de carte d'un Gros Plan — ce bandeau porte déjà deux cartouches et un nombre.",
+    ],
+  },
   {
     v: '2.4',
     date: '03/09/2026',
