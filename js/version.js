@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.5';
+export const VERSION = '2.6';
 export const BUILD_DATE = '2026-09-03 03:40';
 
 export const CHANGELOG = [
+  {
+    v: '2.6',
+    date: '03/09/2026',
+    items: [
+      "<b>« si aucun » passe au-dessus de son minutage.</b> « 6 si aucun --:-- » se lit maintenant sur <b>deux lignes</b> — le mot avec le « si », l'afficheur en dessous, centré sous lui —, ce qui libère la largeur et permet de <b>tout grossir</b> : le mot est écrit à la taille du « si », l'afficheur d'un tiers de plus.",
+      "<b>« si au moins 5 » se lit d'un seul corps.</b> Le mot était écrit deux fois plus petit que le « si » qui le précède et flottait dans le bandeau ; il est désormais à sa taille, et le nombre avec lui. La formule remplit la bande au lieu de s'y perdre. Sur un <b>Gros Plan</b> — un tiers de carte — les mots restent à la taille ordinaire : à ce corps-là ils débordaient de la bande.",
+      "<b>« 3+ PLANS » ne fait qu'un cartouche</b>, au pluriel. Deux étiquettes côte à côte donnaient pour deux ce qui n'est qu'une seule chose : trois plans.",
+      "<b>Un bandeau replié ne grossit plus comme un bandeau court.</b> Le serrage raisonne en largeur : replié sur deux lignes, un bandeau en réclame moins et se voyait donc agrandi — alors qu'il occupe désormais toute la hauteur de la bande, qui, elle, ne grandit pas. Il aurait été rogné en haut et en bas.",
+    ],
+  },
   {
     v: '2.5',
     date: '03/09/2026',

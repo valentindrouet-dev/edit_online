@@ -609,12 +609,24 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    l'illisible pour caser « SÉQ avec 3+ PLAN » dans un tiers de carte. */
 .seq-bloc {
   display: inline-flex; flex-direction: column; align-items: flex-start;
-  justify-content: center; gap: .12em; min-width: 0;
+  justify-content: center; gap: .1em; min-width: 0; max-height: 100%;
 }
 .seq-ligne { display: inline-flex; align-items: center; gap: .22em; min-width: 0; }
 /* Une ligne repliée n'a pas de hauteur de référence : une pastille dimensionnée
    en pourcentage y reprendrait sa taille naturelle. On l'ancre donc en em. */
 .bandeau .seq-bloc .pastille, .bandeau .seq-bloc .pastille-num { height: 1.5em; }
+/* Un mot de seuil — « au moins », « aucun » — s'écrit à la taille du « si » qui
+   le précède : « si au moins 5 » se lit alors d'un seul corps, et remplit le
+   bandeau au lieu d'y flotter en petit. */
+.bandeau .mot.grand { font-size: 1.3em; }
+.bandeau .tc-seuil.nombre.grand { font-size: 1.5em; padding: .04em .26em; }
+.bandeau .tc-seuil.minutage.grand { font-size: 1.1em; padding: .12em .34em; }
+/* Un bloc à deux lignes qui n'a pas de cartouche sous lequel s'aligner —
+   « aucun » au-dessus de son minutage — se centre plutôt que de se ranger à
+   gauche : rien ne dit où serait la marge. */
+.seq-bloc.centre { align-items: center; }
+.obj-html .mot.grand { font-size: 1.05em; font-weight: 800; }
+.obj-html .tc-seuil.nombre.grand { font-size: 1.1rem; }
 /* La hauteur regagnée se rend en corps : les deux lignes sont plus grosses que
    ne l'était la ligne unique. */
 .bandeau .seq-bloc .tag { font-size: .76em; }

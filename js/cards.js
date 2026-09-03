@@ -13,8 +13,8 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=2.5';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.5';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=2.6';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.6';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -123,19 +123,21 @@ function objCoeur(obj, taille, compact) {
     // orangée pour les deux bornes du film, rouge partout ailleurs. Et le
     // « = » disparaît : « aucun --:-- » se lit tout seul, le signe ne servait
     // qu'à distinguer un sens qui n'a pas de flèche.
-    case 'SANS_TC': return `<span class="mot">aucun</span>
-      <span class="tc-seuil minutage ${teinteTc(obj.seuil)}">${
-  obj.sens === 'AVANT' ? `&lt;&nbsp;${tcTexte(obj.seuil)}`
-    : obj.sens === 'APRES' ? `&gt;&nbsp;${tcTexte(obj.seuil)}`
-      : tcTexte(obj.seuil)}</span>`;
+    case 'SANS_TC': return bloc2(`<span class="mot grand">aucun</span>`,
+      `<span class="tc-seuil minutage grand ${teinteTc(obj.seuil)}">${
+        obj.sens === 'AVANT' ? `&lt;&nbsp;${tcTexte(obj.seuil)}`
+          : obj.sens === 'APRES' ? `&gt;&nbsp;${tcTexte(obj.seuil)}`
+            : tcTexte(obj.seuil)}</span>`, 'centre');
     // Les bandeaux de séquence : la pastille violette dit qu'on compte des
     // séquences et non des plans, et ce qui la suit dit lesquelles.
     // Le seuil prend la couleur de ce qu'il compte : « 3+ » et « PLAN » disent
     // une seule chose — trois plans —, et deux cartouches de couleurs
     // différentes les donnaient pour deux.
+    // « 3+ » et « PLANS » ne font qu'un CARTOUCHE : ils disent une seule chose —
+    // trois plans —, et deux étiquettes côte à côte les donnaient pour deux.
     case 'SEQ_TAILLE': return blocSeq(compact,
-      `<span class="tag tag-blanc">${seuilTexte(obj.sens === 'MAX' ? 'MAX' : 'MIN', obj.seuil)}</span>
-       <span class="tag tag-blanc">Plan</span>`);
+      `<span class="tag tag-blanc">${seuilTexte(obj.sens === 'MAX' ? 'MAX' : 'MIN', obj.seuil)}
+        Plan${obj.seuil > 1 ? 's' : ''}</span>`);
     case 'SEQ_VOISINES': return `${tagSeq(compact)}
       <span class="fleche-seq">${obj.sens === 'APRES' ? '▼' : '▲'}</span>`;
     // « La plus longue » : on compte ses plans, d'où la pastille Plan.
@@ -206,9 +208,13 @@ function objCoeur(obj, taille, compact) {
     case 'SEUIL': {
       const q = cibleHTML(obj.cible, taille, compact);
       // « Au plus zéro » se dit « aucun » : le nombre s'en va avec le mot.
-      if (obj.sens === 'MAX' && obj.seuil === 0) return `<span class="mot">aucun</span>${q}`;
-      return `<span class="mot">${obj.sens === 'MAX' ? 'au plus' : 'au moins'}</span>${
-        nombreCible(obj.seuil, obj.cible)}${q}`;
+      // Le mot s'écrit à la taille du « si » — mais pas dans un tiers de carte,
+      // où « au moins » à ce corps-là débordait de la bande. Le Gros Plan garde
+      // les mêmes mots, à la taille ordinaire.
+      const g2 = compact ? '' : ' grand';
+      if (obj.sens === 'MAX' && obj.seuil === 0) return `<span class="mot${g2}">aucun</span>${q}`;
+      return `<span class="mot${g2}">${obj.sens === 'MAX' ? 'au plus' : 'au moins'}</span>${
+        nombreCible(obj.seuil, obj.cible, !compact)}${q}`;
     }
     // « n × icône absente » : la croix posée sur le cartouche ICÔNE en rognait
     // les lettres, et l'on n'y lisait ni le mot ni l'interdit. Le bandeau
@@ -271,15 +277,29 @@ function tagCadrage(f, compact) {
  * étiquette — elle se lit à la taille de la valeur du bandeau, et sa couleur la
  * rattache à l'icône qui la suit.
  */
-function nombreCible(n, cible) {
+function nombreCible(n, cible, grand) {
   const fond = teinteObj({ kind: 'SEUIL', cible });
   const bord = ELEMENTS[cible] ? ELEMENTS[cible].ring : '#3a3b44';
-  return `<span class="tc-seuil nombre" style="background:${fond};border-color:${bord}">${n}</span>`;
+  return `<span class="tc-seuil nombre${grand ? ' grand' : ''}"
+    style="background:${fond};border-color:${bord}">${n}</span>`;
 }
 
 /** La pastille « Séquence » des bandeaux qui comptent des séquences. */
 function tagSeq(compact) {
   return `<span class="tag tag-seq">${compact ? 'Séq' : 'Séquence'}</span>`;
+}
+
+/**
+ * Ce bandeau-là se replie-t-il sur DEUX lignes ? La question se pose au serrage,
+ * qui raisonne en largeur : replié, il en réclame moins mais occupe toute la
+ * hauteur de la bande, et ne peut donc pas grossir comme les autres.
+ */
+function plieEnDeux(obj, compact) {
+  if (obj.kind === 'SANS_TC' || obj.kind === 'SEQ_TAILLE') return true;
+  if (obj.kind !== 'SEQ_AVEC') return false;
+  const k = Math.max(1, obj.seuil || 1);
+  if (obj.sens === 'SANS' && k === 1) return false;
+  return !cibleEstIcone(obj.cible);
 }
 
 /**
@@ -297,11 +317,15 @@ const cibleEstIcone = (c) => !CIBLES_MOT.includes(c) && !FORMATS[c];
  * caser « SÉQ avec 3+ PLAN » dans un tiers de carte. Replié, il reprend de la
  * hauteur — et donc du corps.
  */
-function blocSeq(compact, suite) {
-  return `<span class="seq-bloc">
-    <span class="seq-ligne">${tagSeq(compact)}<span class="mot">avec</span></span>
-    <span class="seq-ligne">${suite}</span>
+function bloc2(haut, bas, cls = '') {
+  return `<span class="seq-bloc ${cls}">
+    <span class="seq-ligne">${haut}</span>
+    <span class="seq-ligne">${bas}</span>
   </span>`;
+}
+
+function blocSeq(compact, suite) {
+  return bloc2(`${tagSeq(compact)}<span class="mot">avec</span>`, suite);
 }
 
 /** L'objectif en entier — « 2 × ⛨ » — pour les cartes et les tableaux. */
@@ -356,6 +380,12 @@ const BLOC_SEQ = 1.18;
 // Le nombre de tête d'un seuil est écrit bien plus gros que les cartouches
 // voisins — c'est une quantité, pas une étiquette.
 const NOMBRE_SEUIL = 1.5;
+// Deux lignes tiennent dans la hauteur d'une bande, mais tout juste : un
+// bandeau replié ne s'autorise pas le grossissement des bandeaux courts.
+const PLAFOND_PLIE = 0.92;
+// Les mots d'un seuil — « au moins », « aucun » — s'écrivent à la taille du
+// « si » qui les précède : la formule se lit d'un seul corps.
+const MOT_GRAND = 1.9;
 
 // Quel profil vaut en ce moment. L'application le dit — elle seule sait si la
 // lecture nue est demandée, et elle le sait AVANT de dessiner. Interroger le
@@ -447,12 +477,15 @@ function coutCoeur(obj, compact, P) {
     case 'PAIRE': return P.rond + (obj.els.length - 1) * (P.rond - EM.chevauche);
     case 'MINUTAGE': return (compact ? 0 : t('Plan') + g) + tt(`< ${tcTexte(obj.seuil)}`);
     case 'CHRONO': return tt('↗ ordre');
-    case 'SANS_TC': return mot('aucun') + g + tt(`< ${tcTexte(obj.seuil)}`);
+    // Replié, il ne réclame que sa ligne la plus large — et un cran de plus,
+    // puisqu'il en profite pour grossir.
+    case 'SANS_TC': return BLOC_SEQ * Math.max(MOT_GRAND * mot('aucun'),
+      NOMBRE_SEUIL * tt(tcTexte(obj.seuil)));
     // Replié sur deux lignes, un bandeau de séquence ne réclame que sa ligne la
     // plus large — et un cran de plus, puisqu'il en profite pour grossir.
     case 'SEQ_TAILLE': return BLOC_SEQ * Math.max(
       t('Séquence', 'Séq') + g + mot('avec'),
-      t(seuilTexte(obj.sens === 'MAX' ? 'MAX' : 'MIN', obj.seuil)) + g + t('Plan'));
+      t(`${seuilTexte(obj.sens === 'MAX' ? 'MAX' : 'MIN', obj.seuil)} Plans`));
     case 'SEQ_VOISINES': return t('Séquence', 'Séq') + g + 0.9;
     case 'SEQ_LONGUE': return t('Plan') + g + t('plus longue séq', 'séq ⌀');
     case 'SEQ_AVEC': {
@@ -476,9 +509,13 @@ function coutCoeur(obj, compact, P) {
     case 'AILLEURS': return (compact ? 0 : t('Séquence') + g) + 0.9 + g + cible(obj.cible);
     case 'CENTRE': return cible(obj.cible) + g + 0.9 + g + t('centre', 'ctr');
     case 'LOT': return tt(compact ? `×${obj.seuil}` : `lot de ${obj.seuil}`) + g + cible(obj.cible);
-    case 'SEUIL': return obj.sens === 'MAX' && obj.seuil === 0
-      ? mot('aucun') + g + cible(obj.cible)
-      : mot('au moins') + g + NOMBRE_SEUIL * tt(String(obj.seuil)) + g + cible(obj.cible);
+    case 'SEUIL': {
+      const mg = compact ? 1 : MOT_GRAND;
+      const ng = compact ? 1 : NOMBRE_SEUIL;
+      return obj.sens === 'MAX' && obj.seuil === 0
+        ? mg * mot('aucun') + g + cible(obj.cible)
+        : mg * mot('au moins') + g + ng * tt(String(obj.seuil)) + g + cible(obj.cible);
+    }
     case 'ABSENTES': return t('Icône', 'Ic.') + g + mot('absente');
     case 'EXTREME': return t('Icône', 'Ic.') + g + tt('max');
     case 'PLAN_ICONES': {
@@ -548,7 +585,12 @@ export function serrageBandeau(objs, format, cfg, nu) {
   // Le facteur peut donc dépasser 1, jusqu'à un plafond : au-delà, une pastille
   // déborderait de la hauteur de la bande, qui, elle, ne grandit pas.
   const facteur = Math.round((dispo / besoin) * 100) / 100;
-  return Math.max(plancher, Math.min(PLAFOND_SERRAGE, facteur));
+  // Un bandeau REPLIÉ sur deux lignes ne profite pas de ce grossissement : il
+  // gagne en largeur ce qu'il perd en hauteur, et la bande, elle, ne grandit
+  // pas. Agrandi comme un bandeau d'une seule ligne, il débordait par le haut
+  // et par le bas — « SÉQUENCE avec » rogné, « 3+ PLANS » coupé.
+  const haut = objs.some((o) => plieEnDeux(o, compact)) ? PLAFOND_PLIE : PLAFOND_SERRAGE;
+  return Math.max(plancher, Math.min(haut, facteur));
 }
 
 /**
