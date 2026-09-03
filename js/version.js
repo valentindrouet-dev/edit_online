@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.6';
+export const VERSION = '2.7';
 export const BUILD_DATE = '2026-09-03 03:40';
 
 export const CHANGELOG = [
+  {
+    v: '2.7',
+    date: '03/09/2026',
+    items: [
+      "<b>Les pouvoirs de règle portent les cartouches du jeu.</b> « la pioche <b>PM / GP</b> » montre les deux étiquettes de cadrage, « monter 1 <b>SÉQUENCE</b> supplémentaire » la pastille violette, « les cartes <b>RACCORD</b> vous rapportent +1 par <b>RACCORD</b> » l'étiquette grise, aux deux endroits. On y lit le même vocabulaire que sur les bandeaux qui comptent, au lieu d'un texte qui les nomme. Et « 1 SÉQUENCE supplémentaire » ne se coupe plus en fin de ligne : le nombre restait seul.",
+      "<b>« n × PLAN de la plus longue SÉQUENCE ».</b> « de la plus longue » n'est pas une chose du jeu, c'est du texte qui relie deux cartouches — il s'écrivait pourtant dans la pastille violette de la Séquence, qui désigne la séquence et rien d'autre.",
+      "<b>La pile d'icônes passe à la ligne</b> sous le cartouche SÉQUENCE, comme le reste : « SÉQ avec / 🛞🛞 + » gagne la place que la ligne unique lui refusait.",
+      "<b>Un Plan Large ne replie rien.</b> Sa bande fait la carte entière — deux fois celle d'un Plan Moyen — et tout y tient sur une ligne. Le repli est fait pour la place qui manque, pas pour lui-même : « 3 × SÉQUENCE avec RACCORD » et « SÉQUENCE avec 3+ PLANS » s'y lisent d'un trait.",
+    ],
+  },
   {
     v: '2.6',
     date: '03/09/2026',

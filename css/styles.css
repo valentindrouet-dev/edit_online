@@ -554,6 +554,16 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    largeur à parts égales. Le sélecteur double la règle générale des bandeaux à
    deux pouvoirs, qui lui donnait sinon une base de contenu comme aux autres. */
 .bandeau-obj.regle, .bandeau.deux .bandeau-obj.regle { flex: 1 1 0; min-width: 0; }
+/* Un cartouche DANS la phrase d'un pouvoir de règle : « la pioche PM / GP »,
+   « les cartes RACCORD ». Il se lit presque à la taille de la phrase — plus
+   petit, il passerait pour une note ; plus gros, il casserait la ligne. */
+.bandeau .regle-mot .tag {
+  display: inline-block; font-size: .88em; padding: .08em .28em; border-radius: .24em;
+  vertical-align: baseline; max-width: none; text-shadow: none; line-height: 1.05;
+}
+/* Le « / » entre deux cadrages, et tout mot que la phrase ne doit pas couper. */
+.bandeau .regle-mot .mot-regle { padding: 0 .12em; opacity: .85; }
+.bandeau .regle-mot .insec { white-space: nowrap; }
 .bandeau .regle-mot {
   display: block;
   font-size: var(--cp, .5em); font-weight: 800; line-height: 1.06;
@@ -614,7 +624,9 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .seq-ligne { display: inline-flex; align-items: center; gap: .22em; min-width: 0; }
 /* Une ligne repliée n'a pas de hauteur de référence : une pastille dimensionnée
    en pourcentage y reprendrait sa taille naturelle. On l'ancre donc en em. */
-.bandeau .seq-bloc .pastille, .bandeau .seq-bloc .pastille-num { height: 1.5em; }
+.bandeau .seq-bloc .pastille, .bandeau .seq-bloc .pastille-num,
+body.sans-illus .bandeau .seq-bloc .pastille,
+body.sans-illus .bandeau .seq-bloc .pastille-num { height: 1.5em; }
 /* Un mot de seuil — « au moins », « aucun » — s'écrit à la taille du « si » qui
    le précède : « si au moins 5 » se lit alors d'un seul corps, et remplit le
    bandeau au lieu d'y flotter en petit. */
