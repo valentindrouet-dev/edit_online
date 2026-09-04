@@ -13,8 +13,9 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=2.7';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.7';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=2.8';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.8';
+import { urlVisuel } from './visuels.js?v=2.8';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -724,7 +725,11 @@ export function renderPlan(h, opts = {}) {
   // un bord de carte.
   const cadre = h.cadre;
   const transforme = transformeCadre(cadre, h.miroir);
-  const fond = `${h.image ? `background-image:url('${h.image}');` : ''}${
+  // Un visuel APPORTÉ se désigne par une clé — `perso:xxxx` —, pas par un
+  // chemin : les URL d'objet changent à chaque ouverture de page. C'est le seul
+  // endroit du dessin qui ait à connaître les deux mondes.
+  const visuel = urlVisuel(h.image);
+  const fond = `${visuel ? `background-image:url('${visuel}');` : ''}${
     cadre ? `background-position:${cadre.x}% ${cadre.y}%;` : ''}${
     transforme ? `transform:${transforme};` : ''}`;
   // Le crâne se lit avec les autres : c'est une icône de la carte, pas un état.

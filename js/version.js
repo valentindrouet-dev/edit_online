@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.7';
+export const VERSION = '2.8';
 export const BUILD_DATE = '2026-09-03 03:40';
 
 export const CHANGELOG = [
+  {
+    v: '2.8',
+    date: '03/09/2026',
+    items: [
+      "<b>Vous pouvez apporter vos propres illustrations, depuis l'éditeur.</b> Le choix d'une image porte une section « <b>Vos images, dans ce navigateur</b> » et un bouton <b>+ Ajouter des images</b> : on en dépose autant qu'on veut d'un coup, et elles rejoignent aussitôt la galerie, à poser sur n'importe quel plan comme celles de la boîte. Jusqu'ici il fallait le dépôt sous la main — déposer un fichier dans <code>assets/</code>, relancer le versionneur, publier.",
+      "<b>Chaque image est redessinée à l'entrée</b>, à 900 px sur son plus grand côté, et réencodée en WebP — le format des visuels imprimés. Une photo de trois mégaoctets en fait cinquante kilo-octets, et la carte n'en montre de toute façon qu'un timbre-poste. La réserve annonce son poids.",
+      "<b>Elles restent sur cette machine.</b> Un site statique n'écrit pas dans son propre dépôt : ces images-là vivent dans le navigateur, pas dans le jeu. Le dépôt ne les voit pas, et une <b>joueuse en ligne non plus</b> — chez elle, un plan qui en porte une s'affiche sans illustration. Chaque vignette porte donc un bouton <b>⤓</b> : il retélécharge le fichier redessiné, à poser dans <code>assets/perso/</code> pour le faire entrer vraiment dans la boîte à la publication suivante.",
+      "<b>Retirer une image ne casse rien</b> : les plans qui la portaient reprennent l'illustration de leur numéro, et l'éditeur dit combien ils sont avant de demander confirmation.",
+    ],
+  },
   {
     v: '2.7',
     date: '03/09/2026',

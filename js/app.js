@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.7';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.8';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,29 +12,32 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=2.7';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.7';
-import { elIcon, numIcon } from './icons.js?v=2.7';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.7';
+} from './data.js?v=2.8';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.8';
+import { elIcon, numIcon } from './icons.js?v=2.8';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.8';
+import { chargerVisuels, ajouterVisuel, retirerVisuel, visuelsApportes, urlVisuel,
+  cleVisuel, idDeCle, estVisuelApporte, blobVisuel, poidsVisuels, COTE_MAX,
+} from './visuels.js?v=2.8';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=2.7';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.7';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.7';
-import { releve, voler, stopperVols } from './anim.js?v=2.7';
-import { campagne } from './lab.js?v=2.7';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.7';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.7';
-import { Salon } from './net/salon.js?v=2.7';
-import { TransportLocal } from './net/local.js?v=2.7';
-import { TransportSupabase } from './net/supabase.js?v=2.7';
-import { enLigneDisponible } from './net/config.js?v=2.7';
-import { coupNu } from './net/protocole.js?v=2.7';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.7';
-import { livret, aideDeJeu } from './livret.js?v=2.7';
+} from './engine.js?v=2.8';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.8';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.8';
+import { releve, voler, stopperVols } from './anim.js?v=2.8';
+import { campagne } from './lab.js?v=2.8';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.8';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.8';
+import { Salon } from './net/salon.js?v=2.8';
+import { TransportLocal } from './net/local.js?v=2.8';
+import { TransportSupabase } from './net/supabase.js?v=2.8';
+import { enLigneDisponible } from './net/config.js?v=2.8';
+import { coupNu } from './net/protocole.js?v=2.8';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.8';
+import { livret, aideDeJeu } from './livret.js?v=2.8';
 
 const app = document.getElementById('app');
 
@@ -3085,7 +3088,7 @@ const TITRES_DOSSIERS = {
   pl: 'Plans Larges et Plans de départ',
   pm: 'Plans Moyens',
   gp: 'Gros Plans',
-  perso: 'Vos images',
+  perso: 'Vos images publiées',
 };
 const titreDossier = (d) => TITRES_DOSSIERS[d] || `Dossier ${d}`;
 
@@ -3106,7 +3109,7 @@ function ligneIllustration(plans) {
     <span>Illustration</span>
     <button class="vignette-illus ${une ? '' : 'melangee'}" data-image="${cles}"
       title="Choisir une autre illustration"
-      style="${une ? `background-image:url('${une}')` : ''}">${une ? '' : '≠'}</button>
+      style="${une ? `background-image:url('${urlVisuel(une)}')` : ''}">${une ? '' : '≠'}</button>
     ${retouchees ? `<span class="imp-rappel">${plans.length > 1
       ? `${retouchees} remplacée${retouchees > 1 ? 's' : ''}`
       : `imprimée ${nomImage(plans[0].imprime.image)}`}</span>` : ''}
@@ -3187,14 +3190,22 @@ function poserCadre(cles, cadre) {
 // de la fenêtre et glisse librement ; une image taillée juste ne bouge pas.
 const TAILLES_IMAGES = new Map();
 
-function mesurerImage(url) {
-  if (!url) return Promise.resolve(null);
-  if (TAILLES_IMAGES.has(url)) return Promise.resolve(TAILLES_IMAGES.get(url));
+function mesurerImage(cle) {
+  // Le cache se range sous la CLÉ et non sous l'URL : c'est la clé que le reste
+  // de l'écran interroge — `TAILLES_IMAGES.has(image)` — et une mesure rangée
+  // sous l'URL n'y répondrait jamais. Le redessin se serait alors relancé sans
+  // fin, chaque passage remesurant la même image.
+  if (!cle) return Promise.resolve(null);
+  if (TAILLES_IMAGES.has(cle)) return Promise.resolve(TAILLES_IMAGES.get(cle));
+  // Un visuel apporté se désigne par une clé : on la traduit avant de la
+  // donner au navigateur, qui ne connaît que des URL.
+  const url = urlVisuel(cle);
+  const fini = (t) => { TAILLES_IMAGES.set(cle, t); return t; };
+  if (!url) return Promise.resolve(fini(null));
   return new Promise((r) => {
     const im = new Image();
-    const fini = (t) => { TAILLES_IMAGES.set(url, t); r(t); };
-    im.onload = () => fini({ w: im.naturalWidth, h: im.naturalHeight });
-    im.onerror = () => fini(null);
+    im.onload = () => r(fini({ w: im.naturalWidth, h: im.naturalHeight }));
+    im.onerror = () => r(fini(null));
     im.src = url;
   });
 }
@@ -3270,6 +3281,36 @@ function blocRecadrage(cles, bornes) {
   </div>`;
 }
 
+/**
+ * Les visuels APPORTÉS, et de quoi en apporter d'autres. Un site statique
+ * n'écrit pas dans `assets/` : ces images-là vivent dans le navigateur, et
+ * l'encart le dit — c'est la seule chose qu'on puisse ajouter à la boîte sans
+ * publier, et la seule qui ne suive pas la carte chez les autres joueuses.
+ */
+function blocApportees(actuelles) {
+  const v = visuelsApportes();
+  const ko = (n) => `${Math.round(n / 1024)} ko`;
+  return `<h3>Vos images, dans ce navigateur
+    <button class="pill mini" id="ajouter-visuels">+ Ajouter des images</button>
+    ${v.length ? `<span class="imp-rappel">${v.length} image${v.length > 1 ? 's' : ''} · ${
+    ko(poidsVisuels())}</span>` : ''}</h3>
+  <input type="file" id="fichiers-visuels" accept="image/*" multiple hidden>
+  ${v.length ? `<div class="grille-illus">
+    ${v.map((x) => `<div class="tuile-apportee">
+      <button class="tuile-illus ${actuelles.has(cleVisuel(x.id)) ? 'on' : ''}"
+        data-choix-image="${cleVisuel(x.id)}" title="${x.nom} — ${x.largeur}×${x.hauteur}, ${ko(x.taille)}"
+        style="background-image:url('${urlVisuel(cleVisuel(x.id))}')"><span>${x.nom.replace(/\.\w+$/, '')}</span></button>
+      <button class="tuile-outil" data-visuel-telecharger="${x.id}"
+        title="Télécharger le fichier redessiné, pour le poser dans assets/">⤓</button>
+      <button class="tuile-outil danger" data-visuel-retirer="${x.id}"
+        title="Retirer cette image de la réserve">✕</button>
+    </div>`).join('')}
+  </div>` : `<p class="aide">Aucune image apportée. Les vôtres sont
+    <b>redessinées à ${COTE_MAX} px</b> et rangées <b>dans ce navigateur</b> : elles ne partent pas
+    dans le dépôt, et une joueuse en ligne ne les verra pas. Pour les faire entrer vraiment dans le
+    jeu, téléchargez-les d'ici, posez-les dans <code>assets/perso/</code> et publiez.</p>`}`;
+}
+
 /** Le choix d'une illustration : toutes celles de la boîte, en vignettes. */
 async function ouvrirChoixImage(cles) {
   const inv = await chargerImages();
@@ -3283,6 +3324,7 @@ async function ouvrirChoixImage(cles) {
       ${cles.length > 1 ? 'sur toute la sélection' : 'sur ce plan'} ; rien n’empêche deux plans de
       partager la même. Le numéro imprimé, lui, ne bouge pas — c’est l’identité du plan.</p>
     <div id="bloc-recadrage">${blocRecadrage(cles)}</div>
+    <div id="bloc-apportees">${blocApportees(actuelles)}</div>
     ${Object.keys(inv).map((d) => (inv[d] && inv[d].length ? `<h3>${titreDossier(d)}</h3>
       <div class="grille-illus">
         ${inv[d].map((f) => {
@@ -3428,8 +3470,72 @@ async function ouvrirChoixImage(cles) {
       .toggle('on', t.dataset.choixImage === b.dataset.choixImage && !!b.dataset.choixImage));
     redessiner();
   });
+  // --- Les images qu'on apporte -------------------------------------------
+  // Elles entrent par le sélecteur du système : rien d'autre ne donne accès
+  // aux fichiers de la machine depuis une page. Chacune est redessinée avant
+  // d'être rangée — voir `visuels.js`.
+  const refaireApportees = () => {
+    const hote = fond.querySelector('#bloc-apportees');
+    if (!hote) return;
+    const a = new Set(surLeModifie(() => cles.map((c) => (planDeCle(c) || {}).image).filter(Boolean)));
+    hote.innerHTML = blocApportees(a);
+    brancherApportees();
+  };
+
+  function brancherApportees() {
+    const bouton = fond.querySelector('#ajouter-visuels');
+    const champ = fond.querySelector('#fichiers-visuels');
+    if (bouton && champ) bouton.addEventListener('click', () => champ.click());
+    if (champ) {
+      champ.addEventListener('change', async () => {
+        const fichiers = [...champ.files];
+        champ.value = '';
+        if (!fichiers.length) return;
+        bouton.disabled = true;
+        bouton.textContent = `Lecture de ${fichiers.length} image${fichiers.length > 1 ? 's' : ''}…`;
+        const ratees = [];
+        for (const f of fichiers) {
+          try { await ajouterVisuel(f); } catch (e) { ratees.push(e.message || String(e)); }
+        }
+        refaireApportees();
+        if (ratees.length) alert(`${ratees.length} image${ratees.length > 1 ? 's' : ''} non ajoutée${
+          ratees.length > 1 ? 's' : ''} :\n\n${ratees.join('\n')}`);
+      });
+    }
+  }
+
+  fond.addEventListener('click', async (e) => {
+    const oter = e.target.closest('[data-visuel-retirer]');
+    if (oter) {
+      const id = oter.dataset.visuelRetirer;
+      const cle = cleVisuel(id);
+      // Les plans qui la portaient reprennent l'illustration de leur numéro :
+      // une retouche qui désigne un visuel disparu laisserait une carte nue
+      // sans qu'on sache pourquoi.
+      const portee = surLeModifie(() => catalogue().filter((p) => p.image === cle));
+      if (!confirm(`Retirer cette image de la réserve ?${portee.length
+        ? `\n\n${portee.length} plan${portee.length > 1 ? 's la portent' : ' la porte'} : ${
+          portee.length > 1 ? 'ils reprendront' : 'il reprendra'} l’illustration de son numéro.`
+        : ''}`)) return;
+      if (portee.length) surLeModifie(() => { for (const p of portee) retoucher(p.cle, 'image', undefined); });
+      await retirerVisuel(id);
+      sauverCfg();
+      touchee = true;
+      refaireApportees();
+      redessiner();
+      return;
+    }
+    const tel = e.target.closest('[data-visuel-telecharger]');
+    if (tel) {
+      const info = visuelsApportes().find((x) => x.id === tel.dataset.visuelTelecharger);
+      const blob = await blobVisuel(tel.dataset.visuelTelecharger);
+      if (blob) telecharger(blob, `${(info ? info.nom : 'image').replace(/\.\w+$/, '')}.webp`);
+    }
+  });
+
   document.body.appendChild(fond);
   brancherRecadrage();
+  brancherApportees();
   // La fenêtre du plan existe enfin : on mesure le visuel et l'on redessine
   // avec la marge exacte, qui décide des flèches et du texte d'aide.
   const img0 = surLeModifie(() => (planApercuCadre(cles) || {}).image);
@@ -5325,9 +5431,13 @@ function appliquerCSV(texte) {
         if (JSON.stringify(o || null) !== JSON.stringify(p.imprime.obj || null)) mis.obj = o;
         const o2 = objDepuisCSV(r, '2');
         if (JSON.stringify(o2 || null) !== JSON.stringify(p.imprime.obj2 || null)) mis.obj2 = o2;
-        // L'illustration : un chemin sous assets/, ou vide pour celle du numéro.
+        // L'illustration : un chemin sous assets/, la clé d'un visuel apporté,
+        // ou vide pour celle du numéro. Une clé qui ne désigne rien dans cette
+        // réserve-ci est écartée : elle viendrait d'une autre machine, et
+        // afficherait un plan nu sans qu'on sache pourquoi.
         const img = (r.illustration || '').trim();
-        if (img && img !== p.imprime.image && /^assets\//.test(img)) mis.image = img;
+        const connue = /^assets\//.test(img) || (estVisuelApporte(img) && !!urlVisuel(img));
+        if (img && img !== p.imprime.image && connue) mis.image = img;
         if (/^(oui|1|true|vrai|x)$/i.test(r.miroir || '')) mis.miroir = true;
         // Le recadrage tient dans une colonne : « zoom|x|y ». Une valeur
         // aberrante est ramenée dans ses bornes plutôt que rejetée.
@@ -6638,7 +6748,12 @@ function route() {
 }
 
 window.addEventListener('hashchange', route);
-route();
+// Les visuels apportés vivent dans le navigateur, et leur lecture est
+// asynchrone : on ouvre la réserve AVANT le premier dessin. Sans cela, une
+// carte qui en porte un s'afficherait nue le temps d'un battement, puis se
+// rhabillerait — ce qui se voit. Une réserve qui refuse de s'ouvrir ne retient
+// pas le démarrage : le jeu tourne, sans les visuels apportés.
+chargerVisuels().then(route, route);
 
 
 // ===========================================================================
