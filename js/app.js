@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.10';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.11';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,34 +12,34 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=2.10';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.10';
-import { elIcon, numIcon } from './icons.js?v=2.10';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.10';
+} from './data.js?v=2.11';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.11';
+import { elIcon, numIcon } from './icons.js?v=2.11';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.11';
 import { chargerVisuels, ajouterVisuel, retirerVisuel, visuelsApportes, urlVisuel,
   cleVisuel, idDeCle, estVisuelApporte, blobVisuel, poidsVisuels, COTE_MAX,
-} from './visuels.js?v=2.10';
+} from './visuels.js?v=2.11';
 import { chargerPublie, materielPublie, signaturePublie, materielVide, composerPublie,
-} from './publie.js?v=2.10';
+} from './publie.js?v=2.11';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=2.10';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.10';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.10';
-import { releve, voler, stopperVols } from './anim.js?v=2.10';
-import { campagne } from './lab.js?v=2.10';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.10';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.10';
-import { Salon } from './net/salon.js?v=2.10';
-import { TransportLocal } from './net/local.js?v=2.10';
-import { TransportSupabase } from './net/supabase.js?v=2.10';
-import { enLigneDisponible } from './net/config.js?v=2.10';
-import { coupNu } from './net/protocole.js?v=2.10';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.10';
-import { livret, aideDeJeu } from './livret.js?v=2.10';
+} from './engine.js?v=2.11';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.11';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.11';
+import { releve, voler, stopperVols } from './anim.js?v=2.11';
+import { campagne } from './lab.js?v=2.11';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.11';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.11';
+import { Salon } from './net/salon.js?v=2.11';
+import { TransportLocal } from './net/local.js?v=2.11';
+import { TransportSupabase } from './net/supabase.js?v=2.11';
+import { enLigneDisponible } from './net/config.js?v=2.11';
+import { coupNu } from './net/protocole.js?v=2.11';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.11';
+import { livret, aideDeJeu } from './livret.js?v=2.11';
 
 const app = document.getElementById('app');
 
@@ -3136,19 +3136,30 @@ const nomImage = (url) => String(url || '').replace(/^assets\//, '').replace(/\.
 
 /**
  * La ligne « Illustration » du formulaire : la vignette du visuel actuel, qui
- * s'ouvre d'un clic sur le choix de tous les autres. Sur un lot dont les plans
- * ne portent pas la même image, la vignette reste vide — on peut quand même en
- * poser une sur tous d'un coup.
+ * s'ouvre d'un clic sur le choix de tous les autres.
+ *
+ * Sur un lot dont les plans ne portent pas la même image, la vignette montrait
+ * un rectangle gris et un « ≠ » — on ne voyait plus de bouton du tout, et le
+ * seul moyen d'en retrouver un était de remettre tout le lot à son imprimé.
+ * Elle montre désormais la PREMIÈRE image du lot, avec un jeton qui dit combien
+ * il y en a de différentes : c'est visiblement une vignette, elle s'ouvre comme
+ * les autres, et l'on sait sans compter que la sélection est panachée.
  */
 function ligneIllustration(plans) {
   const cles = plans.map((p) => p.cle).join(' ');
-  const une = plans.every((p) => p.image === plans[0].image) ? plans[0].image : null;
+  const distinctes = [...new Set(plans.map((p) => p.image || ''))];
+  const une = distinctes.length === 1 ? distinctes[0] : null;
+  // Ce qu'on peint quand elles diffèrent : la première qui existe. Un lot dont
+  // aucun plan n'a d'illustration reste gris — il n'y a rien à montrer.
+  const apercu = une || distinctes.find(Boolean) || '';
   const retouchees = plans.filter((p) => p.imprime && p.image !== p.imprime.image).length;
   return `<div class="champ-ligne">
     <span>Illustration</span>
     <button class="vignette-illus ${une ? '' : 'melangee'}" data-image="${cles}"
-      title="Choisir une autre illustration"
-      style="${une ? `background-image:url('${urlVisuel(une)}')` : ''}">${une ? '' : '≠'}</button>
+      title="${une ? 'Choisir une autre illustration'
+    : `Choisir une illustration pour toute la sélection — ${distinctes.length} images différentes`}"
+      style="${apercu ? `background-image:url('${urlVisuel(apercu)}')` : ''}">${une ? ''
+    : `<span class="vign-compte">≠ ${distinctes.length}</span>`}</button>
     ${retouchees ? `<span class="imp-rappel">${plans.length > 1
       ? `${retouchees} remplacée${retouchees > 1 ? 's' : ''}`
       : `imprimée ${nomImage(plans[0].imprime.image)}`}</span>` : ''}

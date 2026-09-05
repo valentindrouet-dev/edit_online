@@ -241,7 +241,13 @@ button { font-family: inherit; }
 /* L'illustration est rognée par le bas (cover, ancrée en haut à gauche) plutôt
    que comprimée : la boîte du minutage reste ainsi exactement à sa place,
    quelle que soit la part laissée à l'information. */
-.illus     { flex: 0 0 62.5%; position: relative; overflow: hidden; }
+/* 76,5 % : les 62,5 % de la bande imprimée, plus les 14 % que la languette des
+   icônes occupait. L'illustration descend jusqu'au bandeau du pouvoir, et les
+   icônes se posent dessus. Comme la fenêtre devient plus haute que large par
+   rapport au visuel, `cover` le met désormais à l'échelle par la HAUTEUR : il
+   grandit d'un dixième et se rogne sur la droite au lieu du bas — on voit donc
+   le bas des dessins, qui était coupé. */
+.illus     { flex: 0 0 76.5%; position: relative; overflow: hidden; }
 /* L'illustration vit dans sa propre couche, sous le minutage : la retourner en
    miroir ne retourne alors que le dessin. */
 .illus-image { position: absolute; inset: 0; background-size: cover;
@@ -258,16 +264,18 @@ button { font-family: inherit; }
 
    Les dimensions sont mesurées sur les visuels : dans les trois séries, la
    boîte imprimée fait 131 × 43,5 px, quelle que soit la largeur de l'image.
-   L'illustration étant posée en `cover` et toujours mise à l'échelle par la
-   largeur, cette boîte occupe donc une fraction fixe de la fenêtre — 131 / 642
-   pour un Plan Large, 131 / 421 pour un Plan Moyen, 131 / 202 pour un Gros
-   Plan. La hauteur suit le même facteur, rapportée à la hauteur de fenêtre. */
-.moitie.f-PL, .moitie.f-DEP { --bt-l: 20.40%; --bt-h: 15.13%; }
-.moitie.f-PM                { --bt-l: 31.12%; --bt-h: 15.18%; }
-.moitie.f-GP                { --bt-l: 64.85%; --bt-h: 16.34%; }
+   L'illustration est posée en `cover` ; depuis que la fenêtre descend jusqu'au
+   bandeau, elle est plus haute que le visuel ne le demande, et c'est la HAUTEUR
+   qui commande l'échelle — 316 px de haut pour un Plan Moyen ou un Gros Plan,
+   317 pour un Plan Large. La boîte occupe donc une fraction fixe de la fenêtre,
+   qu'on retrouve en rapportant 131 et 43,5 à ce facteur. Elle a grandi d'un
+   dixième avec le reste du dessin. */
+.moitie.f-PL, .moitie.f-DEP { --bt-l: 22.64%; --bt-h: 13.72%; }
+.moitie.f-PM                { --bt-l: 34.53%; --bt-h: 13.77%; }
+.moitie.f-GP                { --bt-l: 66.87%; --bt-h: 13.77%; }
 .illus > .boite-tc {
   position: absolute; top: 0; left: 0;
-  width: var(--bt-l, 20.40%); height: var(--bt-h, 15.13%);
+  width: var(--bt-l, 22.64%); height: var(--bt-h, 13.72%);
   background: #0b0b0b;
   /* Un liseré très discret sur les deux seuls bords qui donnent sur le dessin :
      en haut et à gauche, la boîte est contre l'arête de la carte. Il est tracé
@@ -277,14 +285,24 @@ button { font-family: inherit; }
   border-right: 1px solid rgba(206, 208, 216, .34);
   border-bottom: 1px solid rgba(206, 208, 216, .34);
 }
-/* La languette des icônes : la bande garde sa hauteur — c'est elle qui aligne
-   le bas des deux moitiés d'une carte —, mais elle ne se peint plus. Le fond
-   clair est porté par `.pastilles-fond`, qui n'entoure que les icônes : il
-   s'arrête donc après la dernière, au lieu de courir jusqu'au bord opposé. */
-.pastilles { flex: 0 0 14%;   display: flex; align-items: center; overflow: hidden; }
+/* Les icônes ne sont plus posées sur une bande : il n'y a PLUS de bande. Elles
+   flottent sur le bas de l'illustration, exactement là où la languette les
+   montrait, et l'image descend maintenant jusqu'au bandeau du pouvoir. Le
+   aplat monochrome qui courait derrière elles — la couleur du cadrage, sur
+   toute la largeur — mangeait un septième de chaque carte sans rien dire.
+
+   La rangée sort donc du flux et se pose en calque : la hauteur qu'elle
+   occupait revient à `.illus`, et sa place exacte se retrouve en comptant
+   depuis le bas — le bandeau (18 %) et le libellé (5,5 %). `pointer-events`
+   la traverse : dans l'éditeur, l'illustration se clique, et un calque
+   par-dessus lui volerait son coin. */
+.pastilles {
+  position: absolute; left: 0; right: 0; bottom: 23.5%; height: 14%;
+  display: flex; align-items: center; overflow: hidden; pointer-events: none;
+}
 .pastilles-fond {
   display: flex; align-items: center; gap: .1em; padding: 0 .2em; height: 100%;
-  max-width: 100%; min-width: 0; background: rgba(255,255,255,.62);
+  max-width: 100%; min-width: 0;
 }
 /* `--ec` : de combien ce bandeau-là doit se resserrer pour tenir dans sa
    moitié de carte. Il agit sur la taille du texte, donc sur tous les écarts et
@@ -327,9 +345,14 @@ button { font-family: inherit; }
 
 body.sans-illus .illus { flex: 0 0 36%; background-color: transparent; }
 body.sans-illus .illus-image { display: none; }
-body.sans-illus .pastilles { flex: 1 1 auto; justify-content: center; align-items: stretch; }
+/* Sans image il n'y a rien à recouvrir : les icônes reprennent leur place dans
+   le flux et s'étalent sur tout ce que le visuel laisse. */
+body.sans-illus .pastilles {
+  position: static; height: auto; flex: 1 1 auto;
+  justify-content: center; align-items: stretch; pointer-events: auto;
+}
 body.sans-illus .pastilles-fond {
-  background: transparent; padding: 0 .3em .25em; gap: .18em;
+  padding: 0 .3em .25em; gap: .18em;
   justify-content: center; align-items: flex-start;
 }
 body.sans-illus .pastilles .pastille { height: auto; width: auto; max-height: 100%;
@@ -355,7 +378,6 @@ body.sans-illus .moitie .tcode { font-size: 1.84em; top: .16em; left: .15em; }
 body.sans-illus .moitie.f-GP .pastilles-fond { gap: .12em; }
 /* et son minutage doublé déborderait : il se cale sur la largeur disponible. */
 body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
-.moitie.transition .pastilles-fond { background: rgba(255,255,255,.14); }
 
 /* Le minutage, calé sur la boîte imprimée qu'il remplace.
    `line-height: 1` n'est pas un détail : sans elle, la hauteur de ligne vaut
@@ -520,15 +542,11 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
 .moitie.f-DEP .bandeau { background: #3f8fbf; }
 .moitie.depart .bandeau { background: #7fc4e8; }
 .moitie.transition .bandeau { background: #3c3c44; }
-/* Un plan sans icône n'a pas de languette : cette bande vide n'annonçait rien.
-   Elle garde sa place, c'est elle qui aligne le bas des deux moitiés d'une
-   carte, mais laisse voir la carte au lieu de se peindre.
+/* Les icônes n'ont plus de fond du tout : un plan qui n'en porte pas ne montre
+   donc rien de plus que son illustration.
    Le bandeau de pouvoir, lui, se peint toujours : c'est la place du pouvoir,
    et on doit la voir — vide sur un plan qui n'en a pas, ce qui se lit comme
-   une information et non comme un trou.
-   Depuis que le fond clair est porté par `.pastilles-fond`, qui n'existe que
-   s'il y a des icônes, il n'y a plus rien à éteindre : un plan sans icône ne
-   rend tout simplement pas de fond. */
+   une information et non comme un trou. */
 /* Le ×, le « si » et les flèches de portée se lisent à la taille des icônes :
    ils font partie de la formule, pas de la ponctuation. Un Gros Plan n'a qu'un
    tiers de carte, il les prend un cran plus bas. */
@@ -1416,7 +1434,16 @@ body .demi { transition: box-shadow .12s; }
   display: grid; place-items: center; color: var(--gris); font-weight: 700;
 }
 .vignette-illus:hover { border-color: var(--orange); }
-.vignette-illus.melangee { background-image: none; }
+/* Sélection panachée : la vignette montre la première image du lot et porte un
+   jeton qui dit combien il y en a de différentes. Elle restait grise et vide —
+   on ne voyait plus de bouton, et il fallait remettre tout le lot à son
+   imprimé pour en retrouver un. */
+.vignette-illus.melangee { border-color: var(--violet); border-style: dashed; }
+.vign-compte {
+  font-size: .68rem; font-weight: 800; line-height: 1; padding: 2px 5px;
+  border-radius: 999px; background: var(--violet); color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .85);
+}
 
 /* Sur l'aperçu d'une carte, l'illustration se donne pour cliquable. */
 .illus-cliquable { cursor: pointer; }

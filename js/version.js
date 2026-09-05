@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.10';
-export const BUILD_DATE = '2026-09-05 12:00';
+export const VERSION = '2.11';
+export const BUILD_DATE = '2026-09-05 14:20';
 
 export const CHANGELOG = [
+  {
+    v: '2.11',
+    date: '05/09/2026',
+    items: [
+      "<b>La bande derrière les icônes a disparu.</b> Un aplat de la couleur du cadrage courait sous les icônes, d'un bord à l'autre, au-dessus du bandeau du pouvoir : un septième de chaque carte qui ne disait rien. L'illustration descend maintenant <b>jusqu'au bandeau</b>, et les icônes se posent dessus, exactement là où elles étaient. On ne voit plus que ce qui compte.",
+      "<b>Le dessin y gagne le bas qu'on lui coupait</b> et perd un dixième sur la droite : la fenêtre étant devenue plus haute, c'est désormais la hauteur du visuel qui commande son échelle. Les cadrages posés à la main sur un plan gardent la main. La boîte noire du minutage a suivi le même agrandissement, dans les quatre formats.",
+      "<b>La vignette d'illustration ne disparaît plus sur une sélection multiple.</b> Quand les plans choisis ne portaient pas la même image, elle devenait un rectangle gris avec un « ≠ » pâle — on ne voyait plus de bouton, et le seul moyen d'en retrouver un était de remettre tout le lot à son imprimé. Elle montre à présent la première image du lot, cerclée de violet, avec un jeton <b>≠ n</b> qui dit combien il y en a de différentes.",
+    ],
+  },
   {
     v: '2.10',
     date: '05/09/2026',
