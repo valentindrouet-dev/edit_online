@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.9';
-export const BUILD_DATE = '2026-09-03 03:40';
+export const VERSION = '2.10';
+export const BUILD_DATE = '2026-09-05 12:00';
 
 export const CHANGELOG = [
+  {
+    v: '2.10',
+    date: '05/09/2026',
+    items: [
+      "<b>Les images apportées se voient enfin.</b> Elles entraient bien dans la réserve — le compte le disait, « 1 image · 8 ko » — mais leur vignette était <b>écrasée à un point</b> : la tuile qui l'enveloppe ne prenait pas la largeur de sa case, et une image sans largeur n'a plus de hauteur non plus. On ajoutait une illustration et on ne la retrouvait nulle part. Elle a désormais exactement la taille des visuels de la boîte, juste au-dessus d'eux, ses deux boutons de service au survol.",
+      "<b>Le texte d'aide de la section dit ce que fait v2.9.</b> Il envoyait encore retélécharger chaque fichier à la main pour le poser dans <code>assets/perso/</code> ; <b>⭳ Publier ce matériel</b> emporte les images avec les retouches, dans la même archive.",
+    ],
+  },
   {
     v: '2.9',
     date: '05/09/2026',

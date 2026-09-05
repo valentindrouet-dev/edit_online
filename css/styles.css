@@ -643,7 +643,12 @@ body.sans-illus .bandeau .seq-bloc .pastille-num { height: 1.5em; }
    retélécharger — pour la poser dans `assets/` et la publier vraiment — et la
    retirer de la réserve. Ils ne paraissent qu'au survol : ce sont des gestes
    rares, et une vignette n'est pas une barre d'outils. */
-.tuile-apportee { position: relative; display: inline-flex; }
+/* La tuile enveloppe le bouton : c'est ELLE qui est la case de la grille, et
+   le bouton doit la remplir. Sans cette largeur, la vignette n'a rien à quoi se
+   mesurer — son `aspect-ratio` la ramène alors à un point, et l'image apportée
+   semble ne jamais être arrivée. */
+.tuile-apportee { position: relative; display: block; min-width: 0; }
+.tuile-apportee .tuile-illus { display: block; width: 100%; }
 .tuile-apportee .tuile-outil {
   position: absolute; top: 3px; width: 20px; height: 20px; padding: 0;
   display: flex; align-items: center; justify-content: center;

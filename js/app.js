@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.9';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.10';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,34 +12,34 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=2.9';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.9';
-import { elIcon, numIcon } from './icons.js?v=2.9';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.9';
+} from './data.js?v=2.10';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.10';
+import { elIcon, numIcon } from './icons.js?v=2.10';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.10';
 import { chargerVisuels, ajouterVisuel, retirerVisuel, visuelsApportes, urlVisuel,
   cleVisuel, idDeCle, estVisuelApporte, blobVisuel, poidsVisuels, COTE_MAX,
-} from './visuels.js?v=2.9';
+} from './visuels.js?v=2.10';
 import { chargerPublie, materielPublie, signaturePublie, materielVide, composerPublie,
-} from './publie.js?v=2.9';
+} from './publie.js?v=2.10';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=2.9';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.9';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.9';
-import { releve, voler, stopperVols } from './anim.js?v=2.9';
-import { campagne } from './lab.js?v=2.9';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.9';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.9';
-import { Salon } from './net/salon.js?v=2.9';
-import { TransportLocal } from './net/local.js?v=2.9';
-import { TransportSupabase } from './net/supabase.js?v=2.9';
-import { enLigneDisponible } from './net/config.js?v=2.9';
-import { coupNu } from './net/protocole.js?v=2.9';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.9';
-import { livret, aideDeJeu } from './livret.js?v=2.9';
+} from './engine.js?v=2.10';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.10';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.10';
+import { releve, voler, stopperVols } from './anim.js?v=2.10';
+import { campagne } from './lab.js?v=2.10';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.10';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.10';
+import { Salon } from './net/salon.js?v=2.10';
+import { TransportLocal } from './net/local.js?v=2.10';
+import { TransportSupabase } from './net/supabase.js?v=2.10';
+import { enLigneDisponible } from './net/config.js?v=2.10';
+import { coupNu } from './net/protocole.js?v=2.10';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.10';
+import { livret, aideDeJeu } from './livret.js?v=2.10';
 
 const app = document.getElementById('app');
 
@@ -3346,8 +3346,9 @@ function blocApportees(actuelles) {
     </div>`).join('')}
   </div>` : `<p class="aide">Aucune image apportée. Les vôtres sont
     <b>redessinées à ${COTE_MAX} px</b> et rangées <b>dans ce navigateur</b> : elles ne partent pas
-    dans le dépôt, et une joueuse en ligne ne les verra pas. Pour les faire entrer vraiment dans le
-    jeu, téléchargez-les d'ici, posez-les dans <code>assets/perso/</code> et publiez.</p>`}`;
+    d'elles-mêmes dans le dépôt, et une joueuse en ligne ne les verra pas. Pour les faire entrer
+    vraiment dans le jeu, <b>« ⭳ Publier ce matériel »</b>, en haut du Matériel, les emporte avec
+    les retouches — l'archive contient les fichiers, prêts à poser à la racine du dépôt.</p>`}`;
 }
 
 /** Le choix d'une illustration : toutes celles de la boîte, en vignettes. */
