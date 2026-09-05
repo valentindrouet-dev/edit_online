@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.13';
-export const BUILD_DATE = '2026-09-05 16:30';
+export const VERSION = '2.14';
+export const BUILD_DATE = '2026-09-05 17:10';
 
 export const CHANGELOG = [
+  {
+    v: '2.14',
+    date: '05/09/2026',
+    items: [
+      "<b>La vignette d'illustration ne s'écrase plus en un trait.</b> Le panneau fait 294 px quelle que soit la fenêtre, et la ligne « Illustration » peut porter jusqu'à cinq pièces : la vignette, « n remplacées », le miroir, « recadré » et le retour à l'imprimé. Faute de pouvoir passer à la ligne, tout le monde se comprimait — et la vignette, seule pièce sans texte pour la tenir ouverte, cédait la première : elle tombait à <b>deux pixels</b>, un simple trait, et il n'y avait plus de bouton à cliquer.",
+      "<b>Une ligne de formulaire passe désormais à la ligne suivante</b> au lieu de s'écraser, et ce qui a une taille propre la garde : un bouton se déplace, il ne rétrécit pas. Le texte, lui, se replie. Cela vaut pour toutes les lignes du panneau — « minutages différents » descend sous son champ plutôt que de l'étrangler.",
+    ],
+  },
   {
     v: '2.13',
     date: '05/09/2026',

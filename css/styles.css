@@ -1628,7 +1628,17 @@ body .demi { transition: box-shadow .12s; }
 .bp-tete { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 .bp-tete b { font-size: .92rem; }
 
-.champ-ligne { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+/* Une ligne de formulaire passe à la ligne plutôt que de s'écraser. Le panneau
+   fait 294 px quoi qu'il arrive, et la ligne « Illustration » peut porter
+   jusqu'à cinq pièces : la vignette, « n remplacées », le miroir, « recadré »
+   et le retour à l'imprimé. Sans `wrap`, tout le monde se comprimait — et la
+   vignette, seule pièce sans texte pour la tenir ouverte, cédait la première :
+   elle tombait à DEUX pixels, un simple trait, et l'on ne voyait plus de
+   bouton du tout. */
+.champ-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 8px 0; }
+/* Ce qui a une taille propre la garde : un bouton se déplace, il ne rétrécit
+   pas. Le texte, lui, peut se replier. */
+.champ-ligne .pill, .champ-ligne .vignette-illus { flex: 0 0 auto; white-space: nowrap; }
 .champ-ligne > span:first-child { flex: 0 0 90px; font-size: .86rem; color: var(--encre-doux); }
 .champ-ligne input[type=number] { width: 68px; padding: 6px 8px; border-radius: 8px;
   border: 1px solid var(--gris-clair); font-size: .9rem; color: var(--encre); }
