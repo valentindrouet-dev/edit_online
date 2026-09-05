@@ -300,9 +300,15 @@ button { font-family: inherit; }
   position: absolute; left: 0; right: 0; bottom: 23.5%; height: 14%;
   display: flex; align-items: center; overflow: hidden; pointer-events: none;
 }
+/* Un petit fond clair derrière les icônes — et UNIQUEMENT derrière elles. Il
+   n'enveloppe que la rangée : sa largeur se règle donc toute seule sur le
+   nombre d'icônes du plan, trois icônes font un fond de trois icônes. Il est
+   plus bas que la languette d'autrefois et arrondi au bout : une étiquette
+   posée sur le dessin, pas un aplat qui coupe la carte en deux. */
 .pastilles-fond {
-  display: flex; align-items: center; gap: .1em; padding: 0 .2em; height: 100%;
+  display: flex; align-items: center; gap: .1em; padding: 0 .24em; height: 88%;
   max-width: 100%; min-width: 0;
+  background: rgba(255, 255, 255, .62); border-radius: 0 .55em .55em 0;
 }
 /* `--ec` : de combien ce bandeau-là doit se resserrer pour tenir dans sa
    moitié de carte. Il agit sur la taille du texte, donc sur tous les écarts et
@@ -351,8 +357,12 @@ body.sans-illus .pastilles {
   position: static; height: auto; flex: 1 1 auto;
   justify-content: center; align-items: stretch; pointer-events: auto;
 }
+/* Sans illustration, rien à détacher : les icônes occupent toute la place du
+   visuel, sur le fond du cadrage. Une étiquette derrière elles n'aurait plus
+   de sens — elle ferait un rectangle blanc au milieu de la carte. */
 body.sans-illus .pastilles-fond {
-  padding: 0 .3em .25em; gap: .18em;
+  padding: 0 .3em .25em; gap: .18em; height: auto;
+  background: none; border-radius: 0;
   justify-content: center; align-items: flex-start;
 }
 body.sans-illus .pastilles .pastille { height: auto; width: auto; max-height: 100%;
@@ -378,6 +388,9 @@ body.sans-illus .moitie .tcode { font-size: 1.84em; top: .16em; left: .15em; }
 body.sans-illus .moitie.f-GP .pastilles-fond { gap: .12em; }
 /* et son minutage doublé déborderait : il se cale sur la largeur disponible. */
 body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
+/* Un générique est une carte noire : l'étiquette y devient un voile clair, sans
+   quoi elle ferait une tache blanche sur le seul fond sombre du jeu. */
+.moitie.transition .pastilles-fond { background: rgba(255, 255, 255, .16); }
 
 /* Le minutage, calé sur la boîte imprimée qu'il remplace.
    `line-height: 1` n'est pas un détail : sans elle, la hauteur de ligne vaut

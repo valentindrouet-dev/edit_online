@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.12';
-export const BUILD_DATE = '2026-09-05 15:40';
+export const VERSION = '2.13';
+export const BUILD_DATE = '2026-09-05 16:30';
 
 export const CHANGELOG = [
+  {
+    v: '2.13',
+    date: '05/09/2026',
+    items: [
+      "<b>Une petite étiquette claire revient derrière les icônes</b> — et derrière elles seulement. Elle n'enveloppe que la rangée, donc sa largeur se règle toute seule sur le nombre d'icônes du plan : une icône, une pastille ; trois icônes, une étiquette de trois. Elle est plus basse que la languette d'autrefois et arrondie au bout, si bien qu'elle se lit comme une étiquette posée sur le dessin et non comme l'aplat qui coupait la carte en deux.",
+      "Mesuré sur les quatre formats : 21 px pour une icône, 37 pour deux, 54 pour trois, dans une moitié qui en fait 143. Sans illustration, l'étiquette s'efface — les icônes y occupent déjà toute la place du visuel, il n'y a rien à détacher.",
+    ],
+  },
   {
     v: '2.12',
     date: '05/09/2026',
