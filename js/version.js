@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.11';
-export const BUILD_DATE = '2026-09-05 14:20';
+export const VERSION = '2.12';
+export const BUILD_DATE = '2026-09-05 15:40';
 
 export const CHANGELOG = [
+  {
+    v: '2.12',
+    date: '05/09/2026',
+    items: [
+      "<b>Poser une image sur plusieurs plans les rend vraiment identiques.</b> Une illustration n'est pas seule à décider de ce qu'on voit : le <b>recadrage</b> et le <b>miroir</b> comptent autant, et ils se posaient plan par plan. Deux plans qui ne les avaient pas pareils restaient donc différents après avoir reçu la même image — on croyait les avoir modifiés ensemble, et ils ne se ressemblaient pas. Tout le lot prend maintenant le cadrage du <b>premier plan choisi</b> : celui qu'on voit dans l'aperçu au moment de cliquer.",
+      "<b>Chaque icône porte un liseré clair.</b> Depuis qu'elles se posent à même l'illustration, une silhouette verte sur un feuillage vert se perdait. Un anneau blanc épouse le disque — il en suit le contour exact, pas un carré — et une ombre douce le décolle du dessin. Il tient au rendu d'export comme à l'écran, et suit la taille de la carte.",
+    ],
+  },
   {
     v: '2.11',
     date: '05/09/2026',

@@ -517,6 +517,14 @@ body.coup-en-vol .table-jeu { pointer-events: none; }
    ou trois, décisif sur un Gros Plan. */
 .pastilles .pastille {
   height: 80%; width: auto; flex: 0 1 auto; min-width: 0; object-fit: contain;
+  /* Un liseré clair épouse le disque, puis une ombre douce le décolle.
+     `drop-shadow` suit la transparence de l'image — une ombre de boîte
+     dessinerait un carré autour d'un rond. Deux passes de blanc pour un anneau
+     franc : depuis que les icônes se posent à même l'illustration, une
+     silhouette verte sur un feuillage vert se perdait. */
+  filter: drop-shadow(0 0 .09em rgba(255, 255, 255, .95))
+          drop-shadow(0 0 .09em rgba(255, 255, 255, .8))
+          drop-shadow(0 .06em .12em rgba(0, 0, 0, .5));
 }
 /* Les ronds d'un bandeau — la valeur et les icônes — font tous la MÊME taille,
    et se rétrécissent ensemble quand la place manque : sur un Gros Plan, un

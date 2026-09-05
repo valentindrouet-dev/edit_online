@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.11';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.12';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,34 +12,34 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=2.11';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.11';
-import { elIcon, numIcon } from './icons.js?v=2.11';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.11';
+} from './data.js?v=2.12';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.12';
+import { elIcon, numIcon } from './icons.js?v=2.12';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.12';
 import { chargerVisuels, ajouterVisuel, retirerVisuel, visuelsApportes, urlVisuel,
   cleVisuel, idDeCle, estVisuelApporte, blobVisuel, poidsVisuels, COTE_MAX,
-} from './visuels.js?v=2.11';
+} from './visuels.js?v=2.12';
 import { chargerPublie, materielPublie, signaturePublie, materielVide, composerPublie,
-} from './publie.js?v=2.11';
+} from './publie.js?v=2.12';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=2.11';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.11';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.11';
-import { releve, voler, stopperVols } from './anim.js?v=2.11';
-import { campagne } from './lab.js?v=2.11';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.11';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.11';
-import { Salon } from './net/salon.js?v=2.11';
-import { TransportLocal } from './net/local.js?v=2.11';
-import { TransportSupabase } from './net/supabase.js?v=2.11';
-import { enLigneDisponible } from './net/config.js?v=2.11';
-import { coupNu } from './net/protocole.js?v=2.11';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.11';
-import { livret, aideDeJeu } from './livret.js?v=2.11';
+} from './engine.js?v=2.12';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.12';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.12';
+import { releve, voler, stopperVols } from './anim.js?v=2.12';
+import { campagne } from './lab.js?v=2.12';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.12';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.12';
+import { Salon } from './net/salon.js?v=2.12';
+import { TransportLocal } from './net/local.js?v=2.12';
+import { TransportSupabase } from './net/supabase.js?v=2.12';
+import { enLigneDisponible } from './net/config.js?v=2.12';
+import { coupNu } from './net/protocole.js?v=2.12';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.12';
+import { livret, aideDeJeu } from './livret.js?v=2.12';
 
 const app = document.getElementById('app');
 
@@ -3188,12 +3188,26 @@ function basculerMiroir(cles) {
  * Pose une illustration sur des plans. Choisir exactement celle que le plan
  * porte à l'impression efface la retouche plutôt que de la réécrire : un plan
  * remis sur son visuel d'origine redevient « imprimé ».
+ *
+ * Sur un LOT, la même image doit donner la même carte. Une illustration n'est
+ * pas seule à décider de ce qu'on voit : le recadrage et le miroir aussi, et
+ * ils se posent plan par plan. Deux plans qui n'avaient pas le même recadrage
+ * restaient donc différents après avoir reçu la même image — on croyait les
+ * avoir modifiés ensemble, et ils ne se ressemblaient pas. Tout le lot prend
+ * donc le cadrage du PREMIER plan choisi : c'est ce qu'on voit dans l'aperçu
+ * au moment de cliquer, et l'on peut le régler ensuite pour tous d'un coup.
  */
 function poserImage(cles, url) {
   surLeModifie(() => {
     for (const c of cles) {
       const p = planDeCle(c);
       retoucher(c, 'image', !url || (p && p.imprime.image === url) ? undefined : url);
+    }
+    if (cles.length < 2) return;
+    const modele = planDeCle(cles[0]) || {};
+    for (const c of cles.slice(1)) {
+      retoucher(c, 'cadre', modele.cadre ? { ...modele.cadre } : undefined);
+      retoucher(c, 'miroir', modele.miroir || undefined);
     }
   });
 }
