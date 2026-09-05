@@ -658,6 +658,14 @@ body.sans-illus .bandeau .seq-bloc .pastille-num { height: 1.5em; }
 /* Le titre de la section porte son bouton d'ajout et son compte : on ajoute
    là où l'on regarde, pas au bas d'une liste qu'il faut dérouler. */
 .modale-images h3 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* Publier le matériel : le seul geste qui le rende visible par tous. Il se
+   distingue des autres exports, qui ne produisent que des documents. */
+.pill.publier { background: var(--violet); color: #fff; border-color: var(--violet); }
+.pill.publier:hover:not(:disabled) { background: var(--violet-clair); border-color: var(--violet-clair); }
+/* Le site publie autre chose que ce que cette machine montre : on le dit là où
+   l'on règle le matériel, pas ailleurs. */
+.bandeau-publie { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
 .obj-html .mot.grand { font-size: 1.05em; font-weight: 800; }
 .obj-html .tc-seuil.nombre.grand { font-size: 1.1rem; }
 /* La hauteur regagnée se rend en corps : les deux lignes sont plus grosses que

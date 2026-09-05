@@ -15,7 +15,7 @@
 //      actions à son journal et rejoue. Le déterminisme garantit l'accord.
 
 import { ANNONCE_MS, appliquerAction, configDuSalon, monIdentite, nomDeSalon,
-  prochainNumero, rejouer, retenirNom } from './protocole.js?v=2.8';
+  prochainNumero, rejouer, retenirNom } from './protocole.js?v=2.9';
 
 const jeton = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 

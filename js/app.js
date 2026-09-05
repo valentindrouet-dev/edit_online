@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.8';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.9';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,32 +12,34 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=2.8';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.8';
-import { elIcon, numIcon } from './icons.js?v=2.8';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.8';
+} from './data.js?v=2.9';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.9';
+import { elIcon, numIcon } from './icons.js?v=2.9';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.9';
 import { chargerVisuels, ajouterVisuel, retirerVisuel, visuelsApportes, urlVisuel,
   cleVisuel, idDeCle, estVisuelApporte, blobVisuel, poidsVisuels, COTE_MAX,
-} from './visuels.js?v=2.8';
+} from './visuels.js?v=2.9';
+import { chargerPublie, materielPublie, signaturePublie, materielVide, composerPublie,
+} from './publie.js?v=2.9';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=2.8';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.8';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.8';
-import { releve, voler, stopperVols } from './anim.js?v=2.8';
-import { campagne } from './lab.js?v=2.8';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.8';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.8';
-import { Salon } from './net/salon.js?v=2.8';
-import { TransportLocal } from './net/local.js?v=2.8';
-import { TransportSupabase } from './net/supabase.js?v=2.8';
-import { enLigneDisponible } from './net/config.js?v=2.8';
-import { coupNu } from './net/protocole.js?v=2.8';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.8';
-import { livret, aideDeJeu } from './livret.js?v=2.8';
+} from './engine.js?v=2.9';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.9';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.9';
+import { releve, voler, stopperVols } from './anim.js?v=2.9';
+import { campagne } from './lab.js?v=2.9';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.9';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.9';
+import { Salon } from './net/salon.js?v=2.9';
+import { TransportLocal } from './net/local.js?v=2.9';
+import { TransportSupabase } from './net/supabase.js?v=2.9';
+import { enLigneDisponible } from './net/config.js?v=2.9';
+import { coupNu } from './net/protocole.js?v=2.9';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.9';
+import { livret, aideDeJeu } from './livret.js?v=2.9';
 
 const app = document.getElementById('app');
 
@@ -142,6 +144,35 @@ function appliquerJeuActif() {
   const src = enl || (store.partie && !store.partie.finie ? store.partie.cfg : store.cfg);
   const modifie = src.materielActif === 'MODIFIE';
   appliquerMateriel(modifie ? src.materiel : null, src.cartesDesactivees, src.materiel);
+}
+
+/**
+ * Le matériel PUBLIÉ — `materiel.json`, dans le dépôt — devient celui de cette
+ * machine quand elle n'a rien réglé elle-même. C'est ce qui fait qu'un lien
+ * partagé montre le même jeu à tout le monde : le site porte le matériel du
+ * maître, et une machine neuve l'adopte sans rien avoir à faire.
+ *
+ * Une machine qui a bricolé garde son bricolage : on n'efface pas le travail de
+ * quelqu'un au chargement d'une page. L'éditeur lui dira que le site publie
+ * autre chose, et lui offrira de l'adopter d'un clic.
+ */
+function adopterPublie(force) {
+  const p = materielPublie();
+  if (!p) return false;
+  if (!force && !materielVide(store.cfg.materiel)) return false;
+  store.cfg.materiel = JSON.parse(JSON.stringify(p.materiel));
+  store.cfg.cartesDesactivees = (p.cartesDesactivees || []).slice();
+  store.cfg.publieAdopte = p.signature || p.date || '1';
+  normaliserMateriel();
+  appliquerJeuActif();
+  sauverCfg();
+  return true;
+}
+
+/** Le site publie-t-il un matériel que cette machine n'a pas encore adopté ? */
+function publieEnAttente() {
+  const p = materielPublie();
+  return !!p && signaturePublie() !== (store.cfg.publieAdopte || '');
 }
 
 normaliserMateriel();
@@ -2638,7 +2669,15 @@ function barreJeu() {
     </label>
     <button class="pill" id="csv-export">⭳ Cartes en CSV</button>
     <button class="pill" id="csv-import">⭱ Importer un CSV</button>
-  </div>`;
+    <button class="pill publier" id="materiel-publier"
+      title="Une archive à déposer dans le dépôt : le matériel et vos images. Une fois publiée, tout le monde voit ce jeu — y compris qui ouvre simplement le lien">⭳ Publier ce matériel</button>
+  </div>
+  ${publieEnAttente() ? `<div class="encart attention bandeau-publie">
+    <b>Le site publie un matériel différent du vôtre.</b> Le vôtre est celui que vous voyez ; celui
+    du site est ce que voient les autres. ${materielVide(store.cfg.materiel)
+    ? '' : 'Adopter le publié <b>remplacera vos retouches locales</b>.'}
+    <button class="pill mini" id="adopter-publie">Adopter le matériel du site</button>
+  </div>` : ''}`;
 }
 
 /**
@@ -4821,6 +4860,15 @@ function brancherMateriel() {
   if (cx) cx.addEventListener('click', exporterCSV);
   const ci = app.querySelector('#csv-import');
   if (ci) ci.addEventListener('click', () => importerCSV(refaire));
+  const pub = app.querySelector('#materiel-publier');
+  if (pub) pub.addEventListener('click', () => publierMateriel(pub));
+  const ad = app.querySelector('#adopter-publie');
+  if (ad) ad.addEventListener('click', () => {
+    if (!materielVide(store.cfg.materiel)
+      && !confirm('Adopter le matériel du site remplacera vos retouches locales. Continuer ?')) return;
+    adopterPublie(true);
+    refaire();
+  });
 
   brancherEditeur(refaireEditeur);
 }
@@ -5253,6 +5301,121 @@ function cibleObj(o) {
   if (o.format) return o.format;
   return o.el || '';
 }
+
+/**
+ * Le matériel, prêt à être publié. Une archive à défaire à la racine du dépôt :
+ *
+ *   materiel.json          ce que l'éditeur a réglé — retouches, cartes créées,
+ *                          cartes écartées ; le site le lit au démarrage
+ *   assets/perso/*.webp    les images apportées, devenues de vrais fichiers
+ *   LISEZ-MOI.txt          les deux gestes à faire
+ *
+ * C'est le seul chemin qui rende un matériel VISIBLE PAR TOUS. Ce que l'éditeur
+ * règle vit dans ce navigateur-ci : le site publié, lui, ne porte que ce que le
+ * dépôt contient. Une image apportée ne peut donc pas rester une clé de réserve
+ * — elle devient un fichier, et le matériel publié désigne son chemin.
+ */
+async function publierMateriel(bouton) {
+  const avant = bouton ? bouton.textContent : '';
+  if (bouton) { bouton.disabled = true; bouton.textContent = 'Préparation…'; }
+  try {
+    const { zipStore } = await import(`./export-pdf.js?v=${VERSION}`);
+    const visuels = visuelsApportes();
+    // Un nom de fichier stable, tiré du nom d'origine : deux images qui
+    // porteraient le même reçoivent un suffixe, un dépôt n'ayant qu'un fichier
+    // par chemin.
+    const pris = new Set();
+    const nomDe = (v) => {
+      const base = (v.nom || 'image').replace(/\.\w+$/, '').replace(/[^a-zA-Z0-9_-]+/g, '-')
+        .replace(/^-+|-+$/g, '').slice(0, 40) || 'image';
+      let nom = base; let k = 2;
+      while (pris.has(nom)) nom = `${base}-${k++}`;
+      pris.add(nom);
+      return nom;
+    };
+    const images = [];
+    const fichiers = [];
+    const parCle = {};
+    for (const v of visuels) {
+      const nom = nomDe(v);
+      const blob = await blobVisuel(v.id);
+      if (!blob) continue;
+      // Le document publié ne garde PAS la clé de réserve : elle ne désigne que
+      // le navigateur du maître, et n'aurait aucun sens ailleurs. La table de
+      // correspondance ne sert qu'ici, le temps de traduire les retouches.
+      parCle[cleVisuel(v.id)] = `assets/perso/${nom}.webp`;
+      images.push({ chemin: `assets/perso/${nom}.webp`, nom: v.nom });
+      fichiers.push({ nom: `assets/perso/${nom}.webp`, data: new Uint8Array(await blob.arrayBuffer()) });
+    }
+    // Le matériel publié ne peut pas désigner une réserve de navigateur : les
+    // clés `perso:` deviennent les chemins des fichiers de l'archive.
+    const cfg = JSON.parse(JSON.stringify({
+      materiel: store.cfg.materiel, cartesDesactivees: store.cfg.cartesDesactivees || [],
+    }));
+    let traduites = 0;
+    for (const p of Object.values(cfg.materiel.plans || {})) {
+      if (p && parCle[p.image]) { p.image = parCle[p.image]; traduites++; }
+    }
+    const doc = composerPublie(cfg, images, VERSION);
+    const enc = new TextEncoder();
+    fichiers.unshift({ nom: 'materiel.json', data: enc.encode(`${JSON.stringify(doc, null, 1)}\n`) });
+    fichiers.push({ nom: 'LISEZ-MOI.txt', data: enc.encode(LISEZ_MOI(images.length)) });
+    const quand = new Date();
+    telecharger(new Blob([zipStore(fichiers, quand)], { type: 'application/zip' }),
+      `edit-materiel-${quand.toISOString().slice(0, 10)}.zip`);
+    // Le maître vient de publier ce qu'il a : son propre matériel EST le publié.
+    // Sans cette marque, il verrait au rechargement suivant le bandeau qui
+    // annonce un site différent du sien — alors que c'est le sien.
+    store.cfg.publieAdopte = doc.signature;
+    sauverCfg();
+    if (bouton) {
+      bouton.textContent = `✓ ${images.length} image${images.length > 1 ? 's' : ''}${
+        traduites ? `, ${traduites} plan${traduites > 1 ? 's' : ''} relié${traduites > 1 ? 's' : ''}` : ''}`;
+      setTimeout(() => { bouton.textContent = avant; }, 4000);
+    }
+  } catch (e) {
+    alert(`L’archive n’a pas pu être écrite : ${e.message || e}`);
+    if (bouton) bouton.textContent = avant;
+  } finally {
+    if (bouton) bouton.disabled = false;
+  }
+}
+
+const LISEZ_MOI = (n) => `EDIT — publier ce matériel
+=========================
+
+Ce que vous réglez dans l'éditeur vit dans VOTRE navigateur. Le site publié,
+lui, ne montre que ce que le dépôt contient : c'est pourquoi les autres
+joueuses voient d'autres cartes, et pas vos illustrations.
+
+Cette archive contient tout ce qu'il faut pour que le site porte VOTRE jeu.
+
+DEUX GESTES
+
+  1. Défaites cette archive À LA RACINE du dépôt, en écrasant ce qui s'y
+     trouve. Elle y pose :
+
+       materiel.json${n ? `
+       assets/perso/  (${n} image${n > 1 ? 's' : ''})` : ''}
+
+  2. Publiez — commit et push. C'est tout.
+
+Au prochain chargement, toute machine qui n'a rien réglé elle-même adopte ce
+matériel automatiquement. Celles qui ont bricolé de leur côté gardent leur
+travail, et l'éditeur leur propose d'adopter le vôtre d'un clic.
+
+VOTRE PROPRE MACHINE
+
+Elle garde son réglage local, qui est identique à ce que vous venez de publier.
+Rien à faire.
+
+LES IMAGES
+
+Elles sont redessinées à 900 px sur le plus grand côté et réencodées en WebP —
+le format et la taille des illustrations de la boîte. Une fois dans
+assets/perso/, elles deviennent des illustrations comme les autres : la galerie
+les propose à tout le monde, et elles partent dans les PDF.
+`;
 
 function exporterCSV() {
   const lignes = [CSV_COLS.join(';')];
@@ -6753,7 +6916,9 @@ window.addEventListener('hashchange', route);
 // carte qui en porte un s'afficherait nue le temps d'un battement, puis se
 // rhabillerait — ce qui se voit. Une réserve qui refuse de s'ouvrir ne retient
 // pas le démarrage : le jeu tourne, sans les visuels apportés.
-chargerVisuels().then(route, route);
+Promise.all([chargerVisuels(), chargerPublie(VERSION)])
+  .then(() => { adopterPublie(false); }, () => {})
+  .then(route, route);
 
 
 // ===========================================================================

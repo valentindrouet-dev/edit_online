@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.8';
+export const VERSION = '2.9';
 export const BUILD_DATE = '2026-09-03 03:40';
 
 export const CHANGELOG = [
+  {
+    v: '2.9',
+    date: '05/09/2026',
+    items: [
+      "<b>Votre matériel devient celui du site.</b> C'était le manque de fond : tout ce que règle l'éditeur vit dans <b>votre</b> navigateur, et le site publié ne montre que ce que le dépôt contient — d'où des cartes différentes chez chacun, et vos illustrations absentes. Le Matériel porte donc un bouton <b>⭳ Publier ce matériel</b> : il écrit une <b>archive</b> à défaire à la racine du dépôt, avec <code>materiel.json</code> et vos images devenues de vrais fichiers dans <code>assets/perso/</code>. Vous publiez, et <b>le lien que vous partagez montre votre jeu</b> — sans que personne ait rien à faire.",
+      "<b>Une machine neuve adopte le publié toute seule</b>, au chargement. Une machine qui a bricolé de son côté garde son travail — on n'efface pas ce que quelqu'un a fait au chargement d'une page — et voit dans le Matériel un bandeau « le site publie un matériel différent du vôtre », avec un bouton pour l'adopter d'un clic.",
+      "<b>Les clés de réserve deviennent des chemins.</b> Une image apportée se désigne dans votre navigateur par <code>perso:xxxx</code>, ce qui n'a de sens que chez vous. L'archive la traduit : le matériel publié pointe <code>assets/perso/mon-image.webp</code>, un fichier que tout le monde peut charger. Elle entre alors dans la galerie comme les illustrations de la boîte, et part dans les PDF.",
+      "<b>Trois couches, du plus faible au plus fort</b> : l'<b>imprimé</b> que le code décrit, le <b>publié</b> que le dépôt porte, le <b>local</b> que cette machine a réglé. Le jeu en ligne, lui, ne change pas : c'est le matériel de l'hôte qui fait foi, il voyage déjà avec le salon.",
+    ],
+  },
   {
     v: '2.8',
     date: '03/09/2026',
