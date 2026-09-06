@@ -14,8 +14,8 @@
 // exactement la forme du Broadcast de Supabase, en local — d'où deux
 // transports qui se ressemblent, et une seule logique applicative au-dessus.
 
-import { ANNONCE_MS, estPerime, resume } from './protocole.js?v=2.14';
-import { CANAL_HALL, canalSalon } from './config.js?v=2.14';
+import { ANNONCE_MS, estPerime, resume } from './protocole.js?v=2.15';
+import { CANAL_HALL, canalSalon } from './config.js?v=2.15';
 
 export class TransportLocal {
   constructor() {

@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.14';
-export const BUILD_DATE = '2026-09-05 17:10';
+export const VERSION = '2.15';
+export const BUILD_DATE = '2026-09-06 11:00';
 
 export const CHANGELOG = [
+  {
+    v: '2.15',
+    date: '06/09/2026',
+    items: [
+      "<b>Un pouvoir de plus : « n si aucun PLAN à droite — ou à gauche — de ce plan ».</b> C'est le seul bandeau du jeu qui paie une <b>place</b> plutôt qu'un contenu : il rapporte quand sa carte se trouve au <b>bout de sa séquence</b>, du côté qu'il désigne. Tous les autres poussent à allonger les lignes ; celui-ci récompense de s'arrêter.",
+      "Il ne regarde que <b>sa propre ligne</b>, et jamais sa propre carte — une carte est toujours quelque part, s'inclure rendrait le pouvoir impossible à tenir. Sa portée ne se règle donc pas : elle est écrite dans la phrase, et l'éditeur dit pourquoi.",
+      "<b>Un Raccord ne l'arrête pas</b> : ce n'est pas un plan, et le bandeau écrit bien « Plan ». Un Raccord posé au bout d'une ligne est de toute façon un Raccord <b>ouvert</b>, que la variante du même nom pénalise déjà.",
+      "Sur la carte il se lit « <b>n si aucun PLAN ▶</b> », et « <b>n si ◀ aucun PLAN</b> » de l'autre côté : c'est le mot qui porte la négation — comme dans « aucun --:-- » — et la flèche se met dehors, du côté qu'on regarde, dans la langue des flèches de portée. Mesuré sur les trois cadrages, seul et à deux pouvoirs : rien ne déborde.",
+    ],
+  },
   {
     v: '2.14',
     date: '05/09/2026',

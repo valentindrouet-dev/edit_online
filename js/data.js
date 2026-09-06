@@ -110,6 +110,12 @@ export const CADRAGES_POUVOIR = ['PL', 'PM', 'GP', 'DEP'];
 //   SANS_TC   n points si aucun plan du montage n'a le minutage visé : égal au
 //             seuil (00:00 pour les Raccords et Génériques), ou strictement
 //             avant, ou strictement après
+//   BOUT      n points si AUCUN PLAN ne suit ce plan-ci de son côté : à sa
+//             droite (`DROITE`) ou à sa gauche (`GAUCHE`), dans sa propre
+//             séquence. C'est le seul bandeau qui parle de la PLACE de sa
+//             carte plutôt que de ce que le banc porte : il paie le bout de
+//             ligne. Un Raccord ne l'arrête pas — ce n'est pas un plan, et le
+//             bandeau écrit bien « Plan »
 //
 // Quatre bandeaux comptent des SÉQUENCES plutôt que des plans — ils lisent la
 // forme du banc, pas son contenu carte par carte :
@@ -237,6 +243,17 @@ export const OBJ = {
   // ouvert la séquence, celui sur lequel elle est alignée ; il n'appartient à
   // aucun des deux côtés. `sens` : GAUCHE | DROITE.
   centre: (n, cible, sens) => ({ kind: 'CENTRE', n, cible, sens: sens === 'DROITE' ? 'DROITE' : 'GAUCHE' }),
+
+  // Le BOUT de ligne : n points si aucun plan ne suit celui-ci, de son côté.
+  // Tous les autres bandeaux comptent ce que le banc porte ; celui-ci paie une
+  // PLACE — être le dernier de sa séquence, ou le premier. Il récompense donc
+  // les lignes courtes et les extrémités, là où tout le reste pousse à
+  // allonger. `sens` : DROITE | GAUCHE.
+  //
+  // Un Raccord ne l'arrête pas : ce n'est pas un plan, et le bandeau écrit bien
+  // « Plan ». Un Raccord posé au bout d'une ligne est de toute façon un Raccord
+  // ouvert, que la variante du même nom pénalise déjà.
+  bout: (n, sens) => ({ kind: 'BOUT', n, sens: sens === 'GAUCHE' ? 'GAUCHE' : 'DROITE' }),
 
   // Par LOT : « 2 points par 3 Armes ». `seuil` est la taille du lot ; un lot
   // incomplet ne rapporte rien — sept armes font deux lots de trois.
@@ -368,7 +385,8 @@ export const planMarque = (objs) => (objs || []).some(rapportePoints);
  * séquence lisent la forme du banc, et deux des pouvoirs ajoutés désignent
  * eux-mêmes où ils comptent — les autres lignes, un côté du centre.
  */
-export const KINDS_PORTEE_FIXE = ['CHRONO', 'AILLEURS', 'CENTRE', ...KINDS_SEQUENCE, ...KINDS_REGLE];
+export const KINDS_PORTEE_FIXE = ['CHRONO', 'AILLEURS', 'CENTRE', 'BOUT',
+  ...KINDS_SEQUENCE, ...KINDS_REGLE];
 
 /** Ce bandeau-là laisse-t-il choisir sa portée ? */
 export const porteeReglable = (o) => !!o && !KINDS_PORTEE_FIXE.includes(o.kind);
@@ -379,6 +397,9 @@ export function porteeFigee(o) {
   if (o.kind === 'CHRONO') return '« Dans l’ordre » se lit toujours sur le montage entier.';
   if (o.kind === 'AILLEURS') return 'Ce bandeau dit lui-même où il compte : dans les autres séquences.';
   if (o.kind === 'CENTRE') return 'Ce bandeau dit lui-même où il compte : d’un côté du centre de sa ligne.';
+  if (o.kind === 'BOUT') {
+    return 'Ce bandeau ne compte rien : il regarde la place de sa propre carte, à un bout de sa ligne.';
+  }
   if (estRegleKind(o.kind)) {
     return 'Ce pouvoir ne compte rien : il change une règle pour vous, tant que la carte est'
       + ' dans votre montage. Il n’a donc pas de portée.';
@@ -664,6 +685,11 @@ export function objLabel(o, cfg, opts = {}) {
         ou || ' dans le montage entier'}`;
     }
     case 'CHRONO':  return `${si} tout est dans l’ordre${ou || ' dans le montage entier'}`;
+    // Le seul bandeau qui parle de la place de sa carte : « 3 si aucun Plan à
+    // droite de ce plan ». La portée est écrite dans la phrase, elle ne se
+    // règle pas — d'où l'absence de `ou`.
+    case 'BOUT': return `${si} aucun Plan à ${
+      o.sens === 'GAUCHE' ? 'gauche' : 'droite'} de ce plan, dans sa séquence`;
     case 'SEUIL': {
       // « Au plus zéro » se dit « aucun » : c'est la lecture qui vient à
       // l'esprit, et celle qu'on écrirait sur la carte.
@@ -1032,6 +1058,7 @@ export function ciblesDe(o) {
     case 'RACCORD':   return ['RACCORD'];
     case 'MORT':      return ['MORT'];
     case 'CHRONO':    return ['ORDRE'];
+    case 'BOUT':      return ['PLAN'];
     case 'DOUBLE':    return ['CARTE'];
     case 'ABSENTES': case 'EXTREME': return ['ICONE'];
     case 'PLAN_ICONES': return ['PLAN', 'ICONE'];

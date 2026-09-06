@@ -13,9 +13,9 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=2.14';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.14';
-import { urlVisuel } from './visuels.js?v=2.14';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=2.15';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.15';
+import { urlVisuel } from './visuels.js?v=2.15';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -150,6 +150,20 @@ function objCoeur(obj, taille, compact, large) {
       <span class="tc-seuil minutage">${obj.sens === 'APRES' ? '&gt;' : '&lt;'}&nbsp;${
         tcTexte(obj.seuil)}</span>`;
     case 'CHRONO':  return `<span class="tag tag-chrono">↗ ordre</span>`;
+    // Le bout de ligne : « aucun PLAN de ce côté-ci ». C'est le MOT qui porte la
+    // négation, comme dans « aucun --:-- » et « aucune 🔫 ». Une croix d'angle
+    // sur le cartouche en aurait fait un détail, et « si PLAN ▶ » se serait lu
+    // comme le contraire exact du pouvoir.
+    //
+    // La flèche se pose DEHORS et pointe vers l'extérieur, du côté qu'on
+    // regarde : c'est déjà la langue des flèches de portée — « ◀ X » veut dire
+    // « X, de ce côté-ci ». Les deux sens se lisent donc en miroir.
+    case 'BOUT': {
+      const g2 = compact ? '' : ' grand';
+      const rien = `<span class="mot${g2}">aucun</span>${cibleHTML('PLAN', taille, compact)}`;
+      const fl = (d) => `<span class="fleche-pos">${d}</span>`;
+      return obj.sens === 'GAUCHE' ? `${fl('◀')}${rien}` : `${rien}${fl('▶')}`;
+    }
     // « n si aucun plan à --:-- » : le mot dit l'absence, et il la dit mieux
     // qu'une croix posée sur l'afficheur — elle en recouvrait les chiffres.
     // Le minutage garde sa couleur propre : bleue quand il n'y en a pas,
@@ -381,7 +395,7 @@ export function objHTML(obj, taille, cfg) {
 }
 
 /** Les bandeaux qui se lisent « n si … » plutôt que « n × … ». */
-const OBJ_SI = ['ABSENT', 'CHRONO', 'SANS_TC', 'SEUIL', 'SEQ_TOUTES', 'DOMINE'];
+const OBJ_SI = ['ABSENT', 'CHRONO', 'SANS_TC', 'SEUIL', 'SEQ_TOUTES', 'DOMINE', 'BOUT'];
 export const estSi = (o) => !!o && OBJ_SI.includes(o.kind);
 
 /**
@@ -521,6 +535,12 @@ function coutCoeur(obj, compact, P, large) {
     case 'PAIRE': return P.rond + (obj.els.length - 1) * (P.rond - EM.chevauche);
     case 'MINUTAGE': return (compact ? 0 : t('Plan') + g) + tt(`< ${tcTexte(obj.seuil)}`);
     case 'CHRONO': return tt('↗ ordre');
+    // Le mot « aucun », l'étiquette Plan, la flèche. Le mot est au grand corps
+    // hors Gros Plan, comme celui du seuil.
+    case 'BOUT': {
+      const mg = compact ? 1 : MOT_GRAND;
+      return mg * mot('aucun') + g + t('Plan') + g + 0.9;
+    }
     // Replié, il ne réclame que sa ligne la plus large — et un cran de plus,
     // puisqu'il en profite pour grossir.
     case 'SANS_TC': return BLOC_SEQ * Math.max(MOT_GRAND * mot('aucun'),

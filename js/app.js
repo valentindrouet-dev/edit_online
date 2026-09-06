@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.14';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.15';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,34 +12,34 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=2.14';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.14';
-import { elIcon, numIcon } from './icons.js?v=2.14';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.14';
+} from './data.js?v=2.15';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.15';
+import { elIcon, numIcon } from './icons.js?v=2.15';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.15';
 import { chargerVisuels, ajouterVisuel, retirerVisuel, visuelsApportes, urlVisuel,
   cleVisuel, idDeCle, estVisuelApporte, blobVisuel, poidsVisuels, COTE_MAX,
-} from './visuels.js?v=2.14';
+} from './visuels.js?v=2.15';
 import { chargerPublie, materielPublie, signaturePublie, materielVide, composerPublie,
-} from './publie.js?v=2.14';
+} from './publie.js?v=2.15';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=2.14';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.14';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.14';
-import { releve, voler, stopperVols } from './anim.js?v=2.14';
-import { campagne } from './lab.js?v=2.14';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.14';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.14';
-import { Salon } from './net/salon.js?v=2.14';
-import { TransportLocal } from './net/local.js?v=2.14';
-import { TransportSupabase } from './net/supabase.js?v=2.14';
-import { enLigneDisponible } from './net/config.js?v=2.14';
-import { coupNu } from './net/protocole.js?v=2.14';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.14';
-import { livret, aideDeJeu } from './livret.js?v=2.14';
+} from './engine.js?v=2.15';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.15';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.15';
+import { releve, voler, stopperVols } from './anim.js?v=2.15';
+import { campagne } from './lab.js?v=2.15';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.15';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.15';
+import { Salon } from './net/salon.js?v=2.15';
+import { TransportLocal } from './net/local.js?v=2.15';
+import { TransportSupabase } from './net/supabase.js?v=2.15';
+import { enLigneDisponible } from './net/config.js?v=2.15';
+import { coupNu } from './net/protocole.js?v=2.15';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.15';
+import { livret, aideDeJeu } from './livret.js?v=2.15';
 
 const app = document.getElementById('app');
 
@@ -2215,6 +2215,7 @@ const KINDS = [
   ['ABSENT',  'si CIBLE absente…'],
   ['CHRONO',  'si DANS L’ORDRE'],
   ['SANS_TC', 'si AUCUN MINUTAGE…'],
+  ['BOUT',    'si AUCUN PLAN à gauche / à droite de ce plan…'],
   // Les bandeaux qui comptent des séquences plutôt que des plans : ils lisent
   // la forme du banc, pas son contenu carte par carte.
   ['SEQ_TAILLE',   'par SÉQUENCE de n plans ou plus / ou moins…'],
@@ -3682,6 +3683,13 @@ function blocPouvoir(o, ou, rang = 1) {
       <select data-champ-obj="${ou}"${R} data-part="sens">
         ${opt('MIN', 'ou plus', o.sens !== 'MAX')}${opt('MAX', 'ou moins', o.sens === 'MAX')}
       </select>`;
+  } else if (kind === 'BOUT') {
+    // Rien d'autre à régler : le pouvoir ne compte pas, il regarde la place de
+    // sa carte. Seul le côté se choisit.
+    complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
+        ${opt('DROITE', 'à droite de ce plan', o.sens !== 'GAUCHE')}
+        ${opt('GAUCHE', 'à gauche de ce plan', o.sens === 'GAUCHE')}
+      </select>`;
   } else if (kind === 'SEQ_VOISINES') {
     complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
         ${opt('AVANT', 'au-dessus de celle-ci', o.sens !== 'APRES')}
@@ -4406,7 +4414,7 @@ function declencheurs(obj, plans) {
     case 'MORT':    return plans.filter((p) => p.mort).length;
     case 'MINUTAGE': return plans.filter((p) => (obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
     // Les « si » : le pouvoir se déclenche, ou pas — jamais plusieurs fois.
-    case 'ABSENT': case 'CHRONO': case 'SANS_TC': case 'SEUIL': return 1;
+    case 'ABSENT': case 'CHRONO': case 'SANS_TC': case 'SEUIL': case 'BOUT': return 1;
     // Les bandeaux de séquence ne se déclenchent pas sur une carte mais sur la
     // forme du banc : le matériel seul ne peut pas dire combien de fois. On les
     // compte donc une fois — leur plancher honnête. Il en va de même de ceux
@@ -5181,6 +5189,7 @@ function construireObj(kind, actuel) {
     MINUTAGE: () => OBJ.minutage(n, actuel && actuel.sens ? actuel.sens : 'AVANT',
       actuel && actuel.seuil !== undefined ? actuel.seuil : 25),
     CHRONO:  () => OBJ.chrono(n),
+    BOUT:    () => OBJ.bout(n, actuel && actuel.sens === 'GAUCHE' ? 'GAUCHE' : 'DROITE'),
     SANS_TC: () => OBJ.sansTc(n, actuel && actuel.sens ? actuel.sens : 'EGAL',
       actuel && actuel.seuil !== undefined ? actuel.seuil : 0),
     SEQ_TAILLE:   () => OBJ.seqTaille(n, actuel && actuel.seuil ? Math.max(1, actuel.seuil) : 3,
@@ -5518,6 +5527,7 @@ function objDepuisCSV(r, suf = '') {
     case 'PLAN':    return OBJ.plan(n, portee);
     case 'MORT':    return OBJ.mort(n, portee);
     case 'CHRONO':  return OBJ.chrono(n, portee);
+    case 'BOUT':    return OBJ.bout(n, sens0 === 'GAUCHE' ? 'GAUCHE' : 'DROITE');
     case 'SANS_TC': return OBJ.sansTc(n, ['AVANT', 'APRES'].includes(sens0) ? sens0 : 'EGAL', seuil, portee);
     case 'FORMAT': {
       const [f1, f2] = cible.split('+');

@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=2.14';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=2.15';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -169,6 +169,17 @@ export function porteeDe(obj, sequence, banc, cfg, porteur) {
     return obj.sens === 'DROITE' ? ligne.slice(c + 1) : ligne.slice(0, c);
   }
 
+  // « Aucun plan de ce côté-ci » : la portée est ce qu'il y a au-delà du
+  // porteur, de son côté — strictement, lui non compris. C'est le seul bandeau
+  // qui parle de la PLACE de sa carte, et une carte est toujours quelque part :
+  // s'inclure lui-même le rendrait impossible à tenir.
+  if (obj.kind === 'BOUT') {
+    const ligne = sequence && sequence.includes(porteur) ? sequence : ligneDe(banc, porteur);
+    const i = ligne ? ligne.indexOf(porteur) : -1;
+    if (i < 0) return [];
+    return obj.sens === 'GAUCHE' ? ligne.slice(0, i) : ligne.slice(i + 1);
+  }
+
   const p = objPortee(obj, cfg);
   // Une portée vide plutôt que rien du tout : un plan qu'on interroge alors
   // qu'il n'est pas sur ce banc-là — un aperçu, un plan repris en main — ne
@@ -298,6 +309,12 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
       return n * portee.filter((p) => (obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
     case 'CHRONO':
       return chronologique(portee, cfg) ? n : 0;
+    // Le bout de ligne. La portée est déjà ce qu'il y a au-delà du porteur, de
+    // son côté : il reste à vérifier qu'aucun PLAN ne s'y trouve. Un Raccord
+    // n'y change rien — le bandeau écrit « Plan », et un Raccord n'en est pas
+    // un ici plus qu'ailleurs.
+    case 'BOUT':
+      return portee.some((p) => !estRaccord(p)) ? 0 : n;
     case 'SANS_TC': {
       // La portée doit être vierge du minutage visé — dont le 00:00 bleu des
       // Raccords et Génériques.
@@ -623,7 +640,7 @@ export function compter(banc, cfg) {
 
   const detail = {
     RACCORD: 0, PLAN: 0, FORMAT: 0, ELEMENT: 0, PAIRE: 0,
-    MORT: 0, ABSENT: 0, MINUTAGE: 0, CHRONO: 0, SANS_TC: 0,
+    MORT: 0, ABSENT: 0, MINUTAGE: 0, CHRONO: 0, SANS_TC: 0, BOUT: 0,
     SEQ_TAILLE: 0, SEQ_VOISINES: 0, SEQ_LONGUE: 0, SEQ_AVEC: 0, SEQ_TOUTES: 0,
     AILLEURS: 0, CENTRE: 0, LOT: 0, SEUIL: 0, ABSENTES: 0, DOMINE: 0,
     EXTREME: 0, PLAN_ICONES: 0, DOUBLE: 0,
@@ -723,6 +740,7 @@ export const SOURCES_LABEL = {
   MINUTAGE: 'Objectifs de minutage',
   SANS_TC: 'Objectifs de minutage absent',
   CHRONO: 'Objectifs de montage dans l’ordre',
+  BOUT: 'Objectifs de bout de séquence',
   SEQ_TAILLE: 'Objectifs de séquence longue',
   SEQ_VOISINES: 'Objectifs de séquences voisines',
   SEQ_LONGUE: 'Objectifs de plus longue séquence',

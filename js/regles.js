@@ -14,13 +14,25 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=2.14';
-import { elIcon } from './icons.js?v=2.14';
+import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=2.15';
+import { elIcon } from './icons.js?v=2.15';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.24',
+    date: '06/09/2026',
+    origine: 'Pouvoir demande par l’auteur',
+    corps: (c) => corps_0_24(c),
+    items: [
+      '<b>Un pouvoir de plus : « n si aucun PLAN à droite — ou à gauche — de ce plan ».</b> C’est le seul bandeau qui paie une <b>place</b> plutôt qu’un contenu : il rapporte quand sa carte se trouve au <b>bout de sa séquence</b>, du côté qu’il désigne. Tous les autres poussent à allonger les lignes ; celui-ci récompense de s’arrêter.',
+      'Il ne regarde que <b>sa propre ligne</b>, et jamais sa propre carte : une carte est toujours quelque part, s’inclure la rendrait impossible à tenir. Sa portée ne se règle donc pas — elle est écrite dans la phrase.',
+      '<b>Un Raccord ne l’arrête pas</b> : ce n’est pas un plan, et le bandeau écrit bien « Plan ». Un Raccord posé au bout d’une ligne est de toute façon un Raccord <b>ouvert</b>, que la variante du même nom pénalise déjà.',
+      'Sur la carte il se lit « <b>n si aucun PLAN ▶</b> » — et « <b>n si ◀ aucun PLAN</b> » de l’autre côté : la flèche se met dehors et pointe vers le côté qu’on regarde, comme les flèches de portée du jeu.',
+    ],
+  },
   {
     v: '0.23',
     date: '03/09/2026',
@@ -479,6 +491,17 @@ export function majBloc(v, html) {
 
 // --- v0.23 -----------------------------------------------------------------
 // Variante : un Raccord qu'on n'a pas ferme ne raccorde rien, et coute.
+
+function corps_0_24(c) {
+  return corps_0_23(c)
+    .replace('<h3>Fin de partie</h3>', `${majBloc('0.24',
+    `<b>« n si aucun PLAN à droite — ou à gauche — de ce plan »</b> paie une <b>place</b> et non un
+     contenu : il rapporte quand sa carte est au <b>bout de sa séquence</b>, du côté qu'il désigne.
+     Il ne regarde que sa propre ligne, et jamais sa propre carte.
+     <br><br>Un <b>Raccord</b> ne l'arrête pas : ce n'est pas un plan, et le bandeau écrit bien
+     « Plan ». Sur la carte, la flèche se met dehors et pointe vers le côté qu'on regarde.`)}
+      <h3>Fin de partie</h3>`);
+}
 
 function corps_0_23(c) {
   const m = c && c.raccordOuvertMalus;

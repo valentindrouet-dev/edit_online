@@ -16,9 +16,9 @@
 import {
   FORMATS, ELEMENTS, ELEMENT_IDS, PORTEES, OBJ, objLabel, PAIRES_DEPART, PLANS_DEPART,
   buildCartesDoubles, buildPlansLarges, buildDeparts, SCENES, recenserBoite,
-} from './data.js?v=2.14';
-import { elIcon } from './icons.js?v=2.14';
-import { objHTML } from './cards.js?v=2.14';
+} from './data.js?v=2.15';
+import { elIcon } from './icons.js?v=2.15';
+import { objHTML } from './cards.js?v=2.15';
 
 // --- Les briques de mise en page -------------------------------------------
 
@@ -427,6 +427,7 @@ export function aideDeJeu(cfg) {
       ${g(OBJ.seuilCible(3, 'ARME', 'MIN', 4))}
       ${g(OBJ.sansTc(3, 'AVANT', 30))}
       ${g(OBJ.seqToutes(4, 3, 'MIN'))}
+      ${g(OBJ.bout(3, 'DROITE'))}
     </div>
 
     <div class="aj-bloc">
