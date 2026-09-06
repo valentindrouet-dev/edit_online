@@ -13,9 +13,9 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=2.15';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.15';
-import { urlVisuel } from './visuels.js?v=2.15';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=2.16';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.16';
+import { urlVisuel } from './visuels.js?v=2.16';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -159,8 +159,12 @@ function objCoeur(obj, taille, compact, large) {
     // regarde : c'est déjà la langue des flèches de portée — « ◀ X » veut dire
     // « X, de ce côté-ci ». Les deux sens se lisent donc en miroir.
     case 'BOUT': {
-      const g2 = compact ? '' : ' grand';
-      const rien = `<span class="mot${g2}">aucun</span>${cibleHTML('PLAN', taille, compact)}`;
+      // Le cartouche PLAN, barré de la GROSSE croix rouge — celle qui marque une
+      // icône absente. `grande-croix` la fait de la taille d'une pastille au lieu
+      // du petit sceau d'angle que porte d'ordinaire un cartouche : ici la croix
+      // est tout le pouvoir, pas une nuance.
+      const rien = `<span class="barre grande-croix">${
+        cibleHTML('PLAN', taille, compact)}${croixNon()}</span>`;
       const fl = (d) => `<span class="fleche-pos">${d}</span>`;
       return obj.sens === 'GAUCHE' ? `${fl('◀')}${rien}` : `${rien}${fl('▶')}`;
     }
@@ -460,6 +464,15 @@ const LARGEUR_MOITIE = { GP: 6.72, PM: 13.28, PL: 20, DEP: 20 };
 // du nombre de lignes dont dispose une phrase.
 const HAUTEUR_MOITIE = 13.8;
 const PART_BANDEAU = { illustre: 0.18, nu: 0.3 };
+// Deux pouvoirs ne se partagent plus la largeur : ils s'EMPILENT, l'un au-dessus
+// de l'autre. Chacun retrouve alors toute la largeur de la carte — un « RACCORD »
+// entier plutôt qu'un « Racc. » — et la bande grandit un peu pour les loger.
+// 26 % au lieu de 18 : chaque rangée fait donc 13 %, soit 0,72 fois la hauteur
+// d'un bandeau à un seul pouvoir. C'est ce rapport qui borne le grossissement.
+const PART_BANDEAU_DEUX = { illustre: 0.26, nu: 0.42 };
+const RANGS_DEUX = 2;
+const PLAFOND_DEUX = Math.round(PLAFOND_SERRAGE
+  * (PART_BANDEAU_DEUX.illustre / RANGS_DEUX) / PART_BANDEAU.illustre * 100) / 100;
 
 /**
  * Le corps d'écriture d'une phrase de pouvoir de règle, en em de la carte.
@@ -481,8 +494,9 @@ const CORPS_PHRASE_MIN = 0.3;
 const CORPS_PHRASE_MAX = 0.86;
 const LARGEUR_CAR = 0.56;
 
-function corpsPhrase(texte, large, nu) {
-  const H = HAUTEUR_MOITIE * (nu ? PART_BANDEAU.nu : PART_BANDEAU.illustre) * 0.86;
+function corpsPhrase(texte, large, nu, rangs = 1) {
+  const P = rangs > 1 ? PART_BANDEAU_DEUX : PART_BANDEAU;
+  const H = HAUTEUR_MOITIE * (nu ? P.nu : P.illustre) * 0.86 / rangs;
   const W = Math.max(1, large - 0.5);
   const C = Math.max(1, String(texte).length);
   return Math.max(CORPS_PHRASE_MIN,
@@ -535,12 +549,9 @@ function coutCoeur(obj, compact, P, large) {
     case 'PAIRE': return P.rond + (obj.els.length - 1) * (P.rond - EM.chevauche);
     case 'MINUTAGE': return (compact ? 0 : t('Plan') + g) + tt(`< ${tcTexte(obj.seuil)}`);
     case 'CHRONO': return tt('↗ ordre');
-    // Le mot « aucun », l'étiquette Plan, la flèche. Le mot est au grand corps
-    // hors Gros Plan, comme celui du seuil.
-    case 'BOUT': {
-      const mg = compact ? 1 : MOT_GRAND;
-      return mg * mot('aucun') + g + t('Plan') + g + 0.9;
-    }
+    // L'étiquette Plan, sa croix, la flèche. La croix déborde un peu du cartouche
+    // qu'elle marque, à droite : c'est ce demi-quart de place en plus.
+    case 'BOUT': return t('Plan') + 0.25 + g + 0.9;
     // Replié, il ne réclame que sa ligne la plus large — et un cran de plus,
     // puisqu'il en profite pour grossir.
     case 'SANS_TC': return BLOC_SEQ * Math.max(MOT_GRAND * mot('aucun'),
@@ -614,7 +625,7 @@ function coutCoeur(obj, compact, P, large) {
 }
 
 /** Ce que réclame un pouvoir entier — sa valeur, son signe, son cœur, ses flèches. */
-function coutObj(obj, compact, cfg, P, format, large) {
+function coutObj(obj, compact, cfg, P, format, large, rangs = 1) {
   // Un pouvoir de règle n'a ni valeur, ni « × », ni flèches de portée : sa
   // phrase occupe le reste du bandeau et choisit son corps pour y tenir. Elle
   // ne peut cependant pas se replier en deçà de son plus long mot : c'est cette
@@ -622,7 +633,8 @@ function coutObj(obj, compact, cfg, P, format, large) {
   // côté d'elle.
   if (estRegle(obj)) {
     const phrase = phraseRegle(obj, compact);
-    const corps = corpsPhrase(phrase, (LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM) / 2, P === PROFILS.nu);
+    const corps = corpsPhrase(phrase, LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM,
+      P === PROFILS.nu, rangs);
     const longMot = phrase.split(/\s+/).reduce((m, w) => Math.max(m, w.length), 0);
     return longMot * corps * 0.56;
   }
@@ -640,14 +652,22 @@ function coutObj(obj, compact, cfg, P, format, large) {
  */
 export function serrageBandeau(objs, format, cfg, nu) {
   if (!objs.length) return 1;
-  const compact = format === 'GP' || objs.length > 1;
-  const large = format === 'PL' && objs.length === 1;
+  // Deux pouvoirs s'EMPILENT : chacun a toute la largeur de la carte, et seule
+  // la hauteur se partage. Il n'y a donc plus de raison d'abréger sur un Plan
+  // Moyen ou un Plan Large — seul le Gros Plan, qui n'a qu'un tiers de carte,
+  // garde sa forme courte.
+  const rangs = objs.length;
+  const compact = format === 'GP';
+  const large = format === 'PL';
   const P = PROFILS[(nu === undefined ? lectureNue : nu) ? 'nu' : 'illustre'];
   // Une marge de sûreté : tout ne rétrécit pas exactement en proportion — une
   // bordure d'un pixel, l'interlettrage, l'arrondi des glyphes aux petites
   // tailles. Mieux vaut un bandeau un cheveu trop serré qu'un mot coupé.
-  const besoin = (objs.reduce((s, o) => s + coutObj(o, compact, cfg, P, format, large), 0)
-    + (objs.length - 1) * EM.sep) * 1.2;
+  //
+  // Empilés, ce n'est plus la SOMME qu'il faut loger mais le PLUS LARGE des
+  // deux : chaque rangée est seule sur sa ligne.
+  const couts = objs.map((o) => coutObj(o, compact, cfg, P, format, large, rangs));
+  const besoin = (rangs > 1 ? Math.max(...couts) : couts.reduce((x, y) => x + y, 0)) * 1.2;
   const dispo = LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM;
   // On ne descend pas sous une taille de pastille plancher : en dessous plus
   // rien ne se lit, et mieux vaut alors rogner un mot que rendre la carte
@@ -664,7 +684,11 @@ export function serrageBandeau(objs, format, cfg, nu) {
   // gagne en largeur ce qu'il perd en hauteur, et la bande, elle, ne grandit
   // pas. Agrandi comme un bandeau d'une seule ligne, il débordait par le haut
   // et par le bas — « SÉQUENCE avec » rogné, « 3+ PLANS » coupé.
-  const haut = objs.some((o) => plieEnDeux(o, compact, large)) ? PLAFOND_PLIE : PLAFOND_SERRAGE;
+  // Une rangée de bandeau empilé fait 0,72 fois la hauteur d'un bandeau seul :
+  // le grossissement s'y borne d'autant, sinon le texte déborderait par le haut
+  // et par le bas de sa rangée.
+  const haut = rangs > 1 ? PLAFOND_DEUX
+    : (objs.some((o) => plieEnDeux(o, compact, large)) ? PLAFOND_PLIE : PLAFOND_SERRAGE);
   return Math.max(plancher, Math.min(haut, facteur));
 }
 
@@ -678,16 +702,17 @@ function bandeau(objs, format, cfg) {
   // Même sans objectif le bandeau reste : c'est lui qui aligne le bas des
   // deux moitiés d'une carte.
   if (!objs.length) return '<div class="bandeau sans-objectif"></div>';
-  const compact = format === 'GP' || objs.length > 1;
-  // Un Plan Large seul a la carte entière pour bande : rien n'y a besoin de se
-  // replier sur deux lignes.
-  const pleineLargeur = format === 'PL' && objs.length === 1;
-  // Deux pouvoirs se partagent la largeur : une phrase n'en a donc que la
-  // moitié, et se met à l'échelle en conséquence.
-  const large = (LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM) / objs.length;
+  const rangs = objs.length;
+  const compact = format === 'GP';
+  // Un Plan Large a la carte entière pour bande : rien n'y a besoin de se
+  // replier sur deux lignes, même à deux pouvoirs — ils s'empilent.
+  const pleineLargeur = format === 'PL';
+  // Empilés, chacun garde TOUTE la largeur : une phrase s'y met à l'échelle sur
+  // la carte entière, et non sur une demi-carte.
+  const large = LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM;
   const un = (o) => (estRegle(o)
     ? `<span class="bandeau-obj regle" style="--cp:${
-      corpsPhrase(phraseRegle(o, compact), large, lectureNue).toFixed(3)}em">${
+      corpsPhrase(phraseRegle(o, compact), large, lectureNue, rangs).toFixed(3)}em">${
       objContenu(o, undefined, compact, cfg, pleineLargeur)}</span>`
     : `<span class="bandeau-obj">${numIcon(o.n)}<span class="${
       estSi(o) ? 'si' : 'x'}">${estSi(o) ? 'si' : '×'}</span>${
@@ -724,7 +749,12 @@ export function renderPlan(h, opts = {}) {
   const large = h.format === 'PL' || h.format === 'DEP';
   // `neuf` marque le plan qui vient d'être posé : c'est là que la carte en vol
   // doit atterrir.
+  // Deux pouvoirs s'empilent, et la bande grandit pour les loger. Les deux
+  // moitiés d'une carte prennent la même hauteur de bande — `bandeauDouble` —,
+  // sans quoi leurs bas ne s'aligneraient plus.
+  const objsIci = opts.objs || objsDe(h);
   const cls = ['moitie', `f-${h.format}`, h.transition ? 'transition' : '', h.depart ? 'depart' : '',
+    opts.bandeauDouble || objsIci.length > 1 ? 'bande-deux' : '',
     opts.clickable ? 'choisissable' : '', opts.selected ? 'choisi' : '', opts.neuf ? 'neuf' : ''].join(' ');
   const flex = large ? '1 1 100%' : (h.format === 'GP' ? '0 0 33.6%' : '1 1 66.4%');
   // Le libellé du bas dit le TYPE du plan, pas son rôle : une Ouverture, un
@@ -780,7 +810,7 @@ export function renderPlan(h, opts = {}) {
     </div>
     <div class="pastilles" style="--n:${Math.max(1, icones.length)}">${icones.length
       ? `<span class="pastilles-fond">${icones.map((e) => elIcon(e)).join('')}</span>` : ''}</div>
-    ${bandeau(opts.objs || objsDe(h), h.format, opts.cfg)}
+    ${bandeau(objsIci, h.format, opts.cfg)}
     <div class="libelle" style="--c:${encreLibelle(h.format, !!h.transition)}">${label}</div>
   </div>`;
 }
@@ -795,9 +825,13 @@ export function renderCarte(carte, verso, opts = {}) {
   const plans = m ? (verso ? [m.GP, m.PM] : [m.PM, m.GP]) : [plHalf(carte)];
   const cls = ['carte', opts.selected ? 'sel' : '', opts.small ? 'small' : '', opts.tiny ? 'tiny' : '',
     opts.clickable ? 'clickable' : '', opts.moitiesChoisissables ? 'choix-moitie' : ''].join(' ');
+  // Une carte est une feuille : ses deux moitiés doivent finir à la même
+  // hauteur. Si l'une porte deux pouvoirs, les deux bandes grandissent.
+  const bandeauDouble = plans.some((h) => (objsDe(h) || []).length > 1);
   return `<div class="${cls}" data-carte="${carte.id}" data-verso="${verso ? 1 : 0}">
     ${plans.map((h) => renderPlan(h, {
       ...opts,
+      bandeauDouble,
       // Au montage, la carte reste entière : c'est la moitié que l'on désigne.
       selected: opts.formatChoisi ? opts.formatChoisi === h.format : opts.selected,
     })).join('')}

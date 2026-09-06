@@ -248,6 +248,14 @@ button { font-family: inherit; }
    grandit d'un dixième et se rogne sur la droite au lieu du bas — on voit donc
    le bas des dessins, qui était coupé. */
 .illus     { flex: 0 0 76.5%; position: relative; overflow: hidden; }
+/* Une carte dont un côté porte DEUX pouvoirs donne 8 % de plus à sa bande, sur
+   ses DEUX moitiés : sinon les bas de carte ne s'aligneraient plus. Ce sont
+   les mêmes 8 % que l'illustration cède, et le calque des icônes remonte
+   d'autant — il se compte depuis le bas. */
+.moitie.bande-deux .illus { flex: 0 0 68.5%; }
+.moitie.bande-deux .pastilles { bottom: 31.5%; }
+.moitie.bande-deux .bandeau { flex: 0 0 26%; }
+body.sans-illus .moitie.bande-deux .bandeau { flex: 0 0 42%; }
 /* L'illustration vit dans sa propre couche, sous le minutage : la retourner en
    miroir ne retourne alors que le dessin. */
 .illus-image { position: absolute; inset: 0; background-size: cover;
@@ -327,20 +335,23 @@ button { font-family: inherit; }
   display: flex; align-items: center; justify-content: center; gap: .24em;
   min-width: 0; align-self: stretch;
 }
-.bandeau.deux { gap: .18em; }
-.bandeau.deux .bandeau-obj { flex: 0 1 auto; gap: .16em; }
 .bandeau-sep {
   flex: 0 0 auto; width: 1.5px; align-self: stretch; margin: .22em .04em;
   background: rgba(0, 0, 0, .28); border-radius: 1px;
 }
-/* Deux pouvoirs à loger : tout le monde recule d'autant, la valeur comme les
-   icônes. Ne faire reculer que la valeur la faisait passer pour une pastille
-   de second rang. */
-.bandeau.deux .pastille, .bandeau.deux .pastille-num { height: calc(74% * var(--ec, 1)); }
-.bandeau.deux .tag { font-size: .74em; padding: .2em .34em; }
-.bandeau.deux .x, .bandeau.deux .si { font-size: 1.15em; }
-.bandeau.deux .fleche-pos { font-size: 1em; }
-.moitie.f-GP .bandeau.deux .x, .moitie.f-GP .bandeau.deux .si { font-size: .95em; }
+/* DEUX POUVOIRS S'EMPILENT, l'un au-dessus de l'autre. Côte à côte, chacun
+   n'avait qu'une demi-carte : tout y reculait, les mots s'abrégeaient — « Racc. »
+   pour « RACCORD » —, et la lecture se faisait en deux colonnes serrées. Empilés,
+   chacun retrouve TOUTE la largeur ; c'est la hauteur qu'ils partagent, et la
+   bande grandit un peu pour cela — 26 % de la carte au lieu de 18.
+   `flex: 1 1 0` donne à chaque rangée une hauteur définie : sans elle les
+   pastilles, dimensionnées en pourcentage de leur parent, retomberaient à zéro. */
+.bandeau.deux { flex-direction: column; gap: .1em; }
+.bandeau.deux .bandeau-obj { flex: 1 1 0; min-height: 0; width: 100%; align-self: stretch; }
+/* Le trait qui les sépare se couche avec eux. */
+.bandeau.deux .bandeau-sep {
+  width: auto; height: 1.5px; align-self: stretch; margin: 0 .8em; flex: 0 0 auto;
+}
 .libelle   { flex: 0 0 5.5%;  display: flex; align-items: center; justify-content: center; }
 
 /* --- Lecture nue, sans illustration ---------------------------------------
@@ -769,6 +780,22 @@ body.sans-illus .barre .pastille + .croix-non {
 .barre .tag + .croix-non, .barre .tc-seuil + .croix-non { height: .6em; bottom: 27%; }
 body.sans-illus .barre .tag + .croix-non,
 body.sans-illus .barre .tc-seuil + .croix-non { height: .8em; bottom: 30%; }
+/* Sauf quand la croix EST le pouvoir. « n si aucun PLAN de ce côté-ci » ne dit
+   rien d'autre qu'une absence : sa croix prend alors la taille de celle d'une
+   icône absente, et se voit d'aussi loin que le cartouche qu'elle barre.
+
+   Elle se mesure ici sur LE CARTOUCHE et non sur la bande : un cartouche fait
+   moins de la moitié de la hauteur d'une icône, et une croix calculée pour une
+   pastille tombait sous lui au lieu de le barrer. `height: auto` fait donc
+   épouser au conteneur la hauteur du mot, et les pourcentages s'y rapportent :
+   la croix vaut 1,24 fois le cartouche, et son centre tombe sur son bord droit :
+   elle mord le coin sans avaler le mot, qui se lit encore en entier.
+
+   `align-self: center` est indispensable : sans elle la boîte s'étirerait à la
+   hauteur de la rangée — c'est le défaut d'un enfant de flex — et les 124 %
+   se compteraient sur la bande entière, ce qui donne un disque énorme. */
+.barre.grande-croix { height: auto; align-self: center; margin-right: .32em; }
+.barre.grande-croix .tag + .croix-non { height: 124%; bottom: -40%; right: -30%; }
 
 .moitie .libelle {
   text-align: center; font-size: .54em; font-weight: 800; letter-spacing: .07em;

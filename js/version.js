@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.15';
-export const BUILD_DATE = '2026-09-06 11:00';
+export const VERSION = '2.16';
+export const BUILD_DATE = '2026-09-06 15:30';
 
 export const CHANGELOG = [
+  {
+    v: '2.16',
+    date: '06/09/2026',
+    items: [
+      "<b>Deux pouvoirs sur une carte s'EMPILENT</b>, l'un au-dessus de l'autre, au lieu de se partager la largeur. Côte à côte, chacun n'avait qu'une demi-carte : tout y reculait — pastilles, cartouches, écarts — et les mots s'abrégeaient, « Racc. » pour <b>RACCORD</b>. Empilés, chacun retrouve <b>toute la largeur</b> et le vocabulaire entier ; c'est la hauteur qu'ils partagent.",
+      "La bande grandit un peu pour cela — <b>26 % de la carte au lieu de 18</b> —, et l'illustration lui cède ces huit points. Les <b>deux moitiés</b> d'une carte prennent la même hauteur de bande dès que l'une porte deux pouvoirs : sans quoi les bas de carte ne s'aligneraient plus. Le trait qui sépare les deux pouvoirs se couche avec eux.",
+      "<b>« n si aucun PLAN de ce côté-ci » porte désormais la grosse croix rouge</b>, celle qui marque une icône absente, sur le cartouche <b>PLAN</b>. Le mot « aucun » disparaît : la croix le dit. Elle se mesure sur le cartouche et non sur la bande — calculée pour une pastille, elle tombait sous le mot au lieu de le barrer — et son centre tombe sur son bord droit, si bien qu'elle mord le coin sans avaler le mot.",
+    ],
+  },
   {
     v: '2.15',
     date: '06/09/2026',
