@@ -252,6 +252,16 @@ button { font-family: inherit; }
    ses DEUX moitiés : sinon les bas de carte ne s'aligneraient plus. Ce sont
    les mêmes 8 % que l'illustration cède, et le calque des icônes remonte
    d'autant — il se compte depuis le bas. */
+/* Un plan doit se dessiner PAREIL d'une carte à l'autre. Une moitié qui n'a
+   qu'un pouvoir, posée sur une carte dont l'autre moitié en porte deux, reçoit
+   la bande haute comme sa voisine — mais son contenu, lui, ne doit pas grandir :
+   les pastilles se mesurent en pourcentage de la bande, et le même Gros Plan
+   montrait des icônes une fois et demie trop grosses selon la carte où il
+   tombait. Sa rangée garde donc la hauteur d'une bande ordinaire — 18 des 26 % —,
+   centrée dans la sienne. */
+.moitie.bande-deux .bandeau:not(.deux) .bandeau-obj {
+  flex: 0 0 auto; height: 69.2%; align-self: center;
+}
 .moitie.bande-deux .illus { flex: 0 0 68.5%; }
 .moitie.bande-deux .pastilles { bottom: 31.5%; }
 .moitie.bande-deux .bandeau { flex: 0 0 26%; }

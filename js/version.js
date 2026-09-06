@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.16';
-export const BUILD_DATE = '2026-09-06 15:30';
+export const VERSION = '2.17';
+export const BUILD_DATE = '2026-09-06 17:00';
 
 export const CHANGELOG = [
+  {
+    v: '2.17',
+    date: '06/09/2026',
+    items: [
+      "<b>Un plan se dessine pareil d'une carte à l'autre.</b> Depuis que deux pouvoirs s'empilent, la bande grandit — et elle grandit sur les <b>deux</b> moitiés, pour que les bas de carte restent alignés. La moitié d'à côté, elle, n'a qu'un pouvoir : ses pastilles se mesurant en pourcentage de la bande, elles grossissaient d'une fois et demie. Le <b>même Gros Plan 305</b> montrait donc des icônes énormes sur une carte et normales sur une autre.",
+      "Sa rangée garde désormais la hauteur d'une bande ordinaire — 18 des 26 % —, centrée dans la sienne : la bande est plus haute, le contenu ne bouge pas. Mesuré sur le même plan posé à côté d'une moitié à un pouvoir puis à deux : <b>27,3 px d'icône dans les deux cas</b>.",
+    ],
+  },
   {
     v: '2.16',
     date: '06/09/2026',
