@@ -247,7 +247,7 @@ button { font-family: inherit; }
    rapport au visuel, `cover` le met désormais à l'échelle par la HAUTEUR : il
    grandit d'un dixième et se rogne sur la droite au lieu du bas — on voit donc
    le bas des dessins, qui était coupé. */
-.illus     { flex: 0 0 82%; position: relative; overflow: hidden; }
+.illus     { flex: 0 0 76.5%; position: relative; overflow: hidden; }
 /* Une carte dont un côté porte DEUX pouvoirs donne 8 % de plus à sa bande, sur
    ses DEUX moitiés : sinon les bas de carte ne s'aligneraient plus. Ce sont
    les mêmes 8 % que l'illustration cède, et le calque des icônes remonte
@@ -262,8 +262,8 @@ button { font-family: inherit; }
 .moitie.bande-deux .bandeau:not(.deux) .bandeau-obj {
   flex: 0 0 auto; height: 69.2%; align-self: center;
 }
-.moitie.bande-deux .illus { flex: 0 0 74%; }
-.moitie.bande-deux .pastilles { bottom: 26%; }
+.moitie.bande-deux .illus { flex: 0 0 68.5%; }
+.moitie.bande-deux .pastilles { bottom: 31.5%; }
 .moitie.bande-deux .bandeau { flex: 0 0 26%; }
 body.sans-illus .moitie.bande-deux .bandeau { flex: 0 0 42%; }
 /* L'illustration vit dans sa propre couche, sous le minutage : la retourner en
@@ -290,12 +290,12 @@ body.sans-illus .moitie.bande-deux .bandeau { flex: 0 0 42%; }
    donc que du visuel — 43,5 / 316 — et ne bouge plus quand la fenêtre change ;
    sa largeur, elle, suit le facteur, et a encore grandi d'un quatorzième le jour
    où le libellé a quitté le bas de carte. */
-.moitie.f-PL, .moitie.f-DEP { --bt-l: 24.27%; --bt-h: 13.72%; }
-.moitie.f-PM                { --bt-l: 37.01%; --bt-h: 13.77%; }
-.moitie.f-GP                { --bt-l: 71.68%; --bt-h: 13.77%; }
+.moitie.f-PL, .moitie.f-DEP { --bt-l: 22.64%; --bt-h: 13.72%; }
+.moitie.f-PM                { --bt-l: 34.53%; --bt-h: 13.77%; }
+.moitie.f-GP                { --bt-l: 66.87%; --bt-h: 13.77%; }
 .illus > .boite-tc {
   position: absolute; top: 0; left: 0;
-  width: var(--bt-l, 24.27%); height: var(--bt-h, 13.72%);
+  width: var(--bt-l, 22.64%); height: var(--bt-h, 13.72%);
   background: #0b0b0b;
   /* Un liseré très discret sur les deux seuls bords qui donnent sur le dessin :
      en haut et à gauche, la boîte est contre l'arête de la carte. Il est tracé
@@ -317,7 +317,7 @@ body.sans-illus .moitie.bande-deux .bandeau { flex: 0 0 42%; }
    la traverse : dans l'éditeur, l'illustration se clique, et un calque
    par-dessus lui volerait son coin. */
 .pastilles {
-  position: absolute; left: 0; right: 0; bottom: 18%; height: 17%;
+  position: absolute; left: 0; right: 0; bottom: 23.5%; height: 17%;
   display: flex; align-items: center; overflow: hidden; pointer-events: none;
 }
 /* Un petit fond clair derrière les icônes — et UNIQUEMENT derrière elles. Il
@@ -340,21 +340,13 @@ body.sans-illus .moitie.bande-deux .bandeau { flex: 0 0 42%; }
   transform: translateY(-50%);
   background: var(--fond-bandeau); border-radius: 0 .28em .28em 0;
 }
-/* Le cartouche de cadrage se pose SOUS LA BOÎTE DU MINUTAGE, collé à elle et
-   de la même largeur : `--bt-h` est la hauteur de cette boîte, `--bt-l` sa
-   largeur. Les deux se lisent comme un seul bloc au coin haut-gauche — quand le
-   plan se place, et ce qu'il est. */
-.illus > .marque-cadrage {
-  position: absolute; top: var(--bt-h, 13.72%); left: 0; width: var(--bt-l, 24.27%);
-  display: flex;
-}
-.marque-cadrage .tag-fmt {
-  display: block; width: 100%; background: #0b0b0b;
-  border-radius: 0 0 .25em 0;
-  /* Le mot se replie plutôt que de déborder : la boîte du minutage est étroite
-     sur un Plan Large, et « PLAN DE DÉPART » n'y tient pas d'une seule ligne. */
-  white-space: normal; overflow-wrap: anywhere;
-}
+/* La fine ligne du bas — celle que le libellé tenait — porte le CARTOUCHE de
+   cadrage, celui-là même qu'emploient les bandeaux qui comptent des cadrages :
+   un mot dans sa boîte plutôt qu'un mot posé sur la carte, et le même
+   vocabulaire d'un bout à l'autre du jeu. */
+.libelle { flex: 0 0 5.5%; display: flex; align-items: center; justify-content: center; }
+.marque-cadrage { display: flex; align-items: center; max-width: 100%; min-width: 0; }
+.marque-cadrage .tag-fmt { white-space: nowrap; }
 /* `--ec` : de combien ce bandeau-là doit se resserrer pour tenir dans sa
    moitié de carte. Il agit sur la taille du texte, donc sur tous les écarts et
    toutes les étiquettes, et les pastilles le reprennent sur leur hauteur : le
@@ -493,15 +485,7 @@ body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
    la boîte taillée sur l'imprimé n'aurait plus la bonne mesure. Elle s'efface,
    et c'est le minutage lui-même qui reprend un fond, à sa taille à lui. */
 body.sans-illus .illus > .boite-tc { display: none; }
-/* La boîte s'efface, le cartouche n'a donc plus rien à quoi se coller : il
-   redevient un repère de coin, au bas de la zone du cadrage, au-dessus des
-   icônes — et reprend sa largeur propre. */
-body.sans-illus .illus > .marque-cadrage {
-  top: auto; bottom: .3em; left: auto; right: .35em; width: auto;
-}
-body.sans-illus .marque-cadrage .tag-fmt {
-  width: auto; border-radius: .3em; white-space: nowrap;
-}
+
 body.sans-illus .moitie .tcode {
   background: #0d0d10; border-radius: .3em; text-shadow: none;
 }
@@ -862,8 +846,8 @@ body.sans-illus .barre .tc-seuil + .croix-non { height: .8em; bottom: 30%; }
    un coin n'a pas deux lignes — et garde sa taille quand les icônes qui le
    suivent se serrent : c'est la première chose qu'on lit sur une carte. */
 .marque-cadrage .tag {
-  font-size: .5em; font-weight: 800; letter-spacing: .02em; padding: .2em .25em;
-  text-transform: uppercase; line-height: 1.06; text-align: center;
+  font-size: .46em; font-weight: 800; letter-spacing: .04em; padding: .16em .5em;
+  border-radius: .3em; text-transform: uppercase; line-height: 1.1; text-align: center;
 }
 
 /* L'objectif hors carte : tableaux de score, règles, matériel. */

@@ -7,8 +7,8 @@ export const CHANGELOG = [
     v: '2.20',
     date: '07/09/2026',
     items: [
-      "<b>Le cadrage s'écrit en toutes lettres, sous le minutage</b> — « PLAN LARGE », « PLAN MOYEN », « GROS PLAN », « PLAN DE DÉPART », « RACCORD ». Il se colle à la boîte noire du minutage et en reprend <b>exactement la largeur</b> : les deux se lisent comme un seul bloc au coin haut-gauche, l'un disant quand le plan se place, l'autre ce qu'il est.",
-      "Mesuré sur les cinq formats : même largeur au pixel, aucun écart entre les deux boîtes, et le mot tient sur <b>une seule ligne</b> partout — « PLAN DE DÉPART » compris, qui est le plus long. Sans illustration, la boîte du minutage s'efface et le cartouche redevient un repère de coin, au-dessus des icônes.",
+      "<b>Le cadrage garde sa fine ligne sous le bandeau, mais devient un CARTOUCHE</b> — « PLAN LARGE », « PLAN MOYEN », « GROS PLAN », « PLAN DE DÉPART », « RACCORD ». C'est le même que portent les bandeaux qui comptent des cadrages : un mot dans sa boîte plutôt qu'un mot posé sur la carte, et le même vocabulaire d'un bout à l'autre du jeu.",
+      "Mesuré sur les cinq formats et jusqu'aux vignettes du banc : le cartouche tient dans sa ligne sans jamais déborder de la carte, et le mot reste sur une seule ligne — « PLAN DE DÉPART » compris, qui est le plus long.",
     ],
   },
   {

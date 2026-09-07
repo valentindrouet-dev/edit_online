@@ -771,9 +771,9 @@ export function renderPlan(h, opts = {}) {
   // non par son abréviation : c'est le nom que le jeu emploie partout, et un
   // coin de carte a la place de le porter.
   //
-  // Il se pose SOUS LE MINUTAGE, collé à sa boîte noire et de la même largeur :
-  // les deux se lisent comme un seul bloc au coin haut-gauche, l'un disant quand
-  // le plan se place, l'autre ce qu'il est.
+  // Il occupe la fine ligne du bas, sous le bandeau de pouvoir — la place que le
+  // libellé tenait —, mais en CARTOUCHE plutôt qu'en texte nu : le même que
+  // portent les bandeaux qui comptent des cadrages.
   const marqueCadrage = `<span class="marque-cadrage">${tagCadrage(F.id, false)}</span>`;
   // L'image est posée en style inline : dans une variable CSS, url() se
   // résoudrait contre la feuille de style et non contre le document. Elle vit
@@ -820,13 +820,13 @@ export function renderPlan(h, opts = {}) {
       <div class="illus-image${h.miroir ? ' miroir' : ''}" style="${fond}"></div>
       <div class="boite-tc"></div>
       <div class="tcode ${teinteTc(h.tc)}">${tc(h.tc)}</div>
-      ${marqueCadrage}
     </div>
     <div class="pastilles" style="--n:${Math.max(1, icones.length)}">
       ${icones.length ? `<span class="pastilles-fond">${
     icones.map((e) => elIcon(e)).join('')}</span>` : ''}
     </div>
     ${bandeau(objsIci, h.format, opts.cfg)}
+    <div class="libelle">${marqueCadrage}</div>
   </div>`;
 }
 
@@ -875,10 +875,10 @@ export function renderDos(libelle, reste, opts = {}) {
   // ne sait pas ce qui vient, mais on sait que c'est un Plan Large.
   return `<div class="${cls}" title="${libelle}">
     <div class="moitie f-PL dos-vierge" style="--flex:1 1 100%">
-      <div class="illus"><span class="dos-question">?</span>
-        <span class="marque-cadrage">${tagCadrage('PL', false)}</span></div>
+      <div class="illus"><span class="dos-question">?</span></div>
       <div class="pastilles"></div>
       <div class="bandeau"></div>
+      <div class="libelle"><span class="marque-cadrage">${tagCadrage('PL', false)}</span></div>
     </div>
   </div>`;
 }
