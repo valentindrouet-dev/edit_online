@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.17';
-export const BUILD_DATE = '2026-09-06 17:00';
+export const VERSION = '2.18';
+export const BUILD_DATE = '2026-09-07 10:30';
 
 export const CHANGELOG = [
+  {
+    v: '2.18',
+    date: '07/09/2026',
+    items: [
+      "<b>Les icônes d'un plan se lisent enfin à leur taille.</b> Elles faisaient <b>9,8 % de la carte</b> quand celles d'un bandeau de pouvoir en font 14,8 : le plus important de la carte — ce qu'elle montre — était le plus petit. Elles passent à <b>14,6 %</b>, à égalité avec le bandeau.",
+      "<b>Et leur languette prend la couleur du bandeau de leur plan</b> — vert sur un Plan Large, or sur un Plan Moyen, orangé sur un Gros Plan, bleu sur un Plan de départ. Les deux bandes se lisent alors comme une seule, que l'illustration sépare, au lieu d'un voile blanc sans appartenance. La couleur se dit désormais <b>une seule fois</b>, sur la moitié : le bandeau et la languette y puisent tous deux, et ne peuvent plus diverger.",
+      "Sans illustration, rien ne change : les icônes y occupent déjà toute la place du visuel, sur le fond du cadrage, et une languette n'y aurait plus de sens.",
+    ],
+  },
   {
     v: '2.17',
     date: '06/09/2026',

@@ -16,9 +16,9 @@
 import {
   FORMATS, ELEMENTS, ELEMENT_IDS, PORTEES, OBJ, objLabel, PAIRES_DEPART, PLANS_DEPART,
   buildCartesDoubles, buildPlansLarges, buildDeparts, SCENES, recenserBoite,
-} from './data.js?v=2.17';
-import { elIcon } from './icons.js?v=2.17';
-import { objHTML } from './cards.js?v=2.17';
+} from './data.js?v=2.18';
+import { elIcon } from './icons.js?v=2.18';
+import { objHTML } from './cards.js?v=2.18';
 
 // --- Les briques de mise en page -------------------------------------------
 

@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=2.17';
+import { ELEMENT_IDS } from './data.js?v=2.18';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
