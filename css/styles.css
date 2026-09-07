@@ -325,18 +325,20 @@ body.sans-illus .moitie.bande-deux .bandeau { flex: 0 0 42%; }
    nombre d'icônes du plan, trois icônes font un fond de trois icônes. Il est
    plus bas que la languette d'autrefois et arrondi au bout : une étiquette
    posée sur le dessin, pas un aplat qui coupe la carte en deux. */
-/* La languette est un RAIL, pas un écrin : un filet de la couleur du plan qui
-   passe DERRIÈRE les icônes, sans les entourer. Il ne peut pas être la boîte
-   elle-même — les icônes s'y mesurent en pourcentage, et l'amincir les
-   rapetisserait d'autant. Il est donc peint en dessous, par un calque, et la
-   boîte garde sa pleine hauteur pour servir de référence. */
+/* La languette est peinte DERRIÈRE les icônes, à leur hauteur exacte : le
+   calque et les pastilles partagent le même pourcentage — 86 % de la bande —,
+   si bien que le filet naît et finit avec elles.
+   Elle ne peut pas être la boîte elle-même : les icônes s'y mesurent en
+   pourcentage, et toucher à sa hauteur les redimensionnerait d'autant. Elle est
+   donc peinte en dessous, par un calque, et la boîte garde sa pleine hauteur
+   pour servir de référence. */
 .pastilles-fond {
   position: relative;
   display: flex; align-items: center; gap: .1em; padding: 0 .3em; height: 100%;
   flex: 0 1 auto; max-width: 100%; min-width: 0;
 }
 .pastilles-fond::before {
-  content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 36%;
+  content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 86%;
   transform: translateY(-50%);
   background: var(--fond-bandeau); border-radius: 0 .28em .28em 0;
 }

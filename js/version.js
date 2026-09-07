@@ -9,6 +9,7 @@ export const CHANGELOG = [
     items: [
       "<b>Le cadrage garde sa fine ligne sous le bandeau, mais devient un CARTOUCHE</b> — « PLAN LARGE », « PLAN MOYEN », « GROS PLAN », « PLAN DE DÉPART », « RACCORD ». C'est le même que portent les bandeaux qui comptent des cadrages : un mot dans sa boîte plutôt qu'un mot posé sur la carte, et le même vocabulaire d'un bout à l'autre du jeu.",
       "Mesuré sur les cinq formats et jusqu'aux vignettes du banc : le cartouche tient dans sa ligne sans jamais déborder de la carte, et le mot reste sur une seule ligne — « PLAN DE DÉPART » compris, qui est le plus long.",
+      "<b>Et la languette des icônes fait exactement leur hauteur</b> : elle naît et finit avec elles, au lieu de passer derrière comme un filet. Les deux partagent le même pourcentage de la bande — 86 % —, ce qui garantit l'égalité quelle que soit la taille de la carte : mesuré, 22,8 px de languette pour 22,8 px d'icône.",
     ],
   },
   {
