@@ -9,7 +9,8 @@ export const CHANGELOG = [
     items: [
       "<b>Le cadrage ne s'écrit plus en toutes lettres sous le bandeau.</b> « PLAN MOYEN », « GROS PLAN » occupaient une bande entière au bas de chaque moitié pour redire ce que la carte montre déjà. Le format se dit désormais dans le <b>coin bas-gauche</b>, en tête de la languette, avec le <b>cartouche même qu'emploient les bandeaux de pouvoir</b> — <b>PL</b>, <b>PM</b>, <b>GP</b>, <b>DÉP</b>. Un Raccord garde son mot entier : « TR » ne se lit nulle part ailleurs dans le jeu.",
       "<b>La carte récupère cette bande</b> : l'illustration passe de 76,5 à <b>82 %</b> de la hauteur, et le bandeau comme la languette descendent d'autant. La boîte noire du minutage a suivi le nouveau facteur d'échelle dans les quatre formats — sa hauteur, elle, ne dépend que du visuel et ne bougera plus.",
-      "Le cartouche, la languette et le bandeau partagent la même couleur et se touchent : le bas de carte se lit d'un bloc, et l'on sait d'un coup d'œil quel plan on a sous les yeux.",
+      "Il se pose <b>à droite</b>, seul : rien ne se peint derrière lui, il porte déjà son propre fond. Les icônes restent à l'autre bout, et les deux ne se mêlent pas.",
+      "<b>Et la languette devient un rail.</b> Elle entourait les icônes comme un écrin ; c'est maintenant un <b>filet de la couleur du plan qui passe DERRIÈRE elles</b>, qu'elles débordent en haut et en bas. Il ne pouvait pas être la boîte elle-même — les icônes s'y mesurent en pourcentage, l'amincir les aurait rapetissées d'autant : il est peint en dessous, par un calque, et la boîte garde sa pleine hauteur pour servir de référence. Sans illustration il s'efface : il n'aurait rien à détacher.",
     ],
   },
   {

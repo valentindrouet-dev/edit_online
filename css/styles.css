@@ -318,18 +318,32 @@ body.sans-illus .moitie.bande-deux .bandeau { flex: 0 0 42%; }
    par-dessus lui volerait son coin. */
 .pastilles {
   position: absolute; left: 0; right: 0; bottom: 18%; height: 17%;
-  display: flex; align-items: center; overflow: hidden; pointer-events: none;
+  display: flex; align-items: center; justify-content: space-between;
+  overflow: hidden; pointer-events: none;
 }
 /* Un petit fond clair derrière les icônes — et UNIQUEMENT derrière elles. Il
    n'enveloppe que la rangée : sa largeur se règle donc toute seule sur le
    nombre d'icônes du plan, trois icônes font un fond de trois icônes. Il est
    plus bas que la languette d'autrefois et arrondi au bout : une étiquette
    posée sur le dessin, pas un aplat qui coupe la carte en deux. */
+/* La languette est un RAIL, pas un écrin : un filet de la couleur du plan qui
+   passe DERRIÈRE les icônes, sans les entourer. Il ne peut pas être la boîte
+   elle-même — les icônes s'y mesurent en pourcentage, et l'amincir les
+   rapetisserait d'autant. Il est donc peint en dessous, par un calque, et la
+   boîte garde sa pleine hauteur pour servir de référence. */
 .pastilles-fond {
-  display: flex; align-items: center; gap: .1em; padding: 0 .28em; height: 100%;
-  max-width: 100%; min-width: 0;
-  background: var(--fond-bandeau); border-radius: 0 .55em .55em 0;
+  position: relative;
+  display: flex; align-items: center; gap: .1em; padding: 0 .3em; height: 100%;
+  flex: 0 1 auto; max-width: 100%; min-width: 0;
 }
+.pastilles-fond::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 36%;
+  transform: translateY(-50%);
+  background: var(--fond-bandeau); border-radius: 0 .28em .28em 0;
+}
+/* Le cartouche de cadrage, à l'autre bout : rien derrière lui, il porte déjà
+   son propre fond. */
+.marque-cadrage { flex: 0 0 auto; display: flex; align-items: center; margin-right: .34em; }
 /* `--ec` : de combien ce bandeau-là doit se resserrer pour tenir dans sa
    moitié de carte. Il agit sur la taille du texte, donc sur tous les écarts et
    toutes les étiquettes, et les pastilles le reprennent sur leur hauteur : le
@@ -386,8 +400,14 @@ body.sans-illus .pastilles {
 body.sans-illus .pastilles-fond {
   padding: 0 .3em .25em; gap: .18em; height: auto;
   background: none; border-radius: 0;
+  /* La boîte prend toute la largeur : les icônes s'y centrent, et le cartouche
+     de cadrage se retrouve seul contre le bord droit. */
+  flex: 1 1 auto;
   justify-content: center; align-items: flex-start;
 }
+/* Pas de rail sans illustration : il n'a rien à détacher, et se lirait comme un
+   trait de couleur en travers de la carte. */
+body.sans-illus .pastilles-fond::before { content: none; }
 body.sans-illus .pastilles .pastille { height: auto; width: auto; max-height: 100%;
   max-width: calc((100% - (var(--n, 1) - 1) * .18em) / var(--n, 1)); }
 body.sans-illus .bandeau { flex: 0 0 30%; gap: .3em; }
@@ -821,7 +841,7 @@ body.sans-illus .barre .tc-seuil + .croix-non { height: .8em; bottom: 30%; }
    format depuis que le libellé a quitté le bas de carte. Il ne se replie pas —
    un coin n'a pas deux lignes — et garde sa taille quand les icônes qui le
    suivent se serrent : c'est la première chose qu'on lit sur une carte. */
-.pastilles-fond .tag {
+.marque-cadrage .tag {
   font-size: .58em; font-weight: 800; letter-spacing: .02em; padding: .22em .42em;
   border-radius: .3em; text-transform: uppercase; line-height: 1.08;
   flex: 0 0 auto; white-space: nowrap;

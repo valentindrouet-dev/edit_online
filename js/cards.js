@@ -770,7 +770,10 @@ export function renderPlan(h, opts = {}) {
   // Forme courte pour les quatre cadrages : dans un coin, « GP » se lit aussi
   // vite que « GROS PLAN » et tient sur un tiers de carte. Un Raccord garde son
   // mot entier — « TR » ne se lit nulle part ailleurs dans le jeu.
-  const marqueCadrage = tagCadrage(F.id, F.id !== 'TR');
+  //
+  // Il se pose à DROITE, seul, sans rien derrière lui : la languette des icônes
+  // est à l'autre bout, et les deux ne se mêlent pas.
+  const marqueCadrage = `<span class="marque-cadrage">${tagCadrage(F.id, F.id !== 'TR')}</span>`;
   // L'image est posée en style inline : dans une variable CSS, url() se
   // résoudrait contre la feuille de style et non contre le document. Elle vit
   // dans sa propre couche sous le minutage, pour qu'un retournement en miroir
@@ -817,8 +820,10 @@ export function renderPlan(h, opts = {}) {
       <div class="boite-tc"></div>
       <div class="tcode ${teinteTc(h.tc)}">${tc(h.tc)}</div>
     </div>
-    <div class="pastilles" style="--n:${Math.max(1, icones.length + 1)}">
-      <span class="pastilles-fond">${marqueCadrage}${icones.map((e) => elIcon(e)).join('')}</span>
+    <div class="pastilles" style="--n:${Math.max(1, icones.length)}">
+      ${icones.length ? `<span class="pastilles-fond">${
+    icones.map((e) => elIcon(e)).join('')}</span>` : '<span></span>'}
+      ${marqueCadrage}
     </div>
     ${bandeau(objsIci, h.format, opts.cfg)}
   </div>`;
@@ -870,7 +875,8 @@ export function renderDos(libelle, reste, opts = {}) {
   return `<div class="${cls}" title="${libelle}">
     <div class="moitie f-PL dos-vierge" style="--flex:1 1 100%">
       <div class="illus"><span class="dos-question">?</span></div>
-      <div class="pastilles"><span class="pastilles-fond">${tagCadrage('PL', true)}</span></div>
+      <div class="pastilles"><span></span>
+        <span class="marque-cadrage">${tagCadrage('PL', true)}</span></div>
       <div class="bandeau"></div>
     </div>
   </div>`;
