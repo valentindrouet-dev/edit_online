@@ -318,8 +318,7 @@ body.sans-illus .moitie.bande-deux .bandeau { flex: 0 0 42%; }
    par-dessus lui volerait son coin. */
 .pastilles {
   position: absolute; left: 0; right: 0; bottom: 18%; height: 17%;
-  display: flex; align-items: center; justify-content: space-between;
-  overflow: hidden; pointer-events: none;
+  display: flex; align-items: center; overflow: hidden; pointer-events: none;
 }
 /* Un petit fond clair derrière les icônes — et UNIQUEMENT derrière elles. Il
    n'enveloppe que la rangée : sa largeur se règle donc toute seule sur le
@@ -341,9 +340,21 @@ body.sans-illus .moitie.bande-deux .bandeau { flex: 0 0 42%; }
   transform: translateY(-50%);
   background: var(--fond-bandeau); border-radius: 0 .28em .28em 0;
 }
-/* Le cartouche de cadrage, à l'autre bout : rien derrière lui, il porte déjà
-   son propre fond. */
-.marque-cadrage { flex: 0 0 auto; display: flex; align-items: center; margin-right: .34em; }
+/* Le cartouche de cadrage se pose SOUS LA BOÎTE DU MINUTAGE, collé à elle et
+   de la même largeur : `--bt-h` est la hauteur de cette boîte, `--bt-l` sa
+   largeur. Les deux se lisent comme un seul bloc au coin haut-gauche — quand le
+   plan se place, et ce qu'il est. */
+.illus > .marque-cadrage {
+  position: absolute; top: var(--bt-h, 13.72%); left: 0; width: var(--bt-l, 24.27%);
+  display: flex;
+}
+.marque-cadrage .tag-fmt {
+  display: block; width: 100%; background: #0b0b0b;
+  border-radius: 0 0 .25em 0;
+  /* Le mot se replie plutôt que de déborder : la boîte du minutage est étroite
+     sur un Plan Large, et « PLAN DE DÉPART » n'y tient pas d'une seule ligne. */
+  white-space: normal; overflow-wrap: anywhere;
+}
 /* `--ec` : de combien ce bandeau-là doit se resserrer pour tenir dans sa
    moitié de carte. Il agit sur la taille du texte, donc sur tous les écarts et
    toutes les étiquettes, et les pastilles le reprennent sur leur hauteur : le
@@ -482,6 +493,15 @@ body.sans-illus .moitie.f-GP .tcode { font-size: 1.4em; }
    la boîte taillée sur l'imprimé n'aurait plus la bonne mesure. Elle s'efface,
    et c'est le minutage lui-même qui reprend un fond, à sa taille à lui. */
 body.sans-illus .illus > .boite-tc { display: none; }
+/* La boîte s'efface, le cartouche n'a donc plus rien à quoi se coller : il
+   redevient un repère de coin, au bas de la zone du cadrage, au-dessus des
+   icônes — et reprend sa largeur propre. */
+body.sans-illus .illus > .marque-cadrage {
+  top: auto; bottom: .3em; left: auto; right: .35em; width: auto;
+}
+body.sans-illus .marque-cadrage .tag-fmt {
+  width: auto; border-radius: .3em; white-space: nowrap;
+}
 body.sans-illus .moitie .tcode {
   background: #0d0d10; border-radius: .3em; text-shadow: none;
 }
@@ -842,9 +862,8 @@ body.sans-illus .barre .tc-seuil + .croix-non { height: .8em; bottom: 30%; }
    un coin n'a pas deux lignes — et garde sa taille quand les icônes qui le
    suivent se serrent : c'est la première chose qu'on lit sur une carte. */
 .marque-cadrage .tag {
-  font-size: .58em; font-weight: 800; letter-spacing: .02em; padding: .22em .42em;
-  border-radius: .3em; text-transform: uppercase; line-height: 1.08;
-  flex: 0 0 auto; white-space: nowrap;
+  font-size: .5em; font-weight: 800; letter-spacing: .02em; padding: .2em .25em;
+  text-transform: uppercase; line-height: 1.06; text-align: center;
 }
 
 /* L'objectif hors carte : tableaux de score, règles, matériel. */

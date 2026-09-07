@@ -7,8 +7,8 @@ export const CHANGELOG = [
     v: '2.20',
     date: '07/09/2026',
     items: [
-      "<b>Le cadrage s'écrit en toutes lettres dans le coin</b> — « PLAN LARGE », « PLAN MOYEN », « GROS PLAN », « PLAN DE DÉPART », « RACCORD » — et non par son abréviation. C'est le nom que le jeu emploie partout ailleurs, et un coin de carte a la place de le porter.",
-      "Vérifié sur les cas les plus serrés : un Plan de départ, un Plan Large à <b>cinq icônes</b>, un Gros Plan à trois sur un tiers de carte, et une vignette de banc à demi-taille. Rien ne déborde, et le mot ne touche jamais le rail des icônes.",
+      "<b>Le cadrage s'écrit en toutes lettres, sous le minutage</b> — « PLAN LARGE », « PLAN MOYEN », « GROS PLAN », « PLAN DE DÉPART », « RACCORD ». Il se colle à la boîte noire du minutage et en reprend <b>exactement la largeur</b> : les deux se lisent comme un seul bloc au coin haut-gauche, l'un disant quand le plan se place, l'autre ce qu'il est.",
+      "Mesuré sur les cinq formats : même largeur au pixel, aucun écart entre les deux boîtes, et le mot tient sur <b>une seule ligne</b> partout — « PLAN DE DÉPART » compris, qui est le plus long. Sans illustration, la boîte du minutage s'efface et le cartouche redevient un repère de coin, au-dessus des icônes.",
     ],
   },
   {
