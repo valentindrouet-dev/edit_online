@@ -13,9 +13,9 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre } from './data.js?v=2.19';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.19';
-import { urlVisuel } from './visuels.js?v=2.19';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre } from './data.js?v=2.20';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.20';
+import { urlVisuel } from './visuels.js?v=2.20';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -767,13 +767,13 @@ export function renderPlan(h, opts = {}) {
   // les bandeaux de pouvoir. La carte gagne ainsi la bande entière que le
   // libellé occupait — l'illustration et le bandeau descendent d'autant.
   //
-  // Forme courte pour les quatre cadrages : dans un coin, « GP » se lit aussi
-  // vite que « GROS PLAN » et tient sur un tiers de carte. Un Raccord garde son
-  // mot entier — « TR » ne se lit nulle part ailleurs dans le jeu.
+  // Le cadrage s'écrit EN TOUTES LETTRES — « PLAN MOYEN », « GROS PLAN » — et
+  // non par son abréviation : c'est le nom que le jeu emploie partout, et un
+  // coin de carte a la place de le porter.
   //
   // Il se pose à DROITE, seul, sans rien derrière lui : la languette des icônes
   // est à l'autre bout, et les deux ne se mêlent pas.
-  const marqueCadrage = `<span class="marque-cadrage">${tagCadrage(F.id, F.id !== 'TR')}</span>`;
+  const marqueCadrage = `<span class="marque-cadrage">${tagCadrage(F.id, false)}</span>`;
   // L'image est posée en style inline : dans une variable CSS, url() se
   // résoudrait contre la feuille de style et non contre le document. Elle vit
   // dans sa propre couche sous le minutage, pour qu'un retournement en miroir
@@ -876,7 +876,7 @@ export function renderDos(libelle, reste, opts = {}) {
     <div class="moitie f-PL dos-vierge" style="--flex:1 1 100%">
       <div class="illus"><span class="dos-question">?</span></div>
       <div class="pastilles"><span></span>
-        <span class="marque-cadrage">${tagCadrage('PL', true)}</span></div>
+        <span class="marque-cadrage">${tagCadrage('PL', false)}</span></div>
       <div class="bandeau"></div>
     </div>
   </div>`;

@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.19';
-export const BUILD_DATE = '2026-09-07 14:00';
+export const VERSION = '2.20';
+export const BUILD_DATE = '2026-09-07 16:00';
 
 export const CHANGELOG = [
+  {
+    v: '2.20',
+    date: '07/09/2026',
+    items: [
+      "<b>Le cadrage s'écrit en toutes lettres dans le coin</b> — « PLAN LARGE », « PLAN MOYEN », « GROS PLAN », « PLAN DE DÉPART », « RACCORD » — et non par son abréviation. C'est le nom que le jeu emploie partout ailleurs, et un coin de carte a la place de le porter.",
+      "Vérifié sur les cas les plus serrés : un Plan de départ, un Plan Large à <b>cinq icônes</b>, un Gros Plan à trois sur un tiers de carte, et une vignette de banc à demi-taille. Rien ne déborde, et le mot ne touche jamais le rail des icônes.",
+    ],
+  },
   {
     v: '2.19',
     date: '07/09/2026',
