@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.20';
-export const BUILD_DATE = '2026-09-07 16:00';
+export const VERSION = '2.21';
+export const BUILD_DATE = '2026-09-07 18:30';
 
 export const CHANGELOG = [
+  {
+    v: '2.21',
+    date: '07/09/2026',
+    items: [
+      "<b>L'éditeur de matériel ne rame plus.</b> Un clic sur une carte y refaisait <b>tout l'écran</b> : les cinquante cartes, leurs cent illustrations, leurs deux cents pastilles — que le navigateur redisposait et repeignait pour changer un liseré. Or une sélection ne touche à aucune carte. On ne repeint donc plus que ce qui bouge : le liseré des tuiles retenues, la ligne qui les compte, et le panneau de droite. <b>Un clic passe de 100 ms à 40.</b>",
+      "<b>Et une illustration pesait 137 Mo en mémoire.</b> <code>assets/perso/301.webp</code> mesurait <b>6001 × 6001 px</b> pour 4,2 Mo — deux cents fois le poids des autres visuels de la boîte. Le navigateur la décompressait en entier à chaque affichage, pour la peindre grande comme un timbre. Elle est ramenée à <b>900 px</b>, la même limite que l'éditeur impose aux images qu'on lui apporte : 202 ko, 3 Mo en mémoire, et le dessin est identique à l'écran comme au PDF.",
+      "<b>Le versionneur signale désormais toute illustration au-dessus de 400 ko</b>, avec son poids et la marche à suivre. Une image déposée à la main dans <code>assets/</code> échappe au redimensionnement de l'éditeur : c'est par là qu'un poids lourd se glisse, et il ne passera plus inaperçu.",
+    ],
+  },
   {
     v: '2.20',
     date: '07/09/2026',

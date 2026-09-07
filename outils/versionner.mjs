@@ -13,7 +13,7 @@
 // Il écrit aussi version.json, que la page relit sans cache pour connaître la
 // version publiée sans dépendre du graphe de modules.
 
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -83,11 +83,25 @@ const dossiersImages = readdirSync(join(racine, 'assets'), { withFileTypes: true
     return a.localeCompare(b, 'fr', { numeric: true });
   });
 
+// Une illustration hors de proportion coûte cher à CHAQUE affichage : le
+// navigateur la décompresse en entier — un visuel de 6001 × 6001 px occupe
+// 137 Mo de mémoire vive — même pour la peindre grande comme un timbre. Une
+// carte n'en montre jamais plus de 642 px de large ; l'éditeur ramène d'ailleurs
+// à 900 px toute image qu'on lui apporte. Un fichier déposé à la main dans
+// `assets/` échappe à cette règle, et c'est ainsi qu'un poids lourd s'y glisse.
+// Le versionneur le dit plutôt que de le laisser ramer en silence.
+const POIDS_ALERTE = 400 * 1024;
+const lourdes = [];
+
 const inventaire = {};
 for (const d of dossiersImages) {
   const fichiers = readdirSync(join(racine, 'assets', d))
     .filter((f) => /\.(webp|png|jpe?g|avif)$/i.test(f))
     .sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
+  for (const f of fichiers) {
+    const poids = statSync(join(racine, 'assets', d, f)).size;
+    if (poids > POIDS_ALERTE) lourdes.push(`assets/${d}/${f} — ${Math.round(poids / 1024)} ko`);
+  }
   if (fichiers.length) inventaire[d] = fichiers;
 }
 ecrire('assets/images.json', `${JSON.stringify(inventaire, null, 2)}\n`);
@@ -95,3 +109,9 @@ const nbImages = Object.values(inventaire).reduce((s, l) => s + l.length, 0);
 
 console.log(`v${VERSION} — ${touches} module(s) estampillé(s), sw.js, version.json`
   + ` et assets/images.json (${nbImages} illustrations) à jour.`);
+if (lourdes.length) {
+  console.log(`\n⚠  ${lourdes.length} illustration(s) au-dessus de ${
+    POIDS_ALERTE / 1024} ko — elles alourdissent chaque affichage :`);
+  for (const l of lourdes) console.log(`   ${l}`);
+  console.log('   Ramenez-les à 900 px sur le plus grand côté, comme le fait l’éditeur.');
+}

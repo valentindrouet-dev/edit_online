@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.20';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.21';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,34 +12,34 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=2.20';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.20';
-import { elIcon, numIcon } from './icons.js?v=2.20';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.20';
+} from './data.js?v=2.21';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.21';
+import { elIcon, numIcon } from './icons.js?v=2.21';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.21';
 import { chargerVisuels, ajouterVisuel, retirerVisuel, visuelsApportes, urlVisuel,
   cleVisuel, idDeCle, estVisuelApporte, blobVisuel, poidsVisuels, COTE_MAX,
-} from './visuels.js?v=2.20';
+} from './visuels.js?v=2.21';
 import { chargerPublie, materielPublie, signaturePublie, materielVide, composerPublie,
-} from './publie.js?v=2.20';
+} from './publie.js?v=2.21';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=2.20';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.20';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.20';
-import { releve, voler, stopperVols } from './anim.js?v=2.20';
-import { campagne } from './lab.js?v=2.20';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.20';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.20';
-import { Salon } from './net/salon.js?v=2.20';
-import { TransportLocal } from './net/local.js?v=2.20';
-import { TransportSupabase } from './net/supabase.js?v=2.20';
-import { enLigneDisponible } from './net/config.js?v=2.20';
-import { coupNu } from './net/protocole.js?v=2.20';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.20';
-import { livret, aideDeJeu } from './livret.js?v=2.20';
+} from './engine.js?v=2.21';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.21';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.21';
+import { releve, voler, stopperVols } from './anim.js?v=2.21';
+import { campagne } from './lab.js?v=2.21';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.21';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.21';
+import { Salon } from './net/salon.js?v=2.21';
+import { TransportLocal } from './net/local.js?v=2.21';
+import { TransportSupabase } from './net/supabase.js?v=2.21';
+import { enLigneDisponible } from './net/config.js?v=2.21';
+import { coupNu } from './net/protocole.js?v=2.21';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.21';
+import { livret, aideDeJeu } from './livret.js?v=2.21';
 
 const app = document.getElementById('app');
 
@@ -2735,13 +2735,30 @@ function compositionRetouchee() {
     ${off ? '<button class="pill mini" id="compo-restaurer">↺ Restaurer les supprimées</button>' : ''}</span>`;
 }
 
+/** Une tuile est-elle retenue ? Un plan par sa clé, une carte par son numéro. */
+const tuileChoisie = (t) => (t.genre === 'PLAN' ? mat.plans.has(t.cle) : mat.cartes.has(t.id));
+
+/**
+ * La ligne qui compte ce qui est affiché et ce qui est pris. Elle vit à part
+ * pour qu'un simple changement de sélection puisse la réécrire seule, sans
+ * refaire la galerie — voir `majSelection`.
+ */
+function compteSelection() {
+  const toutes = tuilesDe(mat.vue);
+  const vues = trier(toutes.filter(passeFiltres));
+  const visibles = new Set(toutes.flatMap((t) => plansTuile(t).map((h) => h.cle)));
+  const horsVue = [...mat.plans].filter((c) => !visibles.has(c)).length;
+  const n = mat.plans.size;
+  return `${vues.length} / ${toutes.length} affichée${toutes.length > 1 ? 's' : ''}
+    · <b>${n} plan${n > 1 ? 's' : ''} sélectionné${n > 1 ? 's' : ''}</b>${
+  horsVue ? ` <span class="aide">dont ${horsVue} hors de cette vue</span>` : ''}`;
+}
+
 function galerieMateriel() {
   const toutes = tuilesDe(mat.vue);
   const vues = trier(toutes.filter(passeFiltres));
   const f = mat.filtres;
-  const sel = (t) => (t.genre === 'PLAN' ? mat.plans.has(t.cle) : mat.cartes.has(t.id));
-  const visibles = new Set(toutes.flatMap((t) => plansTuile(t).map((h) => h.cle)));
-  const horsVue = [...mat.plans].filter((c) => !visibles.has(c)).length;
+  const sel = tuileChoisie;
 
   const opt = (v, l, on) => `<option value="${v}" ${on ? 'selected' : ''}>${l}</option>`;
 
@@ -2783,9 +2800,7 @@ function galerieMateriel() {
   </div>
 
   <div class="barre-selection">
-    <span class="info">${vues.length} / ${toutes.length} affichée${toutes.length > 1 ? 's' : ''}
-      · <b>${mat.plans.size} plan${mat.plans.size > 1 ? 's' : ''} sélectionné${mat.plans.size > 1 ? 's' : ''}</b>${
-        horsVue ? ` <span class="aide">dont ${horsVue} hors de cette vue</span>` : ''}</span>
+    <span class="info" id="compte-selection">${compteSelection()}</span>
     <button class="pill mini" id="sel-tout">Tout sélectionner</button>
     <button class="pill mini" id="sel-rien" ${mat.plans.size ? '' : 'disabled'}>Ne rien sélectionner</button>
     ${boutonCreer()}
@@ -4786,6 +4801,16 @@ function brancherMateriel() {
     brancherApercu(e);
     majTuiles();
   };
+  // Le même, en beaucoup moins cher : une sélection ne touche à aucune carte,
+  // les tuiles gardent donc leur dessin et seul leur liseré bouge.
+  const refaireChoix = () => {
+    const e = app.querySelector('#editeur');
+    if (!e) return refaire();
+    majSelection();
+    e.innerHTML = panneauEditeur();
+    brancherEditeur(refaireEditeur);
+    brancherApercu(e);
+  };
 
   // La sélection survit au changement de vue : on peut régler d'un coup des
   // Gros Plans et des Plans Moyens pris dans deux galeries différentes.
@@ -4831,7 +4856,7 @@ function brancherMateriel() {
     }
     mat.ancre = rang;
     mat.ancreVue = mat.vue;
-    refaire();
+    refaireChoix();
   }));
 
   // Créer une carte : elle apparaît dans la galerie, et l'éditeur s'ouvre
@@ -4856,10 +4881,10 @@ function brancherMateriel() {
   if (restaurer) restaurer.addEventListener('click', () => { restaurerTout(); refaire(); });
 
   const tout = app.querySelector('#sel-tout');
-  if (tout) tout.addEventListener('click', () => { tuiles.forEach(ajouterTuile); refaire(); });
+  if (tout) tout.addEventListener('click', () => { tuiles.forEach(ajouterTuile); refaireChoix(); });
   const rien = app.querySelector('#sel-rien');
   if (rien) rien.addEventListener('click', () => {
-    mat.plans.clear(); mat.cartes.clear(); mat.ancre = null; refaire();
+    mat.plans.clear(); mat.cartes.clear(); mat.ancre = null; refaireChoix();
   });
 
   app.querySelectorAll('[data-stat]').forEach((el) => el.addEventListener('change', () => {
@@ -4927,6 +4952,30 @@ function basculerTuile(t) {
 }
 
 /** Redessine les vignettes sélectionnées, sans refaire toute la galerie. */
+/**
+ * Ce qu'une SÉLECTION change, et rien de plus : le liseré des tuiles retenues,
+ * la ligne qui les compte, et le bouton qui les relâche. Les cinquante dessins
+ * de la galerie restent en place.
+ *
+ * `majTuiles`, elle, refait chaque tuile — c'est ce qu'il faut après une
+ * RETOUCHE, où la carte elle-même a changé. Passer par elle pour un simple
+ * clic de sélection coûtait une centaine de millisecondes de mise en page et
+ * de peinture, pour un cadre orange : cinquante cartes, cent illustrations et
+ * deux cents pastilles que le navigateur redisposait sans qu'aucune n'ait
+ * bougé.
+ */
+function majSelection() {
+  const tuiles = trier(tuilesDe(mat.vue).filter(passeFiltres));
+  app.querySelectorAll('[data-tuile]').forEach((el) => {
+    const t = tuiles[+el.dataset.rang];
+    if (t) el.classList.toggle('sel', tuileChoisie(t));
+  });
+  const compte = app.querySelector('#compte-selection');
+  if (compte) compte.innerHTML = compteSelection();
+  const rien = app.querySelector('#sel-rien');
+  if (rien) rien.disabled = !mat.plans.size;
+}
+
 function majTuiles() {
   const tuiles = trier(tuilesDe(mat.vue).filter(passeFiltres));
   app.querySelectorAll('[data-tuile]').forEach((el) => {
