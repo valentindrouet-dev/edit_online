@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.21';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.22';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,34 +12,36 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=2.21';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.21';
-import { elIcon, numIcon } from './icons.js?v=2.21';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.21';
-import { chargerVisuels, ajouterVisuel, retirerVisuel, visuelsApportes, urlVisuel,
+} from './data.js?v=2.22';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.22';
+import { elIcon, numIcon } from './icons.js?v=2.22';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.22';
+import { chargerVisuels, ajouterVisuel, importerVisuel, retirerVisuel, visuelsApportes, urlVisuel,
   cleVisuel, idDeCle, estVisuelApporte, blobVisuel, poidsVisuels, COTE_MAX,
-} from './visuels.js?v=2.21';
+} from './visuels.js?v=2.22';
 import { chargerPublie, materielPublie, signaturePublie, materielVide, composerPublie,
-} from './publie.js?v=2.21';
+} from './publie.js?v=2.22';
+import { composerPartage, sansImages, encoderPartage, decoderPartage, partageDeLURL,
+  lienPartage, LIMITE_LIEN } from './partage.js?v=2.22';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=2.21';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.21';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.21';
-import { releve, voler, stopperVols } from './anim.js?v=2.21';
-import { campagne } from './lab.js?v=2.21';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.21';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.21';
-import { Salon } from './net/salon.js?v=2.21';
-import { TransportLocal } from './net/local.js?v=2.21';
-import { TransportSupabase } from './net/supabase.js?v=2.21';
-import { enLigneDisponible } from './net/config.js?v=2.21';
-import { coupNu } from './net/protocole.js?v=2.21';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.21';
-import { livret, aideDeJeu } from './livret.js?v=2.21';
+} from './engine.js?v=2.22';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.22';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.22';
+import { releve, voler, stopperVols } from './anim.js?v=2.22';
+import { campagne } from './lab.js?v=2.22';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.22';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.22';
+import { Salon } from './net/salon.js?v=2.22';
+import { TransportLocal } from './net/local.js?v=2.22';
+import { TransportSupabase } from './net/supabase.js?v=2.22';
+import { enLigneDisponible } from './net/config.js?v=2.22';
+import { coupNu } from './net/protocole.js?v=2.22';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.22';
+import { livret, aideDeJeu } from './livret.js?v=2.22';
 
 const app = document.getElementById('app');
 
@@ -2672,6 +2674,13 @@ function barreJeu() {
     <button class="pill" id="csv-import">⭱ Importer un CSV</button>
     <button class="pill publier" id="materiel-publier"
       title="Une archive à déposer dans le dépôt : le matériel et vos images. Une fois publiée, tout le monde voit ce jeu — y compris qui ouvre simplement le lien">⭳ Publier ce matériel</button>
+    <button class="pill partage" id="partage-lien"
+      title="Un lien qui porte ce jeu tel qu'il est — réglages et cartes. À coller dans un message : celui qui l'ouvre voit exactement votre version. Les images apportées, elles, ne tiennent pas dans un lien">🔗 Lien de partage</button>
+    <button class="pill partage" id="partage-fichier"
+      title="Un fichier qui porte TOUT — réglages, cartes et vos images apportées. Le testeur le charge ici même">⭳ Fichier de partage</button>
+    <button class="pill" id="partage-charger"
+      title="Ouvrir un fichier de partage reçu">⭱ Charger un partage</button>
+    <input type="file" id="partage-fichier-entree" accept=".json,application/json" hidden>
   </div>
   ${publieEnAttente() ? `<div class="encart attention bandeau-publie">
     <b>Le site publie un matériel différent du vôtre.</b> Le vôtre est celui que vous voyez ; celui
@@ -3387,9 +3396,11 @@ function blocApportees(actuelles) {
     </div>`).join('')}
   </div>` : `<p class="aide">Aucune image apportée. Les vôtres sont
     <b>redessinées à ${COTE_MAX} px</b> et rangées <b>dans ce navigateur</b> : elles ne partent pas
-    d'elles-mêmes dans le dépôt, et une joueuse en ligne ne les verra pas. Pour les faire entrer
-    vraiment dans le jeu, <b>« ⭳ Publier ce matériel »</b>, en haut du Matériel, les emporte avec
-    les retouches — l'archive contient les fichiers, prêts à poser à la racine du dépôt.</p>`}`;
+    d'elles-mêmes dans le dépôt, et une joueuse en ligne ne les verra pas. Deux façons de les
+    emporter, en haut du Matériel : <b>« ⭳ Fichier de partage »</b> les envoie <b>à un testeur</b>,
+    posées sur leurs plans, sans rien publier ; <b>« ⭳ Publier ce matériel »</b> les fait entrer
+    <b>dans le jeu du site</b> — l'archive contient les fichiers, prêts à poser à la racine du
+    dépôt.</p>`}`;
 }
 
 /** Le choix d'une illustration : toutes celles de la boîte, en vignettes. */
@@ -4919,6 +4930,20 @@ function brancherMateriel() {
   if (cx) cx.addEventListener('click', exporterCSV);
   const ci = app.querySelector('#csv-import');
   if (ci) ci.addEventListener('click', () => importerCSV(refaire));
+  const pl = app.querySelector('#partage-lien');
+  if (pl) pl.addEventListener('click', () => partagerParLien(pl));
+  const pf = app.querySelector('#partage-fichier');
+  if (pf) pf.addEventListener('click', () => partagerParFichier(pf));
+  const pc = app.querySelector('#partage-charger');
+  const pe = app.querySelector('#partage-fichier-entree');
+  if (pc && pe) {
+    pc.addEventListener('click', () => pe.click());
+    pe.addEventListener('change', () => {
+      const f = pe.files && pe.files[0];
+      pe.value = '';
+      if (f) chargerFichierPartage(f);
+    });
+  }
   const pub = app.querySelector('#materiel-publier');
   if (pub) pub.addEventListener('click', () => publierMateriel(pub));
   const ad = app.querySelector('#adopter-publie');
@@ -5399,6 +5424,160 @@ function cibleObj(o) {
  * dépôt contient. Une image apportée ne peut donc pas rester une clé de réserve
  * — elle devient un fichier, et le matériel publié désigne son chemin.
  */
+/**
+ * Les visuels apportés, prêts à voyager dans un partage : chacun garde son
+ * IDENTIFIANT, puisque c'est par lui que le matériel le désigne. L'image part
+ * en data: — un partage est un seul fichier, il ne peut pas traîner de dossier
+ * derrière lui.
+ */
+async function imagesPourPartage() {
+  const out = [];
+  for (const v of visuelsApportes()) {
+    const blob = await blobVisuel(v.id);
+    if (!blob) continue;
+    /* eslint-disable no-await-in-loop */
+    const data = await new Promise((ok) => {
+      const l = new FileReader();
+      l.onload = () => ok(String(l.result));
+      l.onerror = () => ok('');
+      l.readAsDataURL(blob);
+    });
+    /* eslint-enable no-await-in-loop */
+    if (data) out.push({ id: v.id, nom: v.nom, largeur: v.largeur, hauteur: v.hauteur, data });
+  }
+  return out;
+}
+
+/**
+ * Un partage complet : les réglages, le matériel, les retouches de textes, et
+ * — dans le fichier seulement — les images apportées.
+ */
+async function composerPartageActuel(avecImages) {
+  return composerPartage(store.cfg, avecImages ? await imagesPourPartage() : [],
+    VERSION, LS.get('regles.textes', {}));
+}
+
+/**
+ * Le LIEN. Il porte les réglages et les cartes, pas les images apportées : une
+ * seule d'entre elles pèse plus qu'une adresse n'accepte. On le dit plutôt que
+ * de les laisser disparaître sans un mot.
+ */
+async function partagerParLien(bouton) {
+  const avant = bouton ? bouton.textContent : '';
+  if (bouton) { bouton.disabled = true; bouton.textContent = 'Préparation…'; }
+  try {
+    const nImages = visuelsApportes().length;
+    const charge = await encoderPartage(sansImages(await composerPartageActuel(false)));
+    const base = `${location.origin}${location.pathname}`;
+    const lien = lienPartage(base, charge);
+    if (charge.length > LIMITE_LIEN) {
+      alert(`Ce matériel est trop gros pour un lien (${Math.round(lien.length / 1024)} ko).\n\n`
+        + 'Passez par « ⭳ Fichier de partage » : il porte tout, sans limite de taille.');
+      return;
+    }
+    let copie = false;
+    try { await navigator.clipboard.writeText(lien); copie = true; } catch { copie = false; }
+    if (bouton) {
+      bouton.textContent = copie ? '✓ Lien copié' : '🔗 Lien de partage';
+      setTimeout(() => { bouton.textContent = avant; }, 2200);
+    }
+    if (!copie) prompt('Voici le lien à partager :', lien);
+    else if (nImages) {
+      alert(`Lien copié (${Math.round(lien.length / 1024)} ko).\n\n`
+        + `Attention : vos ${nImages} image${nImages > 1 ? 's apportées ne partent pas' : ' apportée ne part pas'} `
+        + 'dans un lien. Pour les emporter, utilisez « ⭳ Fichier de partage ».');
+    }
+  } catch (e) {
+    alert(`Le lien n'a pas pu être fabriqué : ${e.message || e}`);
+  } finally {
+    if (bouton) { bouton.disabled = false; if (bouton.textContent === 'Préparation…') bouton.textContent = avant; }
+  }
+}
+
+/** Le FICHIER. Tout y est, images comprises. */
+async function partagerParFichier(bouton) {
+  const avant = bouton ? bouton.textContent : '';
+  if (bouton) { bouton.disabled = true; bouton.textContent = 'Préparation…'; }
+  try {
+    const partage = await composerPartageActuel(true);
+    const texte = `${JSON.stringify(partage, null, 1)}\n`;
+    const quand = new Date();
+    const jour = `${quand.getFullYear()}${String(quand.getMonth() + 1).padStart(2, '0')}${
+      String(quand.getDate()).padStart(2, '0')}`;
+    telecharger(new Blob([texte], { type: 'application/json' }),
+      `edit-partage-v${VERSION}-${jour}.json`);
+    if (bouton) {
+      bouton.textContent = `✓ ${Math.round(texte.length / 1024)} ko`;
+      setTimeout(() => { bouton.textContent = avant; }, 2200);
+    }
+  } catch (e) {
+    alert(`Le fichier n'a pas pu être fabriqué : ${e.message || e}`);
+  } finally {
+    if (bouton) { bouton.disabled = false; if (bouton.textContent === 'Préparation…') bouton.textContent = avant; }
+  }
+}
+
+/**
+ * Recevoir un partage. Il remplace les réglages ET le matériel : c'est tout
+ * l'intérêt — le testeur doit voir exactement le jeu de celui qui partage. On
+ * ne le fait donc pas en douce quand la machine a déjà du travail dessus.
+ */
+async function appliquerPartage(partage, demander) {
+  if (!partage || !partage.cfg) return false;
+  const aDuTravail = !materielVide(store.cfg.materiel);
+  if (demander && aDuTravail
+    && !confirm('Ce partage remplace vos réglages ET votre matériel par ceux qu\'il porte.\n\n'
+      + 'Vos retouches actuelles seront perdues. Continuer ?')) return false;
+  // Les images d'abord : le matériel les désigne par leur identifiant, et une
+  // carte dessinée avant qu'elles ne soient là s'afficherait nue.
+  for (const im of partage.images || []) {
+    try {
+      /* eslint-disable no-await-in-loop */
+      const blob = await (await fetch(im.data)).blob();
+      await importerVisuel(im.id, blob, im.nom, im.largeur, im.hauteur);
+      /* eslint-enable no-await-in-loop */
+    } catch { /* une image illisible ne fait pas tomber le partage */ }
+  }
+  store.cfg = cloneConfig(partage.cfg);
+  normaliserMateriel();
+  sauverCfg();
+  // Les retouches portées au livret et à l'aide font partie du jeu partagé.
+  // Un partage sans aucune retouche n'efface pas celles du testeur : il n'a rien
+  // à dire là-dessus, et effacer par le vide serait une surprise.
+  if (partage.textes && Object.keys(partage.textes).length) LS.set('regles.textes', partage.textes);
+  return true;
+}
+
+/**
+ * Un partage ne porte pas le CODE : celui-ci vient du site. Les deux vont
+ * presque toujours ensemble — on ouvre le lien, on a la version du jour. Mais
+ * un partage gardé quelques jours peut arriver sur un site déjà plus loin :
+ * autant le dire, c'est justement ce qu'on cherchait à ne plus deviner.
+ */
+function motVersion(p) {
+  return p.version === VERSION ? ''
+    : `\n\nÀ noter : ce partage a été fait sur la version ${p.version} du site, `
+      + `qui en est aujourd'hui à la ${VERSION}. Les cartes et les réglages sont bien ceux du partage ; `
+      + 'c\'est le programme qui a changé depuis.';
+}
+
+/** Charger un fichier de partage reçu. */
+async function chargerFichierPartage(fichier) {
+  try {
+    const p = JSON.parse(await fichier.text());
+    if (!p || p.format !== 1 || !p.cfg) {
+      alert('Ce fichier n\'est pas un partage EDIT lisible.');
+      return;
+    }
+    if (!(await appliquerPartage(p, true))) return;
+    alert(`Partage chargé — version ${p.version}, du ${p.date}.${
+      (p.images || []).length ? `\n${p.images.length} image(s) apportée(s) reçue(s).` : ''}${motVersion(p)}`);
+    vueMateriel();
+  } catch (e) {
+    alert(`Fichier illisible : ${e.message || e}`);
+  }
+}
+
 async function publierMateriel(bouton) {
   const avant = bouton ? bouton.textContent : '';
   if (bouton) { bouton.disabled = true; bouton.textContent = 'Préparation…'; }
@@ -7001,8 +7180,34 @@ window.addEventListener('hashchange', route);
 // carte qui en porte un s'afficherait nue le temps d'un battement, puis se
 // rhabillerait — ce qui se voit. Une réserve qui refuse de s'ouvrir ne retient
 // pas le démarrage : le jeu tourne, sans les visuels apportés.
+/**
+ * Une adresse peut porter un PARTAGE — tout le jeu de celui qui l'a envoyée,
+ * dans le fragment. On l'applique avant le premier dessin, sinon la page
+ * montrerait l'ancien matériel le temps d'un battement.
+ *
+ * Une machine qui n'a rien réglé l'adopte sans rien demander : c'est un
+ * testeur, il a ouvert le lien pour ça. Une machine qui a du travail dessus est
+ * prévenue — on n'efface pas le matériel de quelqu'un parce qu'il a cliqué sur
+ * un lien.
+ *
+ * Le fragment est ensuite effacé de la barre d'adresse : on ne veut pas
+ * réappliquer le partage à chaque rechargement, ni traîner une adresse de trois
+ * mille caractères.
+ */
+async function partageDeLAdresse() {
+  const charge = partageDeLURL(location.hash);
+  if (!charge) return;
+  const p = await decoderPartage(charge);
+  history.replaceState(null, '', `${location.pathname}#/materiel`);
+  if (!p) { alert('Ce lien de partage est illisible — il a sans doute été coupé en route.'); return; }
+  if (await appliquerPartage(p, true)) {
+    alert(`Vous jouez maintenant la version partagée — ${p.version}, du ${p.date}.${motVersion(p)}`);
+  }
+}
+
 Promise.all([chargerVisuels(), chargerPublie(VERSION)])
   .then(() => { adopterPublie(false); }, () => {})
+  .then(partageDeLAdresse, partageDeLAdresse)
   .then(route, route);
 
 

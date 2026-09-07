@@ -763,6 +763,10 @@ body.sans-illus .bandeau .seq-bloc .pastille-num { height: 1.5em; }
 /* Publier le matériel : le seul geste qui le rende visible par tous. Il se
    distingue des autres exports, qui ne produisent que des documents. */
 .pill.publier { background: var(--violet); color: #fff; border-color: var(--violet); }
+/* Le partage est le frère léger de la publication : même famille, ton plus
+   clair — l'un pose le jeu dans le dépôt, l'autre le met dans un message. */
+.pill.partage { background: var(--violet-pale); color: var(--violet); border-color: var(--violet-clair); }
+.pill.partage:hover { background: var(--violet-clair); color: #fff; }
 .pill.publier:hover:not(:disabled) { background: var(--violet-clair); border-color: var(--violet-clair); }
 /* Le site publie autre chose que ce que cette machine montre : on le dit là où
    l'on règle le matériel, pas ailleurs. */

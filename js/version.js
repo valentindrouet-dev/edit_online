@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.21';
-export const BUILD_DATE = '2026-09-07 18:30';
+export const VERSION = '2.22';
+export const BUILD_DATE = '2026-09-07 21:10';
 
 export const CHANGELOG = [
+  {
+    v: '2.22',
+    date: '07/09/2026',
+    items: [
+      "<b>Partager LE JEU TEL QU'IL EST, sans rien publier.</b> Tout ce que règle l'éditeur vit dans <b>votre</b> navigateur : un testeur qui ouvre le lien du site voit le jeu du <b>dépôt</b>, pas le vôtre — d'où des cartes différentes chez chacun. « <b>⭳ Publier ce matériel</b> » restait la seule réponse, et elle demande le dépôt sous la main, une archive à défaire, une publication. Le Matériel porte donc deux boutons de plus : <b>🔗 Lien de partage</b> et <b>⭳ Fichier de partage</b>. On envoie, le testeur ouvre, il a exactement votre version.",
+      "<b>Ce qui voyage :</b> les <b>réglages</b> — toutes les variables de partie, variantes comprises —, le <b>matériel</b> — retouches, cartes créées, cartes écartées —, les <b>retouches de textes</b> portées à même le livret et l'aide de jeu, et, dans le fichier, vos <b>illustrations apportées</b>, en clair. Elles gardent leur identifiant : le plan qui en portait une la retrouve <b>posée dessus</b> chez le testeur, pas seulement rangée dans sa réserve.",
+      "<b>Le lien tient dans un message</b> — le matériel y est comprimé puis encodé, un jeu bien retouché fait un peu plus d'un kilo-octet. Il ne peut pas porter les images apportées : une seule pèse cent fois ce qu'une adresse accepte, et il le <b>dit</b> plutôt que de les perdre en silence. Le <b>fichier</b>, lui, porte tout : c'est la forme complète, à charger par « <b>⭱ Charger un partage</b> ».",
+      "La charge voyage dans le <b>fragment</b> de l'adresse — après le <code>#</code>. Un fragment n'est jamais envoyé au serveur : le partage reste entre celui qui l'envoie et celui qui le reçoit, et fonctionne sur un site qui n'a pas de serveur du tout. Le fragment est <b>effacé après coup</b>, pour ne pas se réappliquer à chaque rechargement.",
+      "<b>Un partage ne porte pas le code</b> — celui-là vient du site, et les deux joueuses l'ont forcément en commun puisqu'elles ouvrent la même adresse. Il retient tout de même le <b>numéro de version</b> où il a été fait : reçu sur un site déjà plus loin, il le dit au lieu de laisser deviner. Et il ne s'applique jamais en douce : une machine qui a déjà du travail dessus est <b>prévenue avant</b> d'être remplacée.",
+    ],
+  },
   {
     v: '2.21',
     date: '07/09/2026',

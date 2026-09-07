@@ -196,6 +196,23 @@ export async function ajouterVisuel(fichier) {
   return INFOS.get(v.id);
 }
 
+/**
+ * Fait entrer un visuel EN GARDANT SON IDENTIFIANT. C'est ce qu'il faut pour
+ * recevoir un partage : le matériel qui l'accompagne désigne ses images par
+ * `perso:<id>`, et un identifiant refabriqué ne désignerait plus rien.
+ *
+ * L'image arrive déjà redessinée — elle l'a été chez celui qui partage —, on ne
+ * la repasse donc pas au canevas : ce serait une seconde compression pour rien.
+ */
+export async function importerVisuel(id, blob, nom, largeur, hauteur) {
+  if (!id || !blob) throw new Error('visuel incomplet');
+  const v = { id: String(id), nom: nom || 'image', blob,
+    largeur: largeur || 0, hauteur: hauteur || 0, ajoutee: Date.now() };
+  await transaction(true, (m) => m.put(v));
+  inscrire(v);
+  return INFOS.get(v.id);
+}
+
 /** Retire un visuel de la réserve. Les plans qui le portaient perdent leur image. */
 export async function retirerVisuel(id) {
   await transaction(true, (m) => m.delete(id));
