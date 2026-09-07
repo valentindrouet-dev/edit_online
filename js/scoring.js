@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE } from './data.js?v=2.22';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE, TC_PREMIER, TC_DERNIER } from './data.js?v=2.23';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -497,6 +497,37 @@ function chrono(banc, cfg) {
   return { pts: ordre * cfg.chronoBonus - contre * cfg.chronoMalus, ordre, contre };
 }
 
+/**
+ * Les cartes montées HORS DU FILM.
+ *
+ * Le plan à **01:00** est le premier plan du film, celui à **99:00** le
+ * dernier. On peut monter avant l'un ou après l'autre — la règle ne l'interdit
+ * plus, et c'est ce qui évite les impasses : un montage fermé à ses deux bouts
+ * n'avait plus où se poser. Mais ces cartes-là ne sont plus **dans** le film :
+ * chacune coûte, en plus de ce que son bandeau rapporte.
+ *
+ * Le montage se lit d'un seul tenant — première ligne en haut, dernière en
+ * bas —, donc « avant » et « après » se lisent sur le RANG dans cette lecture,
+ * pas dans la ligne. Une ligne entière ouverte sous celle qui porte le 99:00
+ * est après la fin du film, tout entière.
+ *
+ * Les deux bornes elles-mêmes ne sont pas hors du film : elles le délimitent.
+ * Un montage à l'envers — le 99:00 avant le 01:00 — compte chaque carte une
+ * seule fois, d'où l'ensemble plutôt qu'une somme.
+ */
+export function plansHorsFilm(banc) {
+  const tous = tousLesPlans(banc);
+  const debut = tous.findIndex((p) => p.tc === TC_PREMIER);
+  let fin = -1;
+  for (let i = tous.length - 1; i >= 0; i--) if (tous[i].tc === TC_DERNIER) { fin = i; break; }
+  const hors = new Set();
+  tous.forEach((p, i) => {
+    if (debut >= 0 && i < debut) hors.add(p);
+    if (fin >= 0 && i > fin) hors.add(p);
+  });
+  return [...hors];
+}
+
 function jonctionsRaccordees(banc, cfg) {
   if (!cfg.raccordElement) return 0;
   let n = 0;
@@ -648,7 +679,7 @@ export function compter(banc, cfg) {
     // posé. Trois ouvrent un droit, que le moteur lit ; le quatrième dit ce que
     // valent les Cartes Raccord, et ce sont ELLES qui portent alors les points.
     PIOCHER: 0, SEQ_PLUS: 0, PLAN_PLUS: 0, RACCORD_VAUT: 0,
-    CHRONOLOGIE: 0, POSE: 0, JONCTION: 0,
+    CHRONOLOGIE: 0, POSE: 0, JONCTION: 0, HORS_FILM: 0,
   };
   const lignes = [];
 
@@ -674,6 +705,10 @@ export function compter(banc, cfg) {
   detail.JONCTION = jr * (cfg.raccordElementPoints || 0);
   const ch = chrono(banc, cfg);
   detail.CHRONOLOGIE = ch.pts;
+  // Les cartes montées hors du film. Elles gardent ce que leur bandeau
+  // rapporte — le malus s'ajoute, il ne remplace pas.
+  const hf = cfg.horsFilmMalus ? plansHorsFilm(banc) : [];
+  detail.HORS_FILM = hf.length * (cfg.horsFilmMalus || 0);
 
   const total = Object.values(detail).reduce((a, b) => a + b, 0);
 
@@ -692,6 +727,10 @@ export function compter(banc, cfg) {
     jonctions: jr,
     chronoOrdre: ch.ordre,
     chronoContre: ch.contre,
+    // Les cartes hors film, pour que la table les marque à leur coin : le
+    // malus se lit sur la carte qui le porte, comme tout le reste du décompte.
+    horsFilm: hf,
+    horsFilmMalus: cfg.horsFilmMalus || 0,
   };
 }
 
@@ -762,4 +801,5 @@ export const SOURCES_LABEL = {
   CHRONOLOGIE: 'Variante — chronologie',
   POSE: 'Points de pose',
   JONCTION: 'Jonctions raccordées',
+  HORS_FILM: 'Cartes montées hors du film',
 };

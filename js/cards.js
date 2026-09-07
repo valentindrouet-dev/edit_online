@@ -13,9 +13,9 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre } from './data.js?v=2.22';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.22';
-import { urlVisuel } from './visuels.js?v=2.22';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre } from './data.js?v=2.23';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.23';
+import { urlVisuel } from './visuels.js?v=2.23';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -755,7 +755,8 @@ export function renderPlan(h, opts = {}) {
   const objsIci = opts.objs || objsDe(h);
   const cls = ['moitie', `f-${h.format}`, h.transition ? 'transition' : '', h.depart ? 'depart' : '',
     opts.bandeauDouble || objsIci.length > 1 ? 'bande-deux' : '',
-    opts.clickable ? 'choisissable' : '', opts.selected ? 'choisi' : '', opts.neuf ? 'neuf' : ''].join(' ');
+    opts.clickable ? 'choisissable' : '', opts.selected ? 'choisi' : '', opts.neuf ? 'neuf' : '',
+    opts.horsFilm ? 'hors-film' : ''].join(' ');
   const flex = large ? '1 1 100%' : (h.format === 'GP' ? '0 0 33.6%' : '1 1 66.4%');
   // Le libellé du bas dit le TYPE du plan, pas son rôle : une Ouverture, un
   // Générique de fin et un Raccord sont tous trois des Raccords. Ce que la
@@ -809,7 +810,9 @@ export function renderPlan(h, opts = {}) {
   const jeton = opts.points === undefined ? ''
     : `<div class="jeton-pts ${teinteJeton}" title="${opts.bonifie
       ? 'Ce que ce plan rapporte — bonifie par une carte de votre montage'
-      : 'Ce que ce plan rapporte'}">${opts.points}</div>`;
+      : opts.horsFilm
+        ? 'Ce que ce plan rapporte — carte montee HORS DU FILM, avant le 01:00 ou apres le 99:00'
+        : 'Ce que ce plan rapporte'}">${opts.points}</div>`;
   // `muet` : un plan qui n'est pas vraiment sur la table — un aperçu de pose —
   // n'ouvre pas d'infobulle et ne se donne pas pour une carte du banc.
   const bulle = opts.muet ? ''

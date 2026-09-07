@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.22';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.23';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,36 +12,36 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=2.22';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.22';
-import { elIcon, numIcon } from './icons.js?v=2.22';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.22';
+} from './data.js?v=2.23';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.23';
+import { elIcon, numIcon } from './icons.js?v=2.23';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.23';
 import { chargerVisuels, ajouterVisuel, importerVisuel, retirerVisuel, visuelsApportes, urlVisuel,
   cleVisuel, idDeCle, estVisuelApporte, blobVisuel, poidsVisuels, COTE_MAX,
-} from './visuels.js?v=2.22';
+} from './visuels.js?v=2.23';
 import { chargerPublie, materielPublie, signaturePublie, materielVide, composerPublie,
-} from './publie.js?v=2.22';
+} from './publie.js?v=2.23';
 import { composerPartage, sansImages, encoderPartage, decoderPartage, partageDeLURL,
-  lienPartage, LIMITE_LIEN } from './partage.js?v=2.22';
+  lienPartage, LIMITE_LIEN } from './partage.js?v=2.23';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=2.22';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.22';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.22';
-import { releve, voler, stopperVols } from './anim.js?v=2.22';
-import { campagne } from './lab.js?v=2.22';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.22';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.22';
-import { Salon } from './net/salon.js?v=2.22';
-import { TransportLocal } from './net/local.js?v=2.22';
-import { TransportSupabase } from './net/supabase.js?v=2.22';
-import { enLigneDisponible } from './net/config.js?v=2.22';
-import { coupNu } from './net/protocole.js?v=2.22';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.22';
-import { livret, aideDeJeu } from './livret.js?v=2.22';
+} from './engine.js?v=2.23';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.23';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.23';
+import { releve, voler, stopperVols } from './anim.js?v=2.23';
+import { campagne } from './lab.js?v=2.23';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.23';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.23';
+import { Salon } from './net/salon.js?v=2.23';
+import { TransportLocal } from './net/local.js?v=2.23';
+import { TransportSupabase } from './net/supabase.js?v=2.23';
+import { enLigneDisponible } from './net/config.js?v=2.23';
+import { coupNu } from './net/protocole.js?v=2.23';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.23';
+import { livret, aideDeJeu } from './livret.js?v=2.23';
 
 const app = document.getElementById('app');
 
@@ -51,6 +51,38 @@ const LS = {
   get(k, d) { try { const v = localStorage.getItem('edit.' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem('edit.' + k, JSON.stringify(v)); } catch { /* quota */ } },
 };
+
+// --- Le mode PARTAGÉ --------------------------------------------------------
+// Qui reçoit un partage vient JOUER la version qu'on lui a envoyée, pas la
+// refaire. Les écrans qui fabriquent le jeu — le Matériel, le Laboratoire — et
+// le journal des versions lui sont donc fermés, et l'accueil ne montre ni mode
+// de jeu, ni variantes, ni bascule de matériel : tout cela est réglé par celui
+// qui partage, et le changer en douce ferait tester autre chose.
+//
+// Ce n'est pas un verrou — le code d'un site tient dans son navigateur, rien
+// n'y est secret : c'est un GARDE-FOU. Un jeton bien visible dit qu'on est sur
+// une version partagée, et un clic dessus en sort : celui qui fabrique le
+// partage doit pouvoir ouvrir son propre lien.
+const enPartage = () => LS.get('partage.recu', null) !== null;
+
+/** Ce que le partage dit de lui-même : sa version, sa date. */
+const infoPartage = () => LS.get('partage.recu', null) || {};
+
+/** Les écrans que le mode partagé ferme. */
+const ECRANS_FERMES = ['#/materiel', '#/labo', '#/versions'];
+
+function entrerEnPartage(p) {
+  LS.set('partage.recu', { version: p.version, date: p.date, signature: p.signature || '' });
+}
+
+function quitterLePartage() {
+  if (!confirm('Quitter la version partagée ?\n\n'
+    + 'Le matériel et les réglages reçus ne bougent pas — ce sont les écrans de '
+    + 'fabrication (Matériel, Laboratoire, Versions) qui se rouvrent.')) return;
+  try { localStorage.removeItem('edit.partage.recu'); } catch { /* rien à faire */ }
+  allerA('#/');
+  route();
+}
 
 const store = {
   cfg: Object.assign(cloneConfig(DEFAULTS), migrerCfg(LS.get('cfg', {}))),
@@ -222,6 +254,9 @@ const ONGLETS = [
 
 function topbar(actif) {
   const enPartie = store.partie && !store.partie.finie;
+  const partage = enPartage();
+  const onglets = partage ? ONGLETS.filter(([h]) => !ECRANS_FERMES.includes(h)) : ONGLETS;
+  const info = infoPartage();
   return `<div class="topbar">
     <div class="marque" data-go="#/">
       <div class="logo-mark">
@@ -231,10 +266,13 @@ function topbar(actif) {
       <div class="wordmark">EDIT</div>
       <div class="version-pill">v${VERSION}</div>
     </div>
+    ${partage ? `<button class="jeton-partage" id="sortir-partage"
+      title="Vous jouez une version partagée — matériel et réglages reçus de qui vous a envoyé le lien.&#10;Cliquer pour rouvrir les écrans de fabrication.">
+      🔗 Version partagée${info.version ? ` · v${info.version}` : ''}</button>` : ''}
     <nav class="nav">
       ${enPartie && actif !== '#/partie' ? `<button class="chaud" data-go="#/partie">▶ Partie en cours</button>` : ''}
       ${actif !== '#/' ? `<button data-go="#/">Accueil</button>` : ''}
-      ${ONGLETS.map(([h, l]) => `<button class="${actif === h ? 'actif' : ''}" data-go="${h}">${l}</button>`).join('')}
+      ${onglets.map(([h, l]) => `<button class="${actif === h ? 'actif' : ''}" data-go="${h}">${l}</button>`).join('')}
     </nav>
   </div>`;
 }
@@ -255,6 +293,8 @@ function html(s, garderDefilement = false) {
   app.querySelectorAll('[data-go]').forEach((el) => {
     el.addEventListener('click', () => allerA(el.dataset.go));
   });
+  const sortie = app.querySelector('#sortir-partage');
+  if (sortie) sortie.addEventListener('click', quitterLePartage);
 }
 
 // ===========================================================================
@@ -264,6 +304,12 @@ function html(s, garderDefilement = false) {
 function vueAccueil() {
   const n = store.joueurs.length;
   const titre = 'EDIT'.split('').map((c) => `<span>${c}</span>`).join('');
+  // Sur une version partagée, tout ce qui DÉFINIT le jeu est déjà réglé par
+  // celui qui l'a envoyée : le mode, les variantes, le matériel en jeu. On ne
+  // les montre pas — les changer ferait tester autre chose que ce qu'il a
+  // voulu. Restent les options de confort, qui ne touchent pas aux règles.
+  const partage = enPartage();
+  const info = infoPartage();
 
   html(`${topbar('#/')}
   <div class="hero">
@@ -287,7 +333,11 @@ function vueAccueil() {
           <div id="liste-joueurs">${store.joueurs.map((j, i) => ligneJoueur(j, i)).join('')}</div>
         </div>
 
-        ${bandeauMateriel()}
+        ${partage ? `<div class="bandeau-materiel partage-recu">
+          <span class="bm-titre">🔗 Version partagée${info.version ? ` — v${info.version}` : ''}</span>
+          <span class="aide">${info.date ? `reçue du ${info.date} · ` : ''}cartes, réglages et
+          variantes sont ceux de qui vous a envoyé le lien — rien à régler, jouez.</span>
+        </div>` : bandeauMateriel()}
         <button class="cta" id="go">Commencer la partie</button>
         <button class="pill large" data-go="#/enligne">🌐 Jouer en ligne, chacun sur son appareil</button>
       </div>
@@ -303,9 +353,9 @@ function vueAccueil() {
           </div>
         </div>
 
-        ${panneauMode()}
+        ${partage ? '' : panneauMode()}
 
-        <div class="panneau">
+        ${partage ? '' : `<div class="panneau">
           <h2>Variantes</h2>
           <div class="chips">
             ${chip('sixCartesDepart', '6 Cartes Départ')}
@@ -330,15 +380,15 @@ function vueAccueil() {
           ${store.cfg.planUnique && store.cfg.planUnique !== 'AUCUNE'
     ? `<p class="aide"><b>Pas deux fois le même plan</b> — ${LIBELLE_UNIQUE[store.cfg.planUnique]}.
             Réglé dans <b>Variables › Pose</b>.</p>` : ''}
-        </div>
+        </div>`}
       </div>
     </div>
 
     <div class="rangee-boutons">
       <button class="pill" data-go="#/banc">Banc de montage</button>
-      <button class="pill" data-go="#/labo">Laboratoire d’équilibrage</button>
+      ${partage ? '' : '<button class="pill" data-go="#/labo">Laboratoire d’équilibrage</button>'}
       <button class="pill" data-go="#/regles">Règles du jeu</button>
-      <button class="pill" data-go="#/materiel">Matériel</button>
+      ${partage ? '' : '<button class="pill" data-go="#/materiel">Matériel</button>'}
     </div>
   </div>
   ${pied()}`);
@@ -779,6 +829,18 @@ function bancBloc(st, i, titre, interactif) {
     const a = detail.get(l.plan) || []; a.push(l.pts); detail.set(l.plan, a);
     if (ptsLigne[l.sequence] !== undefined) ptsLigne[l.sequence] += l.pts;
   }
+  // Une carte montée hors du film porte son malus à SON coin : le décompte
+  // s'explique là où on le lit. Le rang de sa ligne se retrouve par le plan
+  // lui-même — le malus tient à sa place, pas à son bandeau.
+  const horsFilm = new Set(score.horsFilm || []);
+  if (horsFilm.size && score.horsFilmMalus) {
+    banc.sequences.forEach((seq, si) => seq.forEach((p) => {
+      if (!horsFilm.has(p)) return;
+      points.set(p, (points.get(p) || 0) + score.horsFilmMalus);
+      const a = detail.get(p) || []; a.push(score.horsFilmMalus); detail.set(p, a);
+      ptsLigne[si] += score.horsFilmMalus;
+    }));
+  }
 
   // Le plan qui vient d'être posé : c'est là que la carte en vol atterrit.
   const neuf = st.dernierPose && st.dernierPose.p === i ? st.dernierPose : null;
@@ -866,8 +928,11 @@ function bancBloc(st, i, titre, interactif) {
     // de plus —, il n'y a rien à compter : un « 0 » y ferait croire à un
     // pouvoir qui a échoué. Une Carte Raccord en a toujours un : elle vaut
     // quelque chose par elle-même, en plus ou en moins.
-    points: planMarque(objsEffectifs(plan, banc, st.cfg))
+    // Une carte hors du film en porte un dans tous les cas : elle coûte, et
+    // c'est justement ce qu'il faut voir.
+    points: planMarque(objsEffectifs(plan, banc, st.cfg)) || horsFilm.has(plan)
       ? (points.get(plan) || 0) : undefined,
+    horsFilm: horsFilm.has(plan),
     // Un Raccord dont le bandeau a été bonifié se dessine avec le NOUVEAU :
     // on doit lire sur la carte ce qu'elle rapporte ici, pas ce qu'elle
     // rapporterait ailleurs. L'aperçu au survol garde l'imprimé à côté, et le
@@ -1413,7 +1478,7 @@ function grouperBandeaux(lignes) {
 const jetonNombre = (n) => (n > 1 ? `<span class="grp-n" title="${n} fois sur le banc">×${n}</span>` : '');
 
 function listeObjectifs(s) {
-  const hors = ['POSE', 'JONCTION', 'CHRONOLOGIE'].filter((k) => s.detail[k]);
+  const hors = ['POSE', 'JONCTION', 'CHRONOLOGIE', 'HORS_FILM'].filter((k) => s.detail[k]);
   if (!s.lignes.length && !hors.length) {
     return `<table class="tableau-score">
       <tr><td class="aide">Aucun bandeau visible sur le banc</td><td>0</td></tr>
@@ -5570,9 +5635,15 @@ async function chargerFichierPartage(fichier) {
       return;
     }
     if (!(await appliquerPartage(p, true))) return;
+    entrerEnPartage(p);
     alert(`Partage chargé — version ${p.version}, du ${p.date}.${
-      (p.images || []).length ? `\n${p.images.length} image(s) apportée(s) reçue(s).` : ''}${motVersion(p)}`);
-    vueMateriel();
+      (p.images || []).length ? `\n${p.images.length} image(s) apportée(s) reçue(s).` : ''}\n\n`
+      + 'Vous êtes maintenant sur la version partagée : le Matériel, le Laboratoire et les '
+      + 'Versions se ferment, et l’accueil ne propose plus de changer le mode ni les variantes — '
+      + 'ils sont déjà réglés. Le jeton « 🔗 Version partagée », en haut, en sort d’un clic.'
+      + motVersion(p));
+    allerA('#/');
+    route();
   } catch (e) {
     alert(`Fichier illisible : ${e.message || e}`);
   }
@@ -7170,7 +7241,17 @@ const ROUTES = {
 
 function route() {
   document.onkeydown = null;
-  (ROUTES[location.hash || '#/'] || vueAccueil)();
+  const hash = location.hash || '#/';
+  // Un écran fermé par le mode partagé ne s'ouvre pas non plus à la main, dans
+  // la barre d'adresse : masquer l'onglet sans fermer la route ne fermerait
+  // rien du tout.
+  if (enPartage() && ECRANS_FERMES.includes(hash)) {
+    history.replaceState(null, '', `${location.pathname}#/`);
+    vueAccueil();
+    window.scrollTo(0, 0);
+    return;
+  }
+  (ROUTES[hash] || vueAccueil)();
   window.scrollTo(0, 0);
 }
 
@@ -7198,10 +7279,17 @@ async function partageDeLAdresse() {
   const charge = partageDeLURL(location.hash);
   if (!charge) return;
   const p = await decoderPartage(charge);
-  history.replaceState(null, '', `${location.pathname}#/materiel`);
+  // Le lien mène à l'ACCUEIL : c'est là qu'un testeur commence. Le Matériel,
+  // vers lequel menait ce chemin, lui est justement fermé.
+  history.replaceState(null, '', `${location.pathname}#/`);
   if (!p) { alert('Ce lien de partage est illisible — il a sans doute été coupé en route.'); return; }
   if (await appliquerPartage(p, true)) {
-    alert(`Vous jouez maintenant la version partagée — ${p.version}, du ${p.date}.${motVersion(p)}`);
+    entrerEnPartage(p);
+    alert(`Vous jouez maintenant la version partagée — ${p.version}, du ${p.date}.\n\n`
+      + 'Cartes, réglages, mode et variantes sont ceux de qui vous a envoyé le lien : il n’y a '
+      + 'rien à régler. Les écrans de fabrication — Matériel, Laboratoire, Versions — sont fermés, '
+      + 'et le jeton « 🔗 Version partagée », en haut, en sort d’un clic.'
+      + motVersion(p));
   }
 }
 

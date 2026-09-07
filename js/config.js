@@ -4,7 +4,7 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=2.22';
+import { ELEMENT_IDS } from './data.js?v=2.23';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -84,13 +84,24 @@ export const DEFAULTS = {
   // malus, à plat. Sans lui, poser des Raccords partout sans jamais les fermer
   // était la stratégie la plus payante du jeu. 0 = variante éteinte.
   raccordOuvertMalus: -2,
-  generiqueBloque: true,     // rien avant l'Ouverture, rien après les Crédits
-  // Le plan à 01:00 est le PREMIER plan du film, celui à 99:00 le DERNIER :
-  // rien ne se joue avant l'un, rien après l'autre. La règle se lit sur le
-  // minutage et non sur un drapeau — un Générique posé autrement que par son
-  // chemin propre n'en levait aucun, et l'on pouvait glisser une carte après la
-  // fin du film.
-  bornesBloquent: true,
+  // --- Les deux bouts du film ---------------------------------------------
+  // Le plan à 01:00 est le PREMIER plan du film, celui à 99:00 le DERNIER.
+  // Pendant deux versions, la règle INTERDISAIT de monter avant l'un ou après
+  // l'autre — et c'est ce qui menait à l'impasse : une joueuse qui posait son
+  // Générique de fin trop tôt fermait un bout de son banc, puis l'autre, et se
+  // retrouvait sans nulle part où poser alors qu'il lui restait des tours.
+  //
+  // On peut désormais y monter. Ces cartes-là ne sont simplement plus DANS le
+  // film : chacune coûte `horsFilmMalus`. La règle se paie au lieu de bloquer,
+  // et il n'y a plus de coup sans issue.
+  //
+  // Les deux interdits restent réglables, pour qui veut l'ancienne partie.
+  generiqueBloque: false,    // à true : rien avant l'Ouverture, rien après les Crédits
+  bornesBloquent: false,     // à true : rien avant le 01:00, rien après le 99:00
+  // Ce que coûte une carte montée hors du film — avant le 01:00, après le
+  // 99:00. Elle garde ce que son bandeau rapporte : c'est un malus qui s'ajoute,
+  // pas une carte qui ne compte plus. 0 = les cartes hors film ne coûtent rien.
+  horsFilmMalus: -3,
   // Variante — pas de Plans de départ. Les quatre faces de départ rejoignent
   // la pioche des Plans Larges, dont elles prennent la couleur : ce sont des
   // Plans Larges comme les autres. Il n'y a alors plus de choix de départ au
@@ -354,10 +365,18 @@ export const SCHEMA = [
       aide: 'variante — un Raccord qui n’a pas de Plan Large à côté de lui, ou dont un bord donne '
         + 'sur le vide, ne raccorde rien : son « x × Raccord » vaut ce malus, à plat. 0 = variante '
         + 'éteinte, un Raccord ouvert rapporte comme un autre' },
-    { k: 'generiqueBloque', l: 'Le Générique ferme le montage', t: 'bool' },
-    { k: 'bornesBloquent', l: 'Le minutage 01:00 / 99:00 ferme le montage', t: 'bool',
-      aide: 'le plan à 01:00 est le premier plan du film, celui à 99:00 le dernier : on ne joue '
-        + 'rien avant l’un ni après l’autre' },
+    { k: 'horsFilmMalus', l: 'Ce que coûte une carte montée hors du film', t: 'int', min: -20, max: 0,
+      aide: 'le plan à 01:00 est le premier plan du film, celui à 99:00 le dernier. On peut monter '
+        + 'avant l’un ou après l’autre — mais ces cartes-là ne sont plus dans le film : chacune '
+        + 'coûte ce malus, en plus de ce que son bandeau rapporte. 0 = elles ne coûtent rien' },
+    { k: 'generiqueBloque', l: 'Le Générique FERME le montage', t: 'bool',
+      aide: 'l’ancienne règle : rien ne se pose avant l’Ouverture ni après les Crédits. Décoché, '
+        + 'on peut y monter — au prix du malus hors film' },
+    { k: 'bornesBloquent', l: 'Le minutage 01:00 / 99:00 FERME le montage', t: 'bool',
+      aide: 'l’ancienne règle : on ne joue rien avant le premier plan du film ni après le dernier, '
+        + 'et une borne ne se pose qu’au bout qui lui revient. Décoché, on peut y monter — au prix '
+        + 'du malus hors film. À cocher, gare aux impasses : un montage fermé aux deux bouts '
+        + 'n’a plus où se poser' },
     { k: 'sixCartesDepart', l: 'Variante — 6 Cartes Départ', t: 'bool',
       aide: 'les quatre plans de départ s’apparient de six façons — 1-2, 2-3, 3-4, 4-1, 2-4, 1-3 — '
         + 'et chaque joueuse pioche une seule de ces six cartes : deux faces au choix au lieu de '

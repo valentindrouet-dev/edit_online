@@ -7,8 +7,8 @@
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, sceneDe, faceJouee,
   TC_VIDE, TC_PREMIER, TC_DERNIER,
-} from './data.js?v=2.22';
-import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=2.22';
+} from './data.js?v=2.23';
+import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=2.23';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -587,6 +587,36 @@ function bornes(banc, cfg) {
     entre: (k) => (ouvert && k === 0) || (clos && k === n)
       || (debut >= 0 && debut >= k) || (fin >= 0 && fin < k),
   };
+}
+
+/**
+ * La RESPIRATION d'un banc : combien d'endroits il offre encore, sans regarder
+ * de carte. Un bout de ligne libre, une ligne à ouvrir, cela compte pour un.
+ *
+ * C'est la mesure qui manquait aux IA. Elles jugeaient un coup sur ce qu'il
+ * rapporte à l'instant, jamais sur ce qu'il laisse ouvert — d'où des montages
+ * qui se refermaient sur eux-mêmes, deux bouts bloqués par les bornes du film
+ * et les côtés pleins, alors qu'il restait des tours à jouer. Une carte qu'on
+ * ne peut plus poser est un tour perdu, ce qui coûte bien plus que le point
+ * qu'on croyait gagner.
+ *
+ * On ne compte pas les cartes : leur variété change ce qui passe — un Raccord
+ * n'entre pas partout, un Plan Large a ses règles —, mais un bout fermé est
+ * fermé pour tout le monde. C'est le plafond de ce que le banc accepte, et il
+ * se lit en une passe sur les lignes plutôt qu'en énumérant tous les coups.
+ */
+export function ouverturesBanc(banc, cfg) {
+  if (!banc) return 0;
+  const bo = bornes(banc, cfg);
+  let n = 0;
+  banc.sequences.forEach((seq, i) => {
+    if (!bo.gauche(i) && placeDuCote(cfg, seq, 'gauche')) n++;
+    if (!bo.droite(i) && placeDuCote(cfg, seq, 'droite')) n++;
+  });
+  // Une ligne de plus, quand le banc en a encore le droit.
+  const k = banc.sequences.length;
+  if (k < limiteSequences(cfg, banc) && !bo.entre(k)) n++;
+  return n;
 }
 
 /** Ce plan-là, avec sa borne s'il en porte une, peut-il se poser ici ? */

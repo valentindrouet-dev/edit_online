@@ -67,6 +67,24 @@ button { font-family: inherit; }
   font-weight: 700; font-size: .74rem; padding: 3px 9px; border-radius: 999px;
   letter-spacing: .02em;
 }
+/* Le jeton du mode partagé. Il doit se voir sans hésitation — on est sur le jeu
+   de quelqu'un d'autre —, d'où l'orangé plein plutôt qu'une pastille pâle de
+   plus. C'est aussi le bouton qui en sort : le curseur le dit. */
+.jeton-partage {
+  background: linear-gradient(135deg, var(--orange) 0%, #fb923c 100%);
+  color: #fff; border: 0; border-radius: 999px;
+  font-weight: 800; font-size: .78rem; letter-spacing: .01em;
+  padding: 7px 15px; cursor: pointer;
+  box-shadow: 0 2px 9px rgba(249,115,22,.32);
+  transition: .16s;
+}
+.jeton-partage:hover { filter: brightness(1.07); box-shadow: 0 3px 13px rgba(249,115,22,.42); }
+
+.bandeau-materiel.partage-recu {
+  border-color: var(--orange); background: #fff7ed;
+}
+.bandeau-materiel .bm-titre { font-weight: 800; color: var(--orange); font-size: .88rem; }
+
 .nav { margin-left: auto; display: flex; gap: 9px; flex-wrap: wrap; }
 .nav button, .pill {
   background: rgba(255,255,255,.85); border: 1px solid var(--gris-clair);
@@ -522,6 +540,16 @@ body.sans-illus .moitie .tcode {
   box-shadow: 0 1px 3px rgba(0, 0, 0, .35), 0 0 0 2px rgba(34, 197, 94, .3);
 }
 body.sans-points .jeton-pts { display: none; }
+
+/* Une carte montée HORS DU FILM — avant le 01:00, après le 99:00. Elle compte
+   toujours, elle coûte simplement. Un liseré rouge en travers du haut le dit
+   sans rien recouvrir de la carte : c'est sa PLACE qui est en cause, pas ce
+   qu'elle porte. Il se pose au-dessus de l'illustration, jamais du bandeau. */
+.moitie.hors-film::before {
+  content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  border: 2px solid rgba(185, 28, 28, .85); border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .35);
+}
 
 /* Pendant le coup d'une IA ou le vol d'une carte, la table reste en place mais
    ne se laisse pas manipuler : un clic la repeindrait sous la carte. */

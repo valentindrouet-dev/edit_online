@@ -14,13 +14,26 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=2.22';
-import { elIcon } from './icons.js?v=2.22';
+import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=2.23';
+import { elIcon } from './icons.js?v=2.23';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.25',
+    date: '07/09/2026',
+    origine: 'Impasse constatee en partie par l’auteur',
+    corps: (c) => corps_0_25(c),
+    items: [
+      '<b>On peut désormais monter AVANT le premier plan du film et APRÈS le dernier.</b> Ces cartes-là ne sont simplement plus <b>dans</b> le film : chacune coûte <b>3 points</b>, en plus de ce que son bandeau rapporte. La règle se paie au lieu d’interdire.',
+      '<b>Ce qu’elle répare : l’impasse.</b> Les deux bornes fermaient le montage — rien avant le <b>01:00</b>, rien après le <b>99:00</b>. Une joueuse qui posait son Générique de fin trop tôt scellait un bout de son banc, puis l’autre, et se retrouvait <b>sans nulle part où poser</b> alors qu’il lui restait des tours à jouer. Un jeu où un coup légal peut vous murer n’est pas un jeu de placement, c’est un piège.',
+      'Le <b>Générique</b> ne scelle plus rien non plus : on monte avant l’Ouverture et après les Crédits, au même prix. Et une <b>borne se pose où l’on veut</b> — un 01:00 posé au milieu ne rend rien illégal, il laisse simplement hors du film tout ce qui le précède.',
+      '<b>Le montage se lit d’un seul tenant</b> : « avant » et « après » se comptent dans l’ordre de lecture — première ligne en haut, dernière en bas —, pas dans la ligne. Une ligne entière ouverte sous celle qui porte le 99:00 est après la fin du film, tout entière.',
+      'Sur la table, une carte hors du film porte un <b>liseré rouge</b> et son jeton compte le malus. Le décompte en fait une ligne à part, « Cartes montées hors du film ». Réglable dans <b>Variables</b> ⚙ — zéro annule le coût, et les deux anciens interdits s’y recochent pour qui veut l’ancienne partie.',
+    ],
+  },
   {
     v: '0.24',
     date: '06/09/2026',
@@ -492,6 +505,27 @@ export function majBloc(v, html) {
 // --- v0.23 -----------------------------------------------------------------
 // Variante : un Raccord qu'on n'a pas ferme ne raccorde rien, et coute.
 
+function corps_0_25(c) {
+  const m = c && c.horsFilmMalus;
+  return corps_0_24(c)
+    .replace('<h3>Fin de partie</h3>', `${majBloc('0.25', m
+    ? `<b>On peut monter hors du film — cela coûte ${m}.</b> Le plan à <b>01:00</b> est le premier
+       plan du film, celui à <b>99:00</b> le dernier. Rien n'interdit d'aller avant l'un ou après
+       l'autre : ces cartes-là ne sont simplement plus <b>dans</b> le film, et chacune vaut
+       <b>${m}</b> — en plus de ce que son bandeau rapporte, qui compte toujours.
+       <br><br>Le montage se lit <b>d'un seul tenant</b> — première ligne en haut, dernière en bas —,
+       donc « avant » et « après » se comptent dans cet ordre-là et non dans la ligne : une ligne
+       entière ouverte sous celle qui porte le 99:00 est après la fin du film, tout entière.
+       <br><br>C'est ce qui remplace l'ancien interdit, et ce qui supprime l'<b>impasse</b> : un
+       Générique de fin posé trop tôt scellait un bout du banc, puis l'autre, et l'on se retrouvait
+       sans nulle part où poser alors qu'il restait des tours. Sur la table, une carte hors du film
+       porte un <b>liseré rouge</b>. Les deux anciens interdits se recochent dans
+       <b>Variables</b> ⚙, pour qui veut l'ancienne partie.`
+    : `Ici, monter hors du film ne coûte rien : le malus est à zéro (réglable dans
+       <b>Variables</b> ⚙).`)}
+      <h3>Fin de partie</h3>`);
+}
+
 function corps_0_24(c) {
   return corps_0_23(c)
     .replace('<h3>Fin de partie</h3>', `${majBloc('0.24',
@@ -561,8 +595,9 @@ function corps_0_21(c) {
       <tr><td><b>n × PLAN de la plus longue SÉQUENCE</b></td>`)
     .replace('<h3>Le minutage</h3>', `<h3>Le minutage</h3>
       ${c.bornesBloquent === false
-        ? majBloc('0.21', `Ici, les deux bornes du minutage ne ferment rien : on pose avant le
-          <b>01:00</b> et après le <b>99:00</b> comme ailleurs (réglable dans <b>Variables</b> ⚙).`)
+        ? majBloc('0.21', `Ici, les deux bornes du minutage <b>ne ferment pas</b> le montage : on
+          pose avant le <b>01:00</b> et après le <b>99:00</b>. Ces cartes-là sont alors
+          <b>hors du film</b> et coûtent — voir plus bas (réglable dans <b>Variables</b> ⚙).`)
         : majBloc('0.21', `<b>Les deux bornes ferment le montage.</b> Le plan à <b>01:00</b> est le
           premier plan du film, celui à <b>99:00</b> le dernier : <b>rien ne se pose avant l'un ni
           après l'autre</b>. Le montage se lisant dans l'ordre — la première ligne ouvre le film, la
@@ -1213,7 +1248,8 @@ function corps_0_14(c) {
     Un Raccord ne relie donc rien et se pose <b>comme un plan ordinaire</b>, au bout d’une ligne.</li>
     <li><b>Générique</b> (Ouverture ou Fermeture) — ouvre ou ferme le film.
     ${c.generiqueBloque === false
-      ? 'Ici, il ne bloque rien (réglable dans <b>Variables</b> ⚙).'
+      ? `Ici, il <b>ne scelle pas</b> le montage : on monte avant l’Ouverture et après les Crédits,
+      et ces cartes-là sont <b>hors du film</b> — elles coûtent (réglable dans <b>Variables</b> ⚙).`
       : `Rien ne peut plus se poser avant l’Ouverture ni après les Crédits : le <b>tout début</b> du
       montage — le bout gauche de la première ligne — et sa <b>toute fin</b> — le bout droit de la
       dernière — sont scellés, et aucune ligne ne s’ouvre plus au-delà.`}</li>

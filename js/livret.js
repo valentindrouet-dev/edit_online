@@ -16,9 +16,9 @@
 import {
   FORMATS, ELEMENTS, ELEMENT_IDS, PORTEES, OBJ, objLabel, PAIRES_DEPART, PLANS_DEPART,
   buildCartesDoubles, buildPlansLarges, buildDeparts, SCENES, recenserBoite,
-} from './data.js?v=2.22';
-import { elIcon } from './icons.js?v=2.22';
-import { objHTML } from './cards.js?v=2.22';
+} from './data.js?v=2.23';
+import { elIcon } from './icons.js?v=2.23';
+import { objHTML } from './cards.js?v=2.23';
 
 // --- Les briques de mise en page -------------------------------------------
 
@@ -227,7 +227,13 @@ export function livret(cfg) {
       <li><b>Deux Raccords ne se touchent pas</b>, et le <b>bord libre d’un Raccord n’accepte qu’un
         Plan Large</b> — jamais un Plan Moyen ni un Gros Plan. C’est là tout l’office du Raccord :
         il ouvre un second côté, et ce côté commence par son propre climax.</li>
-      ${c.bornesBloquent === false ? '' : `<li><b>Rien avant le premier plan du film, rien après le
+      ${c.bornesBloquent === false ? (c.horsFilmMalus ? `<li><b>Avant le premier plan du film,
+        après le dernier : on peut, mais cela coûte.</b> Le plan à <span class="lv-tc-o">01:00</span>
+        ouvre le film, celui à <span class="lv-tc-o">99:00</span> le termine. Rien n’interdit d’aller
+        au-delà — ces cartes-là ne sont simplement plus <b>dans</b> le film, et chacune vaut
+        <b>${c.horsFilmMalus}</b>, en plus de ce que son bandeau rapporte. Le montage se lisant
+        ligne après ligne, une ligne ouverte sous celle qui porte le 99:00 est après la fin du film,
+        <b>tout entière</b>.</li>` : '') : `<li><b>Rien avant le premier plan du film, rien après le
         dernier.</b> Le plan à <span class="lv-tc-o">01:00</span> ouvre le film, celui à
         <span class="lv-tc-o">99:00</span> le termine : on ne pose ni avant l’un ni après l’autre,
         et le montage se lisant ligne après ligne, une ligne ouverte sous celle qui porte le 99:00
@@ -275,6 +281,10 @@ export function livret(cfg) {
       <li>Un bandeau qui paie pour une <b>absence</b> — « n si telle icône est absente » — est la
         seule exception : celui-là <b>ne regarde pas sa propre carte</b>. Sans quoi un plan qui
         montre une Héroïne et dit « 4 si Héroïne absente après » serait son propre démenti.</li>
+      ${c.horsFilmMalus ? `<li>Une carte montée <b>hors du film</b> — avant le
+        <span class="lv-tc-o">01:00</span>, après le <span class="lv-tc-o">99:00</span> — coûte
+        <b>${c.horsFilmMalus}</b>. Elle garde ce que son bandeau rapporte : le malus s’ajoute, il ne
+        remplace pas. Sur la table, un <b>liseré rouge</b> l’entoure.</li>` : ''}
       <li>Les points se lisent au <b>coin de chaque carte</b> pendant la partie : c’est ce que ce
         plan-là vous rapporte, ici et maintenant. Un coin <b>vert</b> signale une Carte Raccord
         <b>bonifiée</b> : elle rapporte autre chose que ce qui est imprimé dessus.</li>

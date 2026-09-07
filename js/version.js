@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.22';
-export const BUILD_DATE = '2026-09-07 21:10';
+export const VERSION = '2.23';
+export const BUILD_DATE = '2026-09-07 23:40';
 
 export const CHANGELOG = [
+  {
+    v: '2.23',
+    date: '07/09/2026',
+    items: [
+      "<b>Plus d'impasse : on peut monter avant le premier plan du film et après le dernier. Règles v0.25.</b> Les deux bornes <b>fermaient</b> le montage — rien avant le <span class='lv-tc-o'>01:00</span>, rien après le <span class='lv-tc-o'>99:00</span>. Une joueuse qui posait son Générique de fin trop tôt scellait un bout de son banc, puis l'autre, et se retrouvait <b>sans nulle part où poser</b> alors qu'il lui restait des tours. Ces cartes-là ne sont désormais plus <b>dans</b> le film : chacune coûte <b>3 points</b>, en plus de ce que son bandeau rapporte. La règle se paie au lieu d'interdire.",
+      "Le <b>Générique</b> ne scelle plus rien non plus, et une <b>borne se pose où l'on veut</b> — un 01:00 posé au milieu ne rend rien illégal, il laisse simplement hors du film tout ce qui le précède. Sur la table, une carte hors du film porte un <b>liseré rouge</b> et son jeton compte le malus ; le décompte en fait une ligne à part. Les deux anciens interdits se recochent dans <b>Variables</b> ⚙, et le montant du malus s'y règle — zéro l'annule.",
+      "<b>Et les IA ont appris à ne pas se murer.</b> Elles jugeaient un coup sur ce qu'il rapporte à l'instant, jamais sur ce qu'il laisse <b>ouvert</b> : elles fermaient leur banc sans y penser. Elles mesurent maintenant sa <b>respiration</b> — combien d'endroits il offre encore —, et paient chaque place manquante au prix d'un plan quand il reste des cartes à monter. Cela vaut dès la <b>Novice</b> : se boucher n'est pas une finesse de stratégie qu'on laisse à la débutante, c'est marcher dans un mur. Le calcul entre aussi dans le <b>dérushage</b> — une carte dont le seul emplacement ferme le banc ne vaut pas ce qu'elle rapporte, et c'est avant de la prendre qu'il faut s'en apercevoir.",
+      "<b>Une version partagée ne donne plus accès aux écrans de fabrication.</b> Qui reçoit un partage vient <b>jouer</b> la version qu'on lui a envoyée, pas la refaire : le <b>Matériel</b>, le <b>Laboratoire</b> et les <b>Versions</b> se ferment — onglets retirés, adresses fermées —, et l'accueil ne montre plus ni <b>mode de jeu</b>, ni <b>variantes</b>, ni la bascule <b>Matériel d'origine / modifié</b>. Tout cela est déjà réglé par celui qui partage ; le changer ferait tester autre chose que ce qu'il a voulu.",
+      "<b>Et un jeton orangé le dit, en haut de chaque écran</b> : « 🔗 Version partagée · v2.23 ». L'accueil le redit avec la date du partage. Ce n'est pas un verrou — le code d'un site tient dans son navigateur, rien n'y est secret : c'est un garde-fou, et un clic sur le jeton en sort. Celui qui fabrique le partage doit pouvoir ouvrir son propre lien.",
+    ],
+  },
   {
     v: '2.22',
     date: '07/09/2026',
