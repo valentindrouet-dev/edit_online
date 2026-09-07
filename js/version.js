@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.18';
-export const BUILD_DATE = '2026-09-07 10:30';
+export const VERSION = '2.19';
+export const BUILD_DATE = '2026-09-07 14:00';
 
 export const CHANGELOG = [
+  {
+    v: '2.19',
+    date: '07/09/2026',
+    items: [
+      "<b>Le cadrage ne s'écrit plus en toutes lettres sous le bandeau.</b> « PLAN MOYEN », « GROS PLAN » occupaient une bande entière au bas de chaque moitié pour redire ce que la carte montre déjà. Le format se dit désormais dans le <b>coin bas-gauche</b>, en tête de la languette, avec le <b>cartouche même qu'emploient les bandeaux de pouvoir</b> — <b>PL</b>, <b>PM</b>, <b>GP</b>, <b>DÉP</b>. Un Raccord garde son mot entier : « TR » ne se lit nulle part ailleurs dans le jeu.",
+      "<b>La carte récupère cette bande</b> : l'illustration passe de 76,5 à <b>82 %</b> de la hauteur, et le bandeau comme la languette descendent d'autant. La boîte noire du minutage a suivi le nouveau facteur d'échelle dans les quatre formats — sa hauteur, elle, ne dépend que du visuel et ne bougera plus.",
+      "Le cartouche, la languette et le bandeau partagent la même couleur et se touchent : le bas de carte se lit d'un bloc, et l'on sait d'un coup d'œil quel plan on a sous les yeux.",
+    ],
+  },
   {
     v: '2.18',
     date: '07/09/2026',

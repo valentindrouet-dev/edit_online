@@ -247,7 +247,7 @@ button { font-family: inherit; }
    rapport au visuel, `cover` le met désormais à l'échelle par la HAUTEUR : il
    grandit d'un dixième et se rogne sur la droite au lieu du bas — on voit donc
    le bas des dessins, qui était coupé. */
-.illus     { flex: 0 0 76.5%; position: relative; overflow: hidden; }
+.illus     { flex: 0 0 82%; position: relative; overflow: hidden; }
 /* Une carte dont un côté porte DEUX pouvoirs donne 8 % de plus à sa bande, sur
    ses DEUX moitiés : sinon les bas de carte ne s'aligneraient plus. Ce sont
    les mêmes 8 % que l'illustration cède, et le calque des icônes remonte
@@ -262,8 +262,8 @@ button { font-family: inherit; }
 .moitie.bande-deux .bandeau:not(.deux) .bandeau-obj {
   flex: 0 0 auto; height: 69.2%; align-self: center;
 }
-.moitie.bande-deux .illus { flex: 0 0 68.5%; }
-.moitie.bande-deux .pastilles { bottom: 31.5%; }
+.moitie.bande-deux .illus { flex: 0 0 74%; }
+.moitie.bande-deux .pastilles { bottom: 26%; }
 .moitie.bande-deux .bandeau { flex: 0 0 26%; }
 body.sans-illus .moitie.bande-deux .bandeau { flex: 0 0 42%; }
 /* L'illustration vit dans sa propre couche, sous le minutage : la retourner en
@@ -286,14 +286,16 @@ body.sans-illus .moitie.bande-deux .bandeau { flex: 0 0 42%; }
    bandeau, elle est plus haute que le visuel ne le demande, et c'est la HAUTEUR
    qui commande l'échelle — 316 px de haut pour un Plan Moyen ou un Gros Plan,
    317 pour un Plan Large. La boîte occupe donc une fraction fixe de la fenêtre,
-   qu'on retrouve en rapportant 131 et 43,5 à ce facteur. Elle a grandi d'un
-   dixième avec le reste du dessin. */
-.moitie.f-PL, .moitie.f-DEP { --bt-l: 22.64%; --bt-h: 13.72%; }
-.moitie.f-PM                { --bt-l: 34.53%; --bt-h: 13.77%; }
-.moitie.f-GP                { --bt-l: 66.87%; --bt-h: 13.77%; }
+   qu'on retrouve en rapportant 131 et 43,5 à ce facteur. Sa HAUTEUR ne dépend
+   donc que du visuel — 43,5 / 316 — et ne bouge plus quand la fenêtre change ;
+   sa largeur, elle, suit le facteur, et a encore grandi d'un quatorzième le jour
+   où le libellé a quitté le bas de carte. */
+.moitie.f-PL, .moitie.f-DEP { --bt-l: 24.27%; --bt-h: 13.72%; }
+.moitie.f-PM                { --bt-l: 37.01%; --bt-h: 13.77%; }
+.moitie.f-GP                { --bt-l: 71.68%; --bt-h: 13.77%; }
 .illus > .boite-tc {
   position: absolute; top: 0; left: 0;
-  width: var(--bt-l, 22.64%); height: var(--bt-h, 13.72%);
+  width: var(--bt-l, 24.27%); height: var(--bt-h, 13.72%);
   background: #0b0b0b;
   /* Un liseré très discret sur les deux seuls bords qui donnent sur le dessin :
      en haut et à gauche, la boîte est contre l'arête de la carte. Il est tracé
@@ -315,7 +317,7 @@ body.sans-illus .moitie.bande-deux .bandeau { flex: 0 0 42%; }
    la traverse : dans l'éditeur, l'illustration se clique, et un calque
    par-dessus lui volerait son coin. */
 .pastilles {
-  position: absolute; left: 0; right: 0; bottom: 23.5%; height: 17%;
+  position: absolute; left: 0; right: 0; bottom: 18%; height: 17%;
   display: flex; align-items: center; overflow: hidden; pointer-events: none;
 }
 /* Un petit fond clair derrière les icônes — et UNIQUEMENT derrière elles. Il
@@ -362,7 +364,7 @@ body.sans-illus .moitie.bande-deux .bandeau { flex: 0 0 42%; }
 .bandeau.deux .bandeau-sep {
   width: auto; height: 1.5px; align-self: stretch; margin: 0 .8em; flex: 0 0 auto;
 }
-.libelle   { flex: 0 0 5.5%;  display: flex; align-items: center; justify-content: center; }
+
 
 /* --- Lecture nue, sans illustration ---------------------------------------
    Sans image, la carte se réorganise : les icônes prennent toute la place du
@@ -815,14 +817,14 @@ body.sans-illus .barre .tc-seuil + .croix-non { height: .8em; bottom: 30%; }
 .barre.grande-croix { height: auto; align-self: center; margin-right: .32em; }
 .barre.grande-croix .tag + .croix-non { height: 124%; bottom: -40%; right: -30%; }
 
-.moitie .libelle {
-  text-align: center; font-size: .54em; font-weight: 800; letter-spacing: .07em;
-  /* Le libellé ne se pose plus sur une bande noire : elle doublait l'épaisseur
-     du cadre en bas de carte, là où les trois autres bords restaient fins. Le
-     cadre est donc d'une seule épaisseur, tout autour, et le libellé s'écrit
-     sur la carte, dans la couleur de son cadrage. */
-  text-transform: uppercase; color: var(--c); background: transparent; padding: 0 .4em;
-  line-height: 1.1; white-space: nowrap; overflow: hidden; width: 100%;
+/* Le cartouche de cadrage, en tête de la languette : c'est lui qui dit le
+   format depuis que le libellé a quitté le bas de carte. Il ne se replie pas —
+   un coin n'a pas deux lignes — et garde sa taille quand les icônes qui le
+   suivent se serrent : c'est la première chose qu'on lit sur une carte. */
+.pastilles-fond .tag {
+  font-size: .58em; font-weight: 800; letter-spacing: .02em; padding: .22em .42em;
+  border-radius: .3em; text-transform: uppercase; line-height: 1.08;
+  flex: 0 0 auto; white-space: nowrap;
 }
 
 /* L'objectif hors carte : tableaux de score, règles, matériel. */

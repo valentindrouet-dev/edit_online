@@ -13,9 +13,9 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, encreLibelle, transformeCadre } from './data.js?v=2.18';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.18';
-import { urlVisuel } from './visuels.js?v=2.18';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre } from './data.js?v=2.19';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.19';
+import { urlVisuel } from './visuels.js?v=2.19';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -762,6 +762,15 @@ export function renderPlan(h, opts = {}) {
   // carte fait — ouvrir, fermer, relier — se lit à son illustration et aux
   // emplacements qu'elle propose.
   const label = h.depart ? 'Plan de départ' : F.label;
+  // Le cadrage ne s'écrit plus en toutes lettres sous le bandeau : il se dit
+  // dans le COIN, en tête de la languette, avec le cartouche même qu'emploient
+  // les bandeaux de pouvoir. La carte gagne ainsi la bande entière que le
+  // libellé occupait — l'illustration et le bandeau descendent d'autant.
+  //
+  // Forme courte pour les quatre cadrages : dans un coin, « GP » se lit aussi
+  // vite que « GROS PLAN » et tient sur un tiers de carte. Un Raccord garde son
+  // mot entier — « TR » ne se lit nulle part ailleurs dans le jeu.
+  const marqueCadrage = tagCadrage(F.id, F.id !== 'TR');
   // L'image est posée en style inline : dans une variable CSS, url() se
   // résoudrait contre la feuille de style et non contre le document. Elle vit
   // dans sa propre couche sous le minutage, pour qu'un retournement en miroir
@@ -808,10 +817,10 @@ export function renderPlan(h, opts = {}) {
       <div class="boite-tc"></div>
       <div class="tcode ${teinteTc(h.tc)}">${tc(h.tc)}</div>
     </div>
-    <div class="pastilles" style="--n:${Math.max(1, icones.length)}">${icones.length
-      ? `<span class="pastilles-fond">${icones.map((e) => elIcon(e)).join('')}</span>` : ''}</div>
+    <div class="pastilles" style="--n:${Math.max(1, icones.length + 1)}">
+      <span class="pastilles-fond">${marqueCadrage}${icones.map((e) => elIcon(e)).join('')}</span>
+    </div>
     ${bandeau(objsIci, h.format, opts.cfg)}
-    <div class="libelle" style="--c:${encreLibelle(h.format, !!h.transition)}">${label}</div>
   </div>`;
 }
 
@@ -855,17 +864,14 @@ export function enPile(html, reste) {
 export function renderDos(libelle, reste, opts = {}) {
   const cls = ['carte', 'dos', opts.small ? 'small' : '', opts.clickable ? 'clickable' : ''].join(' ');
   // Le dos d'une pioche de Plans Larges est un **Plan Large vierge** : le vert
-  // du cadrage, la bande des pastilles, le bandeau, le libellé — la carte telle
-  // qu'elle est, sans rien dessus —, et un point d'interrogation à la place de
-  // l'illustration. On ne sait pas ce qui vient, mais on sait que c'est un
-  // Plan Large.
-  const F = FORMATS.PL;
+  // du cadrage, sa languette, son bandeau — la carte telle qu'elle est, sans
+  // rien dessus —, et un point d'interrogation à la place de l'illustration. On
+  // ne sait pas ce qui vient, mais on sait que c'est un Plan Large.
   return `<div class="${cls}" title="${libelle}">
     <div class="moitie f-PL dos-vierge" style="--flex:1 1 100%">
       <div class="illus"><span class="dos-question">?</span></div>
-      <div class="pastilles"></div>
+      <div class="pastilles"><span class="pastilles-fond">${tagCadrage('PL', true)}</span></div>
       <div class="bandeau"></div>
-      <div class="libelle" style="--c:${F.color}">${F.label}</div>
     </div>
   </div>`;
 }
