@@ -2472,3 +2472,51 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
   .aj-bandeaux .lv-sym { flex: 1 1 100%; }
   .lv-ligne.lv-regle .lv-sym { flex: 1 1 100%; }
 }
+
+/* --- La Carte Objectif commune --------------------------------------------- */
+/* Elle est commune à toute la table : elle se pose donc AU-DESSUS des bancs,
+   pas dans la colonne d'une joueuse. Dessinée comme une carte du jeu — un
+   jeton de points, un titre, ce qu'elle demande — et non comme une ligne de
+   réglage de plus : c'est un but, on doit le voir de loin. */
+.carte-objectif {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  border: 2px solid var(--violet-clair); border-radius: 14px;
+  background: linear-gradient(135deg, #fff 0%, var(--violet-pale) 100%);
+  padding: 12px 16px; margin-bottom: 12px;
+  box-shadow: 0 2px 10px rgba(124, 58, 237, .13);
+}
+.carte-objectif.tenu { border-color: #22c55e; background: linear-gradient(135deg, #fff 0%, #eafaf0 100%); }
+.carte-objectif .co-jeton {
+  flex: 0 0 auto; min-width: 46px; height: 46px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--violet); color: #fff; font-weight: 800; font-size: 1.4rem;
+}
+.carte-objectif.tenu .co-jeton { background: #15803d; }
+.carte-objectif .co-texte { flex: 1 1 260px; min-width: 0; }
+.carte-objectif .co-titre {
+  font-size: .74rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--violet); margin-bottom: 2px;
+}
+.carte-objectif.tenu .co-titre { color: #15803d; }
+.carte-objectif .co-phrase { font-size: 1rem; color: var(--encre); }
+.carte-objectif .co-aide { font-size: .78rem; color: var(--encre-doux); margin-top: 3px; }
+.carte-objectif .co-etats { display: flex; gap: 10px; flex-wrap: wrap; }
+.carte-objectif .co-etat {
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  font-size: .8rem; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+  background: rgba(255, 255, 255, .8); border: 1px solid var(--gris-clair);
+}
+.carte-objectif .co-etat.oui { border-color: #86efac; color: #15803d; }
+.carte-objectif .co-etat.non { color: var(--encre-doux); opacity: .75; }
+
+/* Le paquet, dans les Variables : une carte par ligne, sa valeur à côté. */
+.liste-objectifs { display: flex; flex-direction: column; gap: 9px; }
+.ligne-objectif { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ligne-objectif .chip { flex: 0 0 auto; }
+.ligne-objectif .aide { flex: 1 1 180px; font-size: .78rem; }
+.ligne-objectif.hors { opacity: .45; }
+.champ-mini {
+  width: 58px; padding: 5px 8px; text-align: center; font-weight: 700;
+  border: 1px solid var(--gris-clair); border-radius: 8px; background: #fff;
+  color: var(--encre); font-size: .9rem;
+}

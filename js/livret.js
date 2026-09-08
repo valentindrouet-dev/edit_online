@@ -16,9 +16,10 @@
 import {
   FORMATS, ELEMENTS, ELEMENT_IDS, PORTEES, OBJ, objLabel, PAIRES_DEPART, PLANS_DEPART,
   buildCartesDoubles, buildPlansLarges, buildDeparts, SCENES, recenserBoite,
-} from './data.js?v=2.24';
-import { elIcon } from './icons.js?v=2.24';
-import { objHTML } from './cards.js?v=2.24';
+} from './data.js?v=2.25';
+import { OBJECTIFS_COMMUNS } from './scoring.js?v=2.25';
+import { elIcon } from './icons.js?v=2.25';
+import { objHTML } from './cards.js?v=2.25';
 
 // --- Les briques de mise en page -------------------------------------------
 
@@ -305,6 +306,13 @@ export function livret(cfg) {
         se règle : sur tout le banc, sur une même ligne, ou seulement entre voisins.`)}
       ${encart('Chronologie', `Un bonus par paire de plans dans l’ordre, un malus par paire à
         contresens. Les plans <b>sans minutage</b> sont retirés de la lecture : ils ne la coupent pas.`)}
+      ${encart('Carte Objectif commune', `On en révèle <b>une</b> au début de la partie. Elle reste
+        <b>visible de tous</b>, et chacune la vise sur son propre montage : elle se tient ou ne se
+        tient pas, ses points tombent <b>entiers ou pas du tout</b>. Un montage vide n’en tient
+        aucune.<br><br>${OBJECTIFS_COMMUNS.map((o) => {
+    const t = (c.objectifCommunPoints || {})[o.id];
+    return `<b>${Number.isFinite(t) ? t : o.points}</b> ${o.phrase}`;
+  }).join(' · ')}.`)}
     </div>
     <p class="lv-fin">Toutes ces variantes — et chaque nombre de ce livret — se règlent dans
     l’onglet <b>Variables</b>. Le livret suit ce qui y est réglé : ce que vous lisez ici est la règle

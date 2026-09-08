@@ -7,8 +7,10 @@
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, sceneDe, faceJouee,
   TC_VIDE, TC_PREMIER, TC_DERNIER,
-} from './data.js?v=2.24';
-import { compter, bancVide, plansComptes, bonusRegle, piocheOuverte } from './scoring.js?v=2.24';
+} from './data.js?v=2.25';
+import {
+  compter, bancVide, plansComptes, bonusRegle, piocheOuverte, tirerObjectifCommun,
+} from './scoring.js?v=2.25';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -129,9 +131,19 @@ export function creerPartie(joueurs, cfg, graine) {
   const n = joueurs.length;
   const melees = piochesMelees(cfg);
 
+  // La Carte Objectif commune se tire à part, sur un aléa dérivé de la graine.
+  // À part, pour deux raisons : les paquets et le premier joueur ne bougent
+  // alors pas d'un pouce quand la variante est éteinte — une graine donne
+  // exactement la même partie qu'avant —, et une joueuse en ligne qui rejoue le
+  // journal des coups depuis `{joueurs, cfg, graine}` retrouve forcément la même
+  // carte, sans qu'on ait à la lui envoyer.
+  const objectifTire = tirerObjectifCommun(cfg, rng(`${seed}|objectif`));
+
   const state = {
     seed,
-    cfg,
+    // La partie joue son propre instantané de configuration. On ne le détache
+    // que s'il y a une carte à y inscrire : sans la variante, rien ne change.
+    cfg: objectifTire ? { ...cfg, objectifCommunTire: objectifTire } : cfg,
     joueurs: joueurs.map((j, i) => ({ ...j, idx: i })),
     bancs: joueurs.map(() => bancVide()),
     posees: joueurs.map(() => 0),

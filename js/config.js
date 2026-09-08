@@ -4,7 +4,8 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=2.24';
+import { ELEMENT_IDS } from './data.js?v=2.25';
+import { OBJECTIFS_COMMUNS } from './scoring.js?v=2.25';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -102,6 +103,23 @@ export const DEFAULTS = {
   // 99:00. Elle garde ce que son bandeau rapporte : c'est un malus qui s'ajoute,
   // pas une carte qui ne compte plus. 0 = les cartes hors film ne coûtent rien.
   horsFilmMalus: -3,
+  // --- Variante : les CARTES OBJECTIF ---------------------------------------
+  // Tous les autres bandeaux du jeu sont écrits sur une carte que l'on pioche :
+  // deux joueuses ne poursuivent jamais tout à fait le même but. Une Carte
+  // Objectif fait l'inverse — elle est COMMUNE : on en révèle une au début de
+  // la partie, elle reste visible de tous, et chacune la vise sur son propre
+  // montage. Elle se tient ou ne se tient pas : ses points tombent entiers ou
+  // pas du tout.
+  objectifCommun: false,
+  // Quelles cartes sont dans le paquet, et ce que chacune rapporte. Les valeurs
+  // par défaut sont celles imprimées sur les cartes — voir OBJECTIFS_COMMUNS.
+  objectifsCommunsActifs: Object.fromEntries(OBJECTIFS_COMMUNS.map((o) => [o.id, true])),
+  objectifCommunPoints: Object.fromEntries(OBJECTIFS_COMMUNS.map((o) => [o.id, o.points])),
+  // Imposer une carte plutôt que d'en tirer une : pour rejouer une situation,
+  // et pour que le Laboratoire compare les objectifs entre eux. '' = tirage.
+  objectifCommunImpose: '',
+  // Le seuil de « 5 Plans Larges ou plus ».
+  objectifPlansLarges: 5,
   // Variante — pas de Plans de départ. Les quatre faces de départ rejoignent
   // la pioche des Plans Larges, dont elles prennent la couleur : ce sont des
   // Plans Larges comme les autres. Il n'y a alors plus de choix de départ au
@@ -295,6 +313,11 @@ export function migrerCfg(lu) {
   if (out.objectifsActifs && typeof out.objectifsActifs === 'object') {
     out.objectifsActifs = { ...DEFAULTS.objectifsActifs, ...out.objectifsActifs };
   }
+  // Une Carte Objectif ajoutée après coup entre dans le paquet des
+  // configurations déjà enregistrées, avec sa valeur imprimée.
+  for (const k of ['objectifsCommunsActifs', 'objectifCommunPoints']) {
+    out[k] = { ...DEFAULTS[k], ...(typeof out[k] === 'object' && out[k] ? out[k] : {}) };
+  }
   if (out.materiel && typeof out.materiel === 'object') {
     out.materiel = {
       plans: {}, paires: {}, retires: [],
@@ -365,6 +388,13 @@ export const SCHEMA = [
       aide: 'variante — un Raccord qui n’a pas de Plan Large à côté de lui, ou dont un bord donne '
         + 'sur le vide, ne raccorde rien : son « x × Raccord » vaut ce malus, à plat. 0 = variante '
         + 'éteinte, un Raccord ouvert rapporte comme un autre' },
+    { k: 'objectifCommun', l: 'Variante — une Carte Objectif commune', t: 'bool',
+      aide: 'on en révèle une au début de la partie ; elle reste visible de tous, et chacune la '
+        + 'vise sur son propre montage. Elle se tient ou ne se tient pas : ses points tombent '
+        + 'entiers ou pas du tout. Le paquet se compose plus bas' },
+    { k: 'objectifPlansLarges', l: 'Objectif « le grand jeu » — combien de Plans Larges', t: 'int',
+      min: 2, max: 12,
+      aide: 'le seuil de la Carte Objectif qui demande des Plans Larges' },
     { k: 'horsFilmMalus', l: 'Ce que coûte une carte montée hors du film', t: 'int', min: -20, max: 0,
       aide: 'le plan à 01:00 est le premier plan du film, celui à 99:00 le dernier. On peut monter '
         + 'avant l’un ou après l’autre — mais ces cartes-là ne sont plus dans le film : chacune '

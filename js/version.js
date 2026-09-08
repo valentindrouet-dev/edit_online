@@ -1,8 +1,20 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.24';
-export const BUILD_DATE = '2026-09-08 11:20';
+export const VERSION = '2.25';
+export const BUILD_DATE = '2026-09-08 17:05';
 
 export const CHANGELOG = [
+  {
+    v: '2.25',
+    date: '08/09/2026',
+    items: [
+      "<b>Variante — une CARTE OBJECTIF commune. Règles v0.26.</b> Tous les autres bandeaux du jeu sont écrits sur une carte qu'on pioche : deux joueuses ne poursuivent jamais tout à fait le même but. Celle-ci fait l'inverse — elle est <b>commune</b>. On en révèle <b>une</b> au début de la partie, elle reste <b>visible de tous</b> en haut de la table, et chacune la vise sur son propre montage. C'est le seul but que la table partage.",
+      "<b>Elle se tient ou ne se tient pas</b> : ses points tombent <b>entiers ou pas du tout</b>. On ne grappille pas « dans l'ordre », on l'est ou on ne l'est pas. Un montage <b>vide</b> n'en tient aucune — quatre des six sont des absences, et un banc sans carte les vérifierait toutes par le vide : on aurait ouvert la partie avec ses huit points en poche.",
+      "<b>Six cartes au paquet :</b> « <b>8</b> si votre montage respecte l'ORDRE » · « <b>6</b> si aucun PLAN identique n'en touche un autre » · « <b>6</b> si votre montage porte 5 PLANS LARGES ou plus » · « <b>6</b> si aucun PLAN MOYEN » · « <b>6</b> si aucun GROS PLAN » · « <b>8</b> si votre montage commence ET finit par un GÉNÉRIQUE ». Deux précisions qui comptent : une <b>Carte Raccord</b> occupe la place d'un Plan Moyen ou d'un Gros Plan sans en être un — elle ne rompt donc ni l'un ni l'autre —, et le <b>verso</b> d'une moitié est le même plan que son recto, donc le même jumeau.",
+      "<b>Elle se tire à la graine de la partie</b>, par un tirage à part. Deux joueuses en ligne ouvrent ainsi la même carte sans avoir à se la dire, et rejouer un journal de coups redonne la même. Le tirage à part garantit aussi qu'éteinte, la variante ne change <b>rien du tout</b> : mesuré, une graine donne exactement les mêmes pioches et le même premier joueur qu'avant.",
+      "<b>Tout se règle</b> — la variante se coche sur l'accueil ; le <b>paquet se compose</b> carte par carte dans <b>Variables › Le paquet des Cartes Objectif</b>, où la valeur de chacune s'ajuste aussi, et le seuil de « 5 Plans Larges » avec elle.",
+      "<b>Et les IA la visent.</b> Sans rien ajouter : la carte entre dans le décompte, et le décompte est ce qu'elles maximisent. Mesuré sur cinquante montages — <b>« dans l'ordre » 89 %</b> contre 4 % par hasard, <b>« aucun Gros Plan » 20 %</b> contre 0 %. Deux cartes font exception, et ce n'est pas l'IA qui est en cause : voir ci-dessous.",
+    ],
+  },
   {
     v: '2.24',
     date: '08/09/2026',

@@ -14,13 +14,26 @@
 // Chaque version garde son propre corps : les précédentes restent lisibles
 // telles qu'elles étaient, dans l'onglet « Versions des règles ».
 
-import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=2.24';
-import { elIcon } from './icons.js?v=2.24';
+import { ELEMENTS, ELEMENT_IDS, PLANS_DEPART, PAIRES_DEPART } from './data.js?v=2.25';
+import { elIcon } from './icons.js?v=2.25';
 
 // Chaque version garde son texte complet dans `corps` : les règles
 // précédentes restent donc consultables telles quelles, et pas seulement
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
+  {
+    v: '0.26',
+    date: '08/09/2026',
+    origine: 'Variante demandee par l’auteur',
+    corps: (c) => corps_0_26(c),
+    items: [
+      '<b>Variante — une CARTE OBJECTIF commune.</b> Tous les autres bandeaux du jeu sont écrits sur une carte qu’on pioche : deux joueuses ne poursuivent jamais tout à fait le même but. Celle-ci fait l’inverse — elle est <b>commune</b> : on en révèle <b>une</b> au début de la partie, elle reste visible de tous, et chacune la vise sur son propre montage. C’est le seul but que la table partage.',
+      '<b>Elle se tient ou ne se tient pas</b> : ses points tombent <b>entiers ou pas du tout</b>. On ne grappille pas « dans l’ordre », on l’est ou on ne l’est pas. Un montage <b>vide</b> n’en tient aucune — quatre des six sont des absences, et un banc sans carte les vérifierait toutes par le vide.',
+      '<b>Le paquet en porte six</b> : « <b>8</b> si votre montage respecte l’ORDRE » · « <b>6</b> si aucun PLAN identique n’en touche un autre » · « <b>6</b> si votre montage porte 5 PLANS LARGES ou plus » · « <b>6</b> si aucun PLAN MOYEN » · « <b>6</b> si aucun GROS PLAN » · « <b>8</b> si votre montage commence ET finit par un GÉNÉRIQUE ».',
+      'La carte se tire à la <b>graine</b> de la partie, par un tirage à part : deux joueuses en ligne ouvrent la même sans avoir à se la dire, et rejouer un journal de coups redonne la même. Éteinte, la variante ne change <b>rien</b> — pas même d’un tirage aléatoire : une graine donne exactement la partie qu’elle donnait.',
+      'Tout se règle dans <b>Variables</b> ⚙ : la variante elle-même, <b>quelles cartes sont dans le paquet</b>, ce que chacune rapporte, et le seuil de « 5 Plans Larges ».',
+    ],
+  },
   {
     v: '0.25',
     date: '07/09/2026',
@@ -504,6 +517,32 @@ export function majBloc(v, html) {
 
 // --- v0.23 -----------------------------------------------------------------
 // Variante : un Raccord qu'on n'a pas ferme ne raccorde rien, et coute.
+
+function corps_0_26(c) {
+  const pts = (id, def) => {
+    const t = (c && c.objectifCommunPoints) || {};
+    return Number.isFinite(t[id]) ? t[id] : def;
+  };
+  return corps_0_25(c)
+    .replace('<h3>Fin de partie</h3>', `${majBloc('0.26', c && c.objectifCommun
+    ? `<b>Variante — une CARTE OBJECTIF commune.</b> On en révèle <b>une</b> au début de la
+       partie. Elle reste <b>visible de tous</b>, et chacune la vise sur son propre montage : elle
+       se tient ou ne se tient pas, ses points tombent <b>entiers ou pas du tout</b>. Un montage
+       vide n'en tient aucune.
+       <br><br><b>${pts('ORDRE', 8)}</b> si votre montage respecte l'ORDRE ·
+       <b>${pts('SANS_JUMEAU', 6)}</b> si aucun PLAN identique n'en touche un autre ·
+       <b>${pts('PLANS_LARGES', 6)}</b> si votre montage porte ${(c && c.objectifPlansLarges) || 5}
+       PLANS LARGES ou plus ·
+       <b>${pts('SANS_PM', 6)}</b> si aucun PLAN MOYEN ·
+       <b>${pts('SANS_GP', 6)}</b> si aucun GROS PLAN ·
+       <b>${pts('GENERIQUES', 8)}</b> si votre montage commence ET finit par un GÉNÉRIQUE.
+       <br><br>La carte se tire à la <b>graine</b> de la partie : deux joueuses en ligne ouvrent la
+       même sans se la dire. Le paquet se compose dans <b>Variables</b> ⚙, où chaque carte se
+       décoche et où sa valeur se règle.`
+    : `Ici, aucune Carte Objectif commune : la variante est éteinte (elle se coche sur l'accueil,
+       ou dans <b>Variables</b> ⚙).`)}
+      <h3>Fin de partie</h3>`);
+}
 
 function corps_0_25(c) {
   const m = c && c.horsFilmMalus;

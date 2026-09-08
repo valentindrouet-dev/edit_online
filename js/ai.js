@@ -5,13 +5,13 @@
 // Équilibré : compare tous les placements et évite d'éparpiller ses séquences.
 // Stratège  : anticipe le tour suivant à partir de ce qu'offrent les chutiers.
 
-import { coupsPossibles, appliquer, optionsDerushage, choixDepart, limiteSequences, limitePlans, ouverturesBanc } from './engine.js?v=2.24';
+import { coupsPossibles, appliquer, optionsDerushage, choixDepart, limiteSequences, limitePlans, ouverturesBanc } from './engine.js?v=2.25';
 import {
   compter, bonusRegle, piocheOuverte, plansComptes, bonusRaccord, raccordOuvert,
   estRaccordSimple, tousLesPlans,
-} from './scoring.js?v=2.24';
-import { objsDe, moitiesDe } from './data.js?v=2.24';
-import { PROFILS_IA } from './config.js?v=2.24';
+} from './scoring.js?v=2.25';
+import { objsDe, moitiesDe } from './data.js?v=2.25';
+import { PROFILS_IA } from './config.js?v=2.25';
 
 function cloneBanc(b) {
   return { sequences: b.sequences.map((s) => s.slice()), ouverture: b.ouverture, fermeture: b.fermeture };
@@ -116,14 +116,35 @@ export function valeurDesDroits(banc, cfg) {
  * faut poser pour que les suivants existent. On escompte donc ce que le
  * suivant rapportera, sans quoi le pouvoir ne se déclenche jamais.
  */
+/**
+ * **Et la Carte Objectif commune ?** Elle aussi se paie en une fois : deux des
+ * six se CONSTRUISENT — « 5 Plans Larges », « du générique au générique » — et
+ * ne rapportent rien avant d'être achevées. On a donc essayé de les escompter
+ * comme les Raccords, avec la même pente. **La mesure a dit non**, et le code
+ * ne le fait pas :
+ *
+ *   poids 0     15 % de réussite, score 64,7
+ *   poids 0,8   44 %              score 62,2
+ *   poids 1,5   59 %              score 61,4
+ *
+ * — objectif porté à 16 points, quarante parties. Le taux monte, le score
+ * baisse : bâtir cinq Plans Larges coûte une dizaine de points de décompte
+ * ordinaire, car un montage large dilue des bandeaux qui comptent presque tous
+ * dans LEUR ligne. L'IA qui s'abstient joue donc mieux, et c'est l'objectif
+ * qui est sous-payé — pas elle qui est aveugle. Les quatre autres cartes sont
+ * des absences : tenues dès le départ, perdues en chemin, le décompte les suit
+ * tout seul et l'IA les vise sans qu'on ait rien à ajouter (89 à 100 %).
+ *
+ * `espoirObjectifCommun` reste : c'est lui qui dit à la joueuse où elle en est.
+ */
 const ESPOIR_FERMETURE = 0.55;
 const ESPOIR_RACCORD = 0.7;
 
 function promesses(banc, cfg, reste) {
   if (!reste || reste <= 0) return 0;
-  const raccords = tousLesPlans(banc).filter(estRaccordSimple);
-  if (!raccords.length) return 0;
   let v = 0;
+  const raccords = tousLesPlans(banc).filter(estRaccordSimple);
+  if (!raccords.length) return v;
   if (cfg.raccordOuvertMalus) {
     const ouverts = raccords.filter((p) => raccordOuvert(p, banc, cfg)).length;
     v += ouverts * -cfg.raccordOuvertMalus * ESPOIR_FERMETURE;

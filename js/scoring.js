@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE, TC_PREMIER, TC_DERNIER } from './data.js?v=2.24';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE, TC_PREMIER, TC_DERNIER } from './data.js?v=2.25';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -679,7 +679,7 @@ export function compter(banc, cfg) {
     // posé. Trois ouvrent un droit, que le moteur lit ; le quatrième dit ce que
     // valent les Cartes Raccord, et ce sont ELLES qui portent alors les points.
     PIOCHER: 0, SEQ_PLUS: 0, PLAN_PLUS: 0, RACCORD_VAUT: 0,
-    CHRONOLOGIE: 0, POSE: 0, JONCTION: 0, HORS_FILM: 0,
+    CHRONOLOGIE: 0, POSE: 0, JONCTION: 0, HORS_FILM: 0, OBJECTIF: 0,
   };
   const lignes = [];
 
@@ -709,6 +709,10 @@ export function compter(banc, cfg) {
   // rapporte — le malus s'ajoute, il ne remplace pas.
   const hf = cfg.horsFilmMalus ? plansHorsFilm(banc) : [];
   detail.HORS_FILM = hf.length * (cfg.horsFilmMalus || 0);
+  // La Carte Objectif commune : tout, ou rien.
+  const oc = objectifCommunDe(cfg);
+  const ocTenu = objectifCommunTenu(banc, cfg);
+  detail.OBJECTIF = ocTenu ? pointsObjectifCommun(oc, cfg) : 0;
 
   const total = Object.values(detail).reduce((a, b) => a + b, 0);
 
@@ -731,6 +735,9 @@ export function compter(banc, cfg) {
     // malus se lit sur la carte qui le porte, comme tout le reste du décompte.
     horsFilm: hf,
     horsFilmMalus: cfg.horsFilmMalus || 0,
+    // La Carte Objectif de la partie, et si ce montage-ci la tient.
+    objectif: oc,
+    objectifTenu: ocTenu,
   };
 }
 
@@ -802,4 +809,239 @@ export const SOURCES_LABEL = {
   POSE: 'Points de pose',
   JONCTION: 'Jonctions raccordées',
   HORS_FILM: 'Cartes montées hors du film',
+  OBJECTIF: 'Carte Objectif commune',
 };
+
+// ===========================================================================
+// LES CARTES OBJECTIF — la variante des objectifs COMMUNS
+// ===========================================================================
+// Tous les autres bandeaux du jeu sont écrits sur une carte : chacune apporte
+// les siens, et deux joueuses ne poursuivent jamais tout à fait le même but.
+// Une Carte Objectif fait l'inverse — elle est **commune** : on en révèle UNE
+// au début de la partie, elle reste visible de tous, et chacune la vise sur son
+// propre montage. C'est le seul but que la table partage.
+//
+// Elle se tient ou ne se tient pas : ses points tombent entiers ou pas du tout.
+// C'est ce qui en fait un but et non un compteur de plus — on ne grappille pas
+// « dans l'ordre », on l'est ou on ne l'est pas.
+//
+// Le tirage se fait à la **graine** de la partie, par un tirage à part : les
+// deux joueuses en ligne ouvrent ainsi la même carte sans avoir à se la dire,
+// et rejouer un journal de coups redonne la même. Le tirage à part garantit
+// aussi que les paquets et le premier joueur ne bougent pas d'un pouce quand la
+// variante est éteinte.
+
+/** Ce qui identifie un plan : son numéro imprimé. Le recto et le verso d'une
+ *  même moitié sont un seul et même plan — c'est la même image. */
+const identiteDuPlan = (p) => (p.numOrigine === undefined ? p.num : p.numOrigine);
+
+const cadrageDe = (p, f) => !estRaccord(p) && p.format === f;
+
+/**
+ * Où en est un montage sur le chemin d'un objectif qui se CONSTRUIT — de 0 à 1.
+ *
+ * La part faite ne dit pas la chance d'arriver : deux Plans Larges sur cinq ne
+ * donnent pas deux chances sur cinq de finir, il faut encore en trouver trois.
+ * L'avancement est donc **convexe** — le début ne compte presque pas, la fin
+ * compte double. Mesuré : la part linéaire poussait l'IA à s'engager trop tôt
+ * et lui coûtait 1,7 point de score pour huit points de taux de réussite.
+ */
+const avancement = (fait, but) => (but <= 0 ? 0 : Math.min(1, (fait / but) ** 2));
+
+/**
+ * Les six Cartes Objectif. Chacune porte ce qu'elle rapporte, ce qu'elle
+ * demande, et le moyen de savoir si le montage la tient.
+ *
+ * `points` est la valeur imprimée ; la partie lit celle des variables, qui la
+ * reprend par défaut et se règle une à une.
+ */
+export const OBJECTIFS_COMMUNS = [
+  {
+    id: 'ORDRE',
+    points: 8,
+    titre: 'Dans l’ordre',
+    phrase: 'si votre montage respecte l’ORDRE',
+    aide: 'chaque minutage supérieur ou égal à celui de son voisin de gauche, le montage lu '
+      + 'd’un seul tenant. Les plans sans minutage sont retirés de la lecture.',
+    tenu: (banc, cfg) => chronologique(tousLesPlans(banc), cfg),
+  },
+  {
+    id: 'SANS_JUMEAU',
+    points: 6,
+    titre: 'Jamais deux fois de suite',
+    phrase: 'si aucun PLAN identique n’en touche un autre',
+    aide: 'deux plans sont identiques quand ils portent le même numéro — 201 et 201. Le recto '
+      + 'et le verso d’une même moitié en font partie : c’est la même image. Une Carte Raccord '
+      + 'glissée entre deux ne les sépare pas seulement pour la forme : ils ne se touchent plus.',
+    tenu: (banc) => banc.sequences.every((seq) => {
+      for (let i = 0; i < seq.length - 1; i++) {
+        const a = seq[i]; const b = seq[i + 1];
+        if (estRaccord(a) || estRaccord(b)) continue;
+        if (identiteDuPlan(a) === identiteDuPlan(b)) return false;
+      }
+      return true;
+    }),
+  },
+  {
+    id: 'PLANS_LARGES',
+    points: 6,
+    titre: 'Le grand jeu',
+    phrase: 'si votre montage porte 5 PLANS LARGES ou plus',
+    aide: 'le seuil se règle dans les Variables. Le Plan de départ n’en est pas un : il tient '
+      + 'lieu de climax à sa ligne, mais son cadrage est le sien.',
+    seuil: (cfg) => (cfg.objectifPlansLarges || 5),
+    tenu: (banc, cfg) => tousLesPlans(banc).filter((p) => cadrageDe(p, 'PL')).length
+      >= (cfg.objectifPlansLarges || 5),
+    // Il ne paie qu'au cinquième Plan Large : les quatre premiers ne rapportent
+    // rien, et une IA qui ne lit que le score ne les poserait jamais. `espoir`
+    // dit où en est le montage — c'est cette pente-là qu'elle gravit.
+    espoir: (banc, cfg, reste) => {
+      const seuil = cfg.objectifPlansLarges || 5;
+      const n = tousLesPlans(banc).filter((p) => cadrageDe(p, 'PL')).length;
+      return n + reste >= seuil ? avancement(n, seuil) : 0;
+    },
+  },
+  {
+    id: 'SANS_PM',
+    points: 6,
+    titre: 'Aucun Plan Moyen',
+    phrase: 'si votre montage ne porte aucun PLAN MOYEN',
+    aide: 'une Carte Raccord occupe la place d’un Plan Moyen sur le banc, mais n’en est pas un : '
+      + 'elle ne rompt pas l’objectif.',
+    tenu: (banc) => !tousLesPlans(banc).some((p) => cadrageDe(p, 'PM')),
+  },
+  {
+    id: 'SANS_GP',
+    points: 6,
+    titre: 'Aucun Gros Plan',
+    phrase: 'si votre montage ne porte aucun GROS PLAN',
+    aide: 'une Carte Raccord occupe la place d’un Gros Plan sur le banc, mais n’en est pas un : '
+      + 'elle ne rompt pas l’objectif.',
+    tenu: (banc) => !tousLesPlans(banc).some((p) => cadrageDe(p, 'GP')),
+  },
+  {
+    id: 'GENERIQUES',
+    points: 8,
+    titre: 'Du générique au générique',
+    phrase: 'si votre montage commence ET finit par un GÉNÉRIQUE',
+    aide: 'l’Ouverture au tout début du montage — le bout gauche de la première ligne — et le '
+      + 'Générique de fin à sa toute fin. Les deux, pas l’un ou l’autre.',
+    tenu: (banc) => {
+      const seqs = banc.sequences;
+      if (!seqs.length) return false;
+      const premiere = seqs[0];
+      const derniere = seqs[seqs.length - 1];
+      if (!premiere.length || !derniere.length) return false;
+      return premiere[0].transition === 'OUVERTURE'
+        && derniere[derniere.length - 1].transition === 'CREDITS';
+    },
+    // Deux bouts à tenir, et rien tant que les deux n'y sont pas. Un seul
+    // Générique posé ne rapporte rien : sans cette pente, aucune IA n'irait
+    // chercher le second.
+    espoir: (banc, cfg, reste) => {
+      const seqs = banc.sequences;
+      if (!seqs.length) return 0;
+      const premiere = seqs[0];
+      const derniere = seqs[seqs.length - 1];
+      const ouvert = premiere.length && premiere[0].transition === 'OUVERTURE' ? 1 : 0;
+      const clos = derniere.length && derniere[derniere.length - 1].transition === 'CREDITS' ? 1 : 0;
+      return reste >= 2 - ouvert - clos ? avancement(ouvert + clos, 2) : 0;
+    },
+  },
+];
+
+const PAR_ID = new Map(OBJECTIFS_COMMUNS.map((o) => [o.id, o]));
+
+/** La Carte Objectif de cette partie-ci, s'il y en a une. */
+export function objectifCommunDe(cfg) {
+  if (!cfg || !cfg.objectifCommun) return null;
+  return PAR_ID.get(cfg.objectifCommunTire) || null;
+}
+
+/** Ce qu'elle vaut, telle que les variables la règlent. */
+export function pointsObjectifCommun(o, cfg) {
+  if (!o) return 0;
+  const table = (cfg && cfg.objectifCommunPoints) || {};
+  const n = table[o.id];
+  return Number.isFinite(n) ? n : o.points;
+}
+
+/**
+ * Quelle carte on révèle. Le paquet est celui que les variables cochent ; une
+ * carte imposée court-circuite le tirage — c'est ainsi qu'on rejoue une
+ * situation, et que le Laboratoire compare les objectifs entre eux.
+ */
+export function tirerObjectifCommun(cfg, rand) {
+  if (!cfg || !cfg.objectifCommun) return null;
+  if (cfg.objectifCommunImpose && PAR_ID.has(cfg.objectifCommunImpose)) return cfg.objectifCommunImpose;
+  const actifs = cfg.objectifsCommunsActifs || {};
+  const paquet = OBJECTIFS_COMMUNS.filter((o) => actifs[o.id] !== false);
+  if (!paquet.length) return null;
+  return paquet[Math.floor(rand() * paquet.length) % paquet.length].id;
+}
+
+/**
+ * Ce montage-ci tient-il la Carte Objectif de la partie ?
+ *
+ * Un montage VIDE ne tient rien. Quatre des six objectifs sont des absences —
+ * « aucun Gros Plan », « rien deux fois de suite », « dans l'ordre » —, et un
+ * banc sans carte les vérifierait tous par le vide : on ouvrirait la partie
+ * avec ses huit points déjà en poche. Il faut un film pour le juger.
+ */
+export function objectifCommunTenu(banc, cfg) {
+  const o = objectifCommunDe(cfg);
+  if (!o || !banc || !tousLesPlans(banc).length) return false;
+  return o.tenu(banc, cfg);
+}
+
+/**
+ * À quel point le montage est EN CHEMIN vers la Carte Objectif — de 0 à 1.
+ *
+ * Deux des six cartes se construisent au lieu de se préserver : « 5 Plans
+ * Larges », « du générique au générique ». Celles-là ne rapportent rien tant
+ * qu'elles ne sont pas achevées, et une IA qui ne lit que le score ne pose
+ * jamais le premier jalon — mesuré : 13 % et 3 % de réussite. Les quatre autres
+ * sont des absences : elles sont tenues DÈS LE DÉPART et se perdent en cours de
+ * route, donc le décompte les suit déjà tout seul et elles n'ont pas d'espoir à
+ * déclarer.
+ *
+ * `reste` est le nombre de cartes qu'il reste à monter : un objectif hors de
+ * portée ne vaut plus l'effort, et l'espoir tombe à zéro.
+ */
+export function espoirObjectifCommun(banc, cfg, reste) {
+  const o = objectifCommunDe(cfg);
+  if (!o || !o.espoir || !banc || objectifCommunTenu(banc, cfg)) return 0;
+  return pointsObjectifCommun(o, cfg) * o.espoir(banc, cfg, Math.max(0, reste || 0));
+}
+
+/**
+ * Où en est ce montage-ci, en toutes lettres — « 2 / 5 Plans Larges ». Rien à
+ * dire pour les objectifs d'absence : ils sont tenus, ou perdus, et le témoin
+ * de la carte le dit déjà.
+ */
+export function avancementObjectifCommun(banc, cfg) {
+  const o = objectifCommunDe(cfg);
+  if (!o || !banc || !o.espoir) return '';
+  if (o.id === 'PLANS_LARGES') {
+    const seuil = cfg.objectifPlansLarges || 5;
+    return `${tousLesPlans(banc).filter((p) => cadrageDe(p, 'PL')).length} / ${seuil} Plans Larges`;
+  }
+  if (o.id === 'GENERIQUES') {
+    const seqs = banc.sequences;
+    if (!seqs.length) return 'aucun bout tenu';
+    const d = seqs[0]; const f = seqs[seqs.length - 1];
+    const ouvert = d.length && d[0].transition === 'OUVERTURE';
+    const clos = f.length && f[f.length - 1].transition === 'CREDITS';
+    if (ouvert && clos) return 'les deux bouts';
+    if (ouvert) return 'l’Ouverture est là, pas la fin';
+    if (clos) return 'la fin est là, pas l’Ouverture';
+    return 'aucun bout tenu';
+  }
+  return '';
+}
+
+/** Ce qu'elle rapporte à ce montage : tout, ou rien. */
+export function valeurObjectifCommun(banc, cfg) {
+  const o = objectifCommunDe(cfg);
+  return objectifCommunTenu(banc, cfg) ? pointsObjectifCommun(o, cfg) : 0;
+}

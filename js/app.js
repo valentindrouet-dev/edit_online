@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.24';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.25';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,36 +12,40 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=2.24';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.24';
-import { elIcon, numIcon } from './icons.js?v=2.24';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.24';
+} from './data.js?v=2.25';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.25';
+import { elIcon, numIcon } from './icons.js?v=2.25';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.25';
 import { chargerVisuels, ajouterVisuel, importerVisuel, retirerVisuel, visuelsApportes, urlVisuel,
   cleVisuel, idDeCle, estVisuelApporte, blobVisuel, poidsVisuels, COTE_MAX,
-} from './visuels.js?v=2.24';
+} from './visuels.js?v=2.25';
 import { chargerPublie, materielPublie, signaturePublie, materielVide, composerPublie,
-} from './publie.js?v=2.24';
+} from './publie.js?v=2.25';
 import { composerPartage, sansImages, encoderPartage, decoderPartage, partageDeLURL,
-  lienPartage, LIMITE_LIEN } from './partage.js?v=2.24';
+  lienPartage, LIMITE_LIEN } from './partage.js?v=2.25';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=2.24';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.24';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.24';
-import { releve, voler, stopperVols } from './anim.js?v=2.24';
-import { campagne } from './lab.js?v=2.24';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.24';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.24';
-import { Salon } from './net/salon.js?v=2.24';
-import { TransportLocal } from './net/local.js?v=2.24';
-import { TransportSupabase } from './net/supabase.js?v=2.24';
-import { enLigneDisponible } from './net/config.js?v=2.24';
-import { coupNu } from './net/protocole.js?v=2.24';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.24';
-import { livret, aideDeJeu } from './livret.js?v=2.24';
+} from './engine.js?v=2.25';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.25';
+import {
+  compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone,
+  compteCible, compteGroupes, bancVide, OBJECTIFS_COMMUNS, objectifCommunDe,
+  pointsObjectifCommun, objectifCommunTenu, avancementObjectifCommun,
+} from './scoring.js?v=2.25';
+import { releve, voler, stopperVols } from './anim.js?v=2.25';
+import { campagne } from './lab.js?v=2.25';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.25';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.25';
+import { Salon } from './net/salon.js?v=2.25';
+import { TransportLocal } from './net/local.js?v=2.25';
+import { TransportSupabase } from './net/supabase.js?v=2.25';
+import { enLigneDisponible } from './net/config.js?v=2.25';
+import { coupNu } from './net/protocole.js?v=2.25';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.25';
+import { livret, aideDeJeu } from './livret.js?v=2.25';
 
 const app = document.getElementById('app');
 
@@ -361,7 +365,17 @@ function vueAccueil() {
             ${chip('sixCartesDepart', '6 Cartes Départ')}
             ${chip('sansPlanDepart', 'Pas de Plans de départ')}
             ${chip('piochesMelangees', 'Pioches mélangées')}
+            ${chip('objectifCommun', 'Carte Objectif commune')}
           </div>
+          <p class="aide"><b>Carte Objectif commune</b> — on en révèle <b>une</b> au début de la
+          partie. Elle reste visible de tous, et chacune la vise sur son propre montage : elle se
+          tient ou ne se tient pas, ses points tombent <b>entiers ou pas du tout</b>. Le paquet en
+          porte ${OBJECTIFS_COMMUNS.length} ;
+          ${(() => {
+    const n = OBJECTIFS_COMMUNS.filter((o) => store.cfg.objectifsCommunsActifs[o.id] !== false).length;
+    return n === OBJECTIFS_COMMUNS.length ? 'toutes sont en jeu'
+      : `<b>${n} en jeu</b>`;
+  })()}, et l’on compose le paquet dans <b>Variables › Objectifs</b>.</p>
           <p class="aide"><b>6 Cartes Départ</b> — les quatre plans de départ s’apparient de
           <b>six</b> façons — 1-2, 2-3, 3-4, 4-1, 2-4, 1-3 — et la boîte les contient toutes. Chaque
           joueuse en <b>pioche une seule</b> : deux faces au choix au lieu de quatre, et deux
@@ -692,6 +706,7 @@ function vuePartie(enchainer = true) {
             <span class="jeton-dernier">dernier tour</span>
           </div>`}
 
+        ${carteObjectifHTML(st, vuB)}
         <div class="panneau zone-phase">${zone}</div>
         ${/* Un seul banc à l'écran, les autres en onglets. Par défaut on suit
               qui joue — le coup d'une IA se regarde sur SON banc — et l'onglet
@@ -810,6 +825,41 @@ function colonneAncrage(sequences) {
   const avant = Math.max(...sequences.map(ancreDe));
   const apres = Math.max(...sequences.map((s) => largeurSeq(s) - ancreDe(s)));
   return { avant, apres };
+}
+
+/**
+ * La CARTE OBJECTIF de la partie, posée au-dessus de la table.
+ *
+ * Elle est commune : une seule carte pour tout le monde, révélée au début et
+ * visible jusqu'au bout. Elle se dessine donc comme une carte du jeu — un titre,
+ * ce qu'elle rapporte, ce qu'elle demande — et non comme une ligne de réglage.
+ *
+ * Le témoin de droite dit si le banc **qu'on regarde** la tient. C'est la seule
+ * chose qui change d'une joueuse à l'autre : le but est le même, le montage non.
+ */
+function carteObjectifHTML(st, vuB) {
+  const o = objectifCommunDe(st.cfg);
+  if (!o) return '';
+  const pts = pointsObjectifCommun(o, st.cfg);
+  const tenus = st.bancs.map((b) => objectifCommunTenu(b, st.cfg));
+  const tenu = tenus[vuB];
+  return `<div class="carte-objectif ${tenu ? 'tenu' : ''}">
+    <div class="co-jeton">${pts}</div>
+    <div class="co-texte">
+      <div class="co-titre">Carte Objectif — ${o.titre}</div>
+      <div class="co-phrase"><b>${pts} points</b> ${o.phrase}</div>
+      <div class="co-aide">${o.aide}</div>
+    </div>
+    <div class="co-etats">
+      ${st.joueurs.map((jj, i) => {
+    const ou = avancementObjectifCommun(st.bancs[i], st.cfg);
+    return `<span class="co-etat ${tenus[i] ? 'oui' : 'non'}"
+        title="${jj.nom} ${tenus[i] ? 'tient l’objectif' : `ne le tient pas encore${ou ? ` — ${ou}` : ''}`}">
+        <span class="point-couleur" style="background:${jj.couleur}"></span>${jj.nom}
+        <b>${tenus[i] ? '✓' : (ou || '—')}</b></span>`;
+  }).join('')}
+    </div>
+  </div>`;
 }
 
 function bancBloc(st, i, titre, interactif) {
@@ -1478,7 +1528,7 @@ function grouperBandeaux(lignes) {
 const jetonNombre = (n) => (n > 1 ? `<span class="grp-n" title="${n} fois sur le banc">×${n}</span>` : '');
 
 function listeObjectifs(s) {
-  const hors = ['POSE', 'JONCTION', 'CHRONOLOGIE', 'HORS_FILM'].filter((k) => s.detail[k]);
+  const hors = ['OBJECTIF', 'POSE', 'JONCTION', 'CHRONOLOGIE', 'HORS_FILM'].filter((k) => s.detail[k]);
   if (!s.lignes.length && !hors.length) {
     return `<table class="tableau-score">
       <tr><td class="aide">Aucun bandeau visible sur le banc</td><td>0</td></tr>
@@ -6463,6 +6513,26 @@ function vueVariables() {
       ${SCHEMA.map((g) => `<div class="panneau"><h2>${g.groupe}</h2>${g.champs.map(champ).join('')}</div>`).join('')}
 
       <div class="panneau">
+        <h2>Le paquet des Cartes Objectif</h2>
+        <p class="aide" style="margin-bottom:12px">Une seule est révélée au début de la partie, et
+        elle vaut pour tout le monde. Décocher une carte la sort du paquet ; le nombre à côté est ce
+        qu’elle rapporte à qui la tient.${store.cfg.objectifCommun ? ''
+    : ' <b>La variante est éteinte</b> — elle se coche sur l’accueil, ou plus haut dans <b>Déroulé</b>.'}</p>
+        <div class="liste-objectifs">
+          ${OBJECTIFS_COMMUNS.map((o) => {
+    const on = store.cfg.objectifsCommunsActifs[o.id] !== false;
+    const pts = pointsObjectifCommun(o, store.cfg);
+    return `<div class="ligne-objectif ${on ? '' : 'hors'}">
+            <label class="chip ${on ? 'on' : ''}"><input type="checkbox" data-oc="${o.id}"
+              ${on ? 'checked' : ''}>${o.titre}</label>
+            <input type="number" class="champ-mini" data-oc-pts="${o.id}" value="${pts}" min="0" max="40">
+            <span class="aide">${o.phrase}</span>
+          </div>`;
+  }).join('')}
+        </div>
+      </div>
+
+      <div class="panneau">
         <h2>Bandeaux pris en compte</h2>
         <p class="aide" style="margin-bottom:12px">Décocher un type de bandeau le neutralise : pratique pour
         mesurer sa contribution réelle au score.</p>
@@ -6495,6 +6565,16 @@ function vueVariables() {
   app.querySelectorAll('[data-obj]').forEach((el) => el.addEventListener('change', () => {
     store.cfg.objectifsActifs[el.dataset.obj] = el.checked; sauverCfg();
     el.closest('.chip').classList.toggle('on', el.checked);
+  }));
+  app.querySelectorAll('[data-oc]').forEach((el) => el.addEventListener('change', () => {
+    store.cfg.objectifsCommunsActifs[el.dataset.oc] = el.checked; sauverCfg();
+    el.closest('.chip').classList.toggle('on', el.checked);
+    el.closest('.ligne-objectif').classList.toggle('hors', !el.checked);
+  }));
+  app.querySelectorAll('[data-oc-pts]').forEach((el) => el.addEventListener('change', () => {
+    const n = Math.max(0, Math.min(40, Math.round(+el.value || 0)));
+    el.value = n;
+    store.cfg.objectifCommunPoints[el.dataset.ocPts] = n; sauverCfg();
   }));
   app.querySelectorAll('[data-fam]').forEach((el) => el.addEventListener('change', () => {
     store.cfg.filtreFamilles[el.dataset.fam] = el.checked; sauverCfg(); vueVariables();
