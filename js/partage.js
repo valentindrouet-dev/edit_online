@@ -35,7 +35,7 @@
 // n'est jamais envoyé au serveur : le partage reste entre celui qui l'envoie et
 // celui qui le reçoit, et fonctionne sur un site qui n'a pas de serveur du tout.
 
-import { empreinte } from './publie.js?v=2.23';
+import { empreinte } from './publie.js?v=2.24';
 
 /** La forme du partage. Un lecteur qui ne la connaît pas refuse plutôt que de deviner. */
 export const FORMAT = 1;

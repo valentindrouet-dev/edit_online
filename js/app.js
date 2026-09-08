@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.23';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.24';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,36 +12,36 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=2.23';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.23';
-import { elIcon, numIcon } from './icons.js?v=2.23';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.23';
+} from './data.js?v=2.24';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.24';
+import { elIcon, numIcon } from './icons.js?v=2.24';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.24';
 import { chargerVisuels, ajouterVisuel, importerVisuel, retirerVisuel, visuelsApportes, urlVisuel,
   cleVisuel, idDeCle, estVisuelApporte, blobVisuel, poidsVisuels, COTE_MAX,
-} from './visuels.js?v=2.23';
+} from './visuels.js?v=2.24';
 import { chargerPublie, materielPublie, signaturePublie, materielVide, composerPublie,
-} from './publie.js?v=2.23';
+} from './publie.js?v=2.24';
 import { composerPartage, sansImages, encoderPartage, decoderPartage, partageDeLURL,
-  lienPartage, LIMITE_LIEN } from './partage.js?v=2.23';
+  lienPartage, LIMITE_LIEN } from './partage.js?v=2.24';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=2.23';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.23';
-import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.23';
-import { releve, voler, stopperVols } from './anim.js?v=2.23';
-import { campagne } from './lab.js?v=2.23';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.23';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.23';
-import { Salon } from './net/salon.js?v=2.23';
-import { TransportLocal } from './net/local.js?v=2.23';
-import { TransportSupabase } from './net/supabase.js?v=2.23';
-import { enLigneDisponible } from './net/config.js?v=2.23';
-import { coupNu } from './net/protocole.js?v=2.23';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.23';
-import { livret, aideDeJeu } from './livret.js?v=2.23';
+} from './engine.js?v=2.24';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.24';
+import { compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide } from './scoring.js?v=2.24';
+import { releve, voler, stopperVols } from './anim.js?v=2.24';
+import { campagne } from './lab.js?v=2.24';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.24';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.24';
+import { Salon } from './net/salon.js?v=2.24';
+import { TransportLocal } from './net/local.js?v=2.24';
+import { TransportSupabase } from './net/supabase.js?v=2.24';
+import { enLigneDisponible } from './net/config.js?v=2.24';
+import { coupNu } from './net/protocole.js?v=2.24';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.24';
+import { livret, aideDeJeu } from './livret.js?v=2.24';
 
 const app = document.getElementById('app');
 

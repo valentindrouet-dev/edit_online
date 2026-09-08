@@ -1,8 +1,20 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.23';
-export const BUILD_DATE = '2026-09-07 23:40';
+export const VERSION = '2.24';
+export const BUILD_DATE = '2026-09-08 11:20';
 
 export const CHANGELOG = [
+  {
+    v: '2.24',
+    date: '08/09/2026',
+    items: [
+      "<b>Les IA choisissaient leur Plan de départ à l'aveugle.</b> Les quatre pouvoirs qu'il peut porter — <b>+1 Séquence</b>, <b>+1 Carte en fin de partie</b>, <b>+1 par Raccord</b>, <b>pioche PM / GP</b> — marquent <b>zéro</b> au décompte : ils ouvrent un droit, ils ne rapportent pas. L'IA les voyait donc tous les quatre comme des bandeaux <b>vides</b> et prenait la première face venue. Elle sait maintenant ce que chacun vaut sur une partie entière — et ces valeurs sont <b>mesurées</b>, cinquante parties par pouvoir : <b>+7,5</b> pour la Carte supplémentaire, <b>+3,5</b> pour la pioche.",
+      "<b>Et elle joue ce qu'elle a pris.</b> « +1 par Raccord » ne se déclenchait jamais : le <b>premier</b> Raccord ne rapporte presque rien, et posé au bout d'une ligne il est <b>ouvert</b> — le décompte lui applique donc son malus. L'IA voyait une perte là où il y a une promesse. Elle escompte désormais ce qu'un Raccord vaudra <b>une fois fermé</b>, et ce que le suivant rapportera de plus : sur un matériel où le pouvoir mord, elle passe de <b>0,17 à 0,38 Raccord</b> par montage — plus du double — et les <b>ferme</b>. Sans le pouvoir, elle n'en monte pas davantage : elle joue la carte qu'elle a, pas une manie.",
+      "<b>Le dérushage juge enfin la structure, comme le montage.</b> Il ne lisait que le score du coup — « combien cette carte rapporte-t-elle si je la pose au mieux ? ». Or c'est au <b>dérushage</b> que se décide la forme du montage : un Plan Large ouvre <b>toujours</b> une ligne, on n'a plus le choix une fois qu'on l'a pris. L'IA jugeait donc l'éparpillement au moment où elle ne pouvait plus rien y faire, et jamais au moment où elle le décidait.",
+      "<b>La place, elle, ne se pondère pas.</b> Le manque d'endroits où poser — la <b>respiration</b> du banc, posée en v2.23 — se compte à plein dans les deux phases : se boucher n'est pas un goût qu'on met en balance avec d'autres, c'est un mur. Mesuré sur soixante parties sous l'ancienne règle des bornes, celle qui pouvait murer un banc : <b>zéro tour perdu</b>, contre 31 pour l'IA qui ne lit pas la place.",
+      "<b>Vérifié en duel, sur des graines jamais servies au réglage</b> : la nouvelle contre celle de la v2.23, même table, mêmes cartes — <b>37 victoires contre 23</b>, aucune nulle, <b>+3,2 points</b> d'écart moyen sur soixante parties.",
+      "<b>Deux constats d'équilibrage, au passage.</b> « <b>+1 Séquence</b> » ne vaut rien : la limite de cinq lignes ne mord jamais, un montage de dix cartes en veut deux ou trois. Et « <b>+1 par Raccord</b> » ne vaut rien non plus sur le matériel imprimé — il <b>bonifie</b> un « n × Raccord » imprimé, or les douze moitiés Raccord de la boîte portent « <b>1 × Plan</b> ». Il n'a rien à modifier. L'IA le mesure et décline les deux à juste titre ; elle change d'avis d'elle-même dès que le matériel change.",
+    ],
+  },
   {
     v: '2.23',
     date: '07/09/2026',
