@@ -16,10 +16,10 @@
 import {
   FORMATS, ELEMENTS, ELEMENT_IDS, PORTEES, OBJ, objLabel, PAIRES_DEPART, PLANS_DEPART,
   buildCartesDoubles, buildPlansLarges, buildDeparts, SCENES, recenserBoite,
-} from './data.js?v=2.25';
-import { OBJECTIFS_COMMUNS } from './scoring.js?v=2.25';
-import { elIcon } from './icons.js?v=2.25';
-import { objHTML } from './cards.js?v=2.25';
+} from './data.js?v=2.26';
+import { OBJECTIFS_COMMUNS } from './scoring.js?v=2.26';
+import { elIcon } from './icons.js?v=2.26';
+import { objHTML } from './cards.js?v=2.26';
 
 // --- Les briques de mise en page -------------------------------------------
 

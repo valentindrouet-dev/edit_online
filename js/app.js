@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.25';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.26';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,40 +12,40 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=2.25';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.25';
-import { elIcon, numIcon } from './icons.js?v=2.25';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue } from './cards.js?v=2.25';
+} from './data.js?v=2.26';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.26';
+import { elIcon, numIcon } from './icons.js?v=2.26';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue, reglerGabarits } from './cards.js?v=2.26';
 import { chargerVisuels, ajouterVisuel, importerVisuel, retirerVisuel, visuelsApportes, urlVisuel,
   cleVisuel, idDeCle, estVisuelApporte, blobVisuel, poidsVisuels, COTE_MAX,
-} from './visuels.js?v=2.25';
+} from './visuels.js?v=2.26';
 import { chargerPublie, materielPublie, signaturePublie, materielVide, composerPublie,
-} from './publie.js?v=2.25';
+} from './publie.js?v=2.26';
 import { composerPartage, sansImages, encoderPartage, decoderPartage, partageDeLURL,
-  lienPartage, LIMITE_LIEN } from './partage.js?v=2.25';
+  lienPartage, LIMITE_LIEN } from './partage.js?v=2.26';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=2.25';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.25';
+} from './engine.js?v=2.26';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.26';
 import {
   compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone,
   compteCible, compteGroupes, bancVide, OBJECTIFS_COMMUNS, objectifCommunDe,
   pointsObjectifCommun, objectifCommunTenu, avancementObjectifCommun,
-} from './scoring.js?v=2.25';
-import { releve, voler, stopperVols } from './anim.js?v=2.25';
-import { campagne } from './lab.js?v=2.25';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.25';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.25';
-import { Salon } from './net/salon.js?v=2.25';
-import { TransportLocal } from './net/local.js?v=2.25';
-import { TransportSupabase } from './net/supabase.js?v=2.25';
-import { enLigneDisponible } from './net/config.js?v=2.25';
-import { coupNu } from './net/protocole.js?v=2.25';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.25';
-import { livret, aideDeJeu } from './livret.js?v=2.25';
+} from './scoring.js?v=2.26';
+import { releve, voler, stopperVols } from './anim.js?v=2.26';
+import { campagne } from './lab.js?v=2.26';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.26';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.26';
+import { Salon } from './net/salon.js?v=2.26';
+import { TransportLocal } from './net/local.js?v=2.26';
+import { TransportSupabase } from './net/supabase.js?v=2.26';
+import { enLigneDisponible } from './net/config.js?v=2.26';
+import { coupNu } from './net/protocole.js?v=2.26';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.26';
+import { livret, aideDeJeu } from './livret.js?v=2.26';
 
 const app = document.getElementById('app');
 
@@ -223,6 +223,7 @@ function sauverCfg() {
   // c'est de là que dépend le serrage des bandeaux, calculé au moment où l'on
   // construit le HTML — bien avant que la classe n'atterrisse sur le document.
   reglerLectureNue(!store.cfg.illustrations);
+  reglerGabarits(!!store.cfg.gabarits);
   // Une retouche faite dans la même fenêtre qu'une partie en cours : l'événement
   // `storage` ne se déclenche que dans les AUTRES fenêtres, il faut donc faire
   // ici ce qu'il y ferait. Une partie finie n'y touche pas — son décompte est
@@ -289,6 +290,7 @@ function html(s, garderDefilement = false) {
   // Le dessin des cartes a déjà eu lieu : cette ligne prépare le SUIVANT.
   // C'est `sauverCfg` qui met le rendu au courant à temps.
   reglerLectureNue(!store.cfg.illustrations);
+  reglerGabarits(!!store.cfg.gabarits);
   document.body.classList.toggle('sans-points', store.cfg.pointsSurCartes === false);
   const y = window.scrollY;
   app.innerHTML = s;
@@ -520,6 +522,27 @@ function boutonIllus(id = '') {
     title="Afficher ou masquer les illustrations — le même réglage partout">
     ${store.cfg.illustrations ? 'Images visibles' : 'Images masquées'}
   </button>`;
+}
+
+/**
+ * Le TEMPLATE des Plans Larges : l'habillage imprimé — et lui seul — posé sur
+ * les cartes. Un interrupteur du Matériel, comme les images : le réglage vaut
+ * partout, table, éditeur, banc et PDF.
+ */
+function boutonGabarits() {
+  const on = !!store.cfg.gabarits;
+  return `<button class="pill mini ${on ? '' : 'eteint'}" data-bascule-gabarits="1"
+    title="Habiller les Plans Larges du template imprimé : cadre, boîte de minutage, bande verte à bord déchiré, bandeau « PLAN LARGE ». Les icônes, les images, les pouvoirs et le minutage restent ceux de l’application. Décoché, les cartes gardent leur habillage propre">
+    ${on ? '▣ Template Plan Large' : '▢ Template Plan Large'}
+  </button>`;
+}
+
+function brancherBasculeGabarits(apres) {
+  app.querySelectorAll('[data-bascule-gabarits]').forEach((b) => b.addEventListener('click', () => {
+    store.cfg.gabarits = !store.cfg.gabarits;
+    sauverCfg();
+    if (apres) apres();
+  }));
 }
 
 function brancherBasculeIllus(apres) {
@@ -2777,6 +2800,7 @@ function barreJeu() {
     </span>
     ${compositionRetouchee()}
     ${boutonIllus()}
+    ${boutonGabarits()}
     <button class="pill" id="mat-export">⭳ Tableau en PDF</button>
     <button class="pill" id="cartes-pdf" title="Un PDF par face de carte activée, à 88 × 63 mm, réunis dans une archive ZIP — le jeu Modifié, celui que la galerie montre">⭳ Cartes en PDF</button>
     <button class="pill" id="planches-pdf" title="Toutes les cartes activées en planches A4 paysage — neuf cartes de 88 × 63 mm par page, traits de coupe, une page de rectos puis la page de ses versos">⭳ Cartes en Tableau PDF</button>
@@ -4952,6 +4976,7 @@ function brancherMateriel() {
   }));
 
   brancherBasculeIllus(refaire);
+  brancherBasculeGabarits(refaire);
 
   app.querySelectorAll('[data-filtre]').forEach((el) => el.addEventListener('change', () => {
     if (el.dataset.filtre === 'tri') mat.tri = el.value;
@@ -6585,6 +6610,7 @@ function vueVariables() {
     const materiel = store.cfg.materiel;
     store.cfg = cloneConfig(DEFAULTS);
     reglerLectureNue(!store.cfg.illustrations);
+    reglerGabarits(!!store.cfg.gabarits);
     store.cfg.materiel = materiel;
     sauverCfg(); vueVariables();
   });
@@ -6604,7 +6630,9 @@ function vueVariables() {
           const materiel = store.cfg.materiel;
           store.cfg = Object.assign(cloneConfig(DEFAULTS), migrerCfg(lu));
   reglerLectureNue(!store.cfg.illustrations);
+  reglerGabarits(!!store.cfg.gabarits);
           reglerLectureNue(!store.cfg.illustrations);
+          reglerGabarits(!!store.cfg.gabarits);
           // Un fichier antérieur à l'éditeur ne porte pas de matériel : on
           // garde alors les retouches en place plutôt que de les effacer.
           if (!lu.materiel) store.cfg.materiel = materiel;
@@ -7577,6 +7605,7 @@ export function calerMinutage() {
 
 // Le rendu part avec la lecture qui a été enregistrée, pas avec le défaut.
 reglerLectureNue(!store.cfg.illustrations);
+reglerGabarits(!!store.cfg.gabarits);
 
 calerMinutage();
 // Les fontes du système sont là tout de suite, mais on remesure quand le

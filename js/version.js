@@ -1,8 +1,19 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.25';
-export const BUILD_DATE = '2026-09-08 17:05';
+export const VERSION = '2.26';
+export const BUILD_DATE = '2026-09-08 19:30';
 
 export const CHANGELOG = [
+  {
+    v: '2.26',
+    date: '08/09/2026',
+    items: [
+      "<b>Une option « Template Plan Large », dans le Matériel.</b> Cochée, les Plans Larges reçoivent l'<b>habillage imprimé</b> — le cadre noir, la boîte de minutage aux coins arrondis et à liseré gris, la bande verte à bord déchiré, le bandeau noir « PLAN LARGE » en vert italique. Rien d'autre ne change : les <b>icônes</b>, les <b>images</b>, les <b>pouvoirs</b> et le <b>minutage</b> restent ceux de l'application, et se posent dessus à leur place. Décochée, les cartes gardent l'habillage qu'elles avaient.",
+      "<b>Le template est reconstruit en vecteur, il ne pèse rien.</b> Le gabarit fourni n'est pas entré dans le dépôt comme image : ses mesures ont été relevées — la boîte de minutage à 19,6 × 9,5 % de la carte, le blanc jusqu'à 82,7 %, la bande verte à 12,65 %, le bandeau noir à 4,65 %, l'onglet vert à 39,5 % de large — et tout est dessiné en CSS. Le bord déchiré est un polygone, la texture papier un bruit SVG de deux cents octets peint une fois puis répété. Net à toute taille, et rien à charger.",
+      "<b>L'onglet vert relevé est la languette des icônes.</b> Il tombe exactement là où elles se posent déjà, collé à la bande : le gabarit et l'application avaient la même anatomie sans le savoir. Mesuré à 640 px : le minutage centré dans sa boîte, le pouvoir dans la bande, « PLAN LARGE » dans le bandeau, les quatre icônes sur l'onglet.",
+      "<b>Le réglage suit le HTML des cartes, jusque dans le PDF.</b> Comme la lecture nue, l'application le dit avant de dessiner, et la classe voyage avec la carte — une classe posée sur la page, elle, ne serait jamais entrée dans le SVG de l'export. Vérifié en relisant le JPEG produit : bande verte, bandeau noir, 38 ko.",
+      "<b>Le poids des fichiers, pendant qu'on y est.</b> La boîte entière tient en <b>1,7 Mo</b> d'images pour 87 illustrations, la plus lourde à 202 ko et toutes les autres sous 80. Le versionneur signale déjà tout visuel au-dessus de 400 ko. Le vrai poids mort est ailleurs : <code>version.js</code> — ce journal-ci — fait 175 ko et se charge sur chaque écran, alors qu'un seul le lit. Il se détacherait en un fichier chargé à la demande ; c'est la prochaine économie utile.",
+    ],
+  },
   {
     v: '2.25',
     date: '08/09/2026',

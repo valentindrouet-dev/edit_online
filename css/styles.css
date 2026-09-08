@@ -2520,3 +2520,66 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
   border: 1px solid var(--gris-clair); border-radius: 8px; background: #fff;
   color: var(--encre); font-size: .9rem;
 }
+
+/* --- Le TEMPLATE des Plans Larges ------------------------------------------
+   L'habillage imprimé, reconstruit en VECTEUR — pas une image : le fichier
+   source n'a pas voyagé jusqu'au dépôt, et un template en CSS ne pèse rien,
+   reste net à toute taille et laisse les icônes, les pouvoirs et le minutage
+   se poser dessus comme sur l'habillage ordinaire. La texture papier de la
+   bande est un bruit SVG de deux cents octets, peint une fois puis répété.
+
+   Mesures, sur le gabarit 1321 × 945 (une carte entière) : la boîte du minutage
+   fait 19,6 × 9,5 % de la moitié, en haut à gauche, coins arrondis, liseré gris.
+   Le blanc descend jusqu'à 82,7 % ; la bande verte en prend 12,65 ; le bandeau
+   noir du bas 4,65. L'ONGLET vert relevé, à gauche — 39,5 % de large, 14,3 % de
+   haut, bord droit déchiré — est la languette des icônes : il tombe exactement
+   là où elle se pose déjà.
+   Ne s'applique qu'à `.moitie.f-PL` : la classe est posée au rendu, par
+   `reglerGabarits`, et suit le HTML jusque dans le PDF. */
+.moitie.gabarit { background-color: #fff; }
+.moitie.gabarit .illus { flex: 0 0 82.7%; background: #fff; }
+.moitie.gabarit .bandeau {
+  flex: 0 0 12.65%;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .2 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>"),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='120'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='.012 .09' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 .85 0 0 0 .16 0'/></filter><rect width='100%25' height='100%25' filter='url(%23p)'/></svg>"),
+    linear-gradient(180deg, #8bcb69 0%, #7fc35e 55%, #76b956 100%);
+  /* Un peu moins haute que la bande ordinaire : le corps recule d'un cran pour
+     que « × », cartouches et flèches y tiennent sans toucher les bords. */
+  font-size: calc(.86em * var(--ec, 1));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28);
+}
+.moitie.gabarit .libelle { flex: 0 0 4.65%; background: #0a0a0a; }
+.moitie.gabarit .libelle .marque-cadrage .tag-fmt {
+  background: none; box-shadow: none; padding: 0; border-radius: 0;
+  color: #8fe45c; font-style: italic; font-weight: 900; font-size: .52em;
+  letter-spacing: .03em;
+}
+/* La boîte du minutage : la même place, la même taille — les chiffres y sont
+   déjà centrés —, mais les quatre coins arrondis et le liseré gris du gabarit. */
+.moitie.gabarit .illus > .boite-tc {
+  border-radius: .5em; background: #070707;
+  border: 1px solid rgba(206, 208, 216, .55);
+}
+/* L'ONGLET. La languette des icônes devient la languette verte du gabarit :
+   une largeur fixe, un bord droit déchiré — un polygone, pas une image —, et
+   une ombre douce qui la décolle du dessin. `clip-path` s'applique après
+   `filter` : l'ombre se pose donc sur le parent, où elle épouse la découpe. */
+.moitie.gabarit .pastilles { bottom: 17.3%; height: 14.3%; }
+.moitie.gabarit .pastilles-fond {
+  flex: 0 0 39.5%; max-width: 39.5%; padding: 0 .4em 0 .55em;
+  justify-content: flex-start;
+  filter: drop-shadow(0 -.08em .12em rgba(0, 0, 0, .28));
+}
+.moitie.gabarit .pastilles-fond::before {
+  top: 0; height: 100%; transform: none; border-radius: 0;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .2 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>"),
+    linear-gradient(180deg, #8bcb69 0%, #7fc35e 60%, #7abd5a 100%);
+  clip-path: polygon(0 0, 96.5% 0, 100% 11%, 98.2% 27%, 100% 40%, 96.8% 57%, 99.2% 71%, 97.4% 86%, 100% 100%, 0 100%);
+}
+.moitie.gabarit .pastilles .pastille { height: 78%; }
+/* Deux pouvoirs empilés : la bande grandit, le blanc cède, l'onglet remonte. */
+.moitie.gabarit.bande-deux .illus { flex: 0 0 75.35%; }
+.moitie.gabarit.bande-deux .bandeau { flex: 0 0 20%; }
+.moitie.gabarit.bande-deux .pastilles { bottom: 24.65%; }

@@ -13,9 +13,9 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre } from './data.js?v=2.25';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.25';
-import { urlVisuel } from './visuels.js?v=2.25';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre } from './data.js?v=2.26';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.26';
+import { urlVisuel } from './visuels.js?v=2.26';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -456,6 +456,14 @@ const MOT_GRAND = 1.9;
 let lectureNue = false;
 export function reglerLectureNue(v) { lectureNue = !!v; }
 
+// Le TEMPLATE imprimé sur les Plans Larges — l'habillage seul : cadre, boîte de
+// minutage, bande verte à bord déchiré, bandeau noir. Même mécanique que la
+// lecture nue : l'application le dit avant de dessiner, et la classe voyage
+// avec le HTML — jusque dans l'export PDF, où aucune classe du document ne
+// suivrait.
+let gabarits = false;
+export function reglerGabarits(v) { gabarits = !!v; }
+
 /** La place utile d'un bandeau, selon le cadrage de la moitié qui le porte. */
 const LARGEUR_MOITIE = { GP: 6.72, PM: 13.28, PL: 20, DEP: 20 };
 
@@ -756,7 +764,7 @@ export function renderPlan(h, opts = {}) {
   const cls = ['moitie', `f-${h.format}`, h.transition ? 'transition' : '', h.depart ? 'depart' : '',
     opts.bandeauDouble || objsIci.length > 1 ? 'bande-deux' : '',
     opts.clickable ? 'choisissable' : '', opts.selected ? 'choisi' : '', opts.neuf ? 'neuf' : '',
-    opts.horsFilm ? 'hors-film' : ''].join(' ');
+    opts.horsFilm ? 'hors-film' : '', gabarits && h.format === 'PL' ? 'gabarit' : ''].join(' ');
   const flex = large ? '1 1 100%' : (h.format === 'GP' ? '0 0 33.6%' : '1 1 66.4%');
   // Le libellé du bas dit le TYPE du plan, pas son rôle : une Ouverture, un
   // Générique de fin et un Raccord sont tous trois des Raccords. Ce que la

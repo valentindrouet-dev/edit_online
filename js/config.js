@@ -4,8 +4,8 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=2.25';
-import { OBJECTIFS_COMMUNS } from './scoring.js?v=2.25';
+import { ELEMENT_IDS } from './data.js?v=2.26';
+import { OBJECTIFS_COMMUNS } from './scoring.js?v=2.26';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
@@ -213,6 +213,11 @@ export const DEFAULTS = {
 
   // --- Affichage -----------------------------------------------------------
   illustrations: true,    // les visuels imprimés sur les cartes
+  // Le TEMPLATE imprimé sur les Plans Larges : l'habillage seul — cadre, boîte
+  // de minutage, bande verte à bord déchiré, bandeau noir « PLAN LARGE ». Les
+  // icônes, les images, les pouvoirs et le minutage restent ceux de l'app.
+  // Décoché, les cartes gardent leur habillage propre. Se règle dans Matériel.
+  gabarits: false,
   pointsSurCartes: true,  // le jeton de points au coin des plans du montage
   // La fiche qui s'ouvre au survol d'une carte. Décochée par défaut : elle
   // s'ouvrait sur toutes les cartes de la table, pioches comprises, où elle ne
