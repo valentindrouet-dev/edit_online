@@ -13,9 +13,9 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre } from './data.js?v=2.26';
-import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.26';
-import { urlVisuel } from './visuels.js?v=2.26';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre } from './data.js?v=2.27';
+import { elIcon, numIcon, cadrageIcon } from './icons.js?v=2.27';
+import { urlVisuel } from './visuels.js?v=2.27';
 
 // Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
 // ici une seconde copie de la même formule ; les deux ont divergé le jour où
@@ -222,8 +222,12 @@ function objCoeur(obj, taille, compact, large) {
           Array.from({ length: Math.min(k, 4) },
             () => cibleHTML(obj.cible, taille, compact)).join('')
         }</span><span class="plus-seuil">+</span>`;
-        return large ? `${tagSeq(compact)}<span class="mot">avec</span>${pile}`
-          : blocSeq(compact, pile, large);
+        // Une seule LIGNE, avec le cartouche COURT : « 3 × SÉQ avec 🔑🐒 + »
+        // tient dans un Plan Moyen là où « SÉQUENCE » forçait le repli. Le
+        // repli coûtait la moitié de la hauteur de bande à chacune des deux
+        // lignes ; abréger le seul mot qui déborde rend au bandeau son corps
+        // entier. Un Plan Large, lui, a la place d'écrire le mot en entier.
+        return `${tagSeq(compact || !large)}<span class="mot">avec</span>${pile}`;
       }
       // Une icône seule tient sur la ligne : « SÉQ avec 🔫 » n'a pas besoin de
       // se replier, et une pastille dans une ligne repliée n'a plus de hauteur
@@ -357,7 +361,11 @@ function plieEnDeux(obj, compact, large) {
   if (obj.kind !== 'SEQ_AVEC') return false;
   const k = Math.max(1, obj.seuil || 1);
   if (obj.sens === 'SANS' && k === 1) return false;
-  return k > 1 || !cibleEstIcone(obj.cible);
+  // Un seuil sur une ICÔNE se dessine en pastilles empilées : cela tient sur
+  // une ligne dès que le cartouche prend sa forme courte, et l'on préfère un
+  // mot abrégé à une bande coupée en deux.
+  if (cibleEstIcone(obj.cible)) return false;
+  return true;
 }
 
 /**
@@ -584,13 +592,15 @@ function coutCoeur(obj, compact, P, large) {
       // un « + » : tout tient sur une ligne.
       const haut = seq + g + mot('avec');
       // Un seuil sur une icône empile ses pastilles, comme un couple, et ajoute
-      // un « + ».
+      // un « + ». Tout tient sur UNE ligne — le cartouche y prend sa forme
+      // courte hors Plan Large, ce que le rendu fait aussi : les deux doivent
+      // mesurer la même chose, sinon le serrage se calcule sur un bandeau qui
+      // n'est pas celui qu'on dessine.
       if (cibleEstIcone(obj.cible)) {
         const n = Math.min(Math.max(k, 1), 4);
         const pile = P.rond + (n - 1) * (P.rond - EM.chevauche) + (k > 1 ? g + 0.5 : 0);
-        // Une icône seule ne se replie jamais : elle tient sur la ligne.
-        if (k <= 1 || large) return haut + g + pile;
-        return BLOC_SEQ * Math.max(haut, pile);
+        const court = t('Séquence', 'Séq');
+        return (large ? seq : court) + g + mot('avec') + g + pile;
       }
       const bas = (k > 1 ? t(seuilTexte(obj.sens === 'SANS' ? 'MOINS' : 'MIN', k)) + g : 0)
         + cible(obj.cible);

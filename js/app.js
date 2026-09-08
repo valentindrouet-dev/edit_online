@@ -2,7 +2,7 @@
 // EDIT — application
 // ---------------------------------------------------------------------------
 
-import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.26';
+import { VERSION, BUILD_DATE, CHANGELOG } from './version.js?v=2.27';
 import {
   ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
@@ -12,40 +12,40 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-} from './data.js?v=2.26';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.26';
-import { elIcon, numIcon } from './icons.js?v=2.26';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue, reglerGabarits } from './cards.js?v=2.26';
+} from './data.js?v=2.27';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js?v=2.27';
+import { elIcon, numIcon } from './icons.js?v=2.27';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue, reglerGabarits } from './cards.js?v=2.27';
 import { chargerVisuels, ajouterVisuel, importerVisuel, retirerVisuel, visuelsApportes, urlVisuel,
   cleVisuel, idDeCle, estVisuelApporte, blobVisuel, poidsVisuels, COTE_MAX,
-} from './visuels.js?v=2.26';
+} from './visuels.js?v=2.27';
 import { chargerPublie, materielPublie, signaturePublie, materielVide, composerPublie,
-} from './publie.js?v=2.26';
+} from './publie.js?v=2.27';
 import { composerPartage, sansImages, encoderPartage, decoderPartage, partageDeLURL,
-  lienPartage, LIMITE_LIEN } from './partage.js?v=2.26';
+  lienPartage, LIMITE_LIEN } from './partage.js?v=2.27';
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
   coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
   piochesMelees, appliquerPlan, limitePlans, limiteSequences,
   faceVisible, retourner, resynchroniserBoite,
-} from './engine.js?v=2.26';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.26';
+} from './engine.js?v=2.27';
+import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js?v=2.27';
 import {
   compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone,
   compteCible, compteGroupes, bancVide, OBJECTIFS_COMMUNS, objectifCommunDe,
   pointsObjectifCommun, objectifCommunTenu, avancementObjectifCommun,
-} from './scoring.js?v=2.26';
-import { releve, voler, stopperVols } from './anim.js?v=2.26';
-import { campagne } from './lab.js?v=2.26';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.26';
-import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.26';
-import { Salon } from './net/salon.js?v=2.26';
-import { TransportLocal } from './net/local.js?v=2.26';
-import { TransportSupabase } from './net/supabase.js?v=2.26';
-import { enLigneDisponible } from './net/config.js?v=2.26';
-import { coupNu } from './net/protocole.js?v=2.26';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.26';
-import { livret, aideDeJeu } from './livret.js?v=2.26';
+} from './scoring.js?v=2.27';
+import { releve, voler, stopperVols } from './anim.js?v=2.27';
+import { campagne } from './lab.js?v=2.27';
+import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js?v=2.27';
+import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js?v=2.27';
+import { Salon } from './net/salon.js?v=2.27';
+import { TransportLocal } from './net/local.js?v=2.27';
+import { TransportSupabase } from './net/supabase.js?v=2.27';
+import { enLigneDisponible } from './net/config.js?v=2.27';
+import { coupNu } from './net/protocole.js?v=2.27';
+import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js?v=2.27';
+import { livret, aideDeJeu } from './livret.js?v=2.27';
 
 const app = document.getElementById('app');
 
@@ -2311,7 +2311,7 @@ function vueFin() {
 
 const mat = {
   vue: 'CARTES',        // CARTES | GP | PM | PL | DEPART | TABLE | STATS
-  tri: 'num',
+  tri: 'pm',
   filtres: { face: '', icone: '', pouvoir: '', tcMin: '', tcMax: '', etat: '', actif: '', famille: '' },
   statsFiltres: { format: '', icone: '', pouvoir: '' },
   plans: new Set(),     // clés des plans sélectionnés — survit au changement de vue
@@ -2671,8 +2671,18 @@ function tuilesDe(vue) {
 
 // --- Tri et filtres ---------------------------------------------------------
 
+/**
+ * Les tris de la galerie.
+ *
+ * Une carte double porte DEUX numéros — celui de son Gros Plan et celui de son
+ * Plan Moyen —, et ils n'ont aucune raison d'aller ensemble : la carte 18
+ * apparie le GP 306 au PM 229. Un « numéro croissant » ne voulait donc rien
+ * dire sur cet écran, et c'est bien ce qu'on y lisait. On trie désormais par
+ * l'un OU par l'autre, en le disant.
+ */
 const TRIS = [
-  ['num', 'Numéro croissant'], ['num-desc', 'Numéro décroissant'],
+  ['pm', 'PM croissant'], ['pm-desc', 'PM décroissant'],
+  ['gp', 'GP croissant'], ['gp-desc', 'GP décroissant'],
   ['tc', 'Minutage croissant'], ['tc-desc', 'Minutage décroissant'],
   ['famille', 'Famille'],
 ];
@@ -2716,17 +2726,43 @@ function passeFiltres(t) {
   return true;
 }
 
+/**
+ * Le numéro d'un cadrage sur une tuile — celui du Gros Plan, celui du Plan
+ * Moyen. On le lit sur les MOITIÉS, comme l'étiquette de la tuile : le champ
+ * `gpNum` de la carte est le numéro de la scène appariée, et l'éditeur permet
+ * de retoucher le numéro d'un plan sans que la scène change. Les deux
+ * divergeaient dès la première retouche, et le tri montrait alors un ordre que
+ * les étiquettes démentaient.
+ *
+ * Une tuile qui n'a pas ce cadrage — un Plan Large, un Plan de départ, la
+ * moitié isolée de l'autre famille — se range sur le seul numéro qu'elle ait :
+ * le tri reste ainsi total, et les vues qui ne montrent qu'un cadrage gardent
+ * un ordre par numéro dans les quatre choix.
+ */
+function numCadrage(t, format) {
+  const plans = plansTuile(t);
+  const siens = plans.filter((h) => h.format === format);
+  const lus = (siens.length ? siens : plans).map((h) => h.num);
+  return lus.length ? Math.min(...lus) : 0;
+}
+
 function trier(tuiles) {
-  const num = (t) => (t.genre === 'PLAN' ? t.plan.num : (t.carte.gpNum ?? t.carte.num));
+  const pm = (t) => numCadrage(t, 'PM');
+  const gp = (t) => numCadrage(t, 'GP');
+  // Le second critère est l'autre cadrage : deux cartes qui partagent un Gros
+  // Plan se rangent alors par leur Plan Moyen, au lieu de tomber dans l'ordre
+  // où le paquet les avait mises.
   const tcm = (t) => Math.min(...plansTuile(t).map((h) => h.tc));
   const fam = (t) => plansTuile(t)[0].famille || '';
   const c = [...tuiles];
   switch (mat.tri) {
-    case 'num-desc': c.sort((a, b) => num(b) - num(a)); break;
-    case 'tc':       c.sort((a, b) => tcm(a) - tcm(b) || num(a) - num(b)); break;
-    case 'tc-desc':  c.sort((a, b) => tcm(b) - tcm(a) || num(a) - num(b)); break;
-    case 'famille':  c.sort((a, b) => fam(a).localeCompare(fam(b)) || num(a) - num(b)); break;
-    default:         c.sort((a, b) => num(a) - num(b));
+    case 'pm-desc':  c.sort((a, b) => pm(b) - pm(a) || gp(b) - gp(a)); break;
+    case 'gp':       c.sort((a, b) => gp(a) - gp(b) || pm(a) - pm(b)); break;
+    case 'gp-desc':  c.sort((a, b) => gp(b) - gp(a) || pm(b) - pm(a)); break;
+    case 'tc':       c.sort((a, b) => tcm(a) - tcm(b) || pm(a) - pm(b)); break;
+    case 'tc-desc':  c.sort((a, b) => tcm(b) - tcm(a) || pm(a) - pm(b)); break;
+    case 'famille':  c.sort((a, b) => fam(a).localeCompare(fam(b)) || pm(a) - pm(b)); break;
+    default:         c.sort((a, b) => pm(a) - pm(b) || gp(a) - gp(b));
   }
   return c;
 }
@@ -4987,7 +5023,7 @@ function brancherMateriel() {
   const raz = app.querySelector('#filtres-raz');
   if (raz) raz.addEventListener('click', () => {
     mat.filtres = { face: '', icone: '', pouvoir: '', tcMin: '', tcMax: '', etat: '', actif: '', famille: '' };
-    mat.tri = 'num'; refaire();
+    mat.tri = 'pm'; refaire();
   });
 
   // Un clic simple remplace la sélection ; ⌘ (ou Ctrl) + clic ajoute ou retire

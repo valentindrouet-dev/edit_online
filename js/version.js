@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.26';
-export const BUILD_DATE = '2026-09-08 19:30';
+export const VERSION = '2.27';
+export const BUILD_DATE = '2026-09-08 21:40';
 
 export const CHANGELOG = [
+  {
+    v: '2.27',
+    date: '08/09/2026',
+    items: [
+      "<b>Le tri de la galerie des cartes n'avait aucun sens, et pour deux raisons.</b> Une carte double porte <b>deux numéros</b> — celui de son Gros Plan et celui de son Plan Moyen —, et rien ne les fait aller ensemble : la carte 18 apparie le GP 306 au PM 229. « Numéro croissant » ne disait donc pas <b>lequel</b>. Il se remplace par quatre choix qui le disent : <b>PM croissant</b>, <b>PM décroissant</b>, <b>GP croissant</b>, <b>GP décroissant</b>. Le second critère est l'autre cadrage, si bien que deux cartes qui partagent un Gros Plan se rangent par leur Plan Moyen.",
+      "<b>Et il lisait le mauvais numéro.</b> Il triait sur le numéro de la <b>scène appariée</b>, quand l'étiquette montre celui de la <b>moitié</b> — deux nombres que l'éditeur permet de séparer, puisqu'on peut y retoucher le numéro d'un plan sans toucher à l'appariement. Dès la première retouche les deux divergeaient, et la galerie affichait un ordre que ses propres étiquettes démentaient. Le tri lit désormais ce que l'étiquette montre.",
+      "<b>« n × SÉQUENCE avec 🔫🔫 + » tient sur une seule ligne.</b> Le bandeau se repliait en deux — le cartouche au-dessus, les pastilles en dessous — faute de place dans un Plan Moyen, et chaque ligne n'avait plus que la moitié de la hauteur de bande. Le cartouche prend sa <b>forme courte</b>, « SÉQ », hors Plan Large : le seul mot qui débordait rentre, et le bandeau retrouve son corps entier. Un Plan Large, qui occupe la carte, garde le mot en toutes lettres. Vérifié sur les trois cadrages et les seuils de deux à quatre : rien ne déborde.",
+    ],
+  },
   {
     v: '2.26',
     date: '08/09/2026',
