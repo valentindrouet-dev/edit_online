@@ -529,6 +529,8 @@ export function ciblesSequence() {
     ...CADRAGES_VISABLES.map((f) => ({ id: f, label: FORMATS[f].label })),
     { id: 'RACCORD', label: 'Carte Raccord' },
     { id: 'MORT', label: 'Plan de mort' },
+    // « Séquence avec 3+ Plans » : les plans de la ligne, Raccords exclus.
+    { id: 'PLAN', label: 'Plan (hors Raccord)' },
     // « Valeur de Plan » ne se compte pas comme les autres : ce ne sont pas
     // les plans porteurs qu'on dénombre mais les cadrages DIFFÉRENTS de la
     // ligne. « Une séquence avec 3 Valeurs de Plan » demande donc les trois.
@@ -548,6 +550,7 @@ export function libelleCible(cible) {
   if (estGroupe(cible)) return cible.split('+').map(libelleCible).join(' + ');
   if (cible === 'RACCORD') return 'Carte Raccord';
   if (cible === 'MORT') return 'Plan de mort';
+  if (cible === 'PLAN') return 'Plan';
   if (cible === 'VALEUR') return 'Valeur de Plan';
   if (FORMATS[cible]) return FORMATS[cible].label;
   return ELEMENTS[cible] ? ELEMENTS[cible].label : cible;
@@ -1210,6 +1213,11 @@ const TABLES = {
       PL(103, 45, ['ENNEMI', 'ALLIE', 'OBJET', 'VEHICULE'], OBJ.seqAvec(4, 'SANS', 'ARME')),
       PL(104, 90, ['HEROINE', 'ALLIE', 'VEHICULE'], OBJ.extreme(1, 'PLUS', 'MONTAGE')),
       PL(105, 90, ['HEROINE', 'ENNEMI', 'ALLIE'], OBJ.seqAvec(3, 'AVEC', 'HEROINE+ENNEMI+ALLIE'), { mort: true }),
+      PL(106, 90, ['HEROINE', 'OBJET', 'VEHICULE'], OBJ.seqVoisines(3, 'AVANT')),
+      PL(107, 15, ['HEROINE', 'ENNEMI', 'ARME'], OBJ.seqVoisines(3, 'APRES')),
+      PL(108, 30, ['ALLIE', 'ENNEMI', 'OBJET'], OBJ.seqAvec(4, 'SANS', 'HEROINE')),
+      PL(109, 15, ['ALLIE', 'OBJET', 'ARME'], OBJ.seqAvec(3, 'AVEC', 'RACCORD')),
+      PL(110, 60, ['HEROINE', 'ENNEMI', 'ARME', 'VEHICULE'], OBJ.seqAvec(3, 'AVEC', 'PLAN', 3)),
     ],
     paires: [[null, 309]],
     // Les quatre Plans de départ, 001 à 004. Chacun a un verso différent : les
@@ -1227,7 +1235,9 @@ const TABLES = {
     images: {
       gp309: 'assets/s31/GP309.webp',
       pl101: 'assets/s31/PL101.webp', pl102: 'assets/s31/PL102.webp', pl103: 'assets/s31/PL103.webp',
-      pl104: 'assets/s31/PL104.webp', pl105: 'assets/s31/PL105.webp',
+      pl104: 'assets/s31/PL104.webp', pl105: 'assets/s31/PL105.webp', pl106: 'assets/s31/PL106.webp',
+      pl107: 'assets/s31/PL107.webp', pl108: 'assets/s31/PL108.webp', pl109: 'assets/s31/PL109.webp',
+      pl110: 'assets/s31/PL110.webp',
       pl001: 'assets/s31/DEP001.webp', pl002: 'assets/s31/DEP002.webp',
       pl003: 'assets/s31/DEP003.webp', pl004: 'assets/s31/DEP004.webp',
     },

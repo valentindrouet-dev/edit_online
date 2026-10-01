@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.34';
-export const BUILD_DATE = '2026-10-01 14:11';
+export const VERSION = '2.35';
+export const BUILD_DATE = '2026-10-01 14:15';
 
 export const CHANGELOG = [
+  {
+    v: '2.35',
+    date: '01/10/2026',
+    items: [
+      "<b>Le Set 3.1 reçoit ses Plans Larges 106 à 110</b> : 106 « 3 × Séquence au-dessus », 107 « 3 × Séquence en dessous », 108 « 4 × Séquence sans Héroïne », 109 « 3 × Séquence avec Raccord », 110 « 3 × Séquence avec 3+ Plans ».",
+      "<b>« Plan » devient une cible de séquence</b> dans l'éditeur : « Séquence avec 3+ Plans » compte les plans de la ligne, Raccords exclus.",
+    ],
+  },
   {
     v: '2.34',
     date: '01/10/2026',
