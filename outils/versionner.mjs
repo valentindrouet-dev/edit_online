@@ -1,17 +1,16 @@
 // ---------------------------------------------------------------------------
-// EDIT — estampillage des modules
+// EDIT — versionneur
 // ---------------------------------------------------------------------------
-// À lancer avant chaque publication :   node outils/versionner.mjs
+// Lancé par outils/publier.mjs ; à la main :   node outils/versionner.mjs
 //
-// Le navigateur met chaque module en cache par son URL. Si une seule URL ne
-// change pas d'une version à l'autre, il peut resservir l'ancien fichier — et
-// l'on se retrouve avec un app.js périmé à côté d'un version.js à jour.
-//
-// Ce script estampille donc toutes les URL de modules avec le numéro de
-// version (`./data.js?v=1.8`) : à chaque publication, toutes les adresses
-// changent, et le cache ne peut physiquement plus resservir l'ancien code.
-// Il écrit aussi version.json, que la page relit sans cache pour connaître la
-// version publiée sans dépendre du graphe de modules.
+// Le navigateur met chaque module en cache par son URL : si une adresse ne
+// change pas d'une version à l'autre, il peut resservir l'ancien fichier — un
+// app.js périmé à côté d'un version.js à jour. Ce script écrit donc, à partir
+// du numéro de js/version.js :
+//   · version.json — la version et la liste des modules, que l'amorce
+//     d'index.html relit sans cache pour charger chaque module à `?v=VERSION` ;
+//   · sw.js — le nom du cache, ce qui purge celui de la version précédente ;
+//   · assets/images.json — l'inventaire des illustrations.
 
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -28,9 +27,19 @@ const VERSION = src.match(/VERSION\s*=\s*'([^']+)'/)?.[1];
 const DATE = src.match(/BUILD_DATE\s*=\s*'([^']+)'/)?.[1] || '';
 if (!VERSION) throw new Error('VERSION introuvable dans js/version.js');
 
-// --- Estampillage des imports ----------------------------------------------
-
-// `from './x.js'` et `from './x.js?v=ancienne'` deviennent `from './x.js?v=VERSION'`.
+// --- Les modules : AUCUNE version dans le code ------------------------------
+// Les imports s'écrivent nus — `from './data.js'`. C'est l'amorce d'index.html
+// qui leur donne leur version, par une TABLE D'IMPORTS construite à partir de
+// version.json : le navigateur charge alors `./data.js?v=VERSION`, et le cache
+// ne peut toujours pas resservir l'ancien code.
+//
+// Avant, la version était écrite dans chaque import de chaque module : une
+// publication réécrivait quinze fichiers pour changer un numéro, et deux copies
+// d'un même module pouvaient coexister quand un import portait une version et
+// un autre pas. Une publication ne touche désormais que version.js,
+// version.json et sw.js.
+//
+// Une estampille restée d'avant est retirée au passage.
 const RE_IMPORT = /(from\s+['"])(\.{1,2}\/[^'"?]+\.js)(\?v=[^'"]*)?(['"])/g;
 
 // Le parcours descend dans les sous-dossiers (js/net/…) : un module oublié
@@ -44,11 +53,14 @@ function* modules(dossier) {
 }
 
 let touches = 0;
+const listeModules = [];
 for (const chemin of modules('js')) {
+  listeModules.push(chemin);
   const avant = lire(chemin);
-  const apres = avant.replace(RE_IMPORT, (_, a, url, __, z) => `${a}${url}?v=${VERSION}${z}`);
+  const apres = avant.replace(RE_IMPORT, (_, a, url, __, z) => `${a}${url}${z}`);
   if (apres !== avant) { ecrire(chemin, apres); touches++; }
 }
+listeModules.sort();
 
 // --- Nom du cache du service worker ----------------------------------------
 // Changer le nom purge les caches des versions précédentes à l'activation.
@@ -59,7 +71,9 @@ if (swMaj !== sw) ecrire('sw.js', swMaj);
 
 // --- Version publiée, lisible sans passer par les modules ------------------
 
-ecrire('version.json', `${JSON.stringify({ version: VERSION, date: DATE }, null, 2)}\n`);
+// La liste des modules voyage avec la version : c'est d'elle que l'amorce tire
+// la table d'imports. Un module ajouté dans js/ y entre tout seul.
+ecrire('version.json', `${JSON.stringify({ version: VERSION, date: DATE, modules: listeModules }, null, 2)}\n`);
 
 // --- L'inventaire des illustrations ----------------------------------------
 // Un site statique ne sait pas lister un dossier : pour proposer le choix d'une
@@ -107,7 +121,8 @@ for (const d of dossiersImages) {
 ecrire('assets/images.json', `${JSON.stringify(inventaire, null, 2)}\n`);
 const nbImages = Object.values(inventaire).reduce((s, l) => s + l.length, 0);
 
-console.log(`v${VERSION} — ${touches} module(s) estampillé(s), sw.js, version.json`
+console.log(`v${VERSION} — ${listeModules.length} modules en table d'imports`
+  + `${touches ? ` (${touches} estampille(s) ancienne(s) retirée(s))` : ''}, sw.js, version.json`
   + ` et assets/images.json (${nbImages} illustrations) à jour.`);
 if (lourdes.length) {
   console.log(`\n⚠  ${lourdes.length} illustration(s) au-dessus de ${

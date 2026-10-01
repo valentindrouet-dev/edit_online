@@ -4,8 +4,8 @@
 // Tout ce qui pilote le déroulé et le décompte. Le Laboratoire fait varier ces
 // valeurs pour comparer les équilibrages.
 
-import { ELEMENT_IDS } from './data.js?v=2.28';
-import { OBJECTIFS_COMMUNS } from './scoring.js?v=2.28';
+import { ELEMENT_IDS } from './data.js';
+import { OBJECTIFS_COMMUNS } from './scoring.js';
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------

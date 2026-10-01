@@ -30,12 +30,27 @@
   };
 
   let version = null;
+  let modules = [];
   try {
     const r = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' });
-    if (r.ok) version = (await r.json()).version;
+    if (r.ok) { const j = await r.json(); version = j.version; modules = j.modules || []; }
   } catch { /* hors ligne : on chargera la dernière copie connue */ }
 
   if (version) stampCss(version);
+
+  // La TABLE D'IMPORTS : chaque module du site, à sa version publiée. Le code
+  // importe `./data.js` sans numéro ; le navigateur charge `./data.js?v=…`.
+  // Elle doit être posée avant le premier module — c'est le cas ici. Sans
+  // elle (hors ligne, navigateur très ancien), les imports nus fonctionnent
+  // encore : seul le contournement du cache se perd.
+  if (version && modules.length) {
+    const imports = {};
+    for (const m of modules) imports[`./${m}`] = `./${m}?v=${version}`;
+    const carte = document.createElement('script');
+    carte.type = 'importmap';
+    carte.textContent = JSON.stringify({ imports });
+    document.head.appendChild(carte);
+  }
   const url = version ? `./js/app.js?v=${version}` : './js/app.js';
 
   try {

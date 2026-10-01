@@ -1328,6 +1328,8 @@ table.tbl th { text-align: left; font-size: .7rem; text-transform: uppercase; le
 table.tbl td { padding: 8px 6px; border-bottom: 1px solid var(--gris-clair); }
 table.tbl tr:hover td { background: #faf8ff; }
 table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
+/* Sur téléphone, un tableau large défile dans sa largeur au lieu de pousser la page. */
+@media (max-width: 600px) { table.tbl { display: block; max-width: 100%; overflow-x: auto; } }
 
 /* --- Matériel ------------------------------------------------------------- */
 

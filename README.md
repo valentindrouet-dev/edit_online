@@ -26,7 +26,9 @@ dossier (`python3 -m http.server`).
 index.html              amorçage : demande la version publiée, puis charge le code
 version.json            version publiée, relue hors cache (généré)
 sw.js                   service worker réseau d'abord
-outils/versionner.mjs   estampille les modules avant publication
+outils/publier.mjs      publie une version en une commande
+outils/verifier.mjs     contrôle rapide (≈ 15 s) : moteur, chargement, écrans
+outils/versionner.mjs   version.json, cache du service worker, inventaire des visuels
 outils/extraire-visuels.py  régénère illustrations et icônes depuis les PDF
 css/styles.css
 assets/pm/<num>.webp   visuels des moitiés Plan Moyen  (33)
@@ -53,19 +55,18 @@ Le navigateur met chaque module en cache **par son URL**. Si une seule adresse n
 version à l'autre, il peut resservir l'ancien fichier — c'est ainsi qu'une v1.7 a pu s'afficher avec
 la mise en page de la v1.6. Deux mécanismes s'en chargent :
 
-1. `outils/versionner.mjs` estampille toutes les URL de modules avec le numéro de version
-   (`./data.js?v=1.8`), renomme le cache du service worker et écrit `version.json` ;
-2. `index.html` ne cite **aucune** version : il demande d'abord `version.json` hors cache, puis
-   construit l'adresse du module principal. Même servi depuis le cache, il ouvre donc la dernière
-   version publiée.
+1. `index.html` ne cite **aucune** version : il demande d'abord `version.json` hors cache, y lit la
+   version et la liste des modules, et pose une **table d'imports** qui fait charger chacun à
+   `?v=VERSION`. Les modules s'importent entre eux sans numéro (`from './data.js'`) : une publication
+   ne réécrit donc aucun d'eux ;
+2. `outils/versionner.mjs` écrit `version.json` et renomme le cache du service worker.
 
-La routine de publication tient en trois gestes :
+Publier tient en une commande — elle monte la version, ajoute l'entrée du journal, lance le
+versionneur, relit la syntaxe de tous les modules, commite et pousse :
 
 ```bash
-# 1. mettre à jour VERSION et BUILD_DATE dans js/version.js, ajouter l'entrée au CHANGELOG
-# 2. estampiller
-node outils/versionner.mjs
-# 3. commiter et pousser
+node outils/publier.mjs "<b>Ce qui change.</b> En une ou deux phrases." ["Autre point"…]
+node outils/publier.mjs --verifier "…"   # contrôle rapide d'abord, si le moteur ou la mise en page a bougé
 ```
 
 En complément, la page relit `version.json` toutes les minutes et à chaque retour sur l'onglet :

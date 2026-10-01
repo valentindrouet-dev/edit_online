@@ -1,4 +1,29 @@
 {
-  "version": "2.28",
-  "date": "2026-10-01 10:30"
+  "version": "2.29",
+  "date": "2026-10-01 10:41",
+  "modules": [
+    "js/ai.js",
+    "js/anim.js",
+    "js/app.js",
+    "js/cards.js",
+    "js/config.js",
+    "js/data.js",
+    "js/engine.js",
+    "js/export-pdf.js",
+    "js/icons.js",
+    "js/lab.js",
+    "js/livret.js",
+    "js/melange.js",
+    "js/net/config.js",
+    "js/net/local.js",
+    "js/net/protocole.js",
+    "js/net/salon.js",
+    "js/net/supabase.js",
+    "js/partage.js",
+    "js/publie.js",
+    "js/regles.js",
+    "js/scoring.js",
+    "js/version.js",
+    "js/visuels.js"
+  ]
 }

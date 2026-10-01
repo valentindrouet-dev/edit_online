@@ -9,3 +9,6 @@
 /cartes-neuves.png
 /carte.jpg
 /planlarge.jpg
+
+# Cache de Python, laissé par les scripts d'outils/.
+__pycache__/

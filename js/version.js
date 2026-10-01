@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.28';
-export const BUILD_DATE = '2026-10-01 10:30';
+export const VERSION = '2.29';
+export const BUILD_DATE = '2026-10-01 10:41';
 
 export const CHANGELOG = [
+  {
+    v: '2.29',
+    date: '01/10/2026',
+    items: [
+      "<b>Publier une version tient en une commande.</b> <code>outils/publier.mjs</code> monte la version, écrit le journal, relit la syntaxe de tous les modules, commite et pousse ; <code>outils/verifier.mjs</code> contrôle en quinze secondes le moteur, le chargement et les dix écrans.",
+      "<b>Une publication ne réécrit plus aucun module.</b> Les numéros de version ne sont plus inscrits dans chaque import : l'amorce les pose d'un coup par une table d'imports. Le cache reste déjoué de la même façon, et un module ne peut plus être chargé deux fois.",
+      "<b>Sur téléphone, le tableau du décompte défile dans sa largeur</b> au lieu de pousser la page.",
+    ],
+  },
   {
     v: '2.28',
     date: '01/10/2026',
