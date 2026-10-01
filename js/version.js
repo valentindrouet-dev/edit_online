@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.30';
-export const BUILD_DATE = '2026-10-01 11:44';
+export const VERSION = '2.31';
+export const BUILD_DATE = '2026-10-01 11:49';
 
 export const CHANGELOG = [
+  {
+    v: '2.31',
+    date: '01/10/2026',
+    items: [
+      "<b>Le Set 3.1 ne porte que les cartes fournies par l'auteur</b> — rien n'y est plus repris du Set 2. Il compte aujourd'hui <b>une carte</b> : le Gros Plan 328, recto 35:00 et verso 25:00, montré seul puisque son Plan Moyen n'a pas été fourni.",
+      "<b>Un set incomplet se consulte, il ne se joue pas.</b> Tant que le Set 3.1 n'a pas de paquet entier, le bouton « Commencer la partie », le Laboratoire et le salon en ligne le disent et renvoient au Set 2.",
+    ],
+  },
   {
     v: '2.30',
     date: '01/10/2026',

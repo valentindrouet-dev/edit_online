@@ -868,8 +868,11 @@ export function renderCarte(carte, verso, opts = {}) {
   // d'inverser les moitiés du recto : ce sont d'autres plans, avec leur propre
   // minutage. Il faut donc les demander.
   const m = carte.type === 'DOUBLE' ? moitiesDe(carte, verso ? 'V' : 'R') : null;
-  const plans = m ? (verso ? [m.GP, m.PM] : [m.PM, m.GP]) : [plHalf(carte)];
-  const cls = ['carte', opts.selected ? 'sel' : '', opts.small ? 'small' : '', opts.tiny ? 'tiny' : '',
+  // Une carte dont on n'a qu'une moitié — le Set 3.1 n'a reçu que des Gros
+  // Plans — se montre seule, à la taille de cette moitié.
+  const plans = (m ? (verso ? [m.GP, m.PM] : [m.PM, m.GP]) : [plHalf(carte)]).filter(Boolean);
+  const cls = ['carte', m && plans.length === 1 ? 'solo' : '',
+    opts.selected ? 'sel' : '', opts.small ? 'small' : '', opts.tiny ? 'tiny' : '',
     opts.clickable ? 'clickable' : '', opts.moitiesChoisissables ? 'choix-moitie' : ''].join(' ');
   // Une carte est une feuille : ses deux moitiés doivent finir à la même
   // hauteur. Si l'une porte deux pouvoirs, les deux bandes grandissent.

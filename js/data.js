@@ -808,7 +808,7 @@ const SCENES_IMPRIMEES = [
 // question qu'on pose, puisque la réponse change.
 export function SCENES() {
   const ajoutees = (SURCHARGES.ajouts.scenes || []).map(hydraterScene);
-  const out = [...SCENES_IMPRIMEES, ...ajoutees];
+  const out = [...T().scenes, ...ajoutees];
   return SURCHARGES.retires.size
     ? out.filter((s) => !SURCHARGES.retires.has(idScene(s.idx)))
     : out;
@@ -833,7 +833,10 @@ export function sceneDe(idx) {
 /** De quel côté d'une scène vient un numéro de plan. */
 function indexScenes() {
   const pm = {}, gp = {};
-  for (const s of SCENES()) { pm[s.pmNum] = s.idx; gp[s.gpNum] = s.idx; }
+  for (const s of SCENES()) {
+    if (s.pmNum != null) pm[s.pmNum] = s.idx;
+    if (s.gpNum != null) gp[s.gpNum] = s.idx;
+  }
   return { pm, gp };
 }
 
@@ -866,7 +869,7 @@ const PL_IMPRIMES = [
 export function PLANS_LARGES() {
   const ajoutes = (SURCHARGES.ajouts.larges || []).map((a) => PL(a.num, a.tc || 0,
     (a.el || []).slice(), a.obj ? { ...a.obj } : null, { ajoute: true }));
-  const out = [...PL_IMPRIMES, ...ajoutes];
+  const out = [...T().larges, ...ajoutes];
   return SURCHARGES.retires.size ? out.filter((p) => !SURCHARGES.retires.has(`L${p.num}`)) : out;
 }
 
@@ -920,7 +923,7 @@ export function DEPARTS() {
     faces: (d.faces || []).map((f) => PL(f.num, f.tc || 0, (f.el || []).slice(),
       f.obj ? { ...f.obj } : null, { depart: true, ajoute: true })),
   }));
-  const out = [...DEPARTS_IMPRIMES, ...ajoutes];
+  const out = [...T().departs, ...ajoutes];
   return SURCHARGES.retires.size ? out.filter((d) => !SURCHARGES.retires.has(`S${d.type}`)) : out;
 }
 
@@ -951,7 +954,7 @@ const PAIRES_IMPRIMEES = [
  */
 function PAIRES() {
   const ajoutees = (SURCHARGES.ajouts.paires || []).map((p) => [p.pmNum, p.gpNum, { ajoutee: true }]);
-  return [...PAIRES_IMPRIMEES, ...ajoutees];
+  return [...T().paires, ...ajoutees];
 }
 
 export function buildCartesDoubles() {
@@ -976,7 +979,9 @@ export function buildCartesDoubles() {
     // Une carte supprimée s'en va ; une carte dont une moitié a disparu avec sa
     // scène s'en va aussi — elle n'a plus rien à montrer.
     if (SURCHARGES.retires.has(c.id)) return false;
-    return c.pmScene !== undefined && c.gpScene !== undefined;
+    // Une carte imprimée avec une seule moitié — le Set 3.1 n'a reçu que le
+    // Gros Plan de sa carte — se montre telle quelle.
+    return (c.pmScene !== undefined || c.pmNum == null) && c.gpScene !== undefined;
   });
 }
 
@@ -1167,13 +1172,10 @@ export function cleplan(num, face) {
 }
 
 // --- Les sets de cartes ---------------------------------------------------
-// Chaque set est un matériel d'ORIGINE complet ; les retouches de l'éditeur
-// s'y ajoutent par-dessus — « 3.1 Origine », « 3.1 Modifiée ».
-//
-// Le Set 3.1 se relit carte après carte sur les nouveaux fichiers. Un plan
-// relu porte ici ce que sa carte imprime, face par face ; un plan pas encore
-// relu garde sa valeur du Set 2. Le set reste ainsi jouable pendant qu'on le
-// remplit, et l'écran Matériel dit où en est la relecture.
+// Chaque set est un matériel d'ORIGINE à part entière, avec ses propres
+// cartes ; les retouches de l'éditeur s'y ajoutent par-dessus — « 3.1
+// Origine », « 3.1 Modifiée ». Le Set 3.1 ne porte QUE les cartes que
+// l'auteur a fournies : rien n'y est repris du Set 2.
 export const SETS = [
   { id: '2',   label: 'Set 2',   detail: 'boîte v29' },
   { id: '3.1', label: 'Set 3.1', detail: 'nouvelles cartes' },
@@ -1183,31 +1185,45 @@ export const setValide = (id) => (SETS.some((x) => x.id === id) ? id : SET_DEFAU
 let setCourant = SET_DEFAUT;
 export const setActif = () => setCourant;
 
-const PLANCHES = {
-  '2': {},
+const TABLES = {
+  '2': {
+    scenes: SCENES_IMPRIMEES, larges: PL_IMPRIMES, departs: DEPARTS_IMPRIMES, paires: PAIRES_IMPRIMEES,
+    jouable: true,
+  },
   '3.1': {
-    // GP 328 — le sac de sport. Recto 35:00, verso 25:00.
-    '328R': { tc: 35, el: ['OBJET'], obj: OBJ.element(1, 'OBJET', 'SUITE'), image: 'assets/s31/GP328.webp' },
-    '328V': { tc: 25, el: ['OBJET'], obj: OBJ.element(1, 'OBJET', 'SUITE'), image: 'assets/s31/GP328.webp' },
+    // Une carte, dont on n'a que le Gros Plan : le 328, le sac de sport. Son
+    // numéro vient de son illustration, celle du GP 328 du Set 2.
+    scenes: [S(1, 35, 'OBJET', null, 328, [], ['OBJET'], OBJ.element(1, 'OBJET', 'SUITE'))],
+    larges: [], departs: [],
+    paires: [[null, 328]],
+    images: { gp328: 'assets/s31/GP328.webp' },
+    // Ce qu'une face imprime autrement que l'autre.
+    faces: { '328V': { tc: 25 } },
+    jouable: false,
   },
 };
+const T = () => TABLES[setCourant];
 
-/** Ce que la carte du set en vigueur imprime pour ce plan — rien s'il n'est pas relu. */
-const planche = (cle) => PLANCHES[setCourant][cle] || null;
+/** Un set se joue-t-il ? Il lui faut un paquet entier. */
+export const setJouable = (id) => !!TABLES[setValide(id ?? setCourant)].jouable;
 
-/** Les valeurs imprimées d'un plan : celles de son set quand il y est relu. */
+/** Les valeurs imprimées d'un plan, face comprise. */
 function imprimeDe(cle, defauts) {
-  const pl = planche(cle);
-  return pl ? { ...defauts, ...pl, relu: true } : defauts;
+  const f = T().faces && T().faces[cle];
+  return f ? { ...defauts, ...f } : defauts;
 }
 
-/** Combien de plans un set a déjà relus, sur combien. */
-export function avancementSet(id) {
+/** Ce que porte un set, d'origine : ses cartes et ses plans. */
+export function contenuSet(id) {
   const avant = setCourant;
   setCourant = setValide(id);
+  const t = T();
   try {
-    const cles = catalogue().map((p) => p.cle);
-    return { relus: cles.filter((c) => PLANCHES[setCourant][c]).length, total: cles.length };
+    return {
+      cartes: t.paires.length + t.larges.length + t.departs.length,
+      plans: t.scenes.reduce((n, sc) => n + (sc.pmNum != null ? 2 : 0) + (sc.gpNum != null ? 2 : 0), 0)
+        + t.larges.length + t.departs.reduce((n, d) => n + d.faces.length, 0),
+    };
   } finally { setCourant = avant; }
 }
 
@@ -1449,8 +1465,11 @@ const NUMS_IMPRIMES = new Set([
   ...DEPARTS_IMPRIMES.flatMap((d) => d.faces.map((f) => f.num)),
   ...SCENES_IMPRIMEES.flatMap((s) => [s.pmNum, s.gpNum]),
 ]);
+// Les numéros du Set 2 désignent les fichiers d'assets/pl, pm et gp ; un autre
+// set dit lui-même où sont ses illustrations.
 
 export function imageImprimee(dossier, origine) {
+  if (T().images) return T().images[`${dossier}${origine}`] || '';
   return NUMS_IMPRIMES.has(origine) ? `assets/${dossier}/${origine}.webp` : '';
 }
 
@@ -1554,7 +1573,7 @@ export function catalogue() {
       quoi: `${FORMATS[format].label} ${num}${face ? ` — ${face === 'R' ? 'recto' : 'verso'}` : ''}`,
       tc: tcDe(cle, defauts.tc), el: elDe(cle, defauts.el), obj: objDe(cle, defauts.obj),
       obj2: obj2De(cle, defauts.obj2),
-      mort: mortDe(cle, defauts.mort), modifie: planModifie(cle), relu: !!defauts.relu,
+      mort: mortDe(cle, defauts.mort), modifie: planModifie(cle),
       imprime: {
         tc: defauts.tc, el: (defauts.el || []).slice(), obj: defauts.obj || null,
         obj2: defauts.obj2 || null, mort: !!defauts.mort, num: origine, image: imprimee,
@@ -1569,10 +1588,14 @@ export function catalogue() {
 
   for (const s of SCENES()) {
     for (const f of FACES) {
-      pousse(s.pmNum, f.id, { tc: s.tc, el: s.pm.el, obj: s.pm.obj, obj2: s.pm.obj2, mort: s.mort },
-        'PM', s.famille, { scene: s.idx, titre: s.titre || null });
-      pousse(s.gpNum, f.id, { tc: s.tc, el: s.gp.el, obj: s.gp.obj, obj2: s.gp.obj2, mort: s.mort },
-        'GP', s.famille, { scene: s.idx, titre: s.titre || null });
+      if (s.pmNum != null) {
+        pousse(s.pmNum, f.id, { tc: s.tc, el: s.pm.el, obj: s.pm.obj, obj2: s.pm.obj2, mort: s.mort },
+          'PM', s.famille, { scene: s.idx, titre: s.titre || null });
+      }
+      if (s.gpNum != null) {
+        pousse(s.gpNum, f.id, { tc: s.tc, el: s.gp.el, obj: s.gp.obj, obj2: s.gp.obj2, mort: s.mort },
+          'GP', s.famille, { scene: s.idx, titre: s.titre || null });
+      }
     }
   }
   for (const p of PLANS_LARGES()) {
@@ -1597,7 +1620,7 @@ export function planDeCle(cle) {
  * une éventuelle renumérotation.
  */
 export function moitiesDisponibles(format) {
-  return SCENES().map((s) => {
+  return SCENES().filter((s) => (format === 'GP' ? s.gpNum : s.pmNum) != null).map((s) => {
     const origine = format === 'GP' ? s.gpNum : s.pmNum;
     return {
       num: origine,

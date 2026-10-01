@@ -12,7 +12,7 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-  SETS, SET_DEFAUT, setValide, avancementSet,
+  SETS, SET_DEFAUT, setValide, setJouable, contenuSet,
 } from './data.js';
 import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js';
 import { elIcon, numIcon } from './icons.js';
@@ -381,7 +381,8 @@ function vueAccueil() {
           <span class="aide">Set ${store.cfg.set} · ${info.date ? `reçue du ${info.date} · ` : ''}cartes, réglages et
           variantes sont ceux de qui vous a envoyé le lien — rien à régler, jouez.</span>
         </div>` : bandeauMateriel()}
-        <button class="cta" id="go">Commencer la partie</button>
+        ${setJouable(store.cfg.set) ? '' : `<p class="aide set-incomplet">${messageSetIncomplet()}</p>`}
+        <button class="cta" id="go" ${setJouable(store.cfg.set) ? '' : 'disabled'}>Commencer la partie</button>
         <button class="pill large" data-go="#/enligne">🌐 Jouer en ligne, chacun sur son appareil</button>
       </div>
 
@@ -674,7 +675,14 @@ function allerA(hash) {
   else location.hash = hash;
 }
 
+/** Ce qu'on dit quand le set choisi n'a pas de quoi faire un paquet. */
+function messageSetIncomplet() {
+  return `Le Set ${store.cfg.set} ne porte pas encore de paquet entier : il se consulte dans
+    Matériel, il ne se joue pas. Choisissez le Set ${SET_DEFAUT} pour jouer.`;
+}
+
 function lancerPartie() {
+  if (!setJouable(store.cfg.set)) return;
   appliquerJeuActif();
   // Une partie précédente peut encore avoir un coup d'IA ou une carte en l'air.
   store.filIA++; store.vols = []; stopperVols();
@@ -2681,8 +2689,8 @@ function cartesDe(vue) {
       const r = moitiesDe(c, 'R'), v = moitiesDe(c, 'V');
       return {
         id: c.id, type: 'DOUBLE', carte: c, rang: i,
-        plans: [r.GP, r.PM, v.GP, v.PM],
-        libelle: `Carte ${i + 1} · GP ${r.GP.num} | PM ${r.PM.num}`,
+        plans: [r.GP, r.PM, v.GP, v.PM].filter(Boolean),
+        libelle: `Carte ${i + 1} · GP ${r.GP.num}${r.PM ? ` | PM ${r.PM.num}` : ''}`,
       };
     });
   });
@@ -2864,13 +2872,12 @@ function barreJeu() {
   const n = nbRetouches();
   const off = store.cfg.cartesDesactivees.length;
   const set = store.cfg.set;
-  const av = set === SET_DEFAUT ? null : avancementSet(set);
+  const contenu = contenuSet(set);
   return `<div class="barre-jeu">
     <span class="bj-lg">Set de cartes</span>
     ${segmentSets('data-set')}
-    ${av ? `<span class="aide avancement-set"><b>${av.relus} plan${av.relus > 1 ? 's' : ''} relu${
-    av.relus > 1 ? 's' : ''} sur ${av.total}</b> — les autres gardent leur valeur du Set ${SET_DEFAUT}
-      en attendant leur carte</span>` : ''}
+    <span class="aide">${contenu.cartes} carte${contenu.cartes > 1 ? 's' : ''} · ${contenu.plans} plan${
+    contenu.plans > 1 ? 's' : ''} d’origine${setJouable(set) ? '' : ' — <b>pas encore jouable</b> : il faut un paquet entier'}</span>
     <span class="bj-lg">Jeu lancé en partie</span>
     <div class="segments large" id="seg-jeu">
       <button class="${modifie ? '' : 'on'}" data-jeu="IMPRIME">${set} Origine</button>
@@ -4463,7 +4470,7 @@ function plansDuPaquet() {
   const out = [];
   for (const c of doubles) for (const f of FACES) {
     const m = moitiesDe(c, f.id);
-    out.push(m.GP, m.PM);
+    out.push(...[m.GP, m.PM].filter(Boolean));
   }
   for (const c of larges) out.push(plHalf(c));
   const vus = new Set();
@@ -6196,9 +6203,10 @@ function facesCartes() {
       if (!c.actif) return;
       const rang = String(i + 1).padStart(2, '0');
       const r = moitiesDe(c, 'R'), v = moitiesDe(c, 'V');
-      faces.push({ nom: nomFichier(`carte-${rang}-recto-pm${r.PM.num}-gp${r.GP.num}`),
+      const pm = (h) => (h ? `-pm${h.num}` : '');
+      faces.push({ nom: nomFichier(`carte-${rang}-recto${pm(r.PM)}-gp${r.GP.num}`),
         html: renderCarte(c, false) });
-      faces.push({ nom: nomFichier(`carte-${rang}-verso-gp${v.GP.num}-pm${v.PM.num}`),
+      faces.push({ nom: nomFichier(`carte-${rang}-verso-gp${v.GP.num}${pm(v.PM)}`),
         html: renderCarte(c, true) });
     });
     buildPlansLarges().forEach((c) => {
@@ -6747,7 +6755,9 @@ function repartitionElements() {
   const { doubles, larges } = construirePaquet(store.cfg);
   const compte = Object.fromEntries(ELEMENT_IDS.map((e) => [e, 0]));
   let plans = 0;
-  for (const c of doubles) for (const h of Object.values(moitiesDe(c))) { plans++; for (const e of h.el) compte[e]++; }
+  for (const c of doubles) {
+    for (const h of Object.values(moitiesDe(c)).filter(Boolean)) { plans++; for (const e of h.el) compte[e]++; }
+  }
   for (const c of larges) { plans++; for (const e of c.el) compte[e]++; }
   const max = Math.max(...Object.values(compte)) || 1;
   return `<h3>Éléments dans le paquet <span class="aide">(${plans} plans)</span></h3>
@@ -7090,6 +7100,7 @@ function vueLabo() {
 }
 
 async function lancerLabo() {
+  if (!setJouable(store.cfg.set)) { alert(messageSetIncomplet().replace(/\s+/g, ' ')); return; }
   const joueurs = store.joueurs.map((j) => ({ ...j, type: j.type === 'HUMAIN' ? 'EQUILIBRE' : j.type }));
   store.laboEnCours = true;
   vueLabo();
@@ -7415,7 +7426,12 @@ function brancherSalon(s) {
     vueEnLigne();
   }));
   const lancer = app.querySelector('#ligne-lancer');
-  if (lancer) lancer.addEventListener('click', () => { s.lancer(); });
+  if (lancer) {
+    lancer.addEventListener('click', () => {
+      if (!setJouable(store.cfg.set)) { alert(messageSetIncomplet().replace(/\s+/g, ' ')); return; }
+      s.lancer();
+    });
+  }
 }
 
 // ===========================================================================
