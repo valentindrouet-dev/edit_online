@@ -4144,7 +4144,9 @@ function cartesAssemblage() {
 
 /** Toutes les moitiés d'un cadrage, qu'elles servent ou non. */
 function moitiesToutes(cote) {
-  return SCENES().map((sc) => {
+  // Une scène qui n'a qu'une moitié — le Set 3.1 en est fait — n'en offre pas
+  // dans l'autre cadrage.
+  return SCENES().filter((sc) => (cote === 'GP' ? sc.gpNum : sc.pmNum) != null).map((sc) => {
     const h = halfInfo(sc.idx, cote, { face: 'R' });
     return h ? { num: h.num, ref: cote === 'GP' ? sc.gpNum : sc.pmNum,
       scene: sc.idx, titre: sc.titre || null, famille: sc.famille,
@@ -4199,9 +4201,18 @@ function echangerMoitie(rangA, rangB, cote) {
  */
 function poserMoitie(rang, cote, ref) {
   surLeModifie(() => {
-    const c = buildCartesDoubles().find((x) => x.rang === rang);
+    const cartes = buildCartesDoubles();
+    const c = cartes.find((x) => x.rang === rang);
     if (!c) return;
     poserAppariement(rang, cote === 'PM' ? ref : c.pmNum, cote === 'GP' ? ref : c.gpNum);
+    // La moitié était seule sur une autre carte : elle la quitte, et cette
+    // carte vide disparaît. C'est ainsi qu'on réunit deux demi-cartes.
+    for (const x of cartes) {
+      if (x.rang === rang) continue;
+      const ici = cote === 'PM' ? x.pmNum : x.gpNum;
+      const autre = cote === 'PM' ? x.gpNum : x.pmNum;
+      if (ici === ref && autre == null) poserAppariement(x.rang, null, null);
+    }
   });
   sauverCfg();
 }
@@ -4241,7 +4252,8 @@ function poserNumeroMoitie(rang, cote, texte) {
 /** Le mélange : on brasse les Gros Plans, on rend compte, on écrit. */
 function melangerAssemblage() {
   const actives = mat.assemblage.contraintes;
-  const cartes = surLeModifie(cartesAssemblage);
+  // Les demi-cartes ne se mélangent pas : on brasse les cartes entières.
+  const cartes = surLeModifie(cartesAssemblage).filter((c) => c.pm && c.gp);
   const avant = bilan(cartes, actives);
   const r = melangerMoities(cartes, actives);
   surLeModifie(() => {
@@ -4250,6 +4262,32 @@ function melangerAssemblage() {
   });
   sauverCfg();
   mat.assemblage.rapport = { avant, apres: r.bilan, deplaces: r.deplaces, actives: actives.slice() };
+}
+
+/**
+ * L'assemblage en texte : une carte par ligne, « PM + GP », par numéro imprimé,
+ * puis les moitiés encore seules. C'est ce qu'on colle dans un message pour en
+ * faire l'assemblage d'origine du set.
+ */
+function texteAssemblage() {
+  const cartes = surLeModifie(cartesAssemblage);
+  const entieres = cartes.filter((c) => c.pm && c.gp).map((c) => `${c.pm.ref} + ${c.gp.ref}`);
+  const seulsPM = cartes.filter((c) => c.pm && !c.gp).map((c) => c.pm.ref);
+  const seulsGP = cartes.filter((c) => c.gp && !c.pm).map((c) => c.gp.ref);
+  return [`Set ${store.cfg.set} — assemblage, ${entieres.length} carte${entieres.length > 1 ? 's' : ''}`,
+    ...entieres,
+    ...(seulsPM.length ? [`Plans Moyens seuls : ${seulsPM.join(', ')}`] : []),
+    ...(seulsGP.length ? [`Gros Plans seuls : ${seulsGP.join(', ')}`] : [])].join('\n');
+}
+
+async function copierAssemblage(bouton) {
+  const t = texteAssemblage();
+  try {
+    await navigator.clipboard.writeText(t);
+    const avant = bouton.textContent;
+    bouton.textContent = '✓ Copié';
+    setTimeout(() => { bouton.textContent = avant; }, 1600);
+  } catch { window.prompt('L’assemblage, à copier :', t); }
 }
 
 /** Le rapport du dernier mélange, contrainte par contrainte. */
@@ -4283,10 +4321,18 @@ function rapportMelange() {
  */
 function pastilleMoitie(c, cote) {
   const m = cote === 'GP' ? c.gp : c.pm;
-  if (!m) return `<div class="demi vide">—</div>`;
+  const quoi = cote === 'GP' ? 'Gros Plan' : 'Plan Moyen';
+  // Une place VIDE — une demi-carte : on y dépose une moitié, ou l'on y tape
+  // son numéro.
+  if (!m) {
+    return `<div class="demi ${cote.toLowerCase()} vide" data-demi="${c.rang}" data-cote="${cote}" data-ref=""
+      title="Pas de ${quoi} sur cette carte : glissez-en un ici, ou tapez son numéro">
+      <input class="demi-num" type="text" inputmode="numeric" value="" placeholder="+ ${cote}" size="3"
+        list="nums-${cote}" data-numero-moitie="${c.rang}" data-cote="${cote}"
+        aria-label="${quoi} à poser sur la carte ${c.id}"></div>`;
+  }
   const sur = mat.assemblage.surligne;
   const vise = sur && sur.cote === cote && sur.num === m.num;
-  const quoi = cote === 'GP' ? 'Gros Plan' : 'Plan Moyen';
   return `<div class="demi ${cote.toLowerCase()} ${vise ? 'vise' : ''}" draggable="true"
     data-demi="${c.rang}" data-cote="${cote}" data-num="${m.num}" data-ref="${m.ref}"
     title="${quoi} ${m.num}${m.titre ? ` — ${m.titre}` : ''} · glissez-le sur une autre carte pour les échanger">
@@ -4410,6 +4456,8 @@ function vueAssemblage() {
     <div class="rangee-mini" style="margin-top:10px">
       <button class="pill creer" id="melanger">🎲 Mélanger les Gros Plans</button>
       <button class="pill mini" id="assemblage-reset" ${retouches ? '' : 'disabled'}>↺ Assemblage imprimé</button>
+      <button class="pill mini" id="assemblage-copier"
+        title="L'assemblage en texte — une carte par ligne, « PM + GP » —, à coller dans un message">📋 Copier l’assemblage</button>
       <span class="aide">${b.mauvaises
     ? `<b>${b.mauvaises} carte${b.mauvaises > 1 ? 's' : ''}</b> sur ${b.total} ne tiennent pas
        les contraintes cochées.`
@@ -4987,6 +5035,8 @@ function brancherAssemblage() {
 
   const mel = app.querySelector('#melanger');
   if (mel) mel.addEventListener('click', () => { melangerAssemblage(); refaire(); });
+  const cop = app.querySelector('#assemblage-copier');
+  if (cop) cop.addEventListener('click', () => copierAssemblage(cop));
 
   const raz = app.querySelector('#assemblage-reset');
   if (raz) raz.addEventListener('click', () => {
@@ -5004,14 +5054,17 @@ function brancherAssemblage() {
   }));
 
   // Taper un numéro sur une moitié la remplace. Le champ vit dans une pastille
-  // qui se glisse : tant qu'on écrit dedans, on suspend le glissé — sinon le
-  // navigateur emporte la carte au premier mouvement de sélection du texte.
+  // qui se glisse, et il ne doit pas l'en empêcher : il ne reçoit la souris
+  // qu'une fois ouvert par un CLIC sur la pastille (voir plus bas). Attrapée
+  // n'importe où — numéro compris —, la pastille se glisse.
   app.querySelectorAll('[data-numero-moitie]').forEach((inp) => {
     const demi = inp.closest('.demi');
+    const glissable = demi && !demi.classList.contains('vide');
     const avant = inp.value;
-    inp.addEventListener('pointerdown', () => { if (demi) demi.draggable = false; });
-    inp.addEventListener('focus', () => { if (demi) demi.draggable = false; inp.select(); });
-    inp.addEventListener('blur', () => { if (demi) demi.draggable = true; });
+    inp.addEventListener('focus', () => { if (demi) { demi.draggable = false; demi.classList.add('edition'); } inp.select(); });
+    inp.addEventListener('blur', () => {
+      if (demi) { demi.classList.remove('edition'); if (glissable) demi.draggable = true; }
+    });
     inp.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
       // Échap rend la main sans rien changer : on peut se raviser.
@@ -5045,12 +5098,17 @@ function brancherAssemblage() {
     // ici. C'est ce qui permet de faire entrer une moitié qui n'était sur
     // aucune carte, ce qu'un échange ne saurait faire.
     el.addEventListener('click', (e) => {
-      // Cliquer le champ de numéro, c'est vouloir l'écrire, pas poser dessus.
+      // Le champ déjà ouvert : on écrit, on ne pose rien.
       if (e.target.closest('[data-numero-moitie]')) return;
       const v = mat.assemblage.surligne;
-      if (!v || v.cote !== el.dataset.cote || v.ref === +el.dataset.ref) return;
-      poserMoitie(+el.dataset.demi, v.cote, v.ref);
-      refaire();
+      if (v && v.cote === el.dataset.cote && v.ref !== +el.dataset.ref) {
+        poserMoitie(+el.dataset.demi, v.cote, v.ref);
+        refaire();
+        return;
+      }
+      // Sinon, un clic sans glisser ouvre le numéro à la saisie.
+      const inp = el.querySelector('[data-numero-moitie]');
+      if (inp) inp.focus();
     });
     el.addEventListener('drop', (e) => {
       e.preventDefault();

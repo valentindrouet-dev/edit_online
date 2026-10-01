@@ -1492,7 +1492,16 @@ body .demi { transition: box-shadow .12s; }
 }
 .demi.pm { background: #fdeec4; }
 .demi.gp { background: #fbdac9; }
-.demi.vide { background: #f2f2f4; color: var(--gris); justify-content: center; }
+.demi.vide { background: #f2f2f4; color: var(--gris); justify-content: center; cursor: default;
+  border: 1px dashed #c9c3d9; }
+.demi.vide .demi-num { text-align: center; width: 4.2em; }
+/* Le numéro ne prend la souris qu'une fois ouvert d'un clic : fermé, il
+   laisse la pastille se glisser, d'où qu'on l'attrape. */
+.demi .demi-num { pointer-events: none; }
+.demi.edition .demi-num { pointer-events: auto; }
+.demi:not(.vide) { cursor: grab; }
+.demi.vide { cursor: pointer; }
+.demi.vide .demi-num::placeholder { color: #9b93b3; font-weight: 700; }
 .demi:active { cursor: grabbing; }
 .demi.prise { opacity: .45; }
 .demi.cible { border-color: var(--violet); box-shadow: 0 0 0 2px var(--violet-clair); }

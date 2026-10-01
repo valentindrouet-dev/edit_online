@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.43';
-export const BUILD_DATE = '2026-10-01 15:28';
+export const VERSION = '2.44';
+export const BUILD_DATE = '2026-10-01 15:34';
 
 export const CHANGELOG = [
+  {
+    v: '2.44',
+    date: '01/10/2026',
+    items: [
+      "<b>L'Assemblage réunit les demi-cartes</b> : on glisse un Plan Moyen sur la place vide d'un Gros Plan seul, ou l'inverse, et les deux ne font plus qu'une carte. On peut aussi cliquer la place vide et y taper un numéro.",
+      "<b>Une moitié se glisse d'où qu'on l'attrape</b> — son numéro compris, qui empêchait le glisser ; il s'ouvre à la saisie d'un simple clic.",
+      "<b>📋 Copier l'assemblage</b> donne l'appariement en texte, une carte par ligne, « PM + GP ». Le relevé des moitiés ne montre plus de cases « null ».",
+    ],
+  },
   {
     v: '2.43',
     date: '01/10/2026',
