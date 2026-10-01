@@ -3333,7 +3333,7 @@ function blocPouvoirMixte(plans, ou, rang = 1) {
     <div class="portee-choix">
       ${PORTEES.map((x) => `<button class="pp ${portees.length === 1 && portees[0] === x.id ? 'on' : ''}"
         data-champ-portee="${ou}"${R} data-portee="${x.id}" title="${x.label}">
-        ${x.gauche ? '◀' : ''} ${x.court} ${x.droite ? '▶' : ''}${x.avance ? '▷▷' : ''}</button>`).join('')}
+        ${x.recul ? '◁◁' : ''}${x.gauche ? '◀' : ''} ${x.court} ${x.droite ? '▶' : ''}${x.avance ? '▷▷' : ''}</button>`).join('')}
     </div>
     ${figes ? `<div class="aide portee-fixe">${figes} bandeau${figes > 1 ? 'x' : ''} de séquence ou
       « dans l'ordre » garderont leur portée : elle ne se règle pas.</div>` : ''}
@@ -4087,7 +4087,7 @@ function blocPouvoir(o, ou, rang = 1) {
     ${porteeReglable(o) ? `<div class="portee-choix">
       ${PORTEES.map((x) => `<button class="pp ${objPortee(o, store.cfg) === x.id ? 'on' : ''}"
         data-champ-portee="${ou}"${R} data-portee="${x.id}" title="${x.label}">
-        ${x.gauche ? '◀' : ''} ${x.court} ${x.droite ? '▶' : ''}${x.avance ? '▷▷' : ''}</button>`).join('')}
+        ${x.recul ? '◁◁' : ''}${x.gauche ? '◀' : ''} ${x.court} ${x.droite ? '▶' : ''}${x.avance ? '▷▷' : ''}</button>`).join('')}
     </div>` : (o ? `<div class="aide portee-fixe">${porteeFigee(o)}</div>` : '')}
     <div class="apercu-obj">${o ? `${objHTML(o, 26, store.cfg)}<span class="lit">${objLabel(o, store.cfg)}</span>`
       : '<span class="aide">Bandeau vide</span>'}</div>

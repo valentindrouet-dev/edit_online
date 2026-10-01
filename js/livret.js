@@ -270,7 +270,7 @@ export function livret(cfg) {
     qu’il compte — et rapporte ce qu’il y trouve.</p>
     <div class="lv-portees">${PORTEES.map((p) => `<div class="lv-portee">
       <span class="lv-fleches">${p.gauche ? '◀' : ''}${p.droite ? '▶' : ''}${
-  !p.gauche && !p.droite ? (p.avance ? '▷▷' : '⬚') : ''}</span>
+  !p.gauche && !p.droite ? (p.avance ? '▷▷' : p.recul ? '◁◁' : '⬚') : ''}</span>
       <b>${p.label}</b></div>`).join('')}</div>
     <ul class="lv-liste">
       <li>Un bandeau ne compte <b>pas la carte où il est écrit</b> à part : elle fait partie de sa
@@ -408,7 +408,7 @@ export function aideDeJeu(cfg) {
       ${ENTETE_CARTES}
       ${PORTEES.map((p) => ligne(
     `<span class="lv-fleches">${p.gauche ? '◀' : ''}${p.droite ? '▶' : ''}${
-      !p.gauche && !p.droite ? (p.avance ? '▷▷' : '⬚') : ''}</span>`, p.label, '', B.portees[p.id] || 0)).join('')}
+      !p.gauche && !p.droite ? (p.avance ? '▷▷' : p.recul ? '◁◁' : '⬚') : ''}</span>`, p.label, '', B.portees[p.id] || 0)).join('')}
     </div>
 
     </div>

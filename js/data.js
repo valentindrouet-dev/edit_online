@@ -186,6 +186,11 @@ export const PORTEES = [
   { id: 'SUITE',    label: 'cette carte et toute la suite du montage',
     phrase: 'de cette carte à la fin du montage',
     court: 'suite',    gauche: false, droite: false, avance: true },
+  // ◁◁ — son reflet : du début du montage jusqu'à cette carte comprise, les
+  // lignes du dessus en entier.
+  { id: 'AMONT',    label: 'le début du montage jusqu’à cette carte',
+    phrase: 'du début du montage à cette carte',
+    court: 'amont',    gauche: false, droite: false, recul: true },
 ];
 
 export const PORTEE_IDS = PORTEES.map((p) => p.id);
@@ -1207,7 +1212,41 @@ const TABLES = {
     // Une carte, dont on n'a que le Gros Plan : le 309 (fichiers 309R et
     // 309V), le sac de sport.
     scenes: [
-      S(1, 35, 'OBJET', null, 309, [], ['OBJET'], OBJ.element(1, 'OBJET', 'SUITE')),
+      // Les Gros Plans, lus sur leur recto. Sans minutage, un plan s'écrit 0 —
+      // « --:-- ». La famille suit ce que la carte montre : le crâne d'abord,
+      // puis l'objet, l'arme ou le véhicule, sinon les personnages.
+      S(10, 0, 'PERSONNAGE', null, 301, [], ['HEROINE'], OBJ.element(1, 'HEROINE', 'MONTAGE')),
+      S(11, 0, 'PERSONNAGE', null, 302, [], ['ENNEMI'], OBJ.element(1, 'ENNEMI', 'MONTAGE')),
+      S(12, 0, 'PERSONNAGE', null, 303, [], ['ALLIE'], OBJ.element(1, 'ALLIE', 'MONTAGE')),
+      S(13, 0, 'PERSONNAGE', null, 304, [], ['HEROINE'], OBJ.paire(2, 'HEROINE', 'ALLIE', 'MONTAGE')),
+      S(14, 0, 'PERSONNAGE', null, 305, [], ['ENNEMI'], OBJ.paire(2, 'HEROINE', 'ENNEMI', 'MONTAGE')),
+      S(15, 0, 'PERSONNAGE', null, 306, [], ['ALLIE'], OBJ.paire(2, 'ENNEMI', 'ALLIE', 'MONTAGE')),
+      S(16, 35, 'OBJET', null, 307, [], ['OBJET'], OBJ.domine(6, 'OBJET')),
+      S(17, 20, 'ARME', null, 308, [], ['ARME'], OBJ.paire(2, 'OBJET', 'ARME', 'MONTAGE')),
+      S(18, 35, 'OBJET', null, 309, [], ['OBJET'], OBJ.element(1, 'OBJET', 'SUITE')),
+      S(19, 35, 'OBJET', null, 310, [], ['OBJET'], OBJ.format(2, 'PM', 'MONTAGE')),
+      S(20, 35, 'OBJET', null, 311, [], ['OBJET'], OBJ.absent(6, 'ENNEMI', 'MONTAGE')),
+      S(21, 0, 'OBJET', null, 312, [], ['OBJET', 'VEHICULE'], OBJ.paire(3, 'OBJET', 'ARME', 'MONTAGE', 'VEHICULE')),
+      S(22, 35, 'VEHICULE', null, 313, [], ['VEHICULE'], OBJ.element(1, 'VEHICULE', 'SUITE')),
+      S(23, 65, 'VEHICULE', null, 314, [], ['VEHICULE'], OBJ.paire(2, 'VEHICULE', 'VEHICULE', 'MONTAGE')),
+      S(24, 65, 'PERSONNAGE', null, 315, [], ['HEROINE'], OBJ.domine(6, 'VEHICULE')),
+      S(25, 65, 'PERSONNAGE', null, 316, [], ['ENNEMI'], OBJ.absent(4, 'RACCORD', 'MONTAGE')),
+      S(26, 65, 'PERSONNAGE', null, 317, [], ['ALLIE'], OBJ.format(2, 'PL', 'MONTAGE')),
+      S(27, 65, 'VEHICULE', null, 318, [], ['VEHICULE'], OBJ.absent(4, 'VEHICULE', 'SUITE')),
+      S(28, 80, 'ARME', null, 319, [], ['ARME'], OBJ.domine(6, 'ARME')),
+      S(29, 80, 'ARME', null, 320, [], ['ARME'], OBJ.mort(2, 'MONTAGE')),
+      S(30, 80, 'ARME', null, 321, [], ['ARME'], OBJ.absent(6, 'ALLIE', 'MONTAGE')),
+      S(31, 80, 'ARME', null, 322, [], ['ARME'], OBJ.paire(2, 'ARME', 'ARME', 'MONTAGE')),
+      S(32, 80, 'ARME', null, 323, [], ['ARME'], OBJ.element(1, 'ARME', 'AMONT')),
+      S(33, 65, 'PERSONNAGE', null, 324, [], ['HEROINE'], OBJ.format(2, 'GP', 'MONTAGE')),
+      S(34, 80, 'MORT', null, 325, [], ['ENNEMI'], OBJ.domine(6, 'ENNEMI'), { mort: true }),
+      S(35, 95, 'PERSONNAGE', null, 326, [], ['ENNEMI', 'ALLIE'], OBJ.absent(6, 'MORT', 'MONTAGE')),
+      S(36, 65, 'MORT', null, 327, [], ['VEHICULE'], OBJ.seuilCible(6, 'MORT', 'MIN', 2, 'MONTAGE'), { mort: true }),
+      S(37, 95, 'MORT', null, 328, [], ['ENNEMI'], OBJ.element(1, 'ENNEMI', 'AMONT'), { mort: true }),
+      S(38, 95, 'MORT', null, 329, [], ['HEROINE'], OBJ.domine(6, 'HEROINE'), { mort: true }),
+      S(39, 95, 'MORT', null, 330, [], ['ALLIE'], OBJ.domine(6, 'ALLIE'), { mort: true }),
+      S(40, 0, 'TRANSITION', null, 390, [], [], OBJ.raccord(1), { titre: 'Raccord', transition: 'RACCORD' }),
+      S(41, 99, 'TRANSITION', null, 391, [], [], OBJ.seuilCible(6, 'CARTE', 'MAX', 0, 'SUITE'), { titre: 'Fin', transition: 'CREDITS' }),
       // Les Plans Moyens 201 et 202, sans minutage — « --:-- ». Leur pouvoir
       // change d'une face à l'autre : voir `faces`.
       S(2, 0, 'PERSONNAGE', 201, null, ['HEROINE', 'ENNEMI'], [], null),
@@ -1232,7 +1271,11 @@ const TABLES = {
     ],
     // Chaque carte n'a encore qu'une moitié : on ne sait pas lesquelles vont
     // ensemble.
-    paires: [[null, 309], [201, null], [202, null]],
+    paires: [
+      [null, 301], [null, 302], [null, 303], [null, 304], [null, 305], [null, 306], [null, 307], [null, 308], [null, 309], [null, 310], [null, 311], [null, 312], [null, 313], [null, 314], [null, 315], [null, 316],
+      [null, 317], [null, 318], [null, 319], [null, 320], [null, 321], [null, 322], [null, 323], [null, 324], [null, 325], [null, 326], [null, 327], [null, 328], [null, 329], [null, 330], [null, 390], [null, 391],
+      [201, null], [202, null],
+    ],
     // Les quatre Plans de départ, 001 à 004. Chacun a un verso différent : les
     // cartes sont les six couples des quatre plans, comme la variante « 6
     // Cartes Départ » du Set 2 — qui est ici la règle, pas une variante.
@@ -1246,7 +1289,9 @@ const TABLES = {
     pairesDepart: [['001', '002'], ['002', '003'], ['003', '004'], ['004', '001'], ['002', '004'], ['001', '003']],
     sixSeul: true,
     images: {
-      gp309: 'assets/s31/GP309.webp', pm201: 'assets/s31/PM201.webp', pm202: 'assets/s31/PM202.webp',
+      ...Object.fromEntries([...Array.from({ length: 30 }, (_, i) => 301 + i), 390, 391]
+        .map((n) => [`gp${n}`, `assets/s31/GP${n}.webp`])),
+      pm201: 'assets/s31/PM201.webp', pm202: 'assets/s31/PM202.webp',
       pl101: 'assets/s31/PL101.webp', pl102: 'assets/s31/PL102.webp', pl103: 'assets/s31/PL103.webp',
       pl104: 'assets/s31/PL104.webp', pl105: 'assets/s31/PL105.webp', pl106: 'assets/s31/PL106.webp',
       pl107: 'assets/s31/PL107.webp', pl108: 'assets/s31/PL108.webp', pl109: 'assets/s31/PL109.webp',
@@ -1259,8 +1304,12 @@ const TABLES = {
     // entière, telle qu'elle est imprimée — le site la montre à la place de sa
     // propre composition (voir `renderPlan`).
     faces: {
-      '309R': { visuel: 'assets/s31/GP309R-carte.webp' },
       '309V': { tc: 25, visuel: 'assets/s31/GP309V-carte.webp' },
+      // Les rectos des Gros Plans, montrés tels qu'imprimés ; leurs versos ne
+      // sont pas encore arrivés.
+      ...Object.fromEntries([...Array.from({ length: 30 }, (_, i) => 301 + i), 390, 391]
+        .flatMap((n) => [[`${n}R`, { visuel: `assets/s31/GP${n}R-carte.webp` }],
+          ...(n === 309 ? [] : [[`${n}V`, { absente: true }]])])),
       // Le couple compte APRÈS la carte au recto, AVANT elle au verso.
       '201R': { obj: OBJ.paire(2, 'HEROINE', 'ENNEMI', 'APRES'), visuel: 'assets/s31/PM201R-carte.webp' },
       '201V': { obj: OBJ.paire(2, 'HEROINE', 'ENNEMI', 'AVANT'), visuel: 'assets/s31/PM201V-carte.webp' },
@@ -1290,7 +1339,8 @@ export function contenuSet(id) {
     return {
       cartes: t.paires.length + t.larges.length + (t.sixSeul ? t.pairesDepart.length : t.departs.length),
       plans: t.scenes.reduce((n, sc) => n + (sc.pmNum != null ? 2 : 0) + (sc.gpNum != null ? 2 : 0), 0)
-        + t.larges.length + t.departs.reduce((n, d) => n + d.faces.length, 0),
+        + t.larges.length + t.departs.reduce((n, d) => n + d.faces.length, 0)
+        - Object.values(t.faces || {}).filter((f) => f.absente).length,
     };
   } finally { setCourant = avant; }
 }
@@ -1583,6 +1633,8 @@ export function halfInfo(sceneIdx, format, opts = {}) {
     // La carte imprimée entière ne vaut que pour le plan tel qu'imprimé : une
     // retouche la rendrait fausse, et l'on revient alors à la composition.
     visuel: d.visuel && !planModifie(cle) ? d.visuel : null,
+    // Une face que l'auteur n'a pas encore fournie : elle se montre en attente.
+    absente: !!d.absente,
     miroir: miroirDe(cle),
     cadre: cadreDe(cle),
   };
@@ -1642,6 +1694,8 @@ export function catalogue() {
     const num = numDe(cle, origine);
     const dossier = format === 'PL' || format === 'DEP' ? 'pl' : format === 'GP' ? 'gp' : 'pm';
     const defauts = imprimeDe(cle, { ...brut, image: imageImprimee(dossier, origine) });
+    // Une face pas encore fournie n'est pas un plan qu'on règle.
+    if (defauts.absente) return;
     const imprimee = defauts.image;
     out.push({
       cle, num, numOrigine: origine, face, format, famille,

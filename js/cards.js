@@ -40,11 +40,12 @@ export function objContenu(obj, taille, compact, cfg, large) {
   // ▷▷ — « et toute la suite du montage » : l'icône imprimée, deux triangles
   // blancs cernés de noir, posée après ce qu'elle porte.
   const suite = p.avance ? avanceRapide() : '';
+  const amont = p.recul ? avanceRapide(true) : '';
   // Les flèches se serrent contre ce qu'elles portent : elles en font partie.
   // Les pièces du cœur, elles, sont des mots distincts — « Séquence » et sa
   // flèche, « Plan » et son seuil, deux cadrages — et respirent : dans un
   // conteneur flex, les espaces du HTML ne comptent pas, il leur faut un gap.
-  return `<span class="obj-noyau">${fleche('gauche')}<span class="obj-coeur">${
+  return `<span class="obj-noyau">${amont}${fleche('gauche')}<span class="obj-coeur">${
     objCoeur(obj, taille, compact, large)}</span>${fleche('droite')}${suite}</span>`;
 }
 
@@ -682,7 +683,7 @@ function coutObj(obj, compact, cfg, P, format, large, rangs = 1) {
     return longMot * corps * 0.56;
   }
   const p = PORTEES.find((x) => x.id === objPortee(obj, cfg)) || PORTEES[3];
-  const fleches = (p.gauche ? P.fleche : 0) + (p.droite ? P.fleche : 0) + (p.avance ? P.rond * 0.9 : 0);
+  const fleches = (p.gauche ? P.fleche : 0) + (p.droite ? P.fleche : 0) + (p.avance || p.recul ? P.rond * 0.9 : 0);
   return P.rond + EM.gap + (estSi(obj) ? P.si : P.x) + EM.gap + fleches
     + coutCoeur(obj, compact, P, large);
 }
@@ -788,6 +789,12 @@ function donneesApercu(h, label, points, detail, objs) {
 /** Un plan : moitié de carte, ou Plan Large pleine largeur. */
 export function renderPlan(h, opts = {}) {
   const F = FORMATS[h.transition ? 'TR' : h.format] || FORMATS.PM;
+  // Une face que l'auteur n'a pas encore fournie : sa place, sans rien dessus.
+  if (h.absente) {
+    const flexA = h.format === 'GP' ? '0 0 33.6%' : '1 1 66.4%';
+    return `<div class="moitie f-${h.format} face-absente" style="--flex:${flexA}" data-format="${h.format}" data-num="${h.num}">
+    <span>${F.label} ${h.num}<br>verso à venir</span></div>`;
+  }
   // Un Plan Large et un Plan de départ occupent toute la carte.
   const large = h.format === 'PL' || h.format === 'DEP';
   // `neuf` marque le plan qui vient d'être posé : c'est là que la carte en vol

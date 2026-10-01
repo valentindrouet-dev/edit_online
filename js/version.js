@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.40';
-export const BUILD_DATE = '2026-10-01 14:46';
+export const VERSION = '2.41';
+export const BUILD_DATE = '2026-10-01 15:21';
 
 export const CHANGELOG = [
+  {
+    v: '2.41',
+    date: '01/10/2026',
+    items: [
+      "<b>Le Set 3.1 reçoit les rectos de ses 32 Gros Plans</b> — 301 à 330, 390 et 391 —, montrés avec leur carte imprimée. Leurs versos ne sont pas encore arrivés : leur place se montre en pointillé, « verso à venir ».",
+      "<b>Nouvelle portée ◁◁ — règles v0.28.</b> Le reflet de ▷▷ : elle compte la carte qui la porte et <b>tout ce qui la précède</b> dans le montage, lignes du dessus comprises.",
+      "<b>La « Fin » (391) rapporte 6 si rien ne la suit</b> dans le montage : « aucune carte ▷▷ ».",
+    ],
+  },
   {
     v: '2.40',
     date: '01/10/2026',

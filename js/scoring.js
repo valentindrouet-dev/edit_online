@@ -201,6 +201,11 @@ export function porteeDe(obj, sequence, banc, cfg, porteur) {
     const i = montage.indexOf(porteur);
     return i < 0 ? [] : montage.slice(i);
   }
+  // ◁◁ — son reflet : tout ce qui la précède, et elle.
+  if (p === 'AMONT') {
+    const i = montage.indexOf(porteur);
+    return i < 0 ? [] : montage.slice(0, i + 1);
+  }
   if (p === 'AVANT' || p === 'APRES') {
     // La ligne du porteur. `sequence` la donne d'ordinaire ; on la retrouve
     // dans le banc si l'appelant s'est trompé de séquence.
