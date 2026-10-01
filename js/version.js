@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.42';
-export const BUILD_DATE = '2026-10-01 15:24';
+export const VERSION = '2.43';
+export const BUILD_DATE = '2026-10-01 15:28';
 
 export const CHANGELOG = [
+  {
+    v: '2.43',
+    date: '01/10/2026',
+    items: [
+      "<b>Le Set 3.1 reçoit ses 32 Plans Moyens</b> — 201 à 230, le Raccord 290 et le Générique 291 —, recto et verso, montrés avec leur carte imprimée. Le Raccord coûte −5 sans Plan Large avant lui (recto) ou après lui (verso) ; le Générique rapporte 6 si le minutage est dans l'ordre, et 4 s'il ouvre (recto) ou ferme (verso) le montage.",
+      "Il reste à dire quels Plans Moyens et Gros Plans forment une carte : d'ici là, chaque moitié se montre seule.",
+    ],
+  },
   {
     v: '2.42',
     date: '01/10/2026',

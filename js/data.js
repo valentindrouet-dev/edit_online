@@ -1190,6 +1190,65 @@ export function cleplan(num, face) {
   return face ? `${num}${face}` : String(num);
 }
 
+// --- Les Plans Moyens du Set 3.1 -------------------------------------------
+// Lus sur leurs deux faces. `r` et `v` disent ce que chaque face imprime — son
+// minutage, puis son ou ses pouvoirs ; les icônes sont celles des deux faces.
+// Sans minutage, un plan s'écrit 0 — « --:-- ».
+const PM31 = [
+  { n: 201, el: ['HEROINE', 'ENNEMI'], r: [0, OBJ.paire(2, 'HEROINE', 'ENNEMI', 'APRES')], v: [0, OBJ.paire(2, 'HEROINE', 'ENNEMI', 'AVANT')] },
+  { n: 202, el: ['ENNEMI', 'ALLIE'], r: [0, OBJ.paire(2, 'ENNEMI', 'ALLIE', 'APRES')], v: [0, OBJ.paire(2, 'ENNEMI', 'ALLIE', 'AVANT')] },
+  { n: 203, el: ['HEROINE', 'ALLIE'], r: [0, OBJ.paire(2, 'HEROINE', 'ALLIE', 'APRES')], v: [0, OBJ.paire(2, 'HEROINE', 'ALLIE', 'AVANT')] },
+  { n: 204, el: ['HEROINE', 'ALLIE'], r: [0, OBJ.element(1, 'HEROINE', 'APRES')], v: [0, OBJ.element(1, 'HEROINE', 'AVANT')] },
+  { n: 205, el: ['HEROINE', 'ENNEMI'], r: [0, OBJ.element(1, 'ENNEMI', 'APRES')], v: [0, OBJ.element(1, 'ENNEMI', 'AVANT')] },
+  { n: 206, el: ['ENNEMI', 'ALLIE'], r: [0, OBJ.element(1, 'ALLIE', 'APRES')], v: [0, OBJ.element(1, 'ALLIE', 'AVANT')] },
+  { n: 207, el: ['ALLIE', 'OBJET'], r: [25, OBJ.seuilCible(6, 'OBJET', 'MIN', 5, 'MONTAGE')], v: [35, OBJ.seuilCible(6, 'OBJET', 'MIN', 5, 'MONTAGE')] },
+  { n: 208, el: ['OBJET', 'ARME'], r: [10, OBJ.paire(2, 'OBJET', 'OBJET', 'APRES')], v: [20, OBJ.paire(2, 'OBJET', 'OBJET', 'AVANT')] },
+  { n: 209, el: ['HEROINE', 'OBJET'], r: [25, OBJ.seqAvec(2, 'AVEC', 'OBJET', 2)], v: [35, OBJ.seqAvec(2, 'AVEC', 'OBJET', 2)] },
+  { n: 210, el: ['ALLIE', 'OBJET'], r: [25, OBJ.format(2, 'PM', 'APRES')], v: [35, OBJ.format(2, 'PM', 'AVANT')] },
+  { n: 211, el: ['ALLIE', 'OBJET'], r: [25, OBJ.absent(4, 'ENNEMI', 'SEQUENCE')], v: [35, OBJ.absent(4, 'ENNEMI', 'SEQUENCE')] },
+  { n: 212, el: ['OBJET', 'ARME', 'VEHICULE'], r: [0, OBJ.paire(3, 'OBJET', 'ARME', 'SEQUENCE', 'VEHICULE')], v: [0, OBJ.paire(3, 'OBJET', 'ARME', 'SEQUENCE', 'VEHICULE')] },
+  { n: 213, el: ['ENNEMI', 'VEHICULE'], r: [25, OBJ.seqAvec(2, 'AVEC', 'VEHICULE', 2)], v: [35, OBJ.seqAvec(2, 'AVEC', 'VEHICULE', 2)] },
+  { n: 214, el: ['VEHICULE', 'VEHICULE'], r: [55, OBJ.paire(2, 'VEHICULE', 'VEHICULE', 'APRES')], v: [65, OBJ.paire(2, 'VEHICULE', 'VEHICULE', 'AVANT')] },
+  { n: 215, el: ['HEROINE', 'VEHICULE'], r: [55, OBJ.seuilCible(6, 'VEHICULE', 'MIN', 6, 'MONTAGE')], v: [65, OBJ.seuilCible(6, 'VEHICULE', 'MIN', 6, 'MONTAGE')] },
+  { n: 216, el: ['ENNEMI', 'VEHICULE'], r: [55, OBJ.absent(4, 'RACCORD', 'MONTAGE')], v: [65, OBJ.absent(4, 'RACCORD', 'MONTAGE')] },
+  // Le seul dont le pouvoir change de cible d'une face à l'autre.
+  { n: 217, el: ['ALLIE', 'VEHICULE'], r: [55, OBJ.format(2, 'PM', 'APRES')], v: [65, OBJ.format(2, 'PL', 'AVANT')] },
+  { n: 218, el: ['OBJET', 'VEHICULE'], r: [70, OBJ.absent(4, 'VEHICULE', 'SUITE')], v: [65, OBJ.absent(4, 'VEHICULE', 'SUITE')] },
+  { n: 219, el: ['ALLIE', 'ARME'], r: [70, OBJ.seuilCible(6, 'ARME', 'MIN', 6, 'MONTAGE')], v: [80, OBJ.seuilCible(6, 'ARME', 'MIN', 6, 'MONTAGE')] },
+  { n: 220, el: ['ENNEMI', 'ARME'], r: [70, OBJ.mort(2, 'SUITE')], v: [80, OBJ.mort(2, 'SUITE')] },
+  { n: 221, el: ['HEROINE', 'ARME'], r: [70, OBJ.absent(4, 'ALLIE', 'SEQUENCE')], v: [80, OBJ.absent(4, 'ALLIE', 'SEQUENCE')] },
+  { n: 222, el: ['ARME', 'ARME'], r: [70, OBJ.paire(2, 'ARME', 'ARME', 'APRES')], v: [80, OBJ.paire(2, 'ARME', 'ARME', 'AVANT')] },
+  { n: 223, el: ['ALLIE', 'ARME'], r: [70, OBJ.seqAvec(2, 'AVEC', 'ARME', 2)], v: [80, OBJ.seqAvec(2, 'AVEC', 'ARME', 2)] },
+  // 3 au recto, 2 au verso.
+  { n: 224, el: ['HEROINE', 'ARME'], r: [55, OBJ.format(3, 'GP', 'APRES')], v: [65, OBJ.format(2, 'GP', 'AVANT')] },
+  { n: 225, el: ['ENNEMI', 'ARME'], r: [85, OBJ.absent(4, 'ENNEMI', 'SUITE')], v: [80, OBJ.absent(4, 'ENNEMI', 'SUITE')] },
+  { n: 226, el: ['HEROINE', 'ENNEMI', 'ALLIE'], r: [85, OBJ.absent(6, 'MORT', 'MONTAGE')], v: [95, OBJ.absent(6, 'MORT', 'MONTAGE')] },
+  { n: 227, el: ['ENNEMI', 'VEHICULE'], mort: true, r: [70, OBJ.element(1, 'VEHICULE', 'AMONT')], v: [65, OBJ.element(1, 'VEHICULE', 'AMONT')] },
+  { n: 228, el: ['ENNEMI', 'OBJET'], mort: true, r: [85, OBJ.mort(3, 'SEQUENCE')], v: [95, OBJ.mort(3, 'SEQUENCE')] },
+  { n: 229, el: ['HEROINE', 'VEHICULE'], mort: true, r: [85, OBJ.element(1, 'HEROINE', 'AMONT')], v: [95, OBJ.element(1, 'HEROINE', 'AMONT')] },
+  { n: 230, el: ['ALLIE', 'OBJET'], mort: true, r: [85, OBJ.seqAvec(4, 'AVEC', 'MORT')], v: [95, OBJ.seqAvec(4, 'AVEC', 'MORT')] },
+  // Le Raccord : 1 × Raccord, et −5 s'il n'a pas de Plan Large avant lui au
+  // recto, après lui au verso.
+  { n: 290, el: [], transition: 'RACCORD', titre: 'Raccord',
+    r: [0, OBJ.raccord(1), OBJ.absent(-5, 'PL', 'AVANT')], v: [0, OBJ.raccord(1), OBJ.absent(-5, 'PL', 'APRES')] },
+  // L'Ouverture au recto, la Fin au verso : 6 si le minutage est dans l'ordre,
+  // et 4 si rien ne la précède — ou ne la suit.
+  { n: 291, el: [], transition: 'OUVERTURE', titre: 'BBG présente',
+    r: [1, OBJ.chrono(6), OBJ.seuilCible(4, 'CARTE', 'MAX', 0, 'AMONT')],
+    v: [99, OBJ.chrono(6), OBJ.seuilCible(4, 'CARTE', 'MAX', 0, 'SUITE')], vx: { transition: 'CREDITS', titre: 'Fin' } },
+];
+
+/** La famille d'un plan, d'après ce qu'il montre : le crâne, l'objet, l'arme, le véhicule. */
+const familleDe = (p) => (p.transition ? 'TRANSITION' : p.mort ? 'MORT'
+  : p.el.find((e) => ['OBJET', 'ARME', 'VEHICULE'].includes(e)) || 'PERSONNAGE');
+
+/** Ce qu'une face d'un Plan Moyen du Set 3.1 imprime. */
+const facePM31 = (p, f) => {
+  const [tc, obj, obj2] = p[f];
+  return { tc, obj, ...(obj2 ? { obj2 } : {}), ...(f === 'v' ? p.vx || {} : {}),
+    visuel: `assets/s31/PM${p.n}${f.toUpperCase()}-carte.webp` };
+};
+
 // --- Les sets de cartes ---------------------------------------------------
 // Chaque set est un matériel d'ORIGINE à part entière, avec ses propres
 // cartes ; les retouches de l'éditeur s'y ajoutent par-dessus — « 3.1
@@ -1209,8 +1268,6 @@ const TABLES = {
     scenes: SCENES_IMPRIMEES, larges: PL_IMPRIMES, departs: DEPARTS_IMPRIMES, paires: PAIRES_IMPRIMEES,
   },
   '3.1': {
-    // Une carte, dont on n'a que le Gros Plan : le 309 (fichiers 309R et
-    // 309V), le sac de sport.
     scenes: [
       // Les Gros Plans, lus sur leur recto. Sans minutage, un plan s'écrit 0 —
       // « --:-- ». La famille suit ce que la carte montre : le crâne d'abord,
@@ -1247,10 +1304,10 @@ const TABLES = {
       S(39, 95, 'MORT', null, 330, [], ['ALLIE'], OBJ.domine(6, 'ALLIE'), { mort: true }),
       S(40, 0, 'TRANSITION', null, 390, [], [], OBJ.raccord(1), { titre: 'Raccord', transition: 'RACCORD' }),
       S(41, 99, 'TRANSITION', null, 391, [], [], OBJ.seuilCible(6, 'CARTE', 'MAX', 0, 'SUITE'), { titre: 'Fin', transition: 'CREDITS' }),
-      // Les Plans Moyens 201 et 202, sans minutage — « --:-- ». Leur pouvoir
-      // change d'une face à l'autre : voir `faces`.
-      S(2, 0, 'PERSONNAGE', 201, null, ['HEROINE', 'ENNEMI'], [], null),
-      S(3, 0, 'PERSONNAGE', 202, null, ['ENNEMI', 'ALLIE'], [], null),
+      // Les Plans Moyens : ce que chaque face imprime est dans `faces`.
+      ...PM31.map((p, i) => S(100 + i, p.r[0], familleDe(p), p.n, null, p.el.slice(), [], null, {
+        ...(p.mort ? { mort: true } : {}),
+        ...(p.transition ? { transition: p.transition, titre: p.titre } : {}) })),
     ],
     larges: [
       PL(101, 15, ['HEROINE', 'ENNEMI', 'OBJET', 'VEHICULE'], OBJ.chrono(8)),
@@ -1274,7 +1331,7 @@ const TABLES = {
     paires: [
       [null, 301], [null, 302], [null, 303], [null, 304], [null, 305], [null, 306], [null, 307], [null, 308], [null, 309], [null, 310], [null, 311], [null, 312], [null, 313], [null, 314], [null, 315], [null, 316],
       [null, 317], [null, 318], [null, 319], [null, 320], [null, 321], [null, 322], [null, 323], [null, 324], [null, 325], [null, 326], [null, 327], [null, 328], [null, 329], [null, 330], [null, 390], [null, 391],
-      [201, null], [202, null],
+      ...PM31.map((p) => [p.n, null]),
     ],
     // Les quatre Plans de départ, 001 à 004. Chacun a un verso différent : les
     // cartes sont les six couples des quatre plans, comme la variante « 6
@@ -1291,7 +1348,7 @@ const TABLES = {
     images: {
       ...Object.fromEntries([...Array.from({ length: 30 }, (_, i) => 301 + i), 390, 391]
         .map((n) => [`gp${n}`, `assets/s31/GP${n}.webp`])),
-      pm201: 'assets/s31/PM201.webp', pm202: 'assets/s31/PM202.webp',
+      ...Object.fromEntries(PM31.map((p) => [`pm${p.n}`, `assets/s31/PM${p.n}.webp`])),
       pl101: 'assets/s31/PL101.webp', pl102: 'assets/s31/PL102.webp', pl103: 'assets/s31/PL103.webp',
       pl104: 'assets/s31/PL104.webp', pl105: 'assets/s31/PL105.webp', pl106: 'assets/s31/PL106.webp',
       pl107: 'assets/s31/PL107.webp', pl108: 'assets/s31/PL108.webp', pl109: 'assets/s31/PL109.webp',
@@ -1320,11 +1377,8 @@ const TABLES = {
       '391V': { tc: 1, transition: 'OUVERTURE', titre: 'BBG présente',
         obj: OBJ.seuilCible(6, 'CARTE', 'MAX', 0, 'AMONT'),
         image: 'assets/s31/GP391V.webp', visuel: 'assets/s31/GP391V-carte.webp' },
-      // Le couple compte APRÈS la carte au recto, AVANT elle au verso.
-      '201R': { obj: OBJ.paire(2, 'HEROINE', 'ENNEMI', 'APRES'), visuel: 'assets/s31/PM201R-carte.webp' },
-      '201V': { obj: OBJ.paire(2, 'HEROINE', 'ENNEMI', 'AVANT'), visuel: 'assets/s31/PM201V-carte.webp' },
-      '202R': { obj: OBJ.paire(2, 'ENNEMI', 'ALLIE', 'APRES'), visuel: 'assets/s31/PM202R-carte.webp' },
-      '202V': { obj: OBJ.paire(2, 'ENNEMI', 'ALLIE', 'AVANT'), visuel: 'assets/s31/PM202V-carte.webp' },
+      // Les Plans Moyens, recto et verso.
+      ...Object.fromEntries(PM31.flatMap((p) => [[`${p.n}R`, facePM31(p, 'r')], [`${p.n}V`, facePM31(p, 'v')]])),
       // Les quinze Plans Larges, montrés eux aussi tels qu'imprimés.
       ...Object.fromEntries(Array.from({ length: 15 }, (_, i) => 101 + i)
         .map((n) => [String(n), { visuel: `assets/s31/PL${n}-carte.webp` }])),
