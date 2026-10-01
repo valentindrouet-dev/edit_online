@@ -1253,6 +1253,9 @@ const TABLES = {
     faces: {
       '309R': { visuel: 'assets/s31/GP309R-carte.webp' },
       '309V': { tc: 25, visuel: 'assets/s31/GP309V-carte.webp' },
+      // Les quinze Plans Larges, montrés eux aussi tels qu'imprimés.
+      ...Object.fromEntries(Array.from({ length: 15 }, (_, i) => 101 + i)
+        .map((n) => [String(n), { visuel: `assets/s31/PL${n}-carte.webp` }])),
     },
     jouable: false,
   },
@@ -1591,6 +1594,9 @@ export function plHalf(carte) {
   const cle = cleplan(carte.num, null);
   const d = imprimeDe(cle, { tc: carte.tc, el: carte.el, obj: carte.obj, obj2: carte.obj2,
     mort: !!carte.mort, image: imageImprimee('pl', carte.num) });
+  // Un Plan de départ versé dans les Plans Larges change d'habillage : sa
+  // carte imprimée n'est plus la bonne.
+  const visuel = d.visuel && !planModifie(cle) && !(carte.depart === false) ? d.visuel : null;
   return {
     scene: null,
     format: carte.depart ? 'DEP' : 'PL',
@@ -1609,6 +1615,7 @@ export function plHalf(carte) {
     numOrigine: carte.num,
     depart: !!carte.depart,
     image: imageDe(cle, d.image),
+    visuel,
     miroir: miroirDe(cle),
     cadre: cadreDe(cle),
   };

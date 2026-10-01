@@ -1,8 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.38';
-export const BUILD_DATE = '2026-10-01 14:32';
+export const VERSION = '2.39';
+export const BUILD_DATE = '2026-10-01 14:36';
 
 export const CHANGELOG = [
+  {
+    v: '2.39',
+    date: '01/10/2026',
+    items: [
+      "<b>Les quinze Plans Larges du Set 3.1 s'affichent avec leur carte imprimée</b>, comme le GP 309 : 900 px de large, 65 ko en moyenne, 1 Mo pour les quinze. Une carte retouchée revient à la composition du site.",
+    ],
+  },
   {
     v: '2.38',
     date: '01/10/2026',
