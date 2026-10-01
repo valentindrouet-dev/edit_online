@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.39';
-export const BUILD_DATE = '2026-10-01 14:36';
+export const VERSION = '2.40';
+export const BUILD_DATE = '2026-10-01 14:46';
 
 export const CHANGELOG = [
+  {
+    v: '2.40',
+    date: '01/10/2026',
+    items: [
+      "<b>Un set se joue dès que son paquet suffit</b> au nombre de joueuses : 9 cartes chacune, plus 6 pour les rivières — 24 à deux, 33 à trois, 42 à quatre. Sinon l'accueil dit ce qui manque, et combien. Une carte à qui il manque une moitié reste hors du paquet.",
+      "<b>Les cartes de départ d'un set fait des six couples</b> se distribuent comme la variante « 6 Cartes Départ » : chaque joueuse en tire une.",
+      "<b>Le Set 3.1 reçoit les Plans Moyens 201 et 202</b>, recto et verso, montrés avec leur carte imprimée : « 2 × couple Héroïne + Ennemi » et « 2 × couple Ennemi + Allié », après la carte au recto, avant elle au verso.",
+    ],
+  },
   {
     v: '2.39',
     date: '01/10/2026',

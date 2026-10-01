@@ -993,7 +993,8 @@ export function buildCartesDoubles() {
     if (SURCHARGES.retires.has(c.id)) return false;
     // Une carte imprimée avec une seule moitié — le Set 3.1 n'a reçu que le
     // Gros Plan de sa carte — se montre telle quelle.
-    return (c.pmScene !== undefined || c.pmNum == null) && c.gpScene !== undefined;
+    return (c.pmScene !== undefined || c.pmNum == null) && (c.gpScene !== undefined || c.gpNum == null)
+      && (c.pmNum != null || c.gpNum != null);
   });
 }
 
@@ -1201,12 +1202,17 @@ export const setActif = () => setCourant;
 const TABLES = {
   '2': {
     scenes: SCENES_IMPRIMEES, larges: PL_IMPRIMES, departs: DEPARTS_IMPRIMES, paires: PAIRES_IMPRIMEES,
-    jouable: true,
   },
   '3.1': {
     // Une carte, dont on n'a que le Gros Plan : le 309 (fichiers 309R et
     // 309V), le sac de sport.
-    scenes: [S(1, 35, 'OBJET', null, 309, [], ['OBJET'], OBJ.element(1, 'OBJET', 'SUITE'))],
+    scenes: [
+      S(1, 35, 'OBJET', null, 309, [], ['OBJET'], OBJ.element(1, 'OBJET', 'SUITE')),
+      // Les Plans Moyens 201 et 202, sans minutage — « --:-- ». Leur pouvoir
+      // change d'une face à l'autre : voir `faces`.
+      S(2, 0, 'PERSONNAGE', 201, null, ['HEROINE', 'ENNEMI'], [], null),
+      S(3, 0, 'PERSONNAGE', 202, null, ['ENNEMI', 'ALLIE'], [], null),
+    ],
     larges: [
       PL(101, 15, ['HEROINE', 'ENNEMI', 'OBJET', 'VEHICULE'], OBJ.chrono(8)),
       PL(102, 30, ['OBJET', 'ARME', 'VEHICULE'], OBJ.seqLongue(1)),
@@ -1224,7 +1230,9 @@ const TABLES = {
       PL(114, 75, ['HEROINE', 'ENNEMI', 'ARME'], OBJ.seqAvec(4, 'SANS', 'ALLIE')),
       PL(115, 15, ['OBJET', 'ARME'], OBJ.seqAvec(5, 'AVEC', 'OBJET', 3)),
     ],
-    paires: [[null, 309]],
+    // Chaque carte n'a encore qu'une moitié : on ne sait pas lesquelles vont
+    // ensemble.
+    paires: [[null, 309], [201, null], [202, null]],
     // Les quatre Plans de départ, 001 à 004. Chacun a un verso différent : les
     // cartes sont les six couples des quatre plans, comme la variante « 6
     // Cartes Départ » du Set 2 — qui est ici la règle, pas une variante.
@@ -1238,7 +1246,7 @@ const TABLES = {
     pairesDepart: [['001', '002'], ['002', '003'], ['003', '004'], ['004', '001'], ['002', '004'], ['001', '003']],
     sixSeul: true,
     images: {
-      gp309: 'assets/s31/GP309.webp',
+      gp309: 'assets/s31/GP309.webp', pm201: 'assets/s31/PM201.webp', pm202: 'assets/s31/PM202.webp',
       pl101: 'assets/s31/PL101.webp', pl102: 'assets/s31/PL102.webp', pl103: 'assets/s31/PL103.webp',
       pl104: 'assets/s31/PL104.webp', pl105: 'assets/s31/PL105.webp', pl106: 'assets/s31/PL106.webp',
       pl107: 'assets/s31/PL107.webp', pl108: 'assets/s31/PL108.webp', pl109: 'assets/s31/PL109.webp',
@@ -1253,17 +1261,19 @@ const TABLES = {
     faces: {
       '309R': { visuel: 'assets/s31/GP309R-carte.webp' },
       '309V': { tc: 25, visuel: 'assets/s31/GP309V-carte.webp' },
+      // Le couple compte APRÈS la carte au recto, AVANT elle au verso.
+      '201R': { obj: OBJ.paire(2, 'HEROINE', 'ENNEMI', 'APRES'), visuel: 'assets/s31/PM201R-carte.webp' },
+      '201V': { obj: OBJ.paire(2, 'HEROINE', 'ENNEMI', 'AVANT'), visuel: 'assets/s31/PM201V-carte.webp' },
+      '202R': { obj: OBJ.paire(2, 'ENNEMI', 'ALLIE', 'APRES'), visuel: 'assets/s31/PM202R-carte.webp' },
+      '202V': { obj: OBJ.paire(2, 'ENNEMI', 'ALLIE', 'AVANT'), visuel: 'assets/s31/PM202V-carte.webp' },
       // Les quinze Plans Larges, montrés eux aussi tels qu'imprimés.
       ...Object.fromEntries(Array.from({ length: 15 }, (_, i) => 101 + i)
         .map((n) => [String(n), { visuel: `assets/s31/PL${n}-carte.webp` }])),
     },
-    jouable: false,
   },
 };
 const T = () => TABLES[setCourant];
 
-/** Un set se joue-t-il ? Il lui faut un paquet entier. */
-export const setJouable = (id) => !!TABLES[setValide(id ?? setCourant)].jouable;
 
 /** Les valeurs imprimées d'un plan, face comprise. */
 function imprimeDe(cle, defauts) {

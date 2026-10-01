@@ -53,6 +53,8 @@ export function construirePaquet(cfg) {
     for (const c of base) {
       // Les cartes désactivées dans l'éditeur ne sont pas dans la boîte.
       if (!c.actif) continue;
+      // Une carte dont on n'a qu'une moitié se consulte, elle ne se joue pas.
+      if (c.pmScene === undefined || c.gpScene === undefined) continue;
       const fam1 = sceneDe(c.pmScene)?.famille;
       const fam2 = sceneDe(c.gpScene)?.famille;
       if (cfg.filtreFamilles && (cfg.filtreFamilles[fam1] === false || cfg.filtreFamilles[fam2] === false)) continue;
@@ -73,6 +75,34 @@ export function construirePaquet(cfg) {
   // la pioche des Plans Larges, il n'en reste aucune à proposer.
   return { doubles, larges,
     departs: cfg.sansPlanDepart ? [] : buildDeparts(!!cfg.sixCartesDepart) };
+}
+
+/**
+ * Le paquet suffit-il pour `n` joueuses ? Chacune pose `tours` plans, son Plan
+ * de départ compris — elle en prend donc `tours − 1` dans les pioches —, et les
+ * deux rivières doivent pouvoir se remplir jusqu'au bout. Un paquet plus court
+ * se jouerait, mais la partie s'arrêterait faute de cartes avant le dernier
+ * tour. Mesuré sur le Set 2 : 9 cartes par joueuse, plus les 6 des rivières.
+ */
+export function bilanPaquet(cfg, n) {
+  const { doubles, larges, departs } = construirePaquet(cfg);
+  const incompletes = buildCartesDoubles()
+    .filter((c) => c.actif && (c.pmScene === undefined || c.gpScene === undefined)).length;
+  const t = taillesRiviere(cfg, n);
+  const prises = Math.max(0, (cfg.tours || 10) - (cfg.sansPlanDepart ? 0 : 1));
+  const besoin = prises * n + t.pl + t.pmgp;
+  const total = doubles.length + larges.length;
+  const six = !cfg.sansPlanDepart && (cfg.sixCartesDepart || departs.some((d) => d.six));
+  const departsManquants = cfg.sansPlanDepart ? 0
+    : six ? Math.max(0, n - departs.length) : (departs.length ? 0 : 1);
+  const pmgpManquantes = piochesMelees(cfg) ? 0 : Math.max(0, t.pmgp - doubles.length);
+  const plManquants = piochesMelees(cfg) ? 0 : Math.max(0, t.pl - larges.length);
+  const manque = Math.max(besoin - total, pmgpManquantes + plManquants);
+  return {
+    n, besoin, total, doubles: doubles.length, larges: larges.length, departs: departs.length,
+    incompletes, manque, departsManquants, pmgpManquantes, plManquants,
+    jouable: manque <= 0 && departsManquants === 0,
+  };
 }
 
 /**
@@ -188,7 +218,9 @@ export function creerPartie(joueurs, cfg, graine) {
   // mélangés, et chaque joueuse en PIOCHE UN. Elle a donc deux faces au choix
   // et non quatre, et deux joueuses n'ont jamais le même couple — c'est tout
   // l'objet de la variante.
-  if (!cfg.sansPlanDepart && cfg.sixCartesDepart) {
+  // Un set dont les cartes de départ SONT les six couples se joue toujours
+  // ainsi.
+  if (!cfg.sansPlanDepart && (cfg.sixCartesDepart || departs.some((d) => d.six))) {
     const paquet = melanger(departs, rand);
     joueurs.forEach((_, i) => {
       if (paquet[i]) state.departsProposes[i].push(paquet[i]);
