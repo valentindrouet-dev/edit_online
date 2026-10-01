@@ -902,6 +902,11 @@ export function renderCarte(carte, verso, opts = {}) {
   // Une carte dont on n'a qu'une moitié — le Set 3.1 n'a reçu que des Gros
   // Plans — se montre seule, à la taille de cette moitié.
   const plans = (m ? (verso ? [m.GP, m.PM] : [m.PM, m.GP]) : [plHalf(carte)]).filter(Boolean);
+  // Une carte créée, encore vide : sa place, à remplir à l'Assemblage.
+  if (!plans.length) {
+    return `<div class="carte solo carte-vide ${opts.small ? 'small' : ''}" data-carte="${carte.id}"
+      data-verso="${verso ? 1 : 0}"><span>carte vide</span></div>`;
+  }
   const cls = ['carte', m && plans.length === 1 ? 'solo' : '',
     opts.selected ? 'sel' : '', opts.small ? 'small' : '', opts.tiny ? 'tiny' : '',
     opts.clickable ? 'clickable' : '', opts.moitiesChoisissables ? 'choix-moitie' : ''].join(' ');

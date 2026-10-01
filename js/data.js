@@ -998,8 +998,11 @@ export function buildCartesDoubles() {
     if (SURCHARGES.retires.has(c.id)) return false;
     // Une carte imprimée avec une seule moitié — le Set 3.1 n'a reçu que le
     // Gros Plan de sa carte — se montre telle quelle.
+    // Une carte CRÉÉE peut rester vide : c'est une place qu'on remplit à
+    // l'Assemblage. Une carte imprimée vidée de ses deux moitiés — elles sont
+    // allées compléter d'autres cartes —, elle, disparaît.
     return (c.pmScene !== undefined || c.pmNum == null) && (c.gpScene !== undefined || c.gpNum == null)
-      && (c.pmNum != null || c.gpNum != null);
+      && (c.pmNum != null || c.gpNum != null || !!c.ajoutee);
   });
 }
 

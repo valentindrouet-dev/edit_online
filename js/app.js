@@ -4405,9 +4405,14 @@ function trierMoities(lignes, mode) {
 function carteAssemblage(c, actives) {
   const f = fautes(c.pm, c.gp, actives);
   const nom = (id) => (CONTRAINTES.find((x) => x.id === id) || {}).label || id;
-  return `<div class="carte-assemblage ${f.length ? 'fautive' : ''} ${c.modifie ? 'retouche' : ''}"
+  const neuve = mat.assemblage.neuve === c.rang;
+  return `<div class="carte-assemblage ${f.length ? 'fautive' : ''} ${c.modifie ? 'retouche' : ''} ${neuve ? 'neuve' : ''}"
     data-carte-assemblage="${c.rang}">
-    <div class="ca-tete">${c.id}${c.modifie ? ' <span class="et-mod">·</span>' : ''}</div>
+    <div class="ca-tete">${c.id}${c.modifie ? ' <span class="et-mod">·</span>' : ''}
+      <span class="ca-actions">
+        <button class="ca-bouton" data-dupliquer="${c.rang}" title="Dupliquer : un exemplaire de plus de cette carte">⧉</button>
+        <button class="ca-bouton suppr" data-supprimer-carte="${c.id}" title="Supprimer cette carte">✕</button>
+      </span></div>
     ${pastilleMoitie(c, 'PM')}
     ${pastilleMoitie(c, 'GP')}
     ${f.length ? `<div class="ca-faute" title="${f.map(nom).join(' · ')}">⚠ ${f.length}</div>` : ''}
@@ -4456,6 +4461,8 @@ function vueAssemblage() {
     <div class="rangee-mini" style="margin-top:10px">
       <button class="pill creer" id="melanger">🎲 Mélanger les Gros Plans</button>
       <button class="pill mini" id="assemblage-reset" ${retouches ? '' : 'disabled'}>↺ Assemblage imprimé</button>
+      <button class="pill mini creer" id="assemblage-nouvelle"
+        title="Une carte vide, à remplir en y glissant ou en y tapant ses deux moitiés">＋ Nouvelle carte</button>
       <button class="pill mini" id="assemblage-copier"
         title="L'assemblage en texte — une carte par ligne, « PM + GP » —, à coller dans un message">📋 Copier l’assemblage</button>
       <span class="aide">${b.mauvaises
@@ -4468,6 +4475,11 @@ function vueAssemblage() {
   </div>
 
   <h3 style="margin-top:20px">Les ${cartes.length} cartes</h3>
+  ${mat.assemblage.annonce ? `<p class="encart annonce-assemblage">${mat.assemblage.annonce.texte}
+    <button class="pill mini" data-annuler-suppression="${mat.assemblage.annonce.id}">↺ Annuler</button></p>` : ''}
+  <p class="aide"><b>⧉</b> sur une carte en ajoute un exemplaire de plus, <b>✕</b> la supprime,
+  <b>＋ Nouvelle carte</b> en crée une vide. Le relevé « Où sont les moitiés », plus bas, dit combien
+  de fois chaque plan se trouve dans le jeu.</p>
   <p class="aide"><b>Le numéro de chaque moitié se tape.</b> Écrivez celui d'un autre Plan Moyen
   ou d'un autre Gros Plan sur la carte qui doit l'accueillir, validez d'<b>Entrée</b>, et la moitié
   s'y pose — recto et verso compris. C'est ainsi qu'on fait entrer une moitié qui n'est
@@ -4531,7 +4543,7 @@ function tableauPaires() {
   return `<table class="tbl tbl-materiel">
     <thead><tr><th>Carte</th><th>Gros Plan</th><th>Plan Moyen</th><th>Boîte</th><th>Appariement</th></tr></thead>
     <tbody>${cartes.map((c, i) => `<tr class="${c.appariementModifie ? 'ligne-retouchee' : ''}">
-      <td class="num">${i + 1}</td><td class="num">${c.gpNum}</td><td class="num">${c.pmNum}</td>
+      <td class="num">${i + 1}</td><td class="num">${c.gpNum ?? '—'}</td><td class="num">${c.pmNum ?? '—'}</td>
       <td>${estDesactivee(c.id) ? 'écartée' : 'activée'}</td>
       <td>${c.appariementModifie ? `réapparié (imprimé : GP ${c.gpImprime} | PM ${c.pmImprime})` : 'imprimé'}</td>
     </tr>`).join('')}</tbody>
@@ -5035,6 +5047,44 @@ function brancherAssemblage() {
 
   const mel = app.querySelector('#melanger');
   if (mel) mel.addEventListener('click', () => { melangerAssemblage(); refaire(); });
+  // Créer, dupliquer, supprimer : la composition du jeu, sans quitter l'écran.
+  const derniereCarte = () => surLeModifie(() => Math.max(...buildCartesDoubles().map((c) => c.rang)));
+  const nouv = app.querySelector('#assemblage-nouvelle');
+  if (nouv) {
+    nouv.addEventListener('click', () => {
+      composition().ajouts.paires.push({ pmNum: null, gpNum: null });
+      sauverCfg();
+      mat.assemblage.neuve = derniereCarte(); mat.assemblage.annonce = null;
+      refaire();
+    });
+  }
+  app.querySelectorAll('[data-dupliquer]').forEach((b) => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const c = surLeModifie(() => buildCartesDoubles().find((x) => x.rang === +b.dataset.dupliquer));
+    if (!c) return;
+    composition().ajouts.paires.push({ pmNum: c.pmNum, gpNum: c.gpNum });
+    sauverCfg();
+    mat.assemblage.neuve = derniereCarte(); mat.assemblage.annonce = null;
+    refaire();
+  }));
+  // Supprimer sans question : c'est réversible, et l'écran l'offre aussitôt.
+  app.querySelectorAll('[data-supprimer-carte]').forEach((b) => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const id = b.dataset.supprimerCarte;
+    const m = composition();
+    m.retires = [...new Set([...m.retires, id])];
+    sauverCfg();
+    mat.assemblage.annonce = { id, texte: `Carte ${id} supprimée.` };
+    mat.assemblage.neuve = null;
+    refaire();
+  }));
+  app.querySelectorAll('[data-annuler-suppression]').forEach((b) => b.addEventListener('click', () => {
+    const m = composition();
+    m.retires = m.retires.filter((x) => x !== b.dataset.annulerSuppression);
+    sauverCfg();
+    mat.assemblage.annonce = null;
+    refaire();
+  }));
   const cop = app.querySelector('#assemblage-copier');
   if (cop) cop.addEventListener('click', () => copierAssemblage(cop));
 

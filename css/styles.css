@@ -1480,9 +1480,29 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
    signalent au survol. */
 .pose-en-cours { color: var(--orange); }
 body .demi { transition: box-shadow .12s; }
-.ca-tete { font-size: .68rem; font-weight: 700; color: var(--gris); letter-spacing: .04em; }
+.ca-tete { font-size: .68rem; font-weight: 700; color: var(--gris); letter-spacing: .04em;
+  display: flex; align-items: center; gap: 4px; }
+/* Dupliquer, supprimer : discrets, ils se donnent au survol de la carte. */
+.ca-actions { margin-left: auto; display: flex; gap: 2px; opacity: .35; transition: opacity .12s; }
+.carte-assemblage:hover .ca-actions, .ca-actions:focus-within { opacity: 1; }
+.ca-bouton {
+  border: 0; background: transparent; cursor: pointer; font-size: .82rem; line-height: 1;
+  padding: 2px 4px; border-radius: 5px; color: var(--violet);
+}
+.ca-bouton:hover { background: var(--violet-clair); }
+.ca-bouton.suppr { color: #b3261e; }
+.ca-bouton.suppr:hover { background: #fde2df; }
+.carte-assemblage.neuve { animation: neuve 1.6s ease-out; }
+@keyframes neuve { from { box-shadow: 0 0 0 4px var(--orange); } to { box-shadow: 0 0 0 0 transparent; } }
+.annonce-assemblage { display: flex; align-items: center; gap: 10px; }
+/* Une carte créée, encore vide. */
+.carte.carte-vide {
+  height: 14.33em; width: 6.72em; display: flex; align-items: center; justify-content: center;
+  background: repeating-linear-gradient(135deg, #f4f1fb 0 8px, #ece7f7 8px 16px);
+  outline: 2px dashed #b9a8e6; outline-offset: -6px; color: #6d5aa8; font-weight: 700;
+}
 .ca-faute {
-  position: absolute; top: 4px; right: 6px; font-size: .68rem; font-weight: 800; color: #a8541a;
+  position: absolute; top: 4px; right: 52px; font-size: .68rem; font-weight: 800; color: #a8541a;
 }
 /* Une moitié : on la prend, on la lâche sur celle d'en face. Le curseur le dit
    avant même qu'on essaie. */

@@ -1,8 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.44';
-export const BUILD_DATE = '2026-10-01 15:34';
+export const VERSION = '2.45';
+export const BUILD_DATE = '2026-10-01 16:52';
 
 export const CHANGELOG = [
+  {
+    v: '2.45',
+    date: '01/10/2026',
+    items: [
+      "<b>L'Assemblage gère les exemplaires</b> : ⧉ sur une carte en ajoute un exemplaire de plus, ✕ la supprime — avec « ↺ Annuler » aussitôt —, et <b>＋ Nouvelle carte</b> en crée une vide, qu'on remplit en y glissant ou en y tapant ses deux moitiés. Le relevé « Où sont les moitiés » dit combien de fois chaque plan est dans le jeu.",
+    ],
+  },
   {
     v: '2.44',
     date: '01/10/2026',
