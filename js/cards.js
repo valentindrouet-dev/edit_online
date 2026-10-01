@@ -48,12 +48,16 @@ export function objContenu(obj, taille, compact, cfg, large) {
     objCoeur(obj, taille, compact, large)}</span>${fleche('droite')}${suite}</span>`;
 }
 
-/** L'icône ▷▷ de la portée « cette carte et toute la suite du montage ». */
-export function avanceRapide() {
-  // Comme sur la carte imprimée : la flèche de droite, un peu plus grande,
-  // chevauche la pointe de celle de gauche — dessinée en second, elle passe
-  // dessus, et son cerne noir la détache.
-  return `<span class="avance-rapide" role="img" aria-label="et toute la suite du montage"><svg viewBox="0 0 100 80">
+/**
+ * L'icône ▷▷ de la portée « cette carte et toute la suite du montage » — ou,
+ * retournée, ◁◁ : « ce qui vient avant ».
+ */
+export function avanceRapide(recul = false) {
+  // Comme sur la carte imprimée : la flèche de devant, un peu plus grande,
+  // chevauche la pointe de l'autre — dessinée en second, elle passe dessus, et
+  // son cerne noir la détache. Le retour est le même dessin, en miroir.
+  return `<span class="avance-rapide ${recul ? 'recul' : ''}" role="img" aria-label="${
+    recul ? 'avant' : 'et toute la suite du montage'}"><svg viewBox="0 0 100 80">
     <g fill="#fff" stroke="#16161a" stroke-width="7" stroke-linejoin="round">
       <path d="M8 10 L62 40 L8 70 Z"/><path d="M33 6 L93 40 L33 74 Z"/></g></svg></span>`;
 }
@@ -202,8 +206,10 @@ function objCoeur(obj, taille, compact, large) {
     case 'SEQ_TAILLE': return blocSeq(compact,
       `<span class="tag tag-blanc">${seuilTexte(obj.sens === 'MAX' ? 'MAX' : 'MIN', obj.seuil)}
         Plan${obj.seuil > 1 ? 's' : ''}</span>`, large);
-    case 'SEQ_VOISINES': return `${tagSeq(compact)}
-      <span class="fleche-seq">${obj.sens === 'APRES' ? '▼' : '▲'}</span>`;
+    // Les séquences d'avant ou d'après la sienne, dans l'ordre du montage :
+    // ◁◁ devant le cartouche, ▷▷ derrière — les icônes des cartes imprimées.
+    case 'SEQ_VOISINES': return obj.sens === 'APRES'
+      ? `${tagSeq(compact)}${avanceRapide()}` : `${avanceRapide(true)}${tagSeq(compact)}`;
     // « La plus longue » : on compte ses plans, d'où la pastille Plan.
     // « de la plus longue » n'est pas une chose du jeu : c'est du texte qui
     // relie deux cartouches. Il s'écrivait dans la pastille violette de la
@@ -598,7 +604,7 @@ function coutCoeur(obj, compact, P, large) {
       const bas = t(`${seuilTexte(obj.sens === 'MAX' ? 'MAX' : 'MIN', obj.seuil)} Plans`);
       return large ? haut + g + bas : BLOC_SEQ * Math.max(haut, bas);
     }
-    case 'SEQ_VOISINES': return t('Séquence', 'Séq') + g + 0.9;
+    case 'SEQ_VOISINES': return t('Séquence', 'Séq') + g + P.rond * 1.1;
     case 'SEQ_LONGUE': return t('Plan') + g + mot('de la plus longue') + g
       + t('Séquence', 'Séq');
     case 'SEQ_AVEC': {

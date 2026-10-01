@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.36';
-export const BUILD_DATE = '2026-10-01 14:21';
+export const VERSION = '2.37';
+export const BUILD_DATE = '2026-10-01 14:27';
 
 export const CHANGELOG = [
+  {
+    v: '2.37',
+    date: '01/10/2026',
+    items: [
+      "<b>Plans Larges 106 et 107 du Set 3.1 remplacés</b> par leur nouvelle version : « 4 × ◁◁ Séquence » et « 4 × Séquence ▷▷ » — 4 points par séquence au lieu de 3.",
+      "<b>« Séquence au-dessus / en dessous » se dessine avec les flèches des cartes</b> : ◁◁ devant le cartouche pour les séquences d'avant, ▷▷ derrière pour celles d'après. Le compte ne change pas.",
+    ],
+  },
   {
     v: '2.36',
     date: '01/10/2026',

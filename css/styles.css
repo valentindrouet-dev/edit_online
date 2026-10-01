@@ -2143,9 +2143,11 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 .ap-obj-visuel .fleche-pos { color: var(--fl, var(--encre)); }
 /* ▷▷ — la portée « et toute la suite du montage ». Elle a la hauteur d'une
    pastille et un peu plus de largeur : ce sont deux triangles côte à côte. */
-.avance-rapide { display: inline-flex; align-items: center; height: 1.95em; flex: none; margin-left: .12em; }
+.avance-rapide { display: inline-flex; align-items: center; height: 1.6em; flex: none; margin-left: .12em; }
 .avance-rapide svg { height: 100%; width: auto; display: block; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .35)); }
 .moitie.f-GP .bandeau .avance-rapide { height: 1.75em; }
+.avance-rapide.recul { margin: 0 .12em 0 0; }
+.avance-rapide.recul svg { transform: scaleX(-1); }
 
 /* Une icône peut être portée plusieurs fois : le compte s'affiche en pastille. */
 .choix-icones .ic { position: relative; }
