@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.37';
-export const BUILD_DATE = '2026-10-01 14:27';
+export const VERSION = '2.38';
+export const BUILD_DATE = '2026-10-01 14:32';
 
 export const CHANGELOG = [
+  {
+    v: '2.38',
+    date: '01/10/2026',
+    items: [
+      "<b>Essai : le GP 309 du Set 3.1 s'affiche avec la carte imprimée elle-même</b>, recto et verso, à la place de la composition du site — minutage, icônes et bandeau sont ceux de l'image. Une carte retouchée dans l'éditeur, ou la lecture sans illustrations, revient à la composition.",
+      "Chaque face pèse <b>45 ko</b> en WebP, contre 360 ko pour le fichier d'origine.",
+    ],
+  },
   {
     v: '2.37',
     date: '01/10/2026',

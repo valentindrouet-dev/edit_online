@@ -1247,8 +1247,13 @@ const TABLES = {
       pl001: 'assets/s31/DEP001.webp', pl002: 'assets/s31/DEP002.webp',
       pl003: 'assets/s31/DEP003.webp', pl004: 'assets/s31/DEP004.webp',
     },
-    // Ce qu'une face imprime autrement que l'autre.
-    faces: { '309V': { tc: 25 } },
+    // Ce qu'une face imprime autrement que l'autre. `visuel` : la carte
+    // entière, telle qu'elle est imprimée — le site la montre à la place de sa
+    // propre composition (voir `renderPlan`).
+    faces: {
+      '309R': { visuel: 'assets/s31/GP309R-carte.webp' },
+      '309V': { tc: 25, visuel: 'assets/s31/GP309V-carte.webp' },
+    },
     jouable: false,
   },
 };
@@ -1562,6 +1567,9 @@ export function halfInfo(sceneIdx, format, opts = {}) {
     num: numDe(cle, origine),
     numOrigine: origine,
     image: imageDe(cle, d.image),
+    // La carte imprimée entière ne vaut que pour le plan tel qu'imprimé : une
+    // retouche la rendrait fausse, et l'on revient alors à la composition.
+    visuel: d.visuel && !planModifie(cle) ? d.visuel : null,
     miroir: miroirDe(cle),
     cadre: cadreDe(cle),
   };

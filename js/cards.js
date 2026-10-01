@@ -860,6 +860,15 @@ export function renderPlan(h, opts = {}) {
   // n'ouvre pas d'infobulle et ne se donne pas pour une carte du banc.
   const bulle = opts.muet ? ''
     : ` data-apercu="${donneesApercu(h, label, opts.points, opts.detail, opts.objs)}"`;
+  // La CARTE IMPRIMÉE entière, quand le set la fournit : on la montre telle
+  // quelle, à la place de la composition — minutage, icônes et bandeau sont
+  // déjà dessus. La lecture sans illustrations revient à la composition.
+  if (h.visuel && !lectureNue) {
+    return `<div class="${cls} carte-image" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"${bulle}>
+    ${jeton}
+    <img class="carte-visuel" src="${h.visuel}" alt="${label} ${h.num}" loading="lazy" decoding="async" draggable="false">
+  </div>`;
+  }
   return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"${bulle}>
     ${jeton}
     <div class="illus"${h.cle ? ` data-illus="${h.cle}"` : ''}>

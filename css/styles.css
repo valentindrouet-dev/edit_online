@@ -259,6 +259,12 @@ button { font-family: inherit; }
   background-color: #e9f2dc;
 }
 .carte > .moitie { flex: var(--flex); }
+/* La carte imprimée entière, montrée telle quelle — cadre noir compris : elle
+   a exactement la proportion d'une moitié, et seule, elle EST la carte. */
+.moitie.carte-image { background: #0a0a0a; }
+.moitie.carte-image .carte-visuel { display: block; width: 100%; height: 100%; object-fit: fill; }
+.carte.solo:has(> .moitie.carte-image) { padding: 0; border-radius: 4px; overflow: hidden; }
+.carte.solo > .moitie.carte-image { border-radius: 0; }
 .moitie.f-PM { background-color: #fdf0d3; }
 .moitie.f-GP { background-color: #fbdfd2; }
 .moitie.f-PL { background-color: #e7f2d8; }
