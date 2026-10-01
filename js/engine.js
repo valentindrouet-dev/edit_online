@@ -842,9 +842,20 @@ export function coupsPossibles(state, p, hypothese) {
       continue;
     }
 
-    // Une moitié Générique se pose en tête ou en fin de montage.
-    if (brut.transition === 'OUVERTURE' || brut.transition === 'CREDITS' || brut.dual) {
-      const roles = brut.dual ? ['OUVERTURE', 'CREDITS'] : [brut.transition];
+    // Une moitié Générique se pose en tête ou en fin de montage. Son rôle se
+    // lit sur la FACE qui sera jouée, pas sur le recto : l'Ouverture se pose à
+    // gauche du film, la Fin à droite, et c'est le côté de pose qui décide de
+    // la face. Une carte peut être la Fin au recto et l'Ouverture au verso —
+    // le Gros Plan 391 du Set 3.1 l'est : lu sur son seul recto, il n'avait
+    // jamais le droit d'ouvrir le film.
+    const faceDe = (cote) => (carte.type === 'DOUBLE' ? moitiesDe(carte, faceJouee(format, cote, cfg))[format] : brut);
+    const aGauche = faceDe('gauche'), aDroite = faceDe('droite');
+    const estGenerique = (h) => !!h && (h.transition === 'OUVERTURE' || h.transition === 'CREDITS' || h.dual);
+    if (estGenerique(brut) || estGenerique(aGauche) || estGenerique(aDroite)) {
+      const roles = [
+        ...((aGauche && (aGauche.transition === 'OUVERTURE' || aGauche.dual)) ? ['OUVERTURE'] : []),
+        ...((aDroite && (aDroite.transition === 'CREDITS' || aDroite.dual)) ? ['CREDITS'] : []),
+      ];
       for (const role of roles) {
         // Le Générique se pose au bout du montage — encore faut-il que ce bout
         // soit ouvert : une borne de minutage déjà posée l'a peut-être fermé, ou
@@ -852,11 +863,11 @@ export function coupsPossibles(state, p, hypothese) {
         // place comme les autres ; il ne s'ajoute pas par-dessus.
         if (role === 'OUVERTURE' && !banc.ouverture && banc.sequences.length
           && !bo.gauche(0) && placeDuCote(cfg, banc.sequences[0], 'gauche')) {
-          out.push({ carte, format, action: 'GENERIQUE', role, pos: 0 });
+          out.push({ carte, format, action: 'GENERIQUE', role, pos: 0, cote: 'gauche' });
         }
         if (role === 'CREDITS' && !banc.fermeture && banc.sequences.length
           && !bo.droite(dernier) && placeDuCote(cfg, banc.sequences[dernier], 'droite')) {
-          out.push({ carte, format, action: 'GENERIQUE', role, pos: dernier });
+          out.push({ carte, format, action: 'GENERIQUE', role, pos: dernier, cote: 'droite' });
         }
       }
       if (!brut.dual) continue;

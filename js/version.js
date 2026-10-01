@@ -1,8 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.46';
-export const BUILD_DATE = '2026-10-01 17:12';
+export const VERSION = '2.47';
+export const BUILD_DATE = '2026-10-01 17:16';
 
 export const CHANGELOG = [
+  {
+    v: '2.47',
+    date: '01/10/2026',
+    items: [
+      "<b>Un Générique se lit sur la face qui sera jouée</b>, et non plus sur son seul recto. Le Gros Plan 391 du Set 3.1 — la Fin au recto, « BBG présente » au verso — n'avait jamais le droit d'ouvrir le film : il ouvre désormais à gauche du montage sur son verso, et le ferme à droite sur son recto. Le Plan Moyen 291 de même, faces inversées.",
+    ],
+  },
   {
     v: '2.46',
     date: '01/10/2026',
