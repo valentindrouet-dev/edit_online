@@ -1,8 +1,18 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.27';
-export const BUILD_DATE = '2026-09-08 21:40';
+export const VERSION = '2.28';
+export const BUILD_DATE = '2026-10-01 10:30';
 
 export const CHANGELOG = [
+  {
+    v: '2.28',
+    date: '01/10/2026',
+    items: [
+      "<b>Le site suit la fenêtre, à toutes les largeurs.</b> Mesuré sur les dix écrans, de 390 à 2 212 px : <b>aucun débordement</b>, plus rien qui sorte de son panneau, et le contenu reste centré quand on rétrécit la fenêtre. Quatre défauts réels sont corrigés en chemin.",
+      "<b>Le Matériel se replie enfin.</b> La règle qui devait le passer sur une colonne en fenêtre étroite ne s'appliquait <b>jamais</b> : écrite sur une seule classe, elle perdait contre la règle de base, écrite sur trois. L'éditeur gardait donc ses 370 px à toutes les largeurs — deux cartes de front à 1 100 px, <b>une seule</b> à 900, et un panneau qui sortait de l'écran sur un téléphone. Il reste désormais à droite, aminci à 300 px et toujours collant, jusqu'à 880 px ; en dessous, il passe sous la galerie.",
+      "<b>La galerie des cartes remplit sa largeur.</b> Ses cartes avaient une taille fixe : à côté de l'éditeur, dans une demi-fenêtre, il manquait huit pixels pour en loger une deuxième, et l'on voyait une carte par ligne devant un grand vide. Elle compte maintenant autant de colonnes qu'il en tient — une carte n'y descend jamais sous 210 px —, et chaque carte prend exactement la largeur de la sienne : tout étant en em, sa police se règle sur son conteneur et la carte suit d'un bloc. Mesuré : de 700 à 2 212 px, toujours deux cartes de front au moins, et jamais de vide à droite.",
+      "<b>Une liste déroulante ne pousse plus la page.</b> Une colonne de grille <code>1fr</code> ne descend pas sous son plus long contenu insécable — une liste et sa plus longue option, par exemple « autorisé — un plan peut se répéter ». Les deux colonnes de l'accueil et des Variables se tiennent désormais dans la fenêtre, et c'est le contenu qui se replie : un réglage passe sous son libellé, un filtre du Matériel et le sens du verso se resserrent, l'en-tête d'En ligne va à la ligne.",
+    ],
+  },
   {
     v: '2.27',
     date: '08/09/2026',

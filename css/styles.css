@@ -114,8 +114,13 @@ button { font-family: inherit; }
 .wrap { max-width: 1180px; margin: 0 auto; padding: 0 22px 60px; }
 .wrap.large { max-width: 1500px; }
 .wrap.etroit { max-width: 660px; }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
-@media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+/* `1fr` se lit `minmax(auto, 1fr)` : une colonne ne descend pas sous la largeur
+   de son plus long contenu insécable — une liste déroulante et sa plus longue
+   option, par exemple. Sur une fenêtre étroite, la colonne poussait donc la page
+   au-delà du bord. `minmax(0, …)` la tient dans la fenêtre, et c'est le contenu
+   qui se replie. */
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
 
 .panneau {
   background: rgba(255,255,255,.92); border: 1px solid rgba(255,255,255,.9);
@@ -180,7 +185,13 @@ button { font-family: inherit; }
 
 .rangee-boutons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
 
-.champ { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 8px 0; border-bottom: 1px dashed var(--gris-clair); }
+.champ { display: flex; align-items: center; justify-content: space-between; gap: 8px 14px; padding: 8px 0; border-bottom: 1px dashed var(--gris-clair);
+  /* Sur une fenêtre étroite, le champ passe sous son libellé au lieu de pousser
+     le panneau hors de l'écran. Au large, rien ne change : le libellé prend la
+     place, le champ reste au bout de la ligne. */
+  flex-wrap: wrap; }
+.champ label { flex: 1 1 12em; min-width: 0; }
+.champ select, .champ input[type=number] { max-width: 100%; }
 .champ:last-child { border-bottom: 0; }
 .champ label { font-size: .92rem; color: var(--encre-doux); }
 .champ label small { display: block; color: var(--gris); font-size: .78rem; }
@@ -1399,8 +1410,9 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .compo-retouchee { display: inline-flex; align-items: center; gap: 8px; font-size: .74rem; color: var(--violet); }
 
 /* Le sens de retournement des planches, à côté de son bouton d'export. */
-.retournement { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; color: var(--gris); }
-.retournement select { font-size: .74rem; padding: 3px 6px; }
+.retournement { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; color: var(--gris);
+  max-width: 100%; min-width: 0; }
+.retournement select { font-size: .74rem; padding: 3px 6px; min-width: 0; max-width: 100%; }
 
 /* --- Le choix d'une illustration ------------------------------------------ */
 
@@ -1783,8 +1795,22 @@ body .demi { transition: box-shadow .12s; }
 .tbl-materiel .ligne-retouchee { background: #faf7ff; }
 .tbl-materiel .ligne-retouchee td:last-child { color: var(--violet); font-weight: 700; }
 
+/* Sur une fenêtre moyenne, l'éditeur RESTE à droite — mince, mais collant :
+   on clique une carte, on la règle, sans quitter la galerie des yeux. Empilé
+   sous cinquante cartes, il tombait 3 500 px plus bas, et chaque retouche
+   demandait d'aller le chercher.
+   Ces règles se lisent sur trois classes, comme la règle de base : sur une
+   seule, elles ne s'appliquaient JAMAIS — l'éditeur gardait ses 370 px à toutes
+   les largeurs, écrasait la galerie à deux cartes de front, et sortait de
+   l'écran sur un téléphone. */
 @media (max-width: 1180px) {
-  .materiel-2col { grid-template-columns: minmax(0, 1fr); }
+  .wrap.large.materiel-2col { grid-template-columns: minmax(0, 1fr) 300px; }
+}
+/* En dessous, deux cartes ne tiennent plus à côté de l'éditeur : la galerie
+   prend la largeur et l'éditeur passe dessous. Le seuil est mesuré — à 881 px,
+   deux cartes de 210 px tiennent encore de front à côté d'un éditeur de 300. */
+@media (max-width: 880px) {
+  .wrap.large.materiel-2col { grid-template-columns: minmax(0, 1fr); }
   .editeur { position: static; max-height: none; }
 }
 
@@ -1796,6 +1822,22 @@ body .demi { transition: box-shadow .12s; }
 .materiel-2col .galerie .carte.small:not(.solo) { width: 226px; font-size: 11.3px; }
 .materiel-2col .galerie .carte.solo { font-size: 11.3px; }
 .materiel-2col .galerie { gap: 14px; }
+/* La galerie des cartes doubles REMPLIT sa largeur, quelle que soit la fenêtre :
+   autant de colonnes qu'il en tient — une carte n'y descend jamais sous 210 px —,
+   et chaque carte prend exactement la largeur de la sienne. Avec des cartes de
+   taille fixe, il manquait huit pixels pour en loger une deuxième à côté de
+   l'éditeur dans une demi-fenêtre : on en voyait UNE par ligne, et un grand vide.
+   La carte est entièrement en em — 20 em de large : sa police se règle donc sur
+   son conteneur, un vingtième de sa largeur (`5cqw`), et tout suit d'un bloc.
+   Les vues d'une seule moitié gardent leurs tuiles : un Gros Plan seul est trois
+   fois plus étroit qu'un Plan Large, une grille égale y laisserait des trous. */
+.materiel-2col .galerie:has(.carte.small:not(.solo)) {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(226px, 1fr));
+}
+.materiel-2col .galerie:has(.carte.small:not(.solo)) .vignette {
+  width: auto; min-width: 0; container-type: inline-size;
+}
+.materiel-2col .galerie .vignette .carte.small:not(.solo) { width: 100%; font-size: 11.3px; font-size: 5cqw; }
 
 /* --- Feuille imprimable (export PDF) --------------------------------------- */
 /* Aucune bibliothèque : on bascule la page en mode impression et le navigateur
@@ -1858,6 +1900,10 @@ body .demi { transition: box-shadow .12s; }
   background: #fff; font-size: .84rem; color: var(--encre); text-transform: none; letter-spacing: 0;
 }
 .barre-filtres input { width: 72px; }
+/* Une liste déroulante prend la largeur de sa plus longue option — « avec
+   pouvoir — n si au moins … » — et poussait la barre hors de la fenêtre. */
+.barre-filtres label { max-width: 100%; min-width: 0; }
+.barre-filtres select { max-width: 100%; }
 .barre-filtres label > span, .barre-filtres label { align-items: flex-start; }
 .barre-filtres label:has(input) { flex-direction: column; }
 .barre-filtres label input + input { margin-top: 4px; }
@@ -2146,7 +2192,7 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
    --------------------------------------------------------------------------- */
 .pill.large { display: block; width: 100%; margin-top: 10px; padding: 12px; font-size: .95rem; }
 
-.entete-ligne { display: flex; align-items: center; gap: 14px; margin: 10px 0 20px; }
+.entete-ligne { display: flex; align-items: center; gap: 10px 14px; margin: 10px 0 20px; flex-wrap: wrap; }
 .entete-ligne h1 { font-size: 1.9rem; margin: 0; flex: 0 0 auto; }
 .entete-ligne .pill { margin-left: auto; }
 
