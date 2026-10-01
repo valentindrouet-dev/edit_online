@@ -86,8 +86,9 @@ export function construirePaquet(cfg) {
  */
 export function bilanPaquet(cfg, n) {
   const { doubles, larges, departs } = construirePaquet(cfg);
-  const incompletes = buildCartesDoubles()
-    .filter((c) => c.actif && (c.pmScene === undefined || c.gpScene === undefined)).length;
+  const aCompleter = buildCartesDoubles()
+    .filter((c) => c.actif && (c.pmScene === undefined || c.gpScene === undefined)).map((c) => c.id);
+  const incompletes = aCompleter.length;
   const t = taillesRiviere(cfg, n);
   const prises = Math.max(0, (cfg.tours || 10) - (cfg.sansPlanDepart ? 0 : 1));
   const besoin = prises * n + t.pl + t.pmgp;
@@ -100,7 +101,7 @@ export function bilanPaquet(cfg, n) {
   const manque = Math.max(besoin - total, pmgpManquantes + plManquants);
   return {
     n, besoin, total, doubles: doubles.length, larges: larges.length, departs: departs.length,
-    incompletes, manque, departsManquants, pmgpManquantes, plManquants,
+    incompletes, aCompleter, manque, departsManquants, pmgpManquantes, plManquants,
     jouable: manque <= 0 && departsManquants === 0,
   };
 }

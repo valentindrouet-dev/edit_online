@@ -650,12 +650,12 @@ function bandeauMateriel() {
   return `<div class="bandeau-materiel ${modifie ? 'modifie' : ''}">
     ${segmentSets('data-set-accueil')}
     <div class="segments large" id="seg-materiel">
-      <button class="${modifie ? '' : 'on'}" data-jeu-accueil="IMPRIME">Matériel d’origine</button>
-      <button class="${modifie ? 'on' : ''}" data-jeu-accueil="MODIFIE">Matériel modifié</button>
+      <button class="${modifie ? '' : 'on'}" data-jeu-accueil="IMPRIME">${store.cfg.set} Origine</button>
+      <button class="${modifie ? 'on' : ''}" data-jeu-accueil="MODIFIE">${store.cfg.set} Modifiée</button>
     </div>
     <span class="aide">${modifie
       ? (n ? `${n} retouche${n > 1 ? 's' : ''} en jeu` : 'aucune retouche pour l’instant')
-      : 'les cartes des PDF, sans retouche'}${off ? ` · ${off} carte${off > 1 ? 's' : ''} écartée${off > 1 ? 's' : ''}` : ''}</span>
+      : `les cartes du set, sans retouche${store.cfg.set === SET_DEFAUT ? '' : ' ni assemblage du Matériel'}`}${off ? ` · ${off} carte${off > 1 ? 's' : ''} écartée${off > 1 ? 's' : ''}` : ''}</span>
     <span class="bm-lien" data-go="#/materiel">éditer ›</span>
   </div>`;
 }
@@ -681,32 +681,45 @@ function allerA(hash) {
  * matériel de la CONFIGURATION — celui qui partira en partie —, même si une
  * partie en cours joue un autre jeu.
  */
-function bilanJeu(n = store.joueurs.length) {
-  appliquerMateriel(store.cfg.materielActif === 'MODIFIE' ? store.cfg.materiel : null,
+function bilanJeu(n = store.joueurs.length, jeu = store.cfg.materielActif) {
+  appliquerMateriel(jeu === 'MODIFIE' ? store.cfg.materiel : null,
     store.cfg.cartesDesactivees, store.cfg.materiel, store.cfg.set);
   try { return bilanPaquet(store.cfg, n); } finally { appliquerJeuActif(); }
 }
 
-/** Ce qu'on dit quand le set choisi n'a pas de quoi faire une partie. */
+/**
+ * Ce qu'on dit quand le set choisi n'a pas de quoi faire une partie — et ce
+ * qu'il faut faire. Le cas le plus trompeur passe en premier : l'assemblage
+ * fait dans le Matériel est une retouche, il vit dans le jeu « Modifié » ;
+ * lancer l'« Origine », c'est jouer sans lui.
+ */
 function messageSetIncomplet(n = store.joueurs.length) {
-  const b = bilanJeu(n);
+  const set = store.cfg.set;
   const s = (k) => (k > 1 ? 's' : '');
+  if (store.cfg.materielActif !== 'MODIFIE' && bilanJeu(n, 'MODIFIE').jouable) {
+    return `Vous lancez <b>« ${set} Origine »</b>, qui n'a pas encore d'assemblage : les cartes que vous
+      avez assemblées dans le Matériel sont dans <b>« ${set} Modifiée »</b>.
+      <button class="pill mini" data-jeu-accueil="MODIFIE">Jouer « ${set} Modifiée »</button>`;
+  }
+  const b = bilanJeu(n);
   const morceaux = [];
   if (b.manque > 0) {
-    morceaux.push(`il faut <b>${b.besoin} cartes</b> pour ${n} joueuse${s(n)} — ${
-      b.larges} Plan${s(b.larges)} Large${s(b.larges)} et ${b.doubles} carte${s(b.doubles)} PM / GP ici :
-      <b>il en manque ${b.manque}</b>${b.pmgpManquantes ? `, dont ${b.pmgpManquantes} carte${
-        s(b.pmgpManquantes)} PM / GP au moins` : ''}`);
+    morceaux.push(`il faut <b>${b.besoin} cartes</b> pour ${n} joueuse${s(n)}, il y en a <b>${b.total}</b>
+      de jouables — ${b.doubles} carte${s(b.doubles)} PM / GP complète${s(b.doubles)} et ${b.larges}
+      Plan${s(b.larges)} Large${s(b.larges)} : <b>il en manque ${b.manque}</b>${b.pmgpManquantes
+    ? `, dont ${b.pmgpManquantes} carte${s(b.pmgpManquantes)} PM / GP au moins` : ''}`);
   }
   if (b.departsManquants) {
     morceaux.push(`il manque ${b.departsManquants} carte${s(b.departsManquants)} de départ`);
   }
   if (b.incompletes) {
-    morceaux.push(`${b.incompletes} carte${s(b.incompletes)} à qui il manque une moitié reste${
-      b.incompletes > 1 ? 'nt' : ''} hors du paquet`);
+    const liste = b.aCompleter.slice(0, 8).join(', ') + (b.incompletes > 8 ? '…' : '');
+    morceaux.push(`<b>${b.incompletes} carte${s(b.incompletes)} n'${b.incompletes > 1 ? 'ont' : 'a'} qu'une
+      moitié</b> (${liste}) et reste${b.incompletes > 1 ? 'nt' : ''} hors du paquet — à compléter dans
+      Matériel → Assemblage`);
   }
-  return `Le Set ${store.cfg.set} ne se joue pas encore : ${morceaux.join(' ; ')}.
-    Choisissez le Set ${SET_DEFAUT} pour jouer.`;
+  return `Le Set ${set} ne se joue pas encore${store.cfg.materielActif === 'MODIFIE' ? ` (« ${set} Modifiée »)`
+    : ` (« ${set} Origine »)`} : ${morceaux.join(' ; ')}. Choisissez le Set ${SET_DEFAUT} pour jouer.`;
 }
 
 function lancerPartie() {

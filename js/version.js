@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.45';
-export const BUILD_DATE = '2026-10-01 16:52';
+export const VERSION = '2.46';
+export const BUILD_DATE = '2026-10-01 17:12';
 
 export const CHANGELOG = [
+  {
+    v: '2.46',
+    date: '01/10/2026',
+    items: [
+      "<b>L'accueil dit pourquoi un set ne se lance pas, et comment y remédier.</b> L'assemblage fait dans le Matériel est une retouche : il vit dans « 3.1 Modifiée ». Lancer « 3.1 Origine », c'est jouer sans lui — l'accueil le dit, avec un bouton « Jouer 3.1 Modifiée ». Sinon, il compte les cartes jouables et nomme celles qui n'ont qu'une moitié.",
+      "Les boutons de l'accueil portent le nom du set : « 3.1 Origine » et « 3.1 Modifiée ».",
+    ],
+  },
   {
     v: '2.45',
     date: '01/10/2026',
