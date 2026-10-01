@@ -1,8 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.35';
-export const BUILD_DATE = '2026-10-01 14:15';
+export const VERSION = '2.36';
+export const BUILD_DATE = '2026-10-01 14:21';
 
 export const CHANGELOG = [
+  {
+    v: '2.36',
+    date: '01/10/2026',
+    items: [
+      "<b>Le Set 3.1 reçoit ses Plans Larges 111 à 115</b> : 111 « 10 × icône absente », 112 « 4 × Séquence avec 3+ Armes », 113 « 4 × Séquence avec 3+ Véhicules », 114 « 4 × Séquence sans Allié », 115 « 5 × Séquence avec 3+ Objets ».",
+    ],
+  },
   {
     v: '2.35',
     date: '01/10/2026',
