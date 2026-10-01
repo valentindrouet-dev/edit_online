@@ -6010,6 +6010,7 @@ function objDepuisCSV(r, suf = '') {
     case 'SEQ_VOISINES': return OBJ.seqVoisines(n, sens0 === 'APRES' ? 'APRES' : 'AVANT');
     case 'SEQ_LONGUE':   return OBJ.seqLongue(n);
     case 'SEQ_AVEC': return ciblesSequence().some((c) => c.id === cible)
+      || (String(cible).includes('+') && String(cible).split('+').every((e) => ELEMENT_IDS.includes(e)))
       ? OBJ.seqAvec(n, sens0 === 'SANS' ? 'SANS' : 'AVEC', cible, seuil) : null;
     case 'PAIRE': {
       // « ARME+ARME » ou « ARME+ARME+HEROINE » : la colonne porte le groupe

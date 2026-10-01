@@ -326,6 +326,11 @@ function objCoeur(obj, taille, compact, large) {
  * partagent donc aussi son dessin.
  */
 function cibleHTML(cible, taille, compact) {
+  // Un groupe d'icônes se dessine comme un couple : les pastilles se chevauchent.
+  if (typeof cible === 'string' && cible.includes('+')) {
+    const els = cible.split('+');
+    return `<span class="paire ${els.length > 2 ? 'trio' : ''}">${els.map((e) => elIcon(e, taille)).join('')}</span>`;
+  }
   switch (cible) {
     case 'CARTE':    return '<span class="tag tag-blanc">Carte</span>';
     case 'PLAN':     return '<span class="tag tag-blanc">Plan</span>';
@@ -558,6 +563,7 @@ function coutCoeur(obj, compact, P, large) {
     if (c === 'SEQUENCE') return t('Séquence', 'Séq');
     if (c === 'ICONE') return t('Icône', 'Ic.');
     if (c === 'VALEUR') return t('Valeur de Plan', 'Val.');
+    if (typeof c === 'string' && c.includes('+')) return P.rond + (c.split('+').length - 1) * (P.rond - EM.chevauche);
     return FORMATS[c] ? t(FORMATS[c].label, FORMATS[c].short) : P.rond;
   };
   const tt = (x) => P.tag0 + P.tag1 * String(x).length;
@@ -610,7 +616,7 @@ function coutCoeur(obj, compact, P, large) {
       // mesurer la même chose, sinon le serrage se calcule sur un bandeau qui
       // n'est pas celui qu'on dessine.
       if (cibleEstIcone(obj.cible)) {
-        const n = Math.min(Math.max(k, 1), 4);
+        const n = String(obj.cible).includes('+') ? obj.cible.split('+').length : Math.min(Math.max(k, 1), 4);
         const pile = P.rond + (n - 1) * (P.rond - EM.chevauche) + (k > 1 ? g + 0.5 : 0);
         const court = t('Séquence', 'Séq');
         return (large ? seq : court) + g + mot('avec') + g + pile;

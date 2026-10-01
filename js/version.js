@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.33';
-export const BUILD_DATE = '2026-10-01 12:20';
+export const VERSION = '2.34';
+export const BUILD_DATE = '2026-10-01 14:11';
 
 export const CHANGELOG = [
+  {
+    v: '2.34',
+    date: '01/10/2026',
+    items: [
+      "<b>Le Set 3.1 reçoit ses Plans Larges 101 à 105</b> : 101 « 8 si le minutage est dans l'ordre », 102 « 1 × Plan de la plus longue Séquence », 103 « 4 × Séquence sans Arme », 104 « 1 × l'icône la plus présente », 105 « 3 × Séquence avec Héroïne + Ennemi + Allié » — et le 105 est un plan de mort.",
+      "<b>Une séquence peut demander un GROUPE d'icônes</b> — les trois personnages ensemble, par exemple. Il se compte en groupes complets, et s'écrit « HEROINE+ENNEMI+ALLIE » dans le tableur, comme un couple.",
+      "<b>Un Plan Large peut être un plan de mort.</b>",
+    ],
+  },
   {
     v: '2.33',
     date: '01/10/2026',

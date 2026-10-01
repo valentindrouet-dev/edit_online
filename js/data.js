@@ -536,8 +536,16 @@ export function ciblesSequence() {
   ];
 }
 
+/**
+ * Une cible peut être un GROUPE d'icônes à réunir — « HEROINE+ENNEMI+ALLIE » :
+ * une séquence avec les trois personnages. Elle s'écrit comme la colonne d'un
+ * couple dans le tableur, et se compte en groupes complets.
+ */
+export const estGroupe = (c) => typeof c === 'string' && c.includes('+');
+
 /** Le libellé d'une cible de séquence — icône, cadrage ou Raccord. */
 export function libelleCible(cible) {
+  if (estGroupe(cible)) return cible.split('+').map(libelleCible).join(' + ');
   if (cible === 'RACCORD') return 'Carte Raccord';
   if (cible === 'MORT') return 'Plan de mort';
   if (cible === 'VALEUR') return 'Valeur de Plan';
@@ -1083,7 +1091,7 @@ export function ciblesDe(o) {
       // Les bandeaux de séquence parlent tous de la ligne, et la plupart
       // nomment en plus ce qu'elle doit porter.
       if (KINDS_SEQUENCE.includes(o.kind)) {
-        return ['SEQUENCE', ...(o.cible ? [o.cible] : [])];
+        return ['SEQUENCE', ...(o.cible ? [...new Set(String(o.cible).split('+'))] : [])];
       }
       return o.cible ? [o.cible] : [];
   }
@@ -1196,7 +1204,13 @@ const TABLES = {
     // Une carte, dont on n'a que le Gros Plan : le 309 (fichiers 309R et
     // 309V), le sac de sport.
     scenes: [S(1, 35, 'OBJET', null, 309, [], ['OBJET'], OBJ.element(1, 'OBJET', 'SUITE'))],
-    larges: [],
+    larges: [
+      PL(101, 15, ['HEROINE', 'ENNEMI', 'OBJET', 'VEHICULE'], OBJ.chrono(8)),
+      PL(102, 30, ['OBJET', 'ARME', 'VEHICULE'], OBJ.seqLongue(1)),
+      PL(103, 45, ['ENNEMI', 'ALLIE', 'OBJET', 'VEHICULE'], OBJ.seqAvec(4, 'SANS', 'ARME')),
+      PL(104, 90, ['HEROINE', 'ALLIE', 'VEHICULE'], OBJ.extreme(1, 'PLUS', 'MONTAGE')),
+      PL(105, 90, ['HEROINE', 'ENNEMI', 'ALLIE'], OBJ.seqAvec(3, 'AVEC', 'HEROINE+ENNEMI+ALLIE'), { mort: true }),
+    ],
     paires: [[null, 309]],
     // Les quatre Plans de départ, 001 à 004. Chacun a un verso différent : les
     // cartes sont les six couples des quatre plans, comme la variante « 6
@@ -1212,6 +1226,8 @@ const TABLES = {
     sixSeul: true,
     images: {
       gp309: 'assets/s31/GP309.webp',
+      pl101: 'assets/s31/PL101.webp', pl102: 'assets/s31/PL102.webp', pl103: 'assets/s31/PL103.webp',
+      pl104: 'assets/s31/PL104.webp', pl105: 'assets/s31/PL105.webp',
       pl001: 'assets/s31/DEP001.webp', pl002: 'assets/s31/DEP002.webp',
       pl003: 'assets/s31/DEP003.webp', pl004: 'assets/s31/DEP004.webp',
     },
@@ -1550,7 +1566,7 @@ export function moitiesDe(carte, face = 'R') {
 export function plHalf(carte) {
   const cle = cleplan(carte.num, null);
   const d = imprimeDe(cle, { tc: carte.tc, el: carte.el, obj: carte.obj, obj2: carte.obj2,
-    image: imageImprimee('pl', carte.num) });
+    mort: !!carte.mort, image: imageImprimee('pl', carte.num) });
   return {
     scene: null,
     format: carte.depart ? 'DEP' : 'PL',
@@ -1564,7 +1580,7 @@ export function plHalf(carte) {
     el: elDe(cle, d.el),
     obj: objDe(cle, d.obj),
     obj2: obj2De(cle, d.obj2),
-    mort: mortDe(cle, false),
+    mort: mortDe(cle, d.mort),
     num: numDe(cle, carte.num),
     numOrigine: carte.num,
     depart: !!carte.depart,
@@ -1617,7 +1633,7 @@ export function catalogue() {
     }
   }
   for (const p of PLANS_LARGES()) {
-    pousse(p.num, null, { tc: p.tc, el: p.el, obj: p.obj, obj2: p.obj2, mort: false },
+    pousse(p.num, null, { tc: p.tc, el: p.el, obj: p.obj, obj2: p.obj2, mort: !!p.mort },
       'PL', 'PLAN LARGE', { brouillon: !!p.brouillon });
   }
   for (const d of DEPARTS()) {

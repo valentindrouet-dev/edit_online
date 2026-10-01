@@ -94,6 +94,14 @@ export function compteCible(plans, cible, banc) {
     case 'SEQUENCE': return banc ? banc.sequences.length : 0;
     default:
       if (CADRAGES_POUVOIR.includes(cible)) return plans.filter((p) => aCeCadrage(p, cible)).length;
+      // Un GROUPE — « HEROINE+ENNEMI+ALLIE » — se compte en groupes COMPLETS :
+      // il en faut chaque icône, autant de fois qu'il la demande.
+      if (typeof cible === 'string' && cible.includes('+')) {
+        const demandes = {};
+        for (const e of cible.split('+')) demandes[e] = (demandes[e] || 0) + 1;
+        return Math.min(...Object.entries(demandes)
+          .map(([e, k]) => Math.floor(compteIcone(plans, e) / k)));
+      }
       return compteIcone(plans, cible);
   }
 }
