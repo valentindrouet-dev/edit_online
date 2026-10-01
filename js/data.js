@@ -669,9 +669,9 @@ export function objLabel(o, cfg, opts = {}) {
   const si = nu ? 'si' : `${o.n} si`;
   switch (o.kind) {
     // --- Les pouvoirs de règle : une phrase, pas un compte ------------------
-    case 'PIOCHER': return `Vous pouvez piocher sur la pioche ${
+    case 'PIOCHER': return `Vous pouvez piocher la Carte du dessus de la pioche ${
       o.cible === 'PL' ? 'Plans Larges' : 'PM / GP'}`;
-    case 'SEQ_PLUS': return `Vous pouvez monter ${o.n} séquence${
+    case 'SEQ_PLUS': return `Vous pouvez poser ${o.n} séquence${
       o.n > 1 ? 's' : ''} supplémentaire${o.n > 1 ? 's' : ''}${
       cfg && cfg.sequencesMax > 0 ? ` (${cfg.sequencesMax + o.n})` : ''}`;
     case 'PLAN_PLUS': return `Après le dernier tour, vous pouvez jouer ${o.n} Carte${
@@ -906,11 +906,12 @@ export const PAIRES_DEPART = [
 export function DEPARTS_SIX() {
   const faces = new Map();
   for (const d of DEPARTS()) for (const f of d.faces) faces.set(f.num, f);
-  return PAIRES_DEPART
+  const plans = T().plansDepart || PLANS_DEPART;
+  return (T().pairesDepart || PAIRES_DEPART)
     .map(([a2, b2], i) => {
       const fa = faces.get(a2); const fb = faces.get(b2);
       if (!fa || !fb) return null;
-      const rang = (x) => PLANS_DEPART.indexOf(x) + 1;
+      const rang = (x) => plans.indexOf(x) + 1;
       return { type: `${rang(a2)}-${rang(b2)}`, six: true, rang: i, faces: [fa, fb] };
     })
     .filter(Boolean);
@@ -1010,7 +1011,8 @@ export function buildDeparts(six) {
   // des quatre plans. Elles ne sont pas en plusieurs exemplaires — c'est tout
   // l'objet de la variante : chaque joueuse en pioche une, et deux joueuses
   // n'ont jamais le même couple.
-  if (six) {
+  // Un set dont les cartes de départ SONT les six couples n'a que cette forme.
+  if (six || T().sixSeul) {
     return DEPARTS_SIX().map((d) => {
       const faces = d.faces.filter((f) => carteActive(`S${d.type}f${f.num}`));
       return faces.length ? { id: `S${d.type}`, type: 'DEPART', version: d.type, six: true, faces } : null;
@@ -1194,9 +1196,25 @@ const TABLES = {
     // Une carte, dont on n'a que le Gros Plan : le 309 (fichiers 309R et
     // 309V), le sac de sport.
     scenes: [S(1, 35, 'OBJET', null, 309, [], ['OBJET'], OBJ.element(1, 'OBJET', 'SUITE'))],
-    larges: [], departs: [],
+    larges: [],
     paires: [[null, 309]],
-    images: { gp309: 'assets/s31/GP309.webp' },
+    // Les quatre Plans de départ, 001 à 004. Chacun a un verso différent : les
+    // cartes sont les six couples des quatre plans, comme la variante « 6
+    // Cartes Départ » du Set 2 — qui est ici la règle, pas une variante.
+    departs: [
+      { type: '1', faces: [PL('001', 30, ['HEROINE', 'ALLIE', 'VEHICULE'], OBJ.raccordVaut(1), { depart: true })] },
+      { type: '2', faces: [PL('002', 45, ['ENNEMI', 'ALLIE', 'OBJET', 'ARME'], OBJ.planPlus(1), { depart: true })] },
+      { type: '3', faces: [PL('003', 60, ['HEROINE', 'ENNEMI', 'VEHICULE', 'VEHICULE'], OBJ.sequencePlus(1), { depart: true })] },
+      { type: '4', faces: [PL('004', 75, ['HEROINE', 'ENNEMI', 'ARME', 'ARME'], OBJ.piocher('PMGP'), { depart: true })] },
+    ],
+    plansDepart: ['001', '002', '003', '004'],
+    pairesDepart: [['001', '002'], ['002', '003'], ['003', '004'], ['004', '001'], ['002', '004'], ['001', '003']],
+    sixSeul: true,
+    images: {
+      gp309: 'assets/s31/GP309.webp',
+      pl001: 'assets/s31/DEP001.webp', pl002: 'assets/s31/DEP002.webp',
+      pl003: 'assets/s31/DEP003.webp', pl004: 'assets/s31/DEP004.webp',
+    },
     // Ce qu'une face imprime autrement que l'autre.
     faces: { '309V': { tc: 25 } },
     jouable: false,
@@ -1220,7 +1238,7 @@ export function contenuSet(id) {
   const t = T();
   try {
     return {
-      cartes: t.paires.length + t.larges.length + t.departs.length,
+      cartes: t.paires.length + t.larges.length + (t.sixSeul ? t.pairesDepart.length : t.departs.length),
       plans: t.scenes.reduce((n, sc) => n + (sc.pmNum != null ? 2 : 0) + (sc.gpNum != null ? 2 : 0), 0)
         + t.larges.length + t.departs.reduce((n, d) => n + d.faces.length, 0),
     };

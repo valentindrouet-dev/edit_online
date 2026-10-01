@@ -87,9 +87,9 @@ export function phraseRegle(obj, compact) {
   switch (obj.kind) {
     case 'PIOCHER': return compact
       ? `Pioche ${obj.cible === 'PL' ? 'PL' : 'PM/GP'}`
-      : `Vous pouvez piocher sur la pioche ${obj.cible === 'PL' ? 'Plans Larges' : 'PM / GP'}`;
+      : `Vous pouvez piocher la Carte du dessus de la pioche ${obj.cible === 'PL' ? 'Plans Larges' : 'PM / GP'}`;
     case 'SEQ_PLUS': return compact ? `+${obj.n} séquence`
-      : `Vous pouvez monter ${obj.n} séquence${s(obj.n)} supplémentaire${s(obj.n)}`;
+      : `Vous pouvez poser ${obj.n} séquence${s(obj.n)} supplémentaire${s(obj.n)}`;
     case 'PLAN_PLUS': return compact ? `+${obj.n} Carte`
       : `Après le dernier tour, vous pouvez jouer ${obj.n} Carte${s(obj.n)} supplémentaire${s(obj.n)}`;
     // Un Gros Plan partagé à deux n'a de place que pour une douzaine de
@@ -125,10 +125,10 @@ function phraseRegleHTML(obj, compact) {
       if (compact) return phraseRegle(obj, compact);
       const quoi = obj.cible === 'PL' ? tagCadrage('PL', false)
         : `${tagCadrage('PM', true)}<span class="mot-regle">/</span>${tagCadrage('GP', true)}`;
-      return `Vous pouvez piocher sur la pioche ${lie(quoi)}`;
+      return `Vous pouvez piocher la Carte du dessus de la pioche ${lie(quoi)}`;
     }
     case 'SEQ_PLUS': return compact ? phraseRegle(obj, compact)
-      : `Vous pouvez monter ${lie(`${obj.n} ${tagSeq(false)}`)} supplémentaire${s(obj.n)}`;
+      : `Vous pouvez poser ${lie(`${obj.n} ${tagSeq(false)}`)} supplémentaire${s(obj.n)}`;
     case 'RACCORD_VAUT': return compact ? phraseRegle(obj, compact)
       : `Les cartes ${rac} vous rapportent ${lie(`${signeRegle(obj.n)} par ${rac}`)}`;
     default: return phraseRegle(obj, compact);

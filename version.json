@@ -1,6 +1,6 @@
 {
-  "version": "2.32",
-  "date": "2026-10-01 11:58",
+  "version": "2.33",
+  "date": "2026-10-01 12:20",
   "modules": [
     "js/ai.js",
     "js/anim.js",

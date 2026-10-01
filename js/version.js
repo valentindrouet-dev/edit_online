@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.32';
-export const BUILD_DATE = '2026-10-01 11:58';
+export const VERSION = '2.33';
+export const BUILD_DATE = '2026-10-01 12:20';
 
 export const CHANGELOG = [
+  {
+    v: '2.33',
+    date: '01/10/2026',
+    items: [
+      "<b>Le Set 3.1 reçoit ses quatre Plans de départ, 001 à 004</b> — 30:00 « +1 par Raccord », 45:00 « 1 Carte supplémentaire », 60:00 « 1 Séquence supplémentaire », 75:00 « pioche PM / GP ». Chacun a un verso différent : les cartes sont les <b>six couples</b> des quatre plans, comme la variante « 6 Cartes Départ ».",
+      "<b>Les pouvoirs de règle parlent comme les cartes imprimées</b> : « Vous pouvez <b>poser</b> 1 Séquence supplémentaire », « Vous pouvez piocher <b>la Carte du dessus</b> de la pioche PM / GP ».",
+    ],
+  },
   {
     v: '2.32',
     date: '01/10/2026',
