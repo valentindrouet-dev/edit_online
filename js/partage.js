@@ -62,6 +62,8 @@ export function composerPartage(cfg, images, version, textes) {
   // donné en ligne n'a rien à faire chez le testeur, et la signature du publié
   // adopté parlerait d'un dépôt qui n'est pas le sien.
   delete propre.publieAdopte;
+  // Les retouches des AUTRES sets restent ici : on partage le set en vigueur.
+  delete propre.setsRanges;
   return {
     format: FORMAT,
     version,

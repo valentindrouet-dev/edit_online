@@ -75,6 +75,8 @@ export function composerPublie(cfg, images, version) {
     // Une empreinte courte, pour que l'éditeur sache dire « le site publie un
     // matériel plus récent que le vôtre » sans comparer deux gros objets.
     signature: empreinte(JSON.stringify([cfg.materiel, cfg.cartesDesactivees, images])),
+    // Le set que ces retouches retouchent.
+    set: cfg.set,
     materiel: cfg.materiel,
     cartesDesactivees: cfg.cartesDesactivees || [],
     images: images || [],

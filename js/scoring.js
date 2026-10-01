@@ -130,13 +130,15 @@ function ligneDe(banc, plan) {
 }
 
 /**
- * Les plans qu'un bandeau regarde. Sa portée le dit, et **trois des quatre
+ * Les plans qu'un bandeau regarde. Sa portée le dit, et **trois des cinq
  * portées ne quittent pas la ligne du plan** :
  *
  *   ◀ Héroïne    sa ligne, de son début jusqu'à cette carte comprise
  *   Héroïne ▶    sa ligne, de cette carte comprise jusqu'à son bout
  *   ◀ Héroïne ▶  sa ligne entière
- *   Héroïne      le montage entier — la seule qui en sorte
+ *   Héroïne      le montage entier
+ *   Héroïne ▷▷   cette carte et toute la suite du montage, lignes du dessous
+ *                comprises
  *
  * « Avant » et « après » désignent donc une place **dans la séquence**, pas
  * dans le film : une ligne posée au-dessus n'est pas « avant », elle est
@@ -185,6 +187,12 @@ export function porteeDe(obj, sequence, banc, cfg, porteur) {
   // qu'il n'est pas sur ce banc-là — un aperçu, un plan repris en main — ne
   // doit pas faire tomber le décompte entier.
   if (p === 'SEQUENCE') return sequence || [];
+  // ▷▷ — cette carte et tout ce qui la suit : le reste de sa ligne, puis les
+  // lignes du dessous en entier. Le montage se lit ligne après ligne.
+  if (p === 'SUITE') {
+    const i = montage.indexOf(porteur);
+    return i < 0 ? [] : montage.slice(i);
+  }
   if (p === 'AVANT' || p === 'APRES') {
     // La ligne du porteur. `sequence` la donne d'ordinaire ; on la retrouve
     // dans le banc si l'appelant s'est trompé de séquence.

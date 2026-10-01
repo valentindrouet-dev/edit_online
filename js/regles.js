@@ -22,6 +22,15 @@ import { elIcon } from './icons.js';
 // résumées par leur liste de changements.
 export const REGLES_HISTORIQUE = [
   {
+    v: '0.27',
+    date: '01/10/2026',
+    origine: 'Nouvelle icone des cartes du Set 3.1',
+    corps: (c) => corps_0_27(c),
+    items: [
+      '<b>Nouvelle portée ▷▷ — « et toute la suite ».</b> Un bandeau marqué ▷▷ compte <b>sa propre carte et toutes celles qui la suivent</b> dans le montage : le reste de sa ligne, puis <b>toutes les lignes du dessous</b>. C’est la seule portée qui descende d’une ligne à l’autre — le montage se lit ligne après ligne, chacune de gauche à droite.',
+    ],
+  },
+  {
     v: '0.26',
     date: '08/09/2026',
     origine: 'Variante demandee par l’auteur',
@@ -517,6 +526,17 @@ export function majBloc(v, html) {
 
 // --- v0.23 -----------------------------------------------------------------
 // Variante : un Raccord qu'on n'a pas ferme ne raccorde rien, et coute.
+
+// --- v0.27 -----------------------------------------------------------------
+// La portée ▷▷ : cette carte et toute la suite du montage.
+
+function corps_0_27(c) {
+  return corps_0_26(c).replace(
+    /(<li><b>La portée<\/b>, que ses flèches donnent à lire\.[\s\S]*?)<\/li>/,
+    `$1 ${maj('0.27', `<b>Héroïne ▷▷</b> compte <b>cette carte et toute la suite du montage</b> :
+      le reste de sa ligne, puis toutes les lignes du dessous. C’est la seule portée à flèches qui
+      descende d’une ligne à l’autre.`)}</li>`);
+}
 
 function corps_0_26(c) {
   const pts = (id, def) => {

@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.29';
-export const BUILD_DATE = '2026-10-01 10:41';
+export const VERSION = '2.30';
+export const BUILD_DATE = '2026-10-01 11:44';
 
 export const CHANGELOG = [
+  {
+    v: '2.30',
+    date: '01/10/2026',
+    items: [
+      "<b>Nouveau : le Set de cartes 3.1.</b> Il se choisit sur l'accueil et dans Matériel, à côté du Set 2 (boîte v29), avec son <b>3.1 Origine</b> et son <b>3.1 Modifiée</b> — chaque set garde ses propres retouches. Il se relit carte après carte : un plan pas encore relu garde sa valeur du Set 2, et le Matériel compte où en est la relecture.",
+      "<b>Premier plan relu : le Gros Plan 328</b> — recto 35:00, verso 25:00, une icône Objet, « 1 × Objet ▷▷ » ; son illustration est reprise de la nouvelle carte, deux fois plus fine que l'ancienne.",
+      "<b>Nouvelle portée ▷▷ — règles v0.27.</b> Elle compte la carte qui la porte et <b>toute la suite du montage</b> : le reste de sa ligne, puis toutes les lignes du dessous. Elle se choisit dans l'éditeur comme les autres portées.",
+    ],
+  },
   {
     v: '2.29',
     date: '01/10/2026',

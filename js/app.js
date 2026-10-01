@@ -12,6 +12,7 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
+  SETS, SET_DEFAUT, setValide, avancementSet,
 } from './data.js';
 import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js';
 import { elIcon, numIcon } from './icons.js';
@@ -167,6 +168,37 @@ function normaliserMateriel() {
   store.cfg.materiel = m;
   if (!Array.isArray(store.cfg.cartesDesactivees)) store.cfg.cartesDesactivees = [];
   if (store.cfg.materielActif !== 'IMPRIME') store.cfg.materielActif = 'MODIFIE';
+  store.cfg.set = setValide(store.cfg.set);
+  if (!store.cfg.setsRanges || typeof store.cfg.setsRanges !== 'object') store.cfg.setsRanges = {};
+}
+
+/**
+ * Passer d'un set de cartes à l'autre. Chaque set a ses propres retouches —
+ * « 3.1 Modifiée » n'est pas « 2 Modifiée » : celles du set qu'on quitte sont
+ * rangées de côté, celles du set qu'on rejoint reviennent telles qu'on les avait
+ * laissées. Le reste du code ne voit jamais que le set en vigueur.
+ */
+function changerDeSet(id) {
+  const ancien = store.cfg.set;
+  const neuf = setValide(id);
+  if (neuf === ancien) return;
+  const ranges = store.cfg.setsRanges;
+  ranges[ancien] = { materiel: store.cfg.materiel, cartesDesactivees: store.cfg.cartesDesactivees,
+    materielActif: store.cfg.materielActif };
+  const r = ranges[neuf] || {};
+  delete ranges[neuf];
+  store.cfg.materiel = r.materiel || {};
+  store.cfg.cartesDesactivees = r.cartesDesactivees || [];
+  store.cfg.materielActif = r.materielActif || 'MODIFIE';
+  store.cfg.set = neuf;
+  normaliserMateriel();
+  sauverCfg();
+}
+
+/** Les boutons des sets de cartes — sur l'accueil comme dans le Matériel. */
+function segmentSets(attr) {
+  return `<div class="segments large seg-sets">${SETS.map((x) => `<button class="${
+    x.id === store.cfg.set ? 'on' : ''}" ${attr}="${x.id}" title="${x.detail}">${x.label}</button>`).join('')}</div>`;
 }
 
 /**
@@ -181,7 +213,7 @@ function appliquerJeuActif() {
   const enl = store.enLigne && store.enLigne.salon && store.enLigne.salon.cfg;
   const src = enl || (store.partie && !store.partie.finie ? store.partie.cfg : store.cfg);
   const modifie = src.materielActif === 'MODIFIE';
-  appliquerMateriel(modifie ? src.materiel : null, src.cartesDesactivees, src.materiel);
+  appliquerMateriel(modifie ? src.materiel : null, src.cartesDesactivees, src.materiel, src.set);
 }
 
 /**
@@ -198,6 +230,9 @@ function adopterPublie(force) {
   const p = materielPublie();
   if (!p) return false;
   if (!force && !materielVide(store.cfg.materiel)) return false;
+  // Un matériel publié retouche UN set : on ne le pose pas sur un autre.
+  if (!force && setValide(p.set) !== store.cfg.set) return false;
+  if (force) changerDeSet(p.set);
   store.cfg.materiel = JSON.parse(JSON.stringify(p.materiel));
   store.cfg.cartesDesactivees = (p.cartesDesactivees || []).slice();
   store.cfg.publieAdopte = p.signature || p.date || '1';
@@ -210,7 +245,7 @@ function adopterPublie(force) {
 /** Le site publie-t-il un matériel que cette machine n'a pas encore adopté ? */
 function publieEnAttente() {
   const p = materielPublie();
-  return !!p && signaturePublie() !== (store.cfg.publieAdopte || '');
+  return !!p && setValide(p.set) === store.cfg.set && signaturePublie() !== (store.cfg.publieAdopte || '');
 }
 
 normaliserMateriel();
@@ -240,7 +275,9 @@ function sauverCfg() {
 let profondeurModifie = 0;
 
 function surLeModifie(fn) {
-  if (profondeurModifie++ === 0) appliquerMateriel(store.cfg.materiel, store.cfg.cartesDesactivees, store.cfg.materiel);
+  if (profondeurModifie++ === 0) {
+    appliquerMateriel(store.cfg.materiel, store.cfg.cartesDesactivees, store.cfg.materiel, store.cfg.set);
+  }
   try { return fn(); } finally { if (--profondeurModifie === 0) appliquerJeuActif(); }
 }
 function sauverJoueurs() { LS.set('joueurs', store.joueurs); }
@@ -341,7 +378,7 @@ function vueAccueil() {
 
         ${partage ? `<div class="bandeau-materiel partage-recu">
           <span class="bm-titre">🔗 Version partagée${info.version ? ` — v${info.version}` : ''}</span>
-          <span class="aide">${info.date ? `reçue du ${info.date} · ` : ''}cartes, réglages et
+          <span class="aide">Set ${store.cfg.set} · ${info.date ? `reçue du ${info.date} · ` : ''}cartes, réglages et
           variantes sont ceux de qui vous a envoyé le lien — rien à régler, jouez.</span>
         </div>` : bandeauMateriel()}
         <button class="cta" id="go">Commencer la partie</button>
@@ -468,6 +505,10 @@ function ligneJoueur(j, i) {
 }
 
 function brancherJeuAccueil(apres) {
+  app.querySelectorAll('[data-set-accueil]').forEach((b) => b.addEventListener('click', () => {
+    changerDeSet(b.dataset.setAccueil);
+    if (apres) apres();
+  }));
   app.querySelectorAll('[data-jeu-accueil]').forEach((b) => b.addEventListener('click', () => {
     store.cfg.materielActif = b.dataset.jeuAccueil;
     sauverCfg();
@@ -605,6 +646,7 @@ function bandeauMateriel() {
   const n = Object.keys(store.cfg.materiel.plans).length + Object.keys(store.cfg.materiel.paires).length;
   const off = store.cfg.cartesDesactivees.length;
   return `<div class="bandeau-materiel ${modifie ? 'modifie' : ''}">
+    ${segmentSets('data-set-accueil')}
     <div class="segments large" id="seg-materiel">
       <button class="${modifie ? '' : 'on'}" data-jeu-accueil="IMPRIME">Matériel d’origine</button>
       <button class="${modifie ? 'on' : ''}" data-jeu-accueil="MODIFIE">Matériel modifié</button>
@@ -778,7 +820,7 @@ function vuePartie(enchainer = true) {
           </button>
           <span class="jeton-materiel ${st.cfg.materielActif === 'MODIFIE' ? 'modifie' : ''}"
             title="Le jeu de matériel avec lequel cette partie a été lancée">
-            ${st.cfg.materielActif === 'MODIFIE' ? 'Matériel modifié' : 'Matériel imprimé'}</span>
+            Set ${st.cfg.set || SET_DEFAUT} · ${st.cfg.materielActif === 'MODIFIE' ? 'modifié' : 'origine'}</span>
         </div>
       </div>
     </div>
@@ -2821,11 +2863,18 @@ function barreJeu() {
   const modifie = store.cfg.materielActif === 'MODIFIE';
   const n = nbRetouches();
   const off = store.cfg.cartesDesactivees.length;
+  const set = store.cfg.set;
+  const av = set === SET_DEFAUT ? null : avancementSet(set);
   return `<div class="barre-jeu">
+    <span class="bj-lg">Set de cartes</span>
+    ${segmentSets('data-set')}
+    ${av ? `<span class="aide avancement-set"><b>${av.relus} plan${av.relus > 1 ? 's' : ''} relu${
+    av.relus > 1 ? 's' : ''} sur ${av.total}</b> — les autres gardent leur valeur du Set ${SET_DEFAUT}
+      en attendant leur carte</span>` : ''}
     <span class="bj-lg">Jeu lancé en partie</span>
     <div class="segments large" id="seg-jeu">
-      <button class="${modifie ? '' : 'on'}" data-jeu="IMPRIME">Origine</button>
-      <button class="${modifie ? 'on' : ''}" data-jeu="MODIFIE">Modifié</button>
+      <button class="${modifie ? '' : 'on'}" data-jeu="IMPRIME">${set} Origine</button>
+      <button class="${modifie ? 'on' : ''}" data-jeu="MODIFIE">${set} Modifiée</button>
     </div>
     <span class="aide">
       ${modifie
@@ -3247,7 +3296,7 @@ function blocPouvoirMixte(plans, ou, rang = 1) {
     <div class="portee-choix">
       ${PORTEES.map((x) => `<button class="pp ${portees.length === 1 && portees[0] === x.id ? 'on' : ''}"
         data-champ-portee="${ou}"${R} data-portee="${x.id}" title="${x.label}">
-        ${x.gauche ? '◀' : ''} ${x.court} ${x.droite ? '▶' : ''}</button>`).join('')}
+        ${x.gauche ? '◀' : ''} ${x.court} ${x.droite ? '▶' : ''}${x.avance ? '▷▷' : ''}</button>`).join('')}
     </div>
     ${figes ? `<div class="aide portee-fixe">${figes} bandeau${figes > 1 ? 'x' : ''} de séquence ou
       « dans l'ordre » garderont leur portée : elle ne se règle pas.</div>` : ''}
@@ -4001,7 +4050,7 @@ function blocPouvoir(o, ou, rang = 1) {
     ${porteeReglable(o) ? `<div class="portee-choix">
       ${PORTEES.map((x) => `<button class="pp ${objPortee(o, store.cfg) === x.id ? 'on' : ''}"
         data-champ-portee="${ou}"${R} data-portee="${x.id}" title="${x.label}">
-        ${x.gauche ? '◀' : ''} ${x.court} ${x.droite ? '▶' : ''}</button>`).join('')}
+        ${x.gauche ? '◀' : ''} ${x.court} ${x.droite ? '▶' : ''}${x.avance ? '▷▷' : ''}</button>`).join('')}
     </div>` : (o ? `<div class="aide portee-fixe">${porteeFigee(o)}</div>` : '')}
     <div class="apercu-obj">${o ? `${objHTML(o, 26, store.cfg)}<span class="lit">${objLabel(o, store.cfg)}</span>`
       : '<span class="aide">Bandeau vide</span>'}</div>
@@ -4444,7 +4493,7 @@ function passeStats(h) {
 
 function statsJeu(modifie) {
   const etait = store.cfg.materielActif;
-  appliquerMateriel(modifie ? store.cfg.materiel : null, store.cfg.cartesDesactivees, store.cfg.materiel);
+  appliquerMateriel(modifie ? store.cfg.materiel : null, store.cfg.cartesDesactivees, store.cfg.materiel, store.cfg.set);
   try {
     const tous = plansDuPaquet();
     const plans = tous.filter(passeStats);
@@ -4647,7 +4696,7 @@ function declencheurs(obj, plans) {
  */
 function pouvoirsDuJeu(modifie) {
   const etait = store.cfg.materielActif;
-  appliquerMateriel(modifie ? store.cfg.materiel : null, store.cfg.cartesDesactivees, store.cfg.materiel);
+  appliquerMateriel(modifie ? store.cfg.materiel : null, store.cfg.cartesDesactivees, store.cfg.materiel, store.cfg.set);
   try {
     const plans = plansDuPaquet().filter(passeStats);
     const par = new Map();
@@ -5009,6 +5058,9 @@ function brancherMateriel() {
 
   app.querySelectorAll('[data-jeu]').forEach((b) => b.addEventListener('click', () => {
     store.cfg.materielActif = b.dataset.jeu; sauverCfg(); refaire();
+  }));
+  app.querySelectorAll('[data-set]').forEach((b) => b.addEventListener('click', () => {
+    changerDeSet(b.dataset.set); refaire();
   }));
 
   brancherBasculeIllus(refaire);
@@ -7343,7 +7395,7 @@ function vueSalon(s) {
           <span class="chip on">${mode ? mode.label : ''}</span>
           ${sal.cfg.sansPlanDepart ? '<span class="chip on">Pas de Plans de départ</span>' : ''}
           <span class="chip on">${sal.cfg.tours} plans</span>
-          <span class="chip on">Matériel ${sal.cfg.materielActif === 'MODIFIE' ? 'modifié' : 'imprimé'}</span>
+          <span class="chip on">Set ${sal.cfg.set || SET_DEFAUT} · ${sal.cfg.materielActif === 'MODIFIE' ? 'modifié' : 'origine'}</span>
         </div>` : '<p class="aide">En attente de l’hôte…</p>'}
       </div>
     </div>
@@ -7476,6 +7528,8 @@ function resynchroniserMateriel(st, cfg) {
   // Une partie finie ne bouge plus : son décompte est arrêté, et l'écran de fin
   // doit dire ce qui s'est joué, pas ce que le matériel est devenu depuis.
   if (!st || st.finie) return;
+  // Changer de set dans l'éditeur ne change pas les cartes d'une partie lancée.
+  if (setValide(st.cfg.set) !== setValide(cfg.set)) return;
   // La partie joue son propre instantané de configuration : c'est lui qu'il
   // faut mettre à jour, `appliquerJeuActif()` s'en sert pendant une partie.
   st.cfg.materiel = JSON.parse(JSON.stringify(cfg.materiel));

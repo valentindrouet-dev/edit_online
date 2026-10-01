@@ -37,12 +37,22 @@ export function objContenu(obj, taille, compact, cfg, large) {
   const teinte = teinteObj(obj);
   const fleche = (cote) => (p[cote]
     ? `<span class="fleche-pos" style="--fl:${teinte}">${cote === 'gauche' ? '◀' : '▶'}</span>` : '');
+  // ▷▷ — « et toute la suite du montage » : l'icône imprimée, deux triangles
+  // blancs cernés de noir, posée après ce qu'elle porte.
+  const suite = p.avance ? avanceRapide() : '';
   // Les flèches se serrent contre ce qu'elles portent : elles en font partie.
   // Les pièces du cœur, elles, sont des mots distincts — « Séquence » et sa
   // flèche, « Plan » et son seuil, deux cadrages — et respirent : dans un
   // conteneur flex, les espaces du HTML ne comptent pas, il leur faut un gap.
   return `<span class="obj-noyau">${fleche('gauche')}<span class="obj-coeur">${
-    objCoeur(obj, taille, compact, large)}</span>${fleche('droite')}</span>`;
+    objCoeur(obj, taille, compact, large)}</span>${fleche('droite')}${suite}</span>`;
+}
+
+/** L'icône ▷▷ de la portée « cette carte et toute la suite du montage ». */
+export function avanceRapide() {
+  return `<span class="avance-rapide" role="img" aria-label="et toute la suite du montage"><svg viewBox="0 0 92 56">
+    <g fill="#fff" stroke="#16161a" stroke-width="6" stroke-linejoin="round">
+      <path d="M6 5 L46 28 L6 51 Z"/><path d="M46 5 L86 28 L46 51 Z"/></g></svg></span>`;
 }
 
 /**
@@ -657,7 +667,7 @@ function coutObj(obj, compact, cfg, P, format, large, rangs = 1) {
     return longMot * corps * 0.56;
   }
   const p = PORTEES.find((x) => x.id === objPortee(obj, cfg)) || PORTEES[3];
-  const fleches = (p.gauche ? P.fleche : 0) + (p.droite ? P.fleche : 0);
+  const fleches = (p.gauche ? P.fleche : 0) + (p.droite ? P.fleche : 0) + (p.avance ? P.rond * 0.9 : 0);
   return P.rond + EM.gap + (estSi(obj) ? P.si : P.x) + EM.gap + fleches
     + coutCoeur(obj, compact, P, large);
 }

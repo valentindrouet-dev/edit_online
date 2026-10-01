@@ -198,6 +198,11 @@ export const DEFAULTS = {
   // celles qu'on a supprimées : ces deux-là ne sont pas des retouches mais la
   // **composition du matériel**, et valent donc pour l'imprimé comme pour le
   // modifié — une carte qui n'existe pas n'existe dans aucun des deux jeux.
+  // Le SET de cartes joué — '2', la boîte v29, ou '3.1', les nouvelles cartes.
+  // Chaque set a ses propres retouches ; celles des sets qu'on ne joue pas
+  // attendent dans `setsRanges`.
+  set: '2',
+  setsRanges: {},
   materiel: {
     plans: {}, paires: {},
     ajouts: { scenes: [], larges: [], departs: [], paires: [] },

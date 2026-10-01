@@ -180,6 +180,12 @@ export const PORTEES = [
     court: 'séquence', gauche: true,  droite: true },
   { id: 'MONTAGE',  label: 'dans le montage entier', phrase: 'dans le montage entier',
     court: 'montage',  gauche: false, droite: false },
+  // ▷▷ — cette carte et TOUT ce qui la suit dans le montage, séquences du
+  // dessous comprises. La seule portée qui descende d'une ligne à l'autre :
+  // le montage se lit ligne après ligne, chacune de gauche à droite.
+  { id: 'SUITE',    label: 'cette carte et toute la suite du montage',
+    phrase: 'de cette carte à la fin du montage',
+    court: 'suite',    gauche: false, droite: false, avance: true },
 ];
 
 export const PORTEE_IDS = PORTEES.map((p) => p.id);
@@ -1160,6 +1166,51 @@ export function cleplan(num, face) {
   return face ? `${num}${face}` : String(num);
 }
 
+// --- Les sets de cartes ---------------------------------------------------
+// Chaque set est un matériel d'ORIGINE complet ; les retouches de l'éditeur
+// s'y ajoutent par-dessus — « 3.1 Origine », « 3.1 Modifiée ».
+//
+// Le Set 3.1 se relit carte après carte sur les nouveaux fichiers. Un plan
+// relu porte ici ce que sa carte imprime, face par face ; un plan pas encore
+// relu garde sa valeur du Set 2. Le set reste ainsi jouable pendant qu'on le
+// remplit, et l'écran Matériel dit où en est la relecture.
+export const SETS = [
+  { id: '2',   label: 'Set 2',   detail: 'boîte v29' },
+  { id: '3.1', label: 'Set 3.1', detail: 'nouvelles cartes' },
+];
+export const SET_DEFAUT = '2';
+export const setValide = (id) => (SETS.some((x) => x.id === id) ? id : SET_DEFAUT);
+let setCourant = SET_DEFAUT;
+export const setActif = () => setCourant;
+
+const PLANCHES = {
+  '2': {},
+  '3.1': {
+    // GP 328 — le sac de sport. Recto 35:00, verso 25:00.
+    '328R': { tc: 35, el: ['OBJET'], obj: OBJ.element(1, 'OBJET', 'SUITE'), image: 'assets/s31/GP328.webp' },
+    '328V': { tc: 25, el: ['OBJET'], obj: OBJ.element(1, 'OBJET', 'SUITE'), image: 'assets/s31/GP328.webp' },
+  },
+};
+
+/** Ce que la carte du set en vigueur imprime pour ce plan — rien s'il n'est pas relu. */
+const planche = (cle) => PLANCHES[setCourant][cle] || null;
+
+/** Les valeurs imprimées d'un plan : celles de son set quand il y est relu. */
+function imprimeDe(cle, defauts) {
+  const pl = planche(cle);
+  return pl ? { ...defauts, ...pl, relu: true } : defauts;
+}
+
+/** Combien de plans un set a déjà relus, sur combien. */
+export function avancementSet(id) {
+  const avant = setCourant;
+  setCourant = setValide(id);
+  try {
+    const cles = catalogue().map((p) => p.cle);
+    return { relus: cles.filter((c) => PLANCHES[setCourant][c]).length, total: cles.length };
+  } finally { setCourant = avant; }
+}
+
 export const SURCHARGES = {
   plans: {}, paires: {}, desactives: new Set(),
   // `ajouts` porte les cartes que l'éditeur a créées, `retires` celles qu'il a
@@ -1178,7 +1229,8 @@ export const AJOUTS_VIDES = () => ({ scenes: [], larges: [], departs: [], paires
  * de la boîte, pas une retouche de carte. Il en va de même des cartes créées et
  * supprimées, qui voyagent donc avec `table` mais s'appliquent toujours.
  */
-export function appliquerMateriel(table, desactives, composition) {
+export function appliquerMateriel(table, desactives, composition, set) {
+  setCourant = setValide(set);
   for (const k of Object.keys(SURCHARGES.plans)) delete SURCHARGES.plans[k];
   for (const k of Object.keys(SURCHARGES.paires)) delete SURCHARGES.paires[k];
   Object.assign(SURCHARGES.plans, (table && table.plans) || {});
@@ -1422,6 +1474,8 @@ export function halfInfo(sceneIdx, format, opts = {}) {
   const origine = format === 'GP' ? s.gpNum : s.pmNum;
   const face = opts.face || 'R';
   const cle = cleplan(origine, face);
+  const d = imprimeDe(cle, { tc: s.tc, el: side.el, obj: side.obj, obj2: side.obj2, mort: s.mort,
+    image: imageImprimee(format === 'GP' ? 'gp' : 'pm', origine) });
   return {
     scene: s.idx,
     format,
@@ -1431,14 +1485,14 @@ export function halfInfo(sceneIdx, format, opts = {}) {
     dual: !!opts.dual,
     titre: s.titre || null,
     famille: s.famille,
-    tc: tcDe(cle, s.tc),
-    el: elDe(cle, side.el),
-    obj: objDe(cle, side.obj),
-    obj2: obj2De(cle, side.obj2),
-    mort: mortDe(cle, s.mort),
+    tc: tcDe(cle, d.tc),
+    el: elDe(cle, d.el),
+    obj: objDe(cle, d.obj),
+    obj2: obj2De(cle, d.obj2),
+    mort: mortDe(cle, d.mort),
     num: numDe(cle, origine),
     numOrigine: origine,
-    image: imageDe(cle, imageImprimee(format === 'GP' ? 'gp' : 'pm', origine)),
+    image: imageDe(cle, d.image),
     miroir: miroirDe(cle),
     cadre: cadreDe(cle),
   };
@@ -1458,6 +1512,8 @@ export function moitiesDe(carte, face = 'R') {
 /** Un Plan Large se comporte comme un plan unique pleine largeur. */
 export function plHalf(carte) {
   const cle = cleplan(carte.num, null);
+  const d = imprimeDe(cle, { tc: carte.tc, el: carte.el, obj: carte.obj, obj2: carte.obj2,
+    image: imageImprimee('pl', carte.num) });
   return {
     scene: null,
     format: carte.depart ? 'DEP' : 'PL',
@@ -1467,15 +1523,15 @@ export function plHalf(carte) {
     dual: false,
     titre: null,
     famille: carte.depart ? 'DÉPART' : 'PLAN LARGE',
-    tc: tcDe(cle, carte.tc),
-    el: elDe(cle, carte.el),
-    obj: objDe(cle, carte.obj),
-    obj2: obj2De(cle, carte.obj2),
+    tc: tcDe(cle, d.tc),
+    el: elDe(cle, d.el),
+    obj: objDe(cle, d.obj),
+    obj2: obj2De(cle, d.obj2),
     mort: mortDe(cle, false),
     num: numDe(cle, carte.num),
     numOrigine: carte.num,
     depart: !!carte.depart,
-    image: imageDe(cle, imageImprimee('pl', carte.num)),
+    image: imageDe(cle, d.image),
     miroir: miroirDe(cle),
     cadre: cadreDe(cle),
   };
@@ -1487,17 +1543,18 @@ export function plHalf(carte) {
 
 export function catalogue() {
   const out = [];
-  const pousse = (origine, face, defauts, format, famille, extra = {}) => {
+  const pousse = (origine, face, brut, format, famille, extra = {}) => {
     const cle = cleplan(origine, face);
     const num = numDe(cle, origine);
     const dossier = format === 'PL' || format === 'DEP' ? 'pl' : format === 'GP' ? 'gp' : 'pm';
-    const imprimee = imageImprimee(dossier, origine);
+    const defauts = imprimeDe(cle, { ...brut, image: imageImprimee(dossier, origine) });
+    const imprimee = defauts.image;
     out.push({
       cle, num, numOrigine: origine, face, format, famille,
       quoi: `${FORMATS[format].label} ${num}${face ? ` — ${face === 'R' ? 'recto' : 'verso'}` : ''}`,
       tc: tcDe(cle, defauts.tc), el: elDe(cle, defauts.el), obj: objDe(cle, defauts.obj),
       obj2: obj2De(cle, defauts.obj2),
-      mort: mortDe(cle, defauts.mort), modifie: planModifie(cle),
+      mort: mortDe(cle, defauts.mort), modifie: planModifie(cle), relu: !!defauts.relu,
       imprime: {
         tc: defauts.tc, el: (defauts.el || []).slice(), obj: defauts.obj || null,
         obj2: defauts.obj2 || null, mort: !!defauts.mort, num: origine, image: imprimee,
