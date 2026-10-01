@@ -1304,12 +1304,22 @@ const TABLES = {
     // entière, telle qu'elle est imprimée — le site la montre à la place de sa
     // propre composition (voir `renderPlan`).
     faces: {
-      '309V': { tc: 25, visuel: 'assets/s31/GP309V-carte.webp' },
-      // Les rectos des Gros Plans, montrés tels qu'imprimés ; leurs versos ne
-      // sont pas encore arrivés.
+      // Les Gros Plans, montrés tels qu'imprimés, recto et verso.
       ...Object.fromEntries([...Array.from({ length: 30 }, (_, i) => 301 + i), 390, 391]
-        .flatMap((n) => [[`${n}R`, { visuel: `assets/s31/GP${n}R-carte.webp` }],
-          ...(n === 309 ? [] : [[`${n}V`, { absente: true }]])])),
+        .map((n) => [`${n}R`, { visuel: `assets/s31/GP${n}R-carte.webp` }])),
+      // Le verso garde les icônes et le pouvoir du recto ; seul son minutage
+      // change.
+      ...Object.fromEntries(Object.entries({
+        301: 0, 302: 0, 303: 0, 304: 0, 305: 0, 306: 0, 307: 25, 308: 10, 309: 25, 310: 25,
+        311: 25, 312: 0, 313: 25, 314: 55, 315: 55, 316: 55, 317: 55, 318: 70, 319: 70, 320: 70,
+        321: 70, 322: 70, 323: 70, 324: 55, 325: 85, 326: 85, 327: 85, 328: 85, 329: 85, 330: 85,
+        390: 0,
+      }).map(([n, tc]) => [`${n}V`, { tc, visuel: `assets/s31/GP${n}V-carte.webp` }])),
+      // Le 391 est la Fin au recto, l'Ouverture au verso : « BBG présente », à
+      // 01:00, qui rapporte 6 si rien ne la précède.
+      '391V': { tc: 1, transition: 'OUVERTURE', titre: 'BBG présente',
+        obj: OBJ.seuilCible(6, 'CARTE', 'MAX', 0, 'AMONT'),
+        image: 'assets/s31/GP391V.webp', visuel: 'assets/s31/GP391V-carte.webp' },
       // Le couple compte APRÈS la carte au recto, AVANT elle au verso.
       '201R': { obj: OBJ.paire(2, 'HEROINE', 'ENNEMI', 'APRES'), visuel: 'assets/s31/PM201R-carte.webp' },
       '201V': { obj: OBJ.paire(2, 'HEROINE', 'ENNEMI', 'AVANT'), visuel: 'assets/s31/PM201V-carte.webp' },
@@ -1612,15 +1622,16 @@ export function halfInfo(sceneIdx, format, opts = {}) {
   const face = opts.face || 'R';
   const cle = cleplan(origine, face);
   const d = imprimeDe(cle, { tc: s.tc, el: side.el, obj: side.obj, obj2: side.obj2, mort: s.mort,
-    image: imageImprimee(format === 'GP' ? 'gp' : 'pm', origine) });
+    image: imageImprimee(format === 'GP' ? 'gp' : 'pm', origine),
+    transition: s.transition || null, titre: s.titre || null });
   return {
     scene: s.idx,
     format,
     face,
     cle,
-    transition: s.transition || null,
+    transition: d.transition || null,
     dual: !!opts.dual,
-    titre: s.titre || null,
+    titre: d.titre || null,
     famille: s.famille,
     tc: tcDe(cle, d.tc),
     el: elDe(cle, d.el),

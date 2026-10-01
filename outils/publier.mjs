@@ -127,7 +127,17 @@ if (!opt.sansEnvoi) {
   for (const attente of [0, 2, 4, 8, 16]) {
     if (attente) { etape(`réseau capricieux, nouvel essai dans ${attente} s`); await new Promise((r) => setTimeout(r, attente * 1000)); }
     try { git(['push', '-q', '-u', 'origin', branche], { stdio: 'pipe' }); envoye = true; break; }
-    catch (e) { if (!/Could not resolve|timed out|Connection|RPC failed|unable to access|50\d/i.test(String(e.stderr))) stop(String(e.stderr)); }
+    catch (e) {
+      const err = String(e.stderr);
+      // Quelqu'un a déposé sur la branche entre-temps — des fichiers envoyés
+      // depuis GitHub, par exemple : on reprend son travail, puis on renvoie.
+      if (/fetch first|non-fast-forward|rejected/i.test(err)) {
+        etape('la branche a reçu un dépôt entre-temps : on le récupère');
+        try { git(['pull', '-q', '--rebase', 'origin', branche], { stdio: 'pipe' }); continue; }
+        catch (e2) { stop(`récupération impossible — à régler à la main :\n${e2.stderr}`); }
+      }
+      if (!/Could not resolve|timed out|Connection|RPC failed|unable to access|50\d/i.test(err)) stop(err);
+    }
   }
   if (!envoye) stop('envoi impossible après cinq essais — le commit est fait, relancer « git push ».');
   etape(`envoyé sur ${branche}`);

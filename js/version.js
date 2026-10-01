@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.41';
-export const BUILD_DATE = '2026-10-01 15:21';
+export const VERSION = '2.42';
+export const BUILD_DATE = '2026-10-01 15:24';
 
 export const CHANGELOG = [
+  {
+    v: '2.42',
+    date: '01/10/2026',
+    items: [
+      "<b>Les 32 Gros Plans du Set 3.1 ont leur verso</b>, montré avec la carte imprimée : mêmes icônes, même pouvoir, un autre minutage. Le 391 est la Fin au recto et l'Ouverture au verso — « BBG présente », 01:00, 6 si rien ne la précède.",
+      "<b>Règles v0.28 : la portée ◁◁</b>, reflet de ▷▷ — la carte et tout ce qui la précède dans le montage.",
+      "Les fichiers déposés à la racine du site en ont été retirés : ils ont servi, ils n'ont pas à être publiés.",
+    ],
+  },
   {
     v: '2.41',
     date: '01/10/2026',
