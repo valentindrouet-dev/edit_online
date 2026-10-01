@@ -50,9 +50,12 @@ export function objContenu(obj, taille, compact, cfg, large) {
 
 /** L'icône ▷▷ de la portée « cette carte et toute la suite du montage ». */
 export function avanceRapide() {
-  return `<span class="avance-rapide" role="img" aria-label="et toute la suite du montage"><svg viewBox="0 0 92 56">
-    <g fill="#fff" stroke="#16161a" stroke-width="6" stroke-linejoin="round">
-      <path d="M6 5 L46 28 L6 51 Z"/><path d="M46 5 L86 28 L46 51 Z"/></g></svg></span>`;
+  // Comme sur la carte imprimée : la flèche de droite, un peu plus grande,
+  // chevauche la pointe de celle de gauche — dessinée en second, elle passe
+  // dessus, et son cerne noir la détache.
+  return `<span class="avance-rapide" role="img" aria-label="et toute la suite du montage"><svg viewBox="0 0 100 80">
+    <g fill="#fff" stroke="#16161a" stroke-width="7" stroke-linejoin="round">
+      <path d="M8 10 L62 40 L8 70 Z"/><path d="M33 6 L93 40 L33 74 Z"/></g></svg></span>`;
 }
 
 /**

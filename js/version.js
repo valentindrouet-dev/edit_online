@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.31';
-export const BUILD_DATE = '2026-10-01 11:49';
+export const VERSION = '2.32';
+export const BUILD_DATE = '2026-10-01 11:58';
 
 export const CHANGELOG = [
+  {
+    v: '2.32',
+    date: '01/10/2026',
+    items: [
+      "<b>Le Gros Plan du Set 3.1 porte son vrai numéro : 309</b> — celui de ses fichiers, 309R et 309V. Il s'appelait 328, numéro déduit de son illustration.",
+      "<b>L'icône ▷▷ suit la carte imprimée</b> : la flèche de droite, un peu plus grande, passe sur la pointe de celle de gauche, et l'icône a pris la taille de celle de la carte.",
+    ],
+  },
   {
     v: '2.31',
     date: '01/10/2026',

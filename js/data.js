@@ -1191,14 +1191,14 @@ const TABLES = {
     jouable: true,
   },
   '3.1': {
-    // Une carte, dont on n'a que le Gros Plan : le 328, le sac de sport. Son
-    // numéro vient de son illustration, celle du GP 328 du Set 2.
-    scenes: [S(1, 35, 'OBJET', null, 328, [], ['OBJET'], OBJ.element(1, 'OBJET', 'SUITE'))],
+    // Une carte, dont on n'a que le Gros Plan : le 309 (fichiers 309R et
+    // 309V), le sac de sport.
+    scenes: [S(1, 35, 'OBJET', null, 309, [], ['OBJET'], OBJ.element(1, 'OBJET', 'SUITE'))],
     larges: [], departs: [],
-    paires: [[null, 328]],
-    images: { gp328: 'assets/s31/GP328.webp' },
+    paires: [[null, 309]],
+    images: { gp309: 'assets/s31/GP309.webp' },
     // Ce qu'une face imprime autrement que l'autre.
-    faces: { '328V': { tc: 25 } },
+    faces: { '309V': { tc: 25 } },
     jouable: false,
   },
 };
