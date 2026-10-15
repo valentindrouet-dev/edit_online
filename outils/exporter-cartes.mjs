@@ -80,7 +80,21 @@ await page.evaluate(({ c, imp }) => {
   localStorage.setItem('edit.cfg', JSON.stringify(c));
   localStorage.setItem('edit.atelier.impression', JSON.stringify(imp));
 }, { c: cfg, imp: { mode: opt.mode, perdu: opt.perdu, traits: opt.traits, retournement: opt.retournement, cle: null } });
+// Les images APPORTÉES voyagent dans le fichier de partage : on les remet dans
+// la réserve du navigateur avant de dessiner, comme le fait le site en recevant
+// un partage.
+if ((partage.images || []).length) {
+  await page.goto(`${base}/`, { waitUntil: 'networkidle' });
+  await page.evaluate(async (images) => {
+    const v = await import('./js/visuels.js');
+    for (const im of images) {
+      const blob = await (await fetch(im.data)).blob();
+      await v.importerVisuel(im.id, blob, im.nom, im.largeur, im.hauteur);
+    }
+  }, partage.images);
+}
 await page.goto(`${base}/#/impression`, { waitUntil: 'networkidle' });
+await page.reload({ waitUntil: 'networkidle' });
 await page.waitForSelector('.imp-page', { timeout: 30000 });
 await page.evaluate(async () => { const m = await import('./js/atelier.js'); await m.pret(); });
 const n = await page.$$eval('.imp-carte', (l) => l.length);

@@ -28,6 +28,13 @@ import { visuelsApportes, ajouterVisuel, cleVisuel } from './visuels.js';
 
 let C = null;   // ce que l'application prête à l'atelier — voir app.js
 
+// Les images rangées dans le site, `assets/atelier/` : un logo, une texture,
+// un cadre — tout le monde les voit, et l'export les trouve. L'inventaire est
+// celui que le versionneur écrit à chaque publication.
+let imagesSite = [];
+fetch('assets/images.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : {}))
+  .then((inv) => { imagesSite = (inv && inv.atelier) || []; }).catch(() => {});
+
 const at = {
   cle: 'PM', sel: null, ech: 0, zoom: 1, grille: true, sure: true,
   comparer: '', filtre: 'MISE', choix: '',
@@ -379,10 +386,13 @@ function champ(e, cle, label, type, extra = {}) {
       break;
     case 'image': {
       const vs = visuelsApportes();
+      const site = imagesSite.map((f) => `assets/atelier/${f}`);
+      const connue = vs.some((x) => cleVisuel(x.id) === v) || site.includes(v);
       input = `<select data-champ="${cle}" data-type="texte" id="${id}">
         <option value="">— aucune —</option>
-        ${vs.map((x) => `<option value="${cleVisuel(x.id)}" ${cleVisuel(x.id) === v ? 'selected' : ''}>${echapper(x.nom)}</option>`).join('')}
-        ${v && !vs.some((x) => cleVisuel(x.id) === v) ? `<option selected>${echapper(v)}</option>` : ''}
+        ${site.length ? `<optgroup label="Images du site — pour tout le monde">${site.map((s) => `<option value="${s}" ${s === v ? 'selected' : ''}>${echapper(s.split('/').pop())}</option>`).join('')}</optgroup>` : ''}
+        ${vs.length ? `<optgroup label="Apportées — dans ce navigateur">${vs.map((x) => `<option value="${cleVisuel(x.id)}" ${cleVisuel(x.id) === v ? 'selected' : ''}>${echapper(x.nom)}</option>`).join('')}</optgroup>` : ''}
+        ${v && !connue ? `<option selected>${echapper(v)}</option>` : ''}
       </select>
       <button class="pill mini" id="at-image-ajouter">⭱ Apporter une image</button>
       <input type="file" id="at-image-fichier" accept="image/*" hidden>`;

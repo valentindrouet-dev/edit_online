@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.48';
-export const BUILD_DATE = '2026-10-15 18:21';
+export const VERSION = '2.49';
+export const BUILD_DATE = '2026-10-15 20:53';
 
 export const CHANGELOG = [
+  {
+    v: '2.49',
+    date: '15/10/2026',
+    items: [
+      "<b>Atelier : le choix d'une image propose aussi les images du site</b> — rangées dans <code>assets/atelier/</code>, elles valent pour tout le monde et pour tous les exports. Les images apportées restent dans le navigateur, et voyagent avec le fichier de partage.",
+      "L'export maître vectoriel reprend les images apportées que porte le fichier de partage.",
+    ],
+  },
   {
     v: '2.48',
     date: '15/10/2026',
