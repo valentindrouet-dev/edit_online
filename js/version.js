@@ -1,8 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.49';
-export const BUILD_DATE = '2026-10-15 20:53';
+export const VERSION = '2.50';
+export const BUILD_DATE = '2026-10-15 20:57';
 
 export const CHANGELOG = [
+  {
+    v: '2.50',
+    date: '15/10/2026',
+    items: [
+      "<b>Atelier : « 🖼 Changer l’illustration »</b> sur le plan montré — recto et verso ensemble, ou une seule face —, ou un <b>double-clic</b> sur l'illustration de la carte. La fenêtre est celle du Matériel : images de la boîte, les vôtres, recadrage et miroir.",
+    ],
+  },
   {
     v: '2.49',
     date: '15/10/2026',

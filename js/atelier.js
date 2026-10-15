@@ -254,8 +254,21 @@ const arrondir = (v, libre) => (libre ? Math.round(v * 10) / 10 : Math.round(v *
 function brancherScene() {
   const zone = q('#at-scene');
   if (!zone) return;
+  // Le double-clic se compte ici : la scène se redessine au premier clic, et
+  // le navigateur ne verrait pas deux clics sur le même élément.
+  let dernier = { id: null, t: 0 };
   zone.addEventListener('pointerdown', (ev) => {
     const cadre = ev.target.closest('.at-feuille.editable .at-cadre');
+    if (cadre) {
+      const t = Date.now();
+      const double = dernier.id === cadre.dataset.el && t - dernier.t < 420;
+      dernier = { id: cadre.dataset.el, t };
+      if (double && (mise().elements.find((x) => x.id === cadre.dataset.el) || {}).type === 'illustration') {
+        ev.preventDefault();
+        changerIllustration(false);
+        return;
+      }
+    }
     if (!cadre) {
       if (ev.target.closest('.at-feuille.editable') && at.sel) {
         at.sel = null; dessinerScene(); dessinerPanneau();
@@ -424,7 +437,7 @@ function champsDe(e) {
     ${champ(e, 'ombre', 'Ombre portée', 'bool')}</div>`;
   switch (e.type) {
     case 'illustration':
-      return geo + `<div class="at-groupe"><h4>Image</h4>${champ(e, 'ancrage', 'Ancrage', 'choix', {
+      return boutonsIllustration() + geo + `<div class="at-groupe"><h4>Image</h4>${champ(e, 'ancrage', 'Ancrage', 'choix', {
         options: [['haut', 'en haut'], ['centre', 'au centre'], ['bas', 'en bas'], ['haut-gauche', 'en haut à gauche'], ['haut-droite', 'en haut à droite']], defaut: 'haut' })}
         <p class="aide">Le cadrage plan par plan se règle dans le Matériel ; il est respecté ici.</p></div>` + boite;
     case 'minutage':
@@ -454,6 +467,43 @@ function champsDe(e) {
     default:
       return geo + boite + `<div class="at-groupe">${champ(e, 'ombreBoite', 'Ombre portée', 'bool')}</div>`;
   }
+}
+
+/** Le plan que la scène montre en ce moment. */
+function planCourant() {
+  const ech = echantillons(at.cle);
+  return ech.length ? ech[((at.ech % ech.length) + ech.length) % ech.length].h : null;
+}
+
+/**
+ * Les clés d'illustration du plan montré. Une moitié de carte a deux faces, qui
+ * partagent d'ordinaire la même illustration : on les change ensemble, sauf à
+ * demander la seule face visible.
+ */
+function clesIllustration(seuleFace) {
+  const h = planCourant();
+  if (!h || !h.cle || h.format === 'DOS') return [];
+  if (!h.face || seuleFace) return [h.cle];
+  return [`${h.numOrigine}R`, `${h.numOrigine}V`];
+}
+
+function boutonsIllustration() {
+  const h = planCourant();
+  if (!h || h.format === 'DOS') return '';
+  return `<div class="at-groupe"><h4>L'illustration de ce plan</h4>
+    <div class="rangee-mini">
+      <button class="pill mini creer" data-changer-illus="">🖼 Changer l’illustration${h.face ? ' — recto et verso' : ''}</button>
+      ${h.face ? '<button class="pill mini" data-changer-illus="face">cette face seulement</button>' : ''}
+    </div>
+    <p class="aide">Une image de la boîte, ou la vôtre. Le recadrage et le miroir se règlent dans la même fenêtre.
+    C'est une retouche du Matériel : elle vaut pour ce plan partout — et pour son impression. Double-cliquer
+    l'illustration sur la carte fait de même.</p></div>`;
+}
+
+function changerIllustration(seuleFace) {
+  const cles = clesIllustration(seuleFace);
+  if (!cles.length || !C.choisirIllustration) return;
+  C.choisirIllustration(cles, () => { dessinerScene(); dessinerPanneau(); planifierToutes(); });
 }
 
 function dessinerPanneau() {
@@ -488,6 +538,7 @@ function dessinerPanneau() {
       <div class="rangee-mini"><select id="at-copie-vers">${MISES.filter((x) => x.id !== at.cle)
     .map((x) => `<option value="${x.id}">${x.label}</option>`).join('')}</select>
       <button class="pill mini" id="at-copier-mise">Copier</button></div></div>
+      ${boutonsIllustration()}
       <p class="aide">Cliquez un élément sur la carte, ou un calque ci-dessus, pour le régler.</p>`;
   p.innerHTML = `<h3>Calques <span class="aide">— le premier passe devant</span></h3>
     <div class="at-calques">${calques}</div>
@@ -540,6 +591,7 @@ function brancherPanneau() {
   p.querySelectorAll('[data-dupliquer-el]').forEach((b) => b.addEventListener('click', () => dupliquer(b.dataset.dupliquerEl)));
   p.querySelectorAll('[data-suppr-el]').forEach((b) => b.addEventListener('click', () => supprimer(b.dataset.supprEl)));
   p.querySelectorAll('[data-ajouter]').forEach((b) => b.addEventListener('click', () => ajouter(b.dataset.ajouter)));
+  p.querySelectorAll('[data-changer-illus]').forEach((b) => b.addEventListener('click', () => changerIllustration(!!b.dataset.changerIllus)));
   const des = p.querySelector('#at-deselection');
   if (des) des.addEventListener('click', () => { at.sel = null; dessinerScene(); dessinerPanneau(); });
 

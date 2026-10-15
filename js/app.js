@@ -3700,7 +3700,7 @@ function blocApportees(actuelles) {
 }
 
 /** Le choix d'une illustration : toutes celles de la boîte, en vignettes. */
-async function ouvrirChoixImage(cles) {
+async function ouvrirChoixImage(cles, apres) {
   const inv = await chargerImages();
   const actuelles = new Set(surLeModifie(() => cles.map((c) => (planDeCle(c) || {}).image).filter(Boolean)));
   const total = Object.values(inv).reduce((s, l) => s + l.length, 0);
@@ -3841,7 +3841,7 @@ async function ouvrirChoixImage(cles) {
   const fermer = () => {
     fond.remove();
     document.removeEventListener('keydown', touche);
-    if (touchee) vueMateriel();
+    if (touchee) (apres || vueMateriel)();
   };
   const touche = (e) => { if (e.key === 'Escape') fermer(); };
   document.addEventListener('keydown', touche);
@@ -7642,6 +7642,7 @@ async function ouvrirAtelier(vue) {
   m[vue]({
     app, html, topbar, pied, store, sauverCfg, surLeModifie, LS, telecharger, VERSION,
     appliquerDesign, departsAImprimer, estDesactivee, retournements: RETOURNEMENTS,
+    choisirIllustration: ouvrirChoixImage,
   });
 }
 
