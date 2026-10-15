@@ -18,7 +18,7 @@ import { bandeauGabarit, reglerDessinGabarit } from './cards.js';
 import {
   HAUTEUR, cleMise, largeurMise, POLICES, POLICES_SYSTEME, policeLocale,
 } from './gabarits.js';
-import { urlVisuel } from './visuels.js';
+import { urlVisuel, urlVisuelHD, estVisuelApporte } from './visuels.js';
 
 const echapper = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;');
@@ -38,6 +38,7 @@ export function nomCadrage(h) {
  * rangée à côté de celle de l'écran — `nu/` pour l'écran, `hd/` pour le papier.
  */
 function imageDe(h, opts) {
+  if (opts.hd && estVisuelApporte(h.image)) return urlVisuelHD(h.image);
   const u = urlVisuel(h.image);
   return u && opts.hd ? u.replace('/nu/', '/hd/') : u;
 }
@@ -142,7 +143,7 @@ function contenu(e, h, g, opts, w, hh) {
       return `<div class="g-texte g-libre" style="${styleTexte(e)}">${echapper(t).replace(/\n/g, '<br>')}</div>`;
     }
     case 'image': {
-      const url = urlVisuel(e.src || '');
+      const url = opts.hd ? urlVisuelHD(e.src || '') : urlVisuel(e.src || '');
       return url ? `<div class="g-img" style="background-image:url('${url}');background-size:${
         e.ajustement === 'cover' ? 'cover' : 'contain'}"></div>` : '';
     }

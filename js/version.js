@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.50';
-export const BUILD_DATE = '2026-10-15 20:57';
+export const VERSION = '2.51';
+export const BUILD_DATE = '2026-10-15 21:00';
 
 export const CHANGELOG = [
+  {
+    v: '2.51',
+    date: '15/10/2026',
+    items: [
+      "<b>Une image apportée garde son original intact</b> — sans réduction ni recompression. L'écran se sert d'une copie légère de 900 px ; l'impression — exports de l'Atelier, version vectorielle, export maître — de l'original. Le fichier de partage l'emporte, et « retélécharger » le rend tel qu'il est arrivé.",
+      "<code>outils/illustrations.py --sans-perte</code> range les illustrations seules en WebP sans perte, à leur définition d'origine.",
+    ],
+  },
   {
     v: '2.50',
     date: '15/10/2026',

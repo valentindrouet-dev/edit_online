@@ -15,7 +15,9 @@ Fin au recto, « BBG présente » au verso). Un préfixe est toléré : PL101.pn
 Chaque image sort en deux définitions, en WebP :
     assets/s31/nu/<clé>.webp   pour l'écran — 1 200 px au plus
     assets/s31/hd/<clé>.webp   pour l'impression — la définition d'origine,
-                               jusqu'à 3 200 px
+                               jusqu'à 3 200 px, WebP à 92 % (invisible à l'œil) ;
+                               avec --sans-perte : la définition d'origine entière,
+                               en WebP sans perte — fichiers trois à cinq fois plus lourds
 La transparence est posée sur du blanc : c'est la couleur du papier, et une
 illustration à ciel transparent virait au noir sur le fond de la carte.
 
@@ -69,7 +71,10 @@ def main(dossier):
         cle = f'{prefixe(n)}{m.group(1)}{(m.group(2) or "").upper()}'
         im = sur_blanc(Image.open(os.path.join(dossier, f)))
         reduire(im, 1200).save(os.path.join(NU, f'{cle}.webp'), 'WEBP', quality=84, method=6)
-        reduire(im, 3200).save(os.path.join(HD, f'{cle}.webp'), 'WEBP', quality=90, method=6)
+        if SANS_PERTE:
+            im.save(os.path.join(HD, f'{cle}.webp'), 'WEBP', lossless=True, quality=100, method=6)
+        else:
+            reduire(im, 3200).save(os.path.join(HD, f'{cle}.webp'), 'WEBP', quality=92, method=6)
         cles.append(cle)
         print(f'  {f:>14} → {cle}  ({im.width} × {im.height})')
     # La liste reprend aussi ce qui était déjà là : un second dépôt complète.
@@ -84,7 +89,11 @@ def main(dossier):
         print(f'Ignorés (nom sans numéro de plan) : {", ".join(ignores)}')
 
 
+SANS_PERTE = False
+
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
+    args = [a for a in sys.argv[1:] if a != '--sans-perte']
+    SANS_PERTE = '--sans-perte' in sys.argv
+    if len(args) != 1:
         sys.exit(__doc__)
-    main(sys.argv[1])
+    main(args[0])

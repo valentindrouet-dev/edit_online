@@ -23,6 +23,10 @@
 // l'export PDF reste net — et on la réencode en WebP. Trois mégaoctets
 // deviennent cinquante kilo-octets, et le navigateur ne s'étrangle pas.
 //
+// **Son ORIGINAL est gardé tel quel**, à côté : l'écran se sert de la copie
+// légère, l'IMPRESSION de l'original — sans réduction ni recompression. C'est
+// lui que l'Atelier envoie à l'export, et lui que le fichier de partage emporte.
+//
 // **Elle se désigne par une CLÉ, pas par un chemin.** Un plan retouché retient
 // `perso:xxxx` et non une URL : les URL d'objet changent à chaque ouverture de
 // page, et une retouche enregistrée pointerait dans le vide dès le lendemain.
@@ -46,6 +50,7 @@ export const POIDS_MAX = 25 * 1024 * 1024;
 // chargement, et tout le dessin y puise. `INFOS` garde de quoi les nommer dans
 // l'éditeur sans relire la base.
 const URLS = new Map();
+const URLS_HD = new Map();
 const INFOS = new Map();
 
 export const estVisuelApporte = (src) => typeof src === 'string' && src.startsWith(PREFIXE);
@@ -64,6 +69,16 @@ export const idDeCle = (src) => (estVisuelApporte(src) ? src.slice(PREFIXE.lengt
 export function urlVisuel(src) {
   if (!estVisuelApporte(src)) return src || '';
   return URLS.get(idDeCle(src)) || '';
+}
+
+/**
+ * L'URL à IMPRIMER : l'original apporté, intact, quand on l'a — sinon la même
+ * que l'écran.
+ */
+export function urlVisuelHD(src) {
+  if (!estVisuelApporte(src)) return src || '';
+  const id = idDeCle(src);
+  return URLS_HD.get(id) || URLS.get(id) || '';
 }
 
 /** Ce que l'éditeur montre : les visuels apportés, le dernier d'abord. */
@@ -125,11 +140,17 @@ export async function chargerVisuels() {
 
 function inscrire(v) {
   if (!v || !v.id || !v.blob) return;
-  const ancienne = URLS.get(v.id);
-  if (ancienne) URL.revokeObjectURL(ancienne);
+  for (const m of [URLS, URLS_HD]) {
+    const ancienne = m.get(v.id);
+    if (ancienne) URL.revokeObjectURL(ancienne);
+    m.delete(v.id);
+  }
   URLS.set(v.id, URL.createObjectURL(v.blob));
+  if (v.original) URLS_HD.set(v.id, URL.createObjectURL(v.original));
   INFOS.set(v.id, { id: v.id, nom: v.nom, taille: v.blob.size, ajoutee: v.ajoutee || 0,
-    largeur: v.largeur || 0, hauteur: v.hauteur || 0 });
+    largeur: v.largeur || 0, hauteur: v.hauteur || 0,
+    original: !!v.original, tailleOrig: v.original ? v.original.size : 0,
+    largeurOrig: v.largeurOrig || v.largeur || 0, hauteurOrig: v.hauteurOrig || v.hauteur || 0 });
 }
 
 // --- Faire entrer une image ------------------------------------------------
@@ -157,7 +178,7 @@ async function redessiner(fichier) {
   if (bitmap.close) bitmap.close();
   const blob = await enBlob(cv, 'image/webp', 0.85) || await enBlob(cv, 'image/jpeg', 0.88);
   if (!blob) throw new Error('le navigateur n’a pas su réencoder cette image');
-  return { blob, largeur: w, hauteur: h };
+  return { blob, largeur: w, hauteur: h, largeurOrig: w0, hauteurOrig: h0 };
 }
 
 function creerBitmap(fichier) {
@@ -189,8 +210,13 @@ export async function ajouterVisuel(fichier) {
   if (fichier.type && !TYPES.includes(fichier.type)) {
     throw new Error(`« ${fichier.name} » n’est pas une image que je sache lire (${fichier.type})`);
   }
-  const { blob, largeur, hauteur } = await redessiner(fichier);
-  const v = { id: nouvelId(), nom: fichier.name || 'image', blob, largeur, hauteur, ajoutee: Date.now() };
+  const { blob, largeur, hauteur, largeurOrig, hauteurOrig } = await redessiner(fichier);
+  // L'original n'est gardé que s'il apporte quelque chose : plus grand que la
+  // copie d'écran, ou d'un format sans perte.
+  const garder = largeurOrig > largeur || hauteurOrig > hauteur || fichier.type === 'image/png';
+  const original = garder ? new Blob([fichier], { type: fichier.type || 'image/png' }) : null;
+  const v = { id: nouvelId(), nom: fichier.name || 'image', blob, largeur, hauteur, ajoutee: Date.now(),
+    ...(original ? { original, largeurOrig, hauteurOrig } : {}) };
   await transaction(true, (m) => m.put(v));
   inscrire(v);
   return INFOS.get(v.id);
@@ -204,10 +230,11 @@ export async function ajouterVisuel(fichier) {
  * L'image arrive déjà redessinée — elle l'a été chez celui qui partage —, on ne
  * la repasse donc pas au canevas : ce serait une seconde compression pour rien.
  */
-export async function importerVisuel(id, blob, nom, largeur, hauteur) {
+export async function importerVisuel(id, blob, nom, largeur, hauteur, original, largeurOrig, hauteurOrig) {
   if (!id || !blob) throw new Error('visuel incomplet');
   const v = { id: String(id), nom: nom || 'image', blob,
-    largeur: largeur || 0, hauteur: hauteur || 0, ajoutee: Date.now() };
+    largeur: largeur || 0, hauteur: hauteur || 0, ajoutee: Date.now(),
+    ...(original ? { original, largeurOrig: largeurOrig || 0, hauteurOrig: hauteurOrig || 0 } : {}) };
   await transaction(true, (m) => m.put(v));
   inscrire(v);
   return INFOS.get(v.id);
@@ -219,13 +246,20 @@ export async function retirerVisuel(id) {
   const url = URLS.get(id);
   if (url) URL.revokeObjectURL(url);
   URLS.delete(id);
+  const hd = URLS_HD.get(id);
+  if (hd) URL.revokeObjectURL(hd);
+  URLS_HD.delete(id);
   INFOS.delete(id);
 }
 
-/** Le fichier lui-même, pour le retélécharger et le poser dans `assets/`. */
-export async function blobVisuel(id) {
+/**
+ * Le fichier lui-même, pour le retélécharger et le poser dans `assets/` —
+ * l'original intact avec `hd`, quand on l'a.
+ */
+export async function blobVisuel(id, hd = false) {
   const v = await transaction(false, (m) => m.get(id));
-  return v ? v.blob : null;
+  if (!v) return null;
+  return hd && v.original ? v.original : v.blob;
 }
 
 /** Ce que la réserve pèse en tout — l'éditeur le montre, c'est de la place. */

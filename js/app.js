@@ -3916,7 +3916,7 @@ async function ouvrirChoixImage(cles, apres) {
     const tel = e.target.closest('[data-visuel-telecharger]');
     if (tel) {
       const info = visuelsApportes().find((x) => x.id === tel.dataset.visuelTelecharger);
-      const blob = await blobVisuel(tel.dataset.visuelTelecharger);
+      const blob = await blobVisuel(tel.dataset.visuelTelecharger, true);
       if (blob) telecharger(blob, `${(info ? info.nom : 'image').replace(/\.\w+$/, '')}.webp`);
     }
   });
@@ -5840,18 +5840,24 @@ function cibleObj(o) {
  */
 async function imagesPourPartage() {
   const out = [];
+  const enData = (blob) => new Promise((ok) => {
+    const l = new FileReader();
+    l.onload = () => ok(String(l.result));
+    l.onerror = () => ok('');
+    l.readAsDataURL(blob);
+  });
   for (const v of visuelsApportes()) {
+    /* eslint-disable no-await-in-loop */
     const blob = await blobVisuel(v.id);
     if (!blob) continue;
-    /* eslint-disable no-await-in-loop */
-    const data = await new Promise((ok) => {
-      const l = new FileReader();
-      l.onload = () => ok(String(l.result));
-      l.onerror = () => ok('');
-      l.readAsDataURL(blob);
-    });
+    const data = await enData(blob);
+    // L'original, intact, voyage aussi : c'est lui qu'on imprime.
+    const dataHD = v.original ? await enData(await blobVisuel(v.id, true)) : '';
     /* eslint-enable no-await-in-loop */
-    if (data) out.push({ id: v.id, nom: v.nom, largeur: v.largeur, hauteur: v.hauteur, data });
+    if (data) {
+      out.push({ id: v.id, nom: v.nom, largeur: v.largeur, hauteur: v.hauteur, data,
+        ...(dataHD ? { dataHD, largeurOrig: v.largeurOrig, hauteurOrig: v.hauteurOrig } : {}) });
+    }
   }
   return out;
 }
@@ -5942,7 +5948,8 @@ async function appliquerPartage(partage, demander) {
     try {
       /* eslint-disable no-await-in-loop */
       const blob = await (await fetch(im.data)).blob();
-      await importerVisuel(im.id, blob, im.nom, im.largeur, im.hauteur);
+      const original = im.dataHD ? await (await fetch(im.dataHD)).blob() : null;
+      await importerVisuel(im.id, blob, im.nom, im.largeur, im.hauteur, original, im.largeurOrig, im.hauteurOrig);
       /* eslint-enable no-await-in-loop */
     } catch { /* une image illisible ne fait pas tomber le partage */ }
   }

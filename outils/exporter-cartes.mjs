@@ -89,7 +89,8 @@ if ((partage.images || []).length) {
     const v = await import('./js/visuels.js');
     for (const im of images) {
       const blob = await (await fetch(im.data)).blob();
-      await v.importerVisuel(im.id, blob, im.nom, im.largeur, im.hauteur);
+      const original = im.dataHD ? await (await fetch(im.dataHD)).blob() : null;
+      await v.importerVisuel(im.id, blob, im.nom, im.largeur, im.hauteur, original, im.largeurOrig, im.hauteurOrig);
     }
   }, partage.images);
 }
