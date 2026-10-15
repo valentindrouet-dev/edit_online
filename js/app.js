@@ -7649,7 +7649,11 @@ async function ouvrirAtelier(vue) {
   m[vue]({
     app, html, topbar, pied, store, sauverCfg, surLeModifie, LS, telecharger, VERSION,
     appliquerDesign, departsAImprimer, estDesactivee, retournements: RETOURNEMENTS,
-    choisirIllustration: ouvrirChoixImage,
+    choisirIllustration: ouvrirChoixImage, poserCadre,
+    poserMiroir: (cles, m) => {
+      surLeModifie(() => { for (const k of cles) retoucher(k, 'miroir', m || undefined); });
+      sauverCfg();
+    },
   });
 }
 

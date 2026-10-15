@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.53';
-export const BUILD_DATE = '2026-10-15 21:32';
+export const VERSION = '2.54';
+export const BUILD_DATE = '2026-10-15 21:41';
 
 export const CHANGELOG = [
+  {
+    v: '2.54',
+    date: '15/10/2026',
+    items: [
+      "<b>Chaque carte cadre son illustration.</b> Dans l'Atelier, glisser l'image la déplace dans sa fenêtre, la molette zoome, avec miroir et retour au cadrage d'origine — pour cette carte seulement ; la fenêtre et le reste de la mise en page restent communs.",
+      "<b>Le cerne noir des cartes imprimées</b> entoure maintenant les icônes comme les mots, d'une même épaisseur en mm (0,3 mm, mesuré sur le GP 301), dans les bandeaux et la languette ; le « x » s'écrit en lettre, comme sur les cartes.",
+    ],
+  },
   {
     v: '2.53',
     date: '15/10/2026',

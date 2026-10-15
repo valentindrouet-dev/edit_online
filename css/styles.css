@@ -2888,6 +2888,10 @@ body.mode-impression { background: #d9d6e2; }
 .at-icone .suppr { grid-row: 2; grid-column: 2; }
 
 /* --- Les mots des pouvoirs : graisse et contour du gabarit -------------------- */
+/* L'épaisseur du cerne est une LONGUEUR déclarée : posée en em sur un bandeau,
+   elle s'y calcule une fois, et chaque mot, chaque icône en hérite telle quelle. */
+@property --g-t { syntax: '<length>'; inherits: true; initial-value: 0px; }
+.g-contour .pastille, .g-contour .pastille-num, .g-contour .g-ic { filter: var(--g-cerne); }
 .g-bande .x, .g-bande .si { font-weight: var(--g-graisse, 800); }
 .g-bande .mot, .g-bande .regle-mot { font-weight: var(--g-graisse, 700); }
 .g-bande.g-contour .x, .g-bande.g-contour .si, .g-bande.g-contour .mot, .g-bande.g-contour .mot-libre,

@@ -74,7 +74,7 @@ function jeton(brut, g, opts) {
   if (r === '<' || r === '◀') return { html: '<span class="fleche-pos">◀</span>', l: 1.1 };
   if (r === '>>') return { html: avanceRapide(), l: 1.9 };
   if (r === '<<') return { html: avanceRapide(true), l: 1.9 };
-  if (r.toLowerCase() === 'x' || r === '×') return { html: '<span class="x">×</span>', l: 0.9 };
+  if (r.toLowerCase() === 'x' || r === '×') return { html: `<span class="x${opts.signe === 'x' ? ' lettre' : ''}">${opts.signe === 'x' ? 'x' : '×'}</span>`, l: 0.9 };
   if (/^non:/i.test(r)) {
     const j = jeton(r.slice(4), g, opts);
     return { html: `<span class="barre">${j.html}${croixNon()}</span>`, l: j.l };
@@ -122,32 +122,53 @@ export function phraseJetons(texte, g, opts = {}) {
 }
 
 /**
- * Un CONTOUR autour des lettres, en pour cent du corps : une couronne d'ombres
- * nettes, qui fait des coins arrondis comme le contour extérieur d'un logiciel
- * de dessin. En em, elle se mesure sur chaque mot — le « × » comme « avec ».
+ * Le CERNE — le contour noir des cartes imprimées —, d'une même épaisseur, en
+ * millimètres, autour des mots comme des icônes : `--g-t` la porte, et la
+ * feuille de style la déclare comme une longueur, si bien qu'elle se calcule
+ * là où on la pose et ne varie plus d'un mot à l'autre.
+ *   — autour des lettres, une couronne d'ombres nettes : des coins arrondis,
+ *     comme le contour extérieur d'un logiciel de dessin, et du texte qui
+ *     reste du texte à l'impression ;
+ *   — autour d'une icône, des ombres qui suivent sa forme, transparence
+ *     comprise. Le navigateur les imprime à 300 dpi.
  */
-export function couronne(pc, couleur = '#000000') {
-  const r = pc / 100;
-  const out = [];
-  for (const [n, k] of [[16, 1], [8, 0.5]]) {
+function cerne(couleur) {
+  const c = couleur || '#000000';
+  const t = (k) => `calc(var(--g-t) * ${n2(k)})`;
+  const ring = [];
+  for (const [n, k, dec] of [[16, 1, 0], [8, 0.5, 0.5]]) {
     for (let i = 0; i < n; i++) {
-      const a = ((i + (k < 1 ? 0.5 : 0)) / n) * 2 * Math.PI;
-      out.push(`${n2(r * k * Math.cos(a))}em ${n2(r * k * Math.sin(a))}em 0 ${couleur}`);
+      const a = ((i + dec) / n) * 2 * Math.PI;
+      ring.push(`${t(k * Math.cos(a))} ${t(k * Math.sin(a))} 0 ${c}`);
     }
   }
-  return out.join(',');
+  // Huit ombres enchaînées tracent un octogone régulier autour de la forme.
+  const r = 1 / (1 + Math.SQRT2); const d = r / Math.SQRT2;
+  const filtre = [[r, 0], [-r, 0], [0, r], [0, -r], [d, d], [-d, -d], [d, -d], [-d, d]]
+    .map(([x, y]) => `drop-shadow(${t(x)} ${t(y)} 0 ${c})`).join(' ');
+  return { ring: ring.join(','), filtre };
 }
 
-/** La typographie d'un bandeau : sa police, sa graisse, la couleur et le contour de ses mots. */
-function typoBande(e) {
+/** Les variables du cerne d'un élément, où 1 em vaut `unEm` millimètres. */
+function varsCerne(e, unEm) {
+  if (!(e.trait > 0)) return '';
+  const c = cerne(e.contourCouleur);
+  return `--g-t:${n2(e.trait / unEm)}em;--g-ring:${c.ring};--g-cerne:${c.filtre}`;
+}
+
+/** La typographie d'un bandeau : sa police, sa graisse, la couleur et le cerne de ses mots. */
+function typoBande(e, corps) {
   return [
     e.police ? `font-family:${familleCss(e.police)}` : '',
     e.graisse ? `--g-graisse:${e.graisse}` : '',
     e.italique ? 'font-style:italic' : '',
     e.couleur ? `--g-encre:${e.couleur}` : '',
-    e.contour > 0 ? `--g-ring:${couronne(e.contour, e.contourCouleur)}` : '',
+    varsCerne(e, corps),
   ].filter(Boolean).join(';');
 }
+
+/** Le signe de multiplication du gabarit : la lettre « x » des cartes imprimées, ou « × ». */
+const signeX = (html, signe) => (signe === 'x' ? html.split('<span class="x">×</span>').join('<span class="x lettre">x</span>') : html);
 
 /** Ce que le libellé « {cadrage} » écrit pour ce plan. */
 export function nomCadrage(h) {
@@ -193,7 +214,8 @@ function styleTexte(e, couleur) {
     `text-align:${{ gauche: 'left', centre: 'center', droite: 'right' }[e.alignement || 'centre']}`,
     e.majuscules ? 'text-transform:uppercase' : '',
     e.interlettre ? `letter-spacing:${n2(e.interlettre)}em` : '',
-    e.contour > 0 || e.ombre ? `text-shadow:${[e.contour > 0 ? couronne(e.contour, e.contourCouleur) : '',
+    varsCerne(e, e.taille || 3),
+    e.trait > 0 || e.ombre ? `text-shadow:${[e.trait > 0 ? 'var(--g-ring)' : '',
       e.ombre ? '0 .06em .16em rgba(0,0,0,.6)' : ''].filter(Boolean).join(',')}` : '',
   ].filter(Boolean).join(';');
 }
@@ -248,8 +270,8 @@ function contenu(e, h, g, opts, w, hh) {
       const al = { gauche: 'flex-start', centre: 'center', droite: 'flex-end' }[e.alignement || 'gauche'];
       const esp = n2(e.espacement ?? 1);
       return `<div class="g-languette-boite" style="justify-content:${al}">
-        <div class="g-languette ${e.texture === 'papier' ? 'g-tex-papier' : ''} ${e.dechire ? 'g-dechire' : ''}"
-          style="${styleBoite(e)};gap:${esp}em;padding:0 ${n2(esp + (e.dechire ? 0.6 : 0))}em 0 ${esp}em;${
+        <div class="g-languette ${e.texture === 'papier' ? 'g-tex-papier' : ''} ${e.dechire ? 'g-dechire' : ''} ${e.trait > 0 ? 'g-contour' : ''}"
+          style="${styleBoite(e)};${varsCerne(e, 1)};gap:${esp}em;padding:0 ${n2(esp + (e.dechire ? 0.6 : 0))}em 0 ${esp}em;${
   e.ajuste === false ? 'width:100%;' : ''}--ti:${e.tailleIcones || 76}%">${ic.map((x) => iconeJeu(x, g, opts)).join('')}</div></div>`;
     }
     case 'bandeau': {
@@ -270,18 +292,20 @@ function contenu(e, h, g, opts, w, hh) {
       // ce pouvoir. Sinon, le site le compose.
       const textes = g.textes || {};
       const ecrits = objs.map((o) => textes[signaturePouvoir(o)]);
+      const oj = { ...opts, signe: e.signe };
+      const auto = (l) => signeX(remplacerIcones(bandeauGabarit(l, f, opts.cfg, dispo), g, opts), e.signe);
       const rang = (o, i) => {
-        if (ecrits[i] == null) return remplacerIcones(bandeauGabarit([o], f, opts.cfg, dispo), g, opts);
-        const p = phraseJetons(ecrits[i], g, opts);
+        if (ecrits[i] == null) return auto([o]);
+        const p = phraseJetons(ecrits[i], g, oj);
         const ec = Math.max(0.35, Math.min(1.2, Math.round((dispo / Math.max(1, p.besoin * 1.1)) * 100) / 100));
         return `<div class="bandeau g-phrase-bande" style="--ec:${ec}">${p.html}</div>`;
       };
-      const typo = typoBande(e);
+      const typo = typoBande(e, corps);
+      const cerne = e.trait > 0 ? 'g-contour' : '';
       if (ecrits.every((t) => t == null)) {
-        return `<div class="g-bande ${e.contour > 0 ? 'g-contour' : ''}" style="font-size:${n2(corps)}em;${typo}">${
-          remplacerIcones(bandeauGabarit(objs, f, opts.cfg, dispo), g, opts)}</div>`;
+        return `<div class="g-bande ${cerne}" style="font-size:${n2(corps)}em;${typo}">${auto(objs)}</div>`;
       }
-      return `<div class="g-bande ${objs.length > 1 ? 'g-deux' : ''} ${e.contour > 0 ? 'g-contour' : ''}" style="font-size:${n2(corps)}em;${typo}">${
+      return `<div class="g-bande ${objs.length > 1 ? 'g-deux' : ''} ${cerne}" style="font-size:${n2(corps)}em;${typo}">${
         objs.map((o, i) => `<div class="g-rang">${rang(o, i)}</div>`).join('')}</div>`;
     }
     case 'texte': {
@@ -289,8 +313,8 @@ function contenu(e, h, g, opts, w, hh) {
       if (!t.trim()) return '';
       // Des jetons dans le texte : les icônes s'y alignent sur la ligne.
       if (/\[[^\]]+\]/.test(t)) {
-        return `<div class="g-texte g-libre g-phrase" style="${styleTexte(e)};--gi:${e.tailleIcones || 1.3}em">${
-          phraseJetons(t, g, opts).html}</div>`;
+        return `<div class="g-texte g-libre g-phrase ${e.trait > 0 ? 'g-contour' : ''}" style="${styleTexte(e)};--gi:${e.tailleIcones || 1.3}em">${
+          phraseJetons(t, g, { ...opts, signe: e.signe }).html}</div>`;
       }
       return `<div class="g-texte g-libre" style="${styleTexte(e)}">${echapper(t).replace(/\n/g, '<br>')}</div>`;
     }

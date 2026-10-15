@@ -22,7 +22,9 @@ import {
   ICONES_JEU, nomIcone, signaturePouvoir, JETONS,
 } from './gabarits.js';
 import { rendreMoitie, declarerPolices, cssPolicesEmbarquees, brancherGabarit } from './design.js';
-import { buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, DEPARTS, objsDe } from './data.js';
+import {
+  buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, DEPARTS, objsDe, planDeCle, transformeCadre,
+} from './data.js';
 import { renderCarte, renderDos, bandeauGabarit } from './cards.js';
 import { planchesCartes, archiveCartes, PLANCHE } from './export-pdf.js';
 import { visuelsApportes, ajouterVisuel, cleVisuel, urlVisuel } from './visuels.js';
@@ -38,7 +40,7 @@ fetch('assets/images.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() 
 
 const at = {
   cle: 'PM', sel: null, ech: 0, zoom: 1, grille: true, sure: true,
-  comparer: '', filtre: 'MISE', choix: '',
+  comparer: '', filtre: 'MISE', choix: '', recadrer: true, seuleFace: false,
   annuler: [], refaire: [], instantane: null,
   exp: null, enCours: false,
 };
@@ -187,6 +189,7 @@ function feuille(h, g, editable) {
 }
 
 function dessinerScene() {
+  memoPlan = null;
   const zone = q('#at-scene');
   if (!zone) return;
   const ech = echantillons(at.cle);
@@ -285,6 +288,9 @@ function brancherScene() {
     if (at.sel !== id) { at.sel = id; dessinerScene(); dessinerPanneau(); }
     const e = elementSel();
     if (!e) return;
+    // L'illustration : glisser cadre l'image de CETTE carte, les poignées
+    // règlent la fenêtre commune.
+    if (e.type === 'illustration' && at.recadrer && !poignee && glisserImage(ev, zone)) return;
     const d0 = { x: e.x, y: e.y, w: e.w, h: e.h, px: ev.clientX, py: ev.clientY };
     const avant = JSON.stringify(brouillon());
     const k = mmPx();
@@ -352,6 +358,21 @@ function brancherScene() {
     zone.addEventListener('pointerup', lacher);
     zone.addEventListener('pointercancel', lacher);
   });
+
+  // La molette, sur l'illustration choisie, zoome dans l'image de cette carte.
+  let enAttente = null; let minuteur = 0;
+  zone.addEventListener('wheel', (ev) => {
+    const e = elementSel();
+    if (!e || e.type !== 'illustration' || !at.recadrer || !ev.target.closest('.at-feuille.editable') || !illusScene()) return;
+    ev.preventDefault();
+    const c = enAttente || cadreCourant();
+    enAttente = { ...c, z: Math.round(Math.max(1, Math.min(4, c.z * Math.exp(-ev.deltaY * 0.0015))) * 100) / 100 };
+    apercuCadre(enAttente);
+    const r = q('#at-cadre-zoom');
+    if (r) r.value = enAttente.z;
+    clearTimeout(minuteur);
+    minuteur = setTimeout(() => { const f = enAttente; enAttente = null; poserCadre(f); }, 350);
+  }, { passive: false });
 }
 
 // --- Le panneau : les calques, et les réglages de l'élément choisi -------------------------
@@ -435,14 +456,14 @@ function champsDe(e) {
     ${champ(e, 'alignement', 'Alignement', 'choix', { options: ALIGNEMENTS, defaut: 'centre' })}
     ${champ(e, 'interlettre', 'Interlettrage', 'nombre', { pas: 0.01, unite: 'em' })}
     ${champ(e, 'italique', 'Italique', 'bool')}${champ(e, 'majuscules', 'Majuscules', 'bool')}
-    ${champ(e, 'contour', 'Contour', 'nombre', { min: 0, max: 25, pas: 0.5, unite: '% du corps' })}
+    ${champ(e, 'trait', 'Contour', 'mm', { min: 0, pas: 0.05 })}
     ${champ(e, 'contourCouleur', 'Couleur du contour', 'couleur')}
     ${champ(e, 'ombre', 'Ombre portée', 'bool')}</div>`;
   switch (e.type) {
     case 'illustration':
-      return boutonsIllustration() + geo + `<div class="at-groupe"><h4>Image</h4>${champ(e, 'ancrage', 'Ancrage', 'choix', {
+      return boutonsIllustration() + reglagesCadre() + geo + `<div class="at-groupe"><h4>Image — par défaut</h4>${champ(e, 'ancrage', 'Ancrage', 'choix', {
         options: [['haut', 'en haut'], ['centre', 'au centre'], ['bas', 'en bas'], ['haut-gauche', 'en haut à gauche'], ['haut-droite', 'en haut à droite']], defaut: 'haut' })}
-        <p class="aide">Le cadrage plan par plan se règle dans le Matériel ; il est respecté ici.</p></div>` + boite;
+        <p class="aide">Ce que montre une carte qu'on n'a pas recadrée.</p></div>` + boite;
     case 'minutage':
       return geo + texte + `<div class="at-groupe"><h4>Afficheur</h4>
         ${champ(e, 'couleurSpeciale', 'Couleur de --:--, 01:00, 99:00', 'couleur')}
@@ -452,7 +473,9 @@ function champsDe(e) {
         ${champ(e, 'tailleIcones', 'Taille des icônes', 'nombre', { min: 20, max: 100, pas: 1, unite: '% de la hauteur' })}
         ${champ(e, 'espacement', 'Espacement', 'mm', { min: 0 })}
         ${champ(e, 'alignement', 'Alignement', 'choix', { options: ALIGNEMENTS, defaut: 'gauche' })}
-        ${champ(e, 'ajuste', 'Languette ajustée aux icônes', 'bool')}${champ(e, 'dechire', 'Bord déchiré', 'bool')}</div>` + boite;
+        ${champ(e, 'ajuste', 'Languette ajustée aux icônes', 'bool')}${champ(e, 'dechire', 'Bord déchiré', 'bool')}
+        ${champ(e, 'trait', 'Contour des icônes', 'mm', { min: 0, pas: 0.05 })}
+        ${champ(e, 'contourCouleur', 'Couleur du contour', 'couleur')}</div>` + boite;
     case 'bandeau':
       return geo + `<div class="at-groupe"><h4>Pouvoir</h4>
         ${champ(e, 'quel', 'Montre', 'choix', { options: [['', 'tous les pouvoirs'], ['premier', 'le premier pouvoir'], ['second', 'le second pouvoir']] })}
@@ -462,9 +485,11 @@ function champsDe(e) {
         <div class="at-groupe"><h4>Typographie des pouvoirs</h4>${champ(e, 'police', 'Police', 'police')}
         ${champ(e, 'graisse', 'Graisse des mots', 'choix', { options: GRAISSES, nombres: true, defaut: 800 })}
         ${champ(e, 'couleur', 'Couleur des mots', 'couleur')}${champ(e, 'italique', 'Italique', 'bool')}
-        ${champ(e, 'contour', 'Contour', 'nombre', { min: 0, max: 25, pas: 0.5, unite: '% du corps' })}
+        ${champ(e, 'signe', 'Multiplication', 'choix', { options: [['x', 'x — la lettre des cartes'], ['×', '× — le signe']], defaut: '×' })}
+        ${champ(e, 'trait', 'Contour', 'mm', { min: 0, pas: 0.05 })}
         ${champ(e, 'contourCouleur', 'Couleur du contour', 'couleur')}
-        <p class="aide">Vaut pour les mots du bandeau — « si », « × », « avec »… — écrits par le site comme par vous.</p></div>` + boite;
+        <p class="aide">Vaut pour les mots du bandeau — « si », « x », « avec »… — écrits par le site comme par vous.
+        Le contour cerne d'une même épaisseur les mots et les icônes ; 0 l'ôte.</p></div>` + boite;
     case 'texte':
       return `<div class="at-groupe"><h4>Contenu</h4>${champ(e, 'texte', 'Texte', 'zone')}
         <p class="aide">Peut citer la carte : ${CHAMPS_TEXTE.map(([k, l]) => `<code title="${l}">${k}</code>`).join(' ')}</p>
@@ -636,10 +661,14 @@ function dessinerIcones() {
   })));
 }
 
-/** Le plan que la scène montre en ce moment. */
+/** Le plan que la scène montre en ce moment — gardé jusqu'au prochain dessin de la scène. */
+let memoPlan = null;
 function planCourant() {
+  if (memoPlan && memoPlan.cle === at.cle && memoPlan.ech === at.ech) return memoPlan.h;
   const ech = echantillons(at.cle);
-  return ech.length ? ech[((at.ech % ech.length) + ech.length) % ech.length].h : null;
+  const h = ech.length ? ech[((at.ech % ech.length) + ech.length) % ech.length].h : null;
+  memoPlan = { cle: at.cle, ech: at.ech, h };
+  return h;
 }
 
 /**
@@ -665,6 +694,131 @@ function boutonsIllustration() {
     <p class="aide">Une image de la boîte, ou la vôtre. Le recadrage et le miroir se règlent dans la même fenêtre.
     C'est une retouche du Matériel : elle vaut pour ce plan partout — et pour son impression. Double-cliquer
     l'illustration sur la carte fait de même.</p></div>`;
+}
+
+// --- Le cadrage, carte par carte -----------------------------------------------------------
+// La FENÊTRE de l'illustration est commune à toutes les cartes : c'est le
+// gabarit. Ce qu'elle montre est propre à chaque carte — quelle image, quelle
+// part, à quel zoom. C'est une retouche du Matériel, la même que dans la
+// fenêtre « Changer l'illustration » : elle suit la carte partout, table de
+// jeu et impression comprises, et ne change rien au gabarit.
+
+/** Les faces que le cadrage touche : les deux faces d'une moitié si elles montrent la même image. */
+function clesCadre() {
+  const h = planCourant();
+  if (!h || !h.cle || h.format === 'DOS') return [];
+  if (!h.face || at.seuleFace) return [h.cle];
+  const cles = [`${h.numOrigine}R`, `${h.numOrigine}V`];
+  const images = C.surLeModifie(() => cles.map((k) => (planDeCle(k) || {}).image));
+  return images[0] && images[0] === images[1] ? cles : [h.cle];
+}
+
+const POINTS_ANCRAGE = {
+  haut: [50, 0], centre: [50, 50], bas: [50, 100], 'haut-gauche': [0, 0], 'haut-droite': [100, 0],
+};
+
+/** Le cadrage du plan montré — celui qu'il a, ou ce que l'ancrage commun lui donne. */
+function cadreCourant() {
+  const h = planCourant();
+  if (h && h.cadre) return { ...h.cadre };
+  const ill = mise().elements.find((x) => x.type === 'illustration');
+  const [x, y] = POINTS_ANCRAGE[(ill && ill.ancrage) || 'haut'] || POINTS_ANCRAGE.haut;
+  return { v: 2, z: 1, x, y };
+}
+
+const TAILLES = new Map();
+function tailleImage(url) {
+  if (!TAILLES.has(url)) {
+    TAILLES.set(url, new Promise((ok) => {
+      const i = new Image();
+      i.onload = () => ok({ w: i.naturalWidth, h: i.naturalHeight });
+      i.onerror = () => ok(null);
+      i.src = url;
+    }));
+  }
+  return TAILLES.get(url);
+}
+
+const illusScene = () => q('.at-feuille.editable .g-illus:not(.vide)');
+
+/** Montre un cadrage sur la scène sans rien redessiner — le temps du geste. */
+function apercuCadre(cadre) {
+  const el = illusScene();
+  const h = planCourant();
+  if (!el || !h) return;
+  el.style.backgroundPosition = `${cadre.x}% ${cadre.y}%`;
+  el.style.transform = transformeCadre(cadre, h.miroir) || '';
+  const v = q('#at-cadre-val');
+  if (v) v.textContent = `${Math.round(cadre.z * 100)} %`;
+}
+
+function poserCadre(cadre) {
+  const cles = clesCadre();
+  if (!cles.length || !C.poserCadre) return;
+  C.poserCadre(cles, cadre);
+  dessinerScene(); dessinerPanneau(); planifierToutes();
+}
+
+/** Glisser l'image dans sa fenêtre : la part montrée suit la main. */
+function glisserImage(ev, zone) {
+  const el = illusScene();
+  const h = planCourant();
+  if (!el || !h) return false;
+  const url = (/url\(["']?(.*?)["']?\)/.exec(getComputedStyle(el).backgroundImage) || [])[1];
+  if (!url) return false;
+  let taille = null;
+  tailleImage(url).then((t) => { taille = t; });
+  const c0 = cadreCourant();
+  const bw = el.offsetWidth; const bh = el.offsetHeight;
+  const x0 = ev.clientX; const y0 = ev.clientY;
+  let cadre = null;
+  zone.setPointerCapture(ev.pointerId);
+  const borne = (v) => Math.max(0, Math.min(100, Math.round(v)));
+  const deplacer = (m) => {
+    if (!taille || (!cadre && Math.hypot(m.clientX - x0, m.clientY - y0) < 3)) return;
+    // L'image est posée en « cover » : elle déborde de la fenêtre d'un côté,
+    // et le zoom l'agrandit encore. Ce débordement est la course du cadrage,
+    // de 0 à 100 % ; la main la parcourt au pixel près.
+    const fen = bw / bh; const des = taille.w / taille.h;
+    const ox = des > fen ? des / fen - 1 : 0; const oy = des < fen ? fen / des - 1 : 0;
+    const cx = bw * ((1 + ox) * c0.z - 1); const cy = bh * ((1 + oy) * c0.z - 1);
+    cadre = { v: 2, z: c0.z,
+      x: cx > 0.5 ? borne(c0.x - (((m.clientX - x0) / cx) * 100) * (h.miroir ? -1 : 1)) : c0.x,
+      y: cy > 0.5 ? borne(c0.y - ((m.clientY - y0) / cy) * 100) : c0.y };
+    apercuCadre(cadre);
+  };
+  const lacher = () => {
+    zone.removeEventListener('pointermove', deplacer);
+    zone.removeEventListener('pointerup', lacher);
+    zone.removeEventListener('pointercancel', lacher);
+    if (cadre) poserCadre(cadre);
+  };
+  zone.addEventListener('pointermove', deplacer);
+  zone.addEventListener('pointerup', lacher);
+  zone.addEventListener('pointercancel', lacher);
+  return true;
+}
+
+function reglagesCadre() {
+  const h = planCourant();
+  if (!h || !h.cle || h.format === 'DOS') return '';
+  const c = cadreCourant();
+  const faces = clesCadre().length > 1;
+  return `<div class="at-groupe at-cadrage"><h4>Ce que montre cette carte</h4>
+    <p class="aide">La fenêtre est commune à toutes les cartes ; l'image, sa place et son zoom sont propres à
+    celle-ci${faces ? ' — recto et verso, qui montrent la même image' : ''}.</p>
+    <div class="rangee-mini"><span class="aide">Glisser sur la carte</span>
+      <button class="pill mini ${at.recadrer ? 'on' : ''}" data-geste="image" title="Glisser fait voyager l'image dans sa fenêtre — pour cette carte seulement">✥ cadre l’image de cette carte</button>
+      <button class="pill mini ${at.recadrer ? '' : 'on'}" data-geste="fenetre" title="Glisser déplace la fenêtre de l'illustration — sur toutes les cartes">⬚ déplace la fenêtre commune</button></div>
+    <div class="at-champ"><label for="at-cadre-zoom">Zoom</label><span class="at-saisie">
+      <input type="range" min="1" max="4" step="0.01" value="${c.z}" id="at-cadre-zoom"><b id="at-cadre-val">${Math.round(c.z * 100)} %</b></span></div>
+    <div class="rangee-mini">
+      <button class="pill mini ${h.miroir ? 'on' : ''}" id="at-cadre-miroir">⇄ Miroir</button>
+      <button class="pill mini" id="at-cadre-zero" ${h.cadre ? '' : 'disabled'}>↺ Cadrage d’origine</button>
+      ${h.face ? `<label class="at-case"><input type="checkbox" id="at-seule-face" ${at.seuleFace ? 'checked' : ''}> cette face seulement</label>` : ''}
+    </div>
+    <p class="aide">La molette, sur l'image, zoome. Le cadrage est rangé avec la carte, dans le Matériel : il ne
+    s'annule pas avec Ctrl+Z, mais « Cadrage d'origine » le défait.</p></div>`;
 }
 
 function changerIllustration(seuleFace) {
@@ -760,6 +914,27 @@ function brancherPanneau() {
   p.querySelectorAll('[data-suppr-el]').forEach((b) => b.addEventListener('click', () => supprimer(b.dataset.supprEl)));
   p.querySelectorAll('[data-ajouter]').forEach((b) => b.addEventListener('click', () => ajouter(b.dataset.ajouter)));
   p.querySelectorAll('[data-changer-illus]').forEach((b) => b.addEventListener('click', () => changerIllustration(!!b.dataset.changerIllus)));
+  p.querySelectorAll('[data-geste]').forEach((b) => b.addEventListener('click', () => {
+    at.recadrer = b.dataset.geste === 'image'; dessinerPanneau();
+  }));
+  const zc = p.querySelector('#at-cadre-zoom');
+  if (zc) {
+    zc.addEventListener('input', () => apercuCadre({ ...cadreCourant(), z: +zc.value }));
+    zc.addEventListener('change', () => poserCadre({ ...cadreCourant(), z: +zc.value }));
+  }
+  const mir = p.querySelector('#at-cadre-miroir');
+  if (mir) {
+    mir.addEventListener('click', () => {
+      const h = planCourant();
+      if (!h || !C.poserMiroir) return;
+      C.poserMiroir(clesCadre(), !h.miroir);
+      dessinerScene(); dessinerPanneau(); planifierToutes();
+    });
+  }
+  const zero = p.querySelector('#at-cadre-zero');
+  if (zero) zero.addEventListener('click', () => poserCadre(null));
+  const sf = p.querySelector('#at-seule-face');
+  if (sf) sf.addEventListener('change', () => { at.seuleFace = sf.checked; dessinerPanneau(); });
   const des = p.querySelector('#at-deselection');
   if (des) des.addEventListener('click', () => { at.sel = null; dessinerScene(); dessinerPanneau(); });
 

@@ -72,7 +72,10 @@ export const POLICES = [
  * fichier de l'auteur, mesurés sur son extrait, en font 7 % — : il suit ainsi
  * chaque mot, qu'il soit grand comme le « × » ou petit comme « avec ».
  */
-export const TYPO_POUVOIR = { police: 'Verdana', graisse: 700, couleur: '#ffffff', contour: 7, contourCouleur: '#000000' };
+export const TYPO_POUVOIR = { police: 'Verdana', graisse: 700, couleur: '#ffffff', signe: 'x', trait: 0.3, contourCouleur: '#000000' };
+
+/** Le cerne des icônes : le même que celui des mots. */
+export const CERNE_ICONES = { trait: TYPO_POUVOIR.trait, contourCouleur: TYPO_POUVOIR.contourCouleur };
 
 export const POLICES_SYSTEME = ['Arial', 'Arial Black', 'Impact', 'Georgia', 'Verdana', 'Courier New'];
 
@@ -150,7 +153,7 @@ function elementsDe(W, c) {
       couleurSpeciale: '#59b9ff', lueur: true, alignement: 'centre' },
     { id: 'icones', type: 'icones', nom: 'Icônes', x: 1, y: 42.6, w: Math.min(W - 2, 40), h: 8.7,
       fond: c.bande, texture: 'papier', dechire: true, rayon: 0.3, tailleIcones: 76, espacement: 1.2,
-      alignement: 'gauche', ajuste: true },
+      alignement: 'gauche', ajuste: true, ...CERNE_ICONES },
     { id: 'bandeau', type: 'bandeau', nom: 'Pouvoir', x: 1, y: 51.3, w: W - 2, h: 7.7,
       fond: c.bande, texture: 'papier', echelle: 1, ...TYPO_POUVOIR },
     { id: 'libelle', type: 'texte', nom: 'Type de plan', texte: '{cadrage}', x: 1, y: 59.1, w: W - 2, h: 3.6,
@@ -243,12 +246,17 @@ export function normaliserGabarit(g) {
     else if (!mise.carte) mise.carte = { ...base.mises[m.id].carte };
   }
   if (typeof out.coins !== 'number') out.coins = base.coins;
-  // Un bandeau d'avant la typographie des pouvoirs la reçoit — sans toucher à
-  // celle qu'on lui aurait déjà choisie.
+  // Un bandeau d'avant la typographie des pouvoirs la reçoit, une languette
+  // d'avant le cerne le reçoit — sans toucher à ce qu'on leur aurait choisi.
+  // Le contour de la 2.53 se comptait en % du corps : il devient une épaisseur.
   for (const m of Object.values(out.mises)) {
     for (const e of m.elements || []) {
-      if (e.type !== 'bandeau') continue;
-      for (const [k, v] of Object.entries(TYPO_POUVOIR)) if (e[k] === undefined) e[k] = v;
+      if (e.contour !== undefined) {
+        if (e.trait === undefined) e.trait = e.type === 'texte' ? Math.round((e.contour / 100) * (e.taille || 3) * 100) / 100 : TYPO_POUVOIR.trait;
+        delete e.contour;
+      }
+      const defauts = e.type === 'bandeau' ? TYPO_POUVOIR : e.type === 'icones' ? CERNE_ICONES : null;
+      if (defauts) for (const [k, v] of Object.entries(defauts)) if (e[k] === undefined) e[k] = v;
     }
   }
   if (!Array.isArray(out.icones)) out.icones = [];
