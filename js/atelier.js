@@ -435,6 +435,8 @@ function champsDe(e) {
     ${champ(e, 'alignement', 'Alignement', 'choix', { options: ALIGNEMENTS, defaut: 'centre' })}
     ${champ(e, 'interlettre', 'Interlettrage', 'nombre', { pas: 0.01, unite: 'em' })}
     ${champ(e, 'italique', 'Italique', 'bool')}${champ(e, 'majuscules', 'Majuscules', 'bool')}
+    ${champ(e, 'contour', 'Contour', 'nombre', { min: 0, max: 25, pas: 0.5, unite: '% du corps' })}
+    ${champ(e, 'contourCouleur', 'Couleur du contour', 'couleur')}
     ${champ(e, 'ombre', 'Ombre portée', 'bool')}</div>`;
   switch (e.type) {
     case 'illustration':
@@ -460,6 +462,8 @@ function champsDe(e) {
         <div class="at-groupe"><h4>Typographie des pouvoirs</h4>${champ(e, 'police', 'Police', 'police')}
         ${champ(e, 'graisse', 'Graisse des mots', 'choix', { options: GRAISSES, nombres: true, defaut: 800 })}
         ${champ(e, 'couleur', 'Couleur des mots', 'couleur')}${champ(e, 'italique', 'Italique', 'bool')}
+        ${champ(e, 'contour', 'Contour', 'nombre', { min: 0, max: 25, pas: 0.5, unite: '% du corps' })}
+        ${champ(e, 'contourCouleur', 'Couleur du contour', 'couleur')}
         <p class="aide">Vaut pour les mots du bandeau — « si », « × », « avec »… — écrits par le site comme par vous.</p></div>` + boite;
     case 'texte':
       return `<div class="at-groupe"><h4>Contenu</h4>${champ(e, 'texte', 'Texte', 'zone')}

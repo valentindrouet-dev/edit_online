@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.52';
-export const BUILD_DATE = '2026-10-15 21:13';
+export const VERSION = '2.53';
+export const BUILD_DATE = '2026-10-15 21:32';
 
 export const CHANGELOG = [
+  {
+    v: '2.53',
+    date: '15/10/2026',
+    items: [
+      "<b>Vos icônes nommées d'un chiffre sont les valeurs.</b> Une icône « 2 » s'affiche pour <code>[2]</code>, et remplace aussi la pastille 2 des bandeaux composés par le site.",
+      "<b>La typographie des pouvoirs des cartes.</b> Verdana gras, blanc, cerné de noir : un <b>contour</b> réglable en % du corps (7 % = les 4 px du fichier), pour les bandeaux comme pour les textes.",
+    ],
+  },
   {
     v: '2.52',
     date: '15/10/2026',

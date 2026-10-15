@@ -66,6 +66,14 @@ export const POLICES = [
 ];
 
 /** Les polices de l'ordinateur : elles ne voyagent pas, l'export les remplace. */
+/**
+ * La typographie des pouvoirs sur les cartes imprimées : Verdana gras, blanc,
+ * cerné de noir. Le contour se compte en POUR CENT DU CORPS — les 4 px du
+ * fichier de l'auteur, mesurés sur son extrait, en font 7 % — : il suit ainsi
+ * chaque mot, qu'il soit grand comme le « × » ou petit comme « avec ».
+ */
+export const TYPO_POUVOIR = { police: 'Verdana', graisse: 700, couleur: '#ffffff', contour: 7, contourCouleur: '#000000' };
+
 export const POLICES_SYSTEME = ['Arial', 'Arial Black', 'Impact', 'Georgia', 'Verdana', 'Courier New'];
 
 export const policeLocale = (f) => POLICES.find((p) => p.famille === f) || null;
@@ -144,7 +152,7 @@ function elementsDe(W, c) {
       fond: c.bande, texture: 'papier', dechire: true, rayon: 0.3, tailleIcones: 76, espacement: 1.2,
       alignement: 'gauche', ajuste: true },
     { id: 'bandeau', type: 'bandeau', nom: 'Pouvoir', x: 1, y: 51.3, w: W - 2, h: 7.7,
-      fond: c.bande, texture: 'papier', echelle: 1 },
+      fond: c.bande, texture: 'papier', echelle: 1, ...TYPO_POUVOIR },
     { id: 'libelle', type: 'texte', nom: 'Type de plan', texte: '{cadrage}', x: 1, y: 59.1, w: W - 2, h: 3.6,
       police: 'Montserrat', graisse: 900, italique: true, majuscules: true, taille: 3.1,
       couleur: c.texte, alignement: 'centre', ombre: true },
@@ -166,6 +174,7 @@ function miseRaccord(W, c) {
   m.elements.splice(m.elements.indexOf(b) + 1, 0, {
     id: 'bandeau2', type: 'bandeau', nom: 'Second pouvoir', quel: 'second',
     x: 1, y: 43, w: Math.min(W - 2, 26), h: 7.7, fond: c.bande, texture: 'papier', dechire: true, rayon: 0.3, echelle: 1,
+    ...TYPO_POUVOIR,
   });
   return m;
 }
@@ -234,6 +243,14 @@ export function normaliserGabarit(g) {
     else if (!mise.carte) mise.carte = { ...base.mises[m.id].carte };
   }
   if (typeof out.coins !== 'number') out.coins = base.coins;
+  // Un bandeau d'avant la typographie des pouvoirs la reçoit — sans toucher à
+  // celle qu'on lui aurait déjà choisie.
+  for (const m of Object.values(out.mises)) {
+    for (const e of m.elements || []) {
+      if (e.type !== 'bandeau') continue;
+      for (const [k, v] of Object.entries(TYPO_POUVOIR)) if (e[k] === undefined) e[k] = v;
+    }
+  }
   if (!Array.isArray(out.icones)) out.icones = [];
   if (!out.textes || typeof out.textes !== 'object') out.textes = {};
   if (!out.nom) out.nom = base.nom;

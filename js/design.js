@@ -42,14 +42,22 @@ function iconeJeu(id, g, opts) {
   return u ? `<img class="pastille g-ic" src="${u}" alt="${id}">` : elIcon(id);
 }
 
-/** Les icônes du jeu d'un bandeau composé par le site, remplacées par celles de l'auteur. */
+/**
+ * Les icônes d'un bandeau composé par le site, remplacées par celles de
+ * l'auteur : une icône du jeu par celle qui porte son nom, une pastille de
+ * valeur par l'icône nommée de son chiffre — « 2 ».
+ */
 function remplacerIcones(html, g, opts) {
+  if (!g || !(g.icones || []).length) return html;
   let out = html;
   for (const [nom, id] of Object.entries(ICONES_JEU)) {
     const u = urlIcone(nom, g, opts);
     if (u) out = out.split(`src="assets/icones/${id}.webp"`).join(`src="${u}"`);
   }
-  return out;
+  return out.replace(/<svg class="pastille-num[^"]*"[^>]*aria-label="(\d+)">[\s\S]*?<\/svg>/g, (tout, n) => {
+    const u = urlIcone(n, g, opts);
+    return u ? `<img class="pastille-num g-ic" src="${u}" alt="${n}">` : tout;
+  });
 }
 
 /**
@@ -58,6 +66,9 @@ function remplacerIcones(html, g, opts) {
  */
 function jeton(brut, g, opts) {
   const r = brut.trim();
+  // Une icône de l'auteur passe avant tout : nommée « 2 », elle EST la valeur 2.
+  const perso = /^non:/i.test(r) ? '' : urlIcone(nomIcone(r), g, opts);
+  if (perso) return { html: `<img class="pastille g-ic" src="${perso}" alt="${echapper(r)}">`, l: 2.11 };
   if (/^[+\-−]?\d+$/.test(r)) return { html: numIcon(parseInt(r.replace('−', '-'), 10)), l: 2.11 };
   if (r === '>' || r === '▶') return { html: '<span class="fleche-pos">▶</span>', l: 1.1 };
   if (r === '<' || r === '◀') return { html: '<span class="fleche-pos">◀</span>', l: 1.1 };
@@ -110,13 +121,31 @@ export function phraseJetons(texte, g, opts = {}) {
   return { html: pieces.join(''), besoin };
 }
 
-/** La typographie d'un bandeau : sa police, sa graisse, la couleur de ses mots. */
+/**
+ * Un CONTOUR autour des lettres, en pour cent du corps : une couronne d'ombres
+ * nettes, qui fait des coins arrondis comme le contour extérieur d'un logiciel
+ * de dessin. En em, elle se mesure sur chaque mot — le « × » comme « avec ».
+ */
+export function couronne(pc, couleur = '#000000') {
+  const r = pc / 100;
+  const out = [];
+  for (const [n, k] of [[16, 1], [8, 0.5]]) {
+    for (let i = 0; i < n; i++) {
+      const a = ((i + (k < 1 ? 0.5 : 0)) / n) * 2 * Math.PI;
+      out.push(`${n2(r * k * Math.cos(a))}em ${n2(r * k * Math.sin(a))}em 0 ${couleur}`);
+    }
+  }
+  return out.join(',');
+}
+
+/** La typographie d'un bandeau : sa police, sa graisse, la couleur et le contour de ses mots. */
 function typoBande(e) {
   return [
     e.police ? `font-family:${familleCss(e.police)}` : '',
     e.graisse ? `--g-graisse:${e.graisse}` : '',
     e.italique ? 'font-style:italic' : '',
     e.couleur ? `--g-encre:${e.couleur}` : '',
+    e.contour > 0 ? `--g-ring:${couronne(e.contour, e.contourCouleur)}` : '',
   ].filter(Boolean).join(';');
 }
 
@@ -145,7 +174,11 @@ const ANCRAGES = {
 };
 
 /** La police d'un texte, avec un repli si elle manque. */
-const familleCss = (p) => `'${String(p || 'Inter').replace(/'/g, '')}', 'Inter', 'Segoe UI', Arial, sans-serif`;
+// Verdana n'est pas une police libre : elle vient de l'ordinateur. Là où elle
+// manque — l'export maître, sous Linux —, DejaVu Sans, de la même famille de
+// dessin, prend sa place.
+const familleCss = (p) => `'${String(p || 'Inter').replace(/'/g, '')}', ${
+  p === 'Verdana' ? "'DejaVu Sans', " : ''}'Inter', 'Segoe UI', Arial, sans-serif`;
 
 /** Ce qu'un élément écrit — police, corps, couleur, alignement. */
 function styleTexte(e, couleur) {
@@ -160,7 +193,8 @@ function styleTexte(e, couleur) {
     `text-align:${{ gauche: 'left', centre: 'center', droite: 'right' }[e.alignement || 'centre']}`,
     e.majuscules ? 'text-transform:uppercase' : '',
     e.interlettre ? `letter-spacing:${n2(e.interlettre)}em` : '',
-    e.ombre ? 'text-shadow:0 .06em .16em rgba(0,0,0,.6)' : '',
+    e.contour > 0 || e.ombre ? `text-shadow:${[e.contour > 0 ? couronne(e.contour, e.contourCouleur) : '',
+      e.ombre ? '0 .06em .16em rgba(0,0,0,.6)' : ''].filter(Boolean).join(',')}` : '',
   ].filter(Boolean).join(';');
 }
 
@@ -244,10 +278,10 @@ function contenu(e, h, g, opts, w, hh) {
       };
       const typo = typoBande(e);
       if (ecrits.every((t) => t == null)) {
-        return `<div class="g-bande" style="font-size:${n2(corps)}em;${typo}">${
+        return `<div class="g-bande ${e.contour > 0 ? 'g-contour' : ''}" style="font-size:${n2(corps)}em;${typo}">${
           remplacerIcones(bandeauGabarit(objs, f, opts.cfg, dispo), g, opts)}</div>`;
       }
-      return `<div class="g-bande ${objs.length > 1 ? 'g-deux' : ''}" style="font-size:${n2(corps)}em;${typo}">${
+      return `<div class="g-bande ${objs.length > 1 ? 'g-deux' : ''} ${e.contour > 0 ? 'g-contour' : ''}" style="font-size:${n2(corps)}em;${typo}">${
         objs.map((o, i) => `<div class="g-rang">${rang(o, i)}</div>`).join('')}</div>`;
     }
     case 'texte': {

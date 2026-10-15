@@ -2886,3 +2886,10 @@ body.mode-impression { background: #d9d6e2; }
 .at-icone input { min-width: 0; font: 700 12px ui-monospace, Menlo, Consolas, monospace; }
 .at-icone .aide { grid-column: 1; font-size: 11px; }
 .at-icone .suppr { grid-row: 2; grid-column: 2; }
+
+/* --- Les mots des pouvoirs : graisse et contour du gabarit -------------------- */
+.g-bande .x, .g-bande .si { font-weight: var(--g-graisse, 800); }
+.g-bande .mot, .g-bande .regle-mot { font-weight: var(--g-graisse, 700); }
+.g-bande.g-contour .x, .g-bande.g-contour .si, .g-bande.g-contour .mot, .g-bande.g-contour .mot-libre,
+.g-bande.g-contour .plus-seuil, .g-bande.g-contour .regle-mot { text-shadow: var(--g-ring); }
+.g-bande.g-contour .regle-mot .tag { text-shadow: none; }
