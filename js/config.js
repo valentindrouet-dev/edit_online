@@ -203,6 +203,10 @@ export const DEFAULTS = {
   // attendent dans `setsRanges`.
   set: '2',
   setsRanges: {},
+  // Le DESSIN des cartes, réglé dans l'Atelier : le brouillon de gabarit, la
+  // version dont il est tiré, et s'il dessine les cartes du site. Éteint, le
+  // site garde son dessin à lui.
+  design: { actif: false, gabarit: null, base: 'v1' },
   materiel: {
     plans: {}, paires: {},
     ajouts: { scenes: [], larges: [], departs: [], paires: [] },
@@ -328,6 +332,7 @@ export function migrerCfg(lu) {
   for (const k of ['objectifsCommunsActifs', 'objectifCommunPoints']) {
     out[k] = { ...DEFAULTS[k], ...(typeof out[k] === 'object' && out[k] ? out[k] : {}) };
   }
+  if (out.design && typeof out.design === 'object') out.design = { ...DEFAULTS.design, ...out.design };
   if (out.materiel && typeof out.materiel === 'object') {
     out.materiel = {
       plans: {}, paires: {}, retires: [],

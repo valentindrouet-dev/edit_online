@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.47';
-export const BUILD_DATE = '2026-10-01 17:16';
+export const VERSION = '2.48';
+export const BUILD_DATE = '2026-10-15 18:21';
 
 export const CHANGELOG = [
+  {
+    v: '2.48',
+    date: '15/10/2026',
+    items: [
+      "<b>Nouvel écran : l'Atelier.</b> Le dessin des cartes devient un <b>gabarit</b> réglable, en millimètres sur le carton de 88 × 63 mm : on prend un élément sur la carte pour le déplacer ou le redimensionner — il se cale au demi-millimètre et s'aimante aux bords et aux milieux —, on change sa police, son corps, ses couleurs, on ajoute des textes, des images, des formes. Une mise en page par type de carte : Plan Large, Plan de départ, Plan Moyen, Gros Plan, Raccords, dos de la pioche. Toutes les cartes du set suivent, d'un coup.",
+      "<b>Des versions, des essais, des comparaisons.</b> Le brouillon s'annule (Ctrl+Z), s'enregistre en essai, se compare côte à côte avec une autre version, et « 📋 Copier le gabarit » le donne en texte pour en faire une version publiée. Une case branche le dessin sur tout le site — galeries, table de jeu, lien partagé.",
+      "<b>L'impression</b> : planches A4 recto-verso ou une carte par fichier, en PDF ou en PNG, de 300 à 600 dpi, avec fond perdu et repères de coupe ; et une <b>version vectorielle</b>, imprimée par le navigateur, où le texte reste du texte et les illustrations gardent toute leur définition. Seize polices libres sont fournies, dont un afficheur à segments pour le minutage.",
+    ],
+  },
   {
     v: '2.47',
     date: '01/10/2026',

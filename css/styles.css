@@ -2680,3 +2680,159 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 .moitie.gabarit.bande-deux .illus { flex: 0 0 75.35%; }
 .moitie.gabarit.bande-deux .bandeau { flex: 0 0 20%; }
 .moitie.gabarit.bande-deux .pastilles { bottom: 24.65%; }
+
+/* --- Cartes dessinées par un GABARIT (l'Atelier) ----------------------------
+   Une carte est alors un carton de 88 × 63 mm : `--ar` en donne la proportion
+   — fond perdu compris —, `--fr` la part d'une carte entière qu'elle occupe
+   (une demi-carte en vaut une demi). Chaque moitié est un conteneur : sa
+   largeur fait l'unité, et 1 em y vaut 1 mm (voir js/design.js). */
+.carte.design {
+  padding: 0; gap: 0; background: #000; overflow: hidden;
+  aspect-ratio: var(--ar, 88 / 63); width: calc(300px * var(--fr, 1)); height: auto;
+}
+.carte.small.design { width: calc(258px * var(--fr, 1)); }
+.carte.tiny.design { width: calc(150px * var(--fr, 1)); }
+.carte.design > .moitie.design {
+  flex: var(--flex) !important; width: auto !important; height: auto !important;
+  min-width: 0; border-radius: 0;
+}
+.moitie.design { container-type: inline-size; background: #000; overflow: hidden; }
+.g-carte {
+  position: absolute; inset: 0; overflow: hidden; line-height: 1;
+  font-size: calc(100cqw / var(--gw, 58.5));
+}
+.g-el { position: absolute; box-sizing: border-box; overflow: hidden; display: flex; }
+.g-illus { position: absolute; inset: 0; background-size: cover; background-repeat: no-repeat; }
+.g-illus.vide { background: repeating-linear-gradient(135deg, #2a2a30 0 6px, #232328 6px 12px); }
+.g-img { position: absolute; inset: 0; background-repeat: no-repeat; background-position: center; }
+.g-texte { flex: 1 1 auto; display: flex; align-items: center; min-width: 0; line-height: 1; white-space: nowrap; }
+.g-texte.g-libre { white-space: pre-line; }
+/* Le minutage : les chiffres, et sous eux les segments éteints. */
+.g-tc { display: grid; align-items: center; }
+.g-tc > span { grid-area: 1 / 1; }
+.g-tc-fantome { opacity: .12; text-shadow: none !important; }
+.g-languette-boite { position: absolute; inset: 0; display: flex; align-items: stretch; }
+.g-languette {
+  display: flex; align-items: center; height: 100%; box-sizing: border-box;
+  flex: 0 1 auto; min-width: 0;
+}
+.g-languette .pastille {
+  height: var(--ti, 76%); width: auto; aspect-ratio: 1 / 1; flex: 0 1 auto; min-width: 0;
+  object-fit: contain; filter: drop-shadow(0 .06em .12em rgba(0, 0, 0, .45));
+}
+.g-dechire {
+  clip-path: polygon(0 0, 96.5% 0, 100% 11%, 98.2% 27%, 100% 40%, 96.8% 57%, 99.2% 71%, 97.4% 86%, 100% 100%, 0 100%);
+}
+.g-tex-papier {
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .2 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>"),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='120'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='.012 .09' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 .85 0 0 0 .16 0'/></filter><rect width='100%25' height='100%25' filter='url(%23p)'/></svg>");
+}
+.g-bande { position: absolute; inset: 0; display: flex; }
+.g-carte .bandeau { flex: 1 1 auto; height: 100%; width: 100%; background: none; }
+
+/* --- L'Atelier ---------------------------------------------------------------- */
+.atelier .at-tete h2 { margin: 0; }
+.at-versions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.at-versions select { max-width: 100%; }
+.at-etat { font-size: .85rem; margin-right: 6px; }
+.at-modifie { color: var(--orange); }
+.at-mises { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0; }
+.at-corps { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .at-corps { grid-template-columns: minmax(0, 1fr); } }
+.at-outils { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+.at-ech-nom { font-weight: 700; font-size: .88rem; min-width: 14em; }
+.at-espace { flex: 1 1 auto; }
+.at-case { display: inline-flex; align-items: center; gap: 4px; font-size: .82rem; }
+.at-scene {
+  display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; overflow: auto;
+  padding: 18px; background: #e9e6f2; border-radius: 12px; min-height: 200px;
+  touch-action: none;
+}
+.at-comparaison { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.at-legende { font-size: .78rem; font-weight: 700; color: var(--gris); min-height: 1em; }
+.at-feuille { position: relative; flex: 0 0 auto; box-shadow: 0 6px 22px rgba(30, 20, 60, .25); user-select: none; }
+.at-grille { position: absolute; inset: 0; pointer-events: none; }
+.at-sure { position: absolute; border: 1px dashed rgba(249, 115, 22, .7); pointer-events: none; }
+.at-cadres { position: absolute; inset: 0; }
+.at-cadre { position: absolute; cursor: move; outline: 1px dashed transparent; }
+.at-feuille.editable:hover .at-cadre { outline-color: rgba(124, 58, 237, .45); }
+.at-cadre:hover { outline: 1px solid rgba(124, 58, 237, .9) !important; }
+.at-cadre.sel { outline: 2px solid var(--violet) !important; z-index: 2; }
+.at-cadre-nom {
+  position: absolute; left: 0; top: -1.45em; font-size: 10px; font-weight: 700; white-space: nowrap;
+  background: var(--violet); color: #fff; padding: 1px 5px; border-radius: 4px; display: none;
+}
+.at-cadre.sel .at-cadre-nom, .at-cadre:hover .at-cadre-nom { display: block; }
+.at-poignee {
+  position: absolute; width: 10px; height: 10px; background: #fff; border: 2px solid var(--violet);
+  border-radius: 2px; margin: -5px 0 0 -5px;
+}
+.p-nw { left: 0; top: 0; cursor: nwse-resize; } .p-n { left: 50%; top: 0; cursor: ns-resize; }
+.p-ne { left: 100%; top: 0; cursor: nesw-resize; } .p-e { left: 100%; top: 50%; cursor: ew-resize; }
+.p-se { left: 100%; top: 100%; cursor: nwse-resize; } .p-s { left: 50%; top: 100%; cursor: ns-resize; }
+.p-sw { left: 0; top: 100%; cursor: nesw-resize; } .p-w { left: 0; top: 50%; cursor: ew-resize; }
+.at-guides { position: absolute; inset: 0; pointer-events: none; }
+.at-guide { position: absolute; background: #f43f5e; }
+.at-guide.v { top: 0; bottom: 0; width: 1px; }
+.at-guide.h { left: 0; right: 0; height: 1px; }
+.at-droite { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
+.at-droite h3 { margin: 0 0 6px; }
+.at-calques { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+.at-calque {
+  display: flex; align-items: center; gap: 4px; padding: 3px 4px; border-radius: 7px; cursor: pointer;
+  font-size: .84rem;
+}
+.at-calque:hover { background: #f4f1fb; }
+.at-calque.sel { background: var(--violet-clair); }
+.at-calque.cache .at-calque-nom { opacity: .45; text-decoration: line-through; }
+.at-calque-nom { font-weight: 700; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.at-mini {
+  border: 0; background: transparent; cursor: pointer; padding: 2px 5px; border-radius: 5px;
+  color: var(--violet); font-size: .8rem; line-height: 1;
+}
+.at-mini:hover:not(:disabled) { background: #ece7f7; }
+.at-mini:disabled { opacity: .3; cursor: default; }
+.at-mini.suppr { color: #b3261e; }
+.at-ajouts { margin-bottom: 10px; }
+.at-titre-el { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.at-titre-el input { font-weight: 800; font-size: 1rem; flex: 1 1 auto; min-width: 0; }
+.at-groupe { border-top: 1px solid var(--gris-clair); padding: 8px 0 4px; }
+.at-groupe h4 { margin: 0 0 6px; font-size: .74rem; text-transform: uppercase; letter-spacing: .08em; color: var(--gris); }
+.at-champ { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); align-items: center; gap: 6px; margin: 4px 0; font-size: .84rem; }
+.at-champ.large { grid-template-columns: minmax(0, 1fr); }
+.at-saisie { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.at-saisie input[type=number] { width: 6em; }
+.at-saisie input[type=text], .at-saisie select, .at-saisie textarea { flex: 1 1 auto; min-width: 0; max-width: 100%; }
+.at-saisie input[type=color] { width: 40px; height: 26px; padding: 0; border: 1px solid var(--gris-clair); border-radius: 5px; }
+.at-unite { font-style: normal; color: var(--gris); font-size: .78rem; }
+.at-sans { font-size: .78rem; display: inline-flex; gap: 3px; align-items: center; }
+.at-filtres { display: flex; flex-wrap: wrap; gap: 4px; }
+.at-toutes { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
+.at-toutes .moitie { cursor: pointer; }
+.at-export-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px 16px; margin: 10px 0; }
+.at-export-grille label { display: flex; flex-direction: column; gap: 3px; font-size: .82rem; font-weight: 700; }
+.at-export-grille label.at-case { flex-direction: row; align-self: end; }
+
+/* --- L'impression vectorielle ------------------------------------------------ */
+body.mode-impression { background: #d9d6e2; }
+.imp-barre {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px; margin: 0 0 16px;
+  background: #fff; border-radius: 10px; box-shadow: var(--ombre);
+}
+.imp-pages { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.imp-page { position: relative; background: #fff; overflow: hidden; box-shadow: 0 4px 18px rgba(0, 0, 0, .2); }
+.imp-place { position: absolute; }
+.imp-carte { position: relative; overflow: hidden; }
+.imp-carte > .carte.design {
+  width: 100% !important; height: 100% !important; aspect-ratio: auto !important;
+  border-radius: 0 !important; box-shadow: none !important;
+}
+.imp-trait { position: absolute; background: #000; z-index: 3; }
+@media print {
+  body.mode-impression { background: #fff; margin: 0; }
+  body.mode-impression .imp-barre { display: none; }
+  body.mode-impression .imp-pages { display: block; gap: 0; }
+  body.mode-impression .imp-page { box-shadow: none; break-after: page; page-break-after: always; margin: 0; }
+  body.mode-impression * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

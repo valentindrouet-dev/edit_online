@@ -31,6 +31,20 @@ interface, commentaires, commits.
 - Matériel en trois couches : imprimé → publié (`materiel.json`) → local (`edit.cfg`).
 - Mode partagé : Matériel, Laboratoire et Versions restent fermés (`ECRANS_FERMES` dans `app.js`).
 
+## L'Atelier — le dessin des cartes
+
+- Un **gabarit** (`js/gabarits.js`) dit où se posent les éléments d'une carte, en **millimètres** sur le
+  carton de 88 × 63 mm ; `js/design.js` le dessine (1 em = 1 mm), `js/atelier.js` est l'écran d'édition
+  et la page d'impression (`#/impression`).
+- Un essai de l'auteur arrive en JSON (« 📋 Copier le gabarit ») : l'ajouter **en tête** de
+  `VERSIONS_GABARIT` avec l'identifiant suivant (`v2`, `v3`…), puis publier.
+- Illustrations seules : `python3 outils/illustrations.py <dossier>` (numéros comme noms de fichiers) →
+  `assets/s31/nu` (écran) et `assets/s31/hd` (impression), et `js/illus31.js`.
+- Export maître vectoriel : `node outils/exporter-cartes.mjs <fichier-de-partage.json> [--cartes] [--perdu 3]`
+  — le fichier de partage de l'auteur porte son matériel, son set et son gabarit.
+- Polices : uniquement des polices libres (OFL), servies depuis `assets/polices` (Google Fonts n'est pas
+  joignable depuis ce conteneur ; le registre npm l'est — paquets `@fontsource/…`).
+
 ## Sécurité — non négociable
 
 - L'URL du projet Supabase et la clé **anon / publishable** sont publiques par conception.

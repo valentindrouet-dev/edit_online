@@ -14,6 +14,8 @@ import {
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
   SETS, SET_DEFAUT, setValide, contenuSet,
 } from './data.js';
+import { brancherGabarit } from './design.js';
+import { normaliserGabarit, versionPubliee as gabaritPublie, VERSION_DEFAUT } from './gabarits.js';
 import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js';
 import { elIcon, numIcon } from './icons.js';
 import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue, reglerGabarits } from './cards.js';
@@ -75,7 +77,7 @@ const enPartage = () => LS.get('partage.recu', null) !== null;
 const infoPartage = () => LS.get('partage.recu', null) || {};
 
 /** Les écrans que le mode partagé ferme. */
-const ECRANS_FERMES = ['#/materiel', '#/labo', '#/versions'];
+const ECRANS_FERMES = ['#/materiel', '#/labo', '#/versions', '#/atelier', '#/impression'];
 
 function entrerEnPartage(p) {
   LS.set('partage.recu', { version: p.version, date: p.date, signature: p.signature || '' });
@@ -252,9 +254,25 @@ function publieEnAttente() {
 normaliserMateriel();
 appliquerJeuActif();
 
+/**
+ * Le dessin des cartes : celui du site, ou le gabarit de l'Atelier quand il
+ * est branché. Le brouillon de l'Atelier vit dans la configuration — il voyage
+ * donc avec un partage, et le testeur voit les cartes telles qu'on les dessine.
+ */
+let gabaritMemo = { cle: null, g: null };
+function appliquerDesign() {
+  const d = store.cfg.design;
+  if (!d || !d.actif) { brancherGabarit(null); return; }
+  const brut = d.gabarit || (gabaritPublie(d.base || VERSION_DEFAUT) || {}).gabarit;
+  const cle = JSON.stringify(brut || null);
+  if (gabaritMemo.cle !== cle) gabaritMemo = { cle, g: normaliserGabarit(brut) };
+  brancherGabarit(gabaritMemo.g, { set: store.cfg.set });
+}
+
 function sauverCfg() {
   LS.set('cfg', store.cfg);
   appliquerJeuActif();
+  appliquerDesign();
   // Le rendu des cartes doit connaître la lecture demandée AVANT de dessiner :
   // c'est de là que dépend le serrage des bandeaux, calculé au moment où l'on
   // construit le HTML — bien avant que la classe n'atterrisse sur le document.
@@ -283,11 +301,15 @@ function surLeModifie(fn) {
 }
 function sauverJoueurs() { LS.set('joueurs', store.joueurs); }
 
+// Le dessin des cartes se règle avant le premier écran.
+appliquerDesign();
+
 // --- Chrome ----------------------------------------------------------------
 
 const ONGLETS = [
   ['#/banc', 'Banc de montage'],
   ['#/materiel', 'Matériel'],
+  ['#/atelier', 'Atelier'],
   ['#/regles', 'Règles'],
   ['#/variables', 'Variables'],
   ['#/labo', 'Laboratoire'],
@@ -7607,10 +7629,25 @@ const ROUTES = {
   '#/labo': vueLabo,
   '#/historique': vueHistorique,
   '#/versions': vueVersions,
+  '#/atelier': () => ouvrirAtelier('vueAtelier'),
+  '#/impression': () => ouvrirAtelier('vueImpression'),
 };
+
+/**
+ * L'Atelier ne se charge que si on l'ouvre. Il emprunte à l'application de
+ * quoi dessiner l'écran et lire le Matériel — rien de plus.
+ */
+async function ouvrirAtelier(vue) {
+  const m = await import('./atelier.js');
+  m[vue]({
+    app, html, topbar, pied, store, sauverCfg, surLeModifie, LS, telecharger, VERSION,
+    appliquerDesign, departsAImprimer, estDesactivee, retournements: RETOURNEMENTS,
+  });
+}
 
 function route() {
   document.onkeydown = null;
+  document.body.classList.remove('mode-impression');
   const hash = location.hash || '#/';
   // Un écran fermé par le mode partagé ne s'ouvre pas non plus à la main, dans
   // la barre d'adresse : masquer l'onglet sans fermer la route ne fermerait

@@ -4,6 +4,8 @@
 // Relu depuis les PDF de cartes (PLANS_LARGES, PLANS_MOYENS, GROS_PLANS) et le
 // tableau de répartition EDIT_44_cartes_v29.
 
+import { NUES } from './illus31.js';
+
 // --- Les six éléments ------------------------------------------------------
 // Trois personnages (Héroïne, Ennemi, Allié) et trois éléments (Arme, Objet,
 // Véhicule).
@@ -1388,6 +1390,19 @@ const TABLES = {
     },
   },
 };
+// Les illustrations SEULES, quand elles sont arrivées (outils/illustrations.py) :
+// elles prennent la place de l'illustration découpée dans la carte imprimée. Une
+// face qui a la sienne — « 391V » — la reçoit en propre.
+for (const k of NUES) {
+  const m = /^(pl|pm|gp)(\d{3})([RV]?)$/.exec(k);
+  if (!m) continue;
+  const chemin = `assets/s31/nu/${k}.webp`;
+  if (m[3]) {
+    const f = TABLES['3.1'].faces;
+    f[`${m[2]}${m[3]}`] = { ...(f[`${m[2]}${m[3]}`] || {}), image: chemin };
+  } else TABLES['3.1'].images[`${m[1]}${m[2]}`] = chemin;
+}
+
 const T = () => TABLES[setCourant];
 
 

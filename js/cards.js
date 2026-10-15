@@ -14,6 +14,7 @@
 // puis le libellé.
 
 import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre } from './data.js';
+import { HAUTEUR, cleMise, largeurMise } from './gabarits.js';
 import { elIcon, numIcon, cadrageIcon } from './icons.js';
 import { urlVisuel } from './visuels.js';
 
@@ -669,7 +670,7 @@ function coutCoeur(obj, compact, P, large) {
 }
 
 /** Ce que réclame un pouvoir entier — sa valeur, son signe, son cœur, ses flèches. */
-function coutObj(obj, compact, cfg, P, format, large, rangs = 1) {
+function coutObj(obj, compact, cfg, P, format, large, rangs = 1, dispo) {
   // Un pouvoir de règle n'a ni valeur, ni « × », ni flèches de portée : sa
   // phrase occupe le reste du bandeau et choisit son corps pour y tenir. Elle
   // ne peut cependant pas se replier en deçà de son plus long mot : c'est cette
@@ -677,7 +678,7 @@ function coutObj(obj, compact, cfg, P, format, large, rangs = 1) {
   // côté d'elle.
   if (estRegle(obj)) {
     const phrase = phraseRegle(obj, compact);
-    const corps = corpsPhrase(phrase, LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM,
+    const corps = corpsPhrase(phrase, dispo || LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM,
       P === PROFILS.nu, rangs);
     const longMot = phrase.split(/\s+/).reduce((m, w) => Math.max(m, w.length), 0);
     return longMot * corps * 0.56;
@@ -694,7 +695,7 @@ function coutObj(obj, compact, cfg, P, format, large, rangs = 1) {
  * pastilles, étiquettes, écarts — si bien que la composition garde exactement
  * ses proportions, et que la valeur reste de la taille des icônes.
  */
-export function serrageBandeau(objs, format, cfg, nu) {
+export function serrageBandeau(objs, format, cfg, nu, dispoForce) {
   if (!objs.length) return 1;
   // Deux pouvoirs s'EMPILENT : chacun a toute la largeur de la carte, et seule
   // la hauteur se partage. Il n'y a donc plus de raison d'abréger sur un Plan
@@ -710,9 +711,10 @@ export function serrageBandeau(objs, format, cfg, nu) {
   //
   // Empilés, ce n'est plus la SOMME qu'il faut loger mais le PLUS LARGE des
   // deux : chaque rangée est seule sur sa ligne.
-  const couts = objs.map((o) => coutObj(o, compact, cfg, P, format, large, rangs));
+  const couts = objs.map((o) => coutObj(o, compact, cfg, P, format, large, rangs, dispoForce));
   const besoin = (rangs > 1 ? Math.max(...couts) : couts.reduce((x, y) => x + y, 0)) * 1.2;
-  const dispo = LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM;
+  // Un gabarit de l'Atelier donne sa propre largeur de bande, en em du bandeau.
+  const dispo = dispoForce || LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM;
   // On ne descend pas sous une taille de pastille plancher : en dessous plus
   // rien ne se lit, et mieux vaut alors rogner un mot que rendre la carte
   // illisible. Le plancher se dit en taille de rond, pas en facteur — sans
@@ -742,7 +744,8 @@ export function serrageBandeau(objs, format, cfg, nu) {
  * alors deux fois plus courte, ils se lisent en version compacte, comme sur un
  * Gros Plan.
  */
-function bandeau(objs, format, cfg) {
+function bandeau(objs, format, cfg, dispo, nu) {
+  const nuIci = nu === undefined ? lectureNue : nu;
   // Même sans objectif le bandeau reste : c'est lui qui aligne le bas des
   // deux moitiés d'une carte.
   if (!objs.length) return '<div class="bandeau sans-objectif"></div>';
@@ -753,18 +756,39 @@ function bandeau(objs, format, cfg) {
   const pleineLargeur = format === 'PL';
   // Empilés, chacun garde TOUTE la largeur : une phrase s'y met à l'échelle sur
   // la carte entière, et non sur une demi-carte.
-  const large = LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM;
+  const large = dispo || LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM;
   const un = (o) => (estRegle(o)
     ? `<span class="bandeau-obj regle" style="--cp:${
-      corpsPhrase(phraseRegle(o, compact), large, lectureNue, rangs).toFixed(3)}em">${
+      corpsPhrase(phraseRegle(o, compact), large, nuIci, rangs).toFixed(3)}em">${
       objContenu(o, undefined, compact, cfg, pleineLargeur)}</span>`
     : `<span class="bandeau-obj">${numIcon(o.n)}<span class="${
       estSi(o) ? 'si' : 'x'}">${estSi(o) ? 'si' : '×'}</span>${
       objContenu(o, undefined, compact, cfg, pleineLargeur)}</span>`);
-  const ec = serrageBandeau(objs, format, cfg);
+  const ec = serrageBandeau(objs, format, cfg, nuIci, dispo);
   return `<div class="bandeau ${objs.length > 1 ? 'deux' : ''}"${ec < 1 ? ` style="--ec:${ec}"` : ''}>${
     objs.map(un).join('<i class="bandeau-sep"></i>')}</div>`;
 }
+
+/**
+ * Le bandeau d'un plan, pour un GABARIT de l'Atelier : la bande y a la
+ * largeur que le gabarit lui donne — `dispo`, en em du bandeau —, et se lit
+ * toujours comme une carte illustrée.
+ */
+export function bandeauGabarit(objs, format, cfg, dispo) {
+  return bandeau(objs, format, cfg, dispo, false);
+}
+
+// Le DESSIN PAR GABARIT. Quand l'Atelier est branché, une moitié de carte ne se
+// compose plus ici : elle est confiée au gabarit, qui rend son intérieur et sa
+// largeur en millimètres. L'application le règle avant de dessiner — même
+// mécanique que la lecture nue —, et ce module n'a rien à savoir des gabarits.
+let dessinGabarit = null;
+let coinsGabarit = 3;
+export function reglerDessinGabarit(fn, coins) {
+  dessinGabarit = fn || null;
+  if (typeof coins === 'number') coinsGabarit = coins;
+}
+export const dessinGabaritActif = () => !!dessinGabarit;
 
 /**
  * Les données que le pop-up de survol affiche en grand. `points` n'est fourni
@@ -789,6 +813,26 @@ function donneesApercu(h, label, points, detail, objs) {
 /** Un plan : moitié de carte, ou Plan Large pleine largeur. */
 export function renderPlan(h, opts = {}) {
   const F = FORMATS[h.transition ? 'TR' : h.format] || FORMATS.PM;
+  // Le gabarit de l'Atelier, quand il est branché : il rend l'intérieur de la
+  // moitié ; on garde l'enveloppe — classes, jeton de points, aperçu au
+  // survol —, dont la table de jeu se sert pour désigner et compter.
+  if (dessinGabarit && !h.absente && !opts.classique) {
+    const d = dessinGabarit(h, opts);
+    if (d) {
+      const objsG = opts.objs || objsDe(h);
+      const clsG = ['moitie', `f-${h.format}`, 'design', h.transition ? 'transition' : '', h.depart ? 'depart' : '',
+        opts.clickable ? 'choisissable' : '', opts.selected ? 'choisi' : '', opts.neuf ? 'neuf' : '',
+        opts.horsFilm ? 'hors-film' : ''].join(' ');
+      const labelG = h.depart ? 'Plan de départ' : F.label;
+      const teinteG = opts.bonifie ? 'bonifie' : opts.points < 0 ? 'negatif' : (opts.points ? '' : 'nul');
+      const jetonG = opts.points === undefined ? ''
+        : `<div class="jeton-pts ${teinteG}" title="Ce que ce plan rapporte">${opts.points}</div>`;
+      const bulleG = opts.muet ? ''
+        : ` data-apercu="${donneesApercu(h, labelG, opts.points, opts.detail, objsG)}"`;
+      return `<div class="${clsG}" style="--flex:${d.w} ${d.w} 0%;--gw:${d.w}" data-format="${h.format}" data-num="${h.num}"${bulleG}>
+      ${jetonG}${d.html}</div>`;
+    }
+  }
   // Une face que l'auteur n'a pas encore fournie : sa place, sans rien dessus.
   if (h.absente) {
     const flexA = h.format === 'GP' ? '0 0 33.6%' : '1 1 66.4%';
@@ -907,6 +951,29 @@ export function renderCarte(carte, verso, opts = {}) {
     return `<div class="carte solo carte-vide ${opts.small ? 'small' : ''}" data-carte="${carte.id}"
       data-verso="${verso ? 1 : 0}"><span>carte vide</span></div>`;
   }
+  // Dessinée par un gabarit, la carte est un carton de 88 × 63 mm : ses
+  // moitiés se partagent la largeur en proportion de leurs millimètres. Le
+  // fond perdu (`opts.perdu`, en mm) s'ajoute sur les bords EXTÉRIEURS — pas
+  // entre les deux moitiés, qui se touchent.
+  if (dessinGabarit && !opts.classique) {
+    const p = opts.perdu || 0;
+    const n = plans.length;
+    const W = plans.reduce((s, h) => s + largeurMise(cleMise(h)), 0) + 2 * p;
+    const H = HAUTEUR + 2 * p;
+    const r = opts.impression ? 0 : coinsGabarit;
+    const clsD = ['carte', 'design', m && n === 1 ? 'solo' : '',
+      opts.selected ? 'sel' : '', opts.small ? 'small' : '', opts.tiny ? 'tiny' : '',
+      opts.clickable ? 'clickable' : '', opts.moitiesChoisissables ? 'choix-moitie' : ''].join(' ');
+    return `<div class="${clsD}" data-carte="${carte.id}" data-verso="${verso ? 1 : 0}"
+      style="--ar:${W}/${H};--fr:${Math.round((W / (88 + 2 * p)) * 1000) / 1000};border-radius:${
+  Math.round((r / W) * 10000) / 100}% / ${Math.round((r / H) * 10000) / 100}%">
+    ${plans.map((h, i) => renderPlan(h, {
+    ...opts,
+    perduCotes: { g: i === 0 ? p : 0, d: i === n - 1 ? p : 0, h: p, b: p },
+    selected: opts.formatChoisi ? opts.formatChoisi === h.format : opts.selected,
+  })).join('')}
+  </div>`;
+  }
   const cls = ['carte', m && plans.length === 1 ? 'solo' : '',
     opts.selected ? 'sel' : '', opts.small ? 'small' : '', opts.tiny ? 'tiny' : '',
     opts.clickable ? 'clickable' : '', opts.moitiesChoisissables ? 'choix-moitie' : ''].join(' ');
@@ -938,6 +1005,19 @@ export function enPile(html, reste) {
 }
 
 export function renderDos(libelle, reste, opts = {}) {
+  // Le dos d'un gabarit de l'Atelier, quand il est branché.
+  if (dessinGabarit && !opts.classique) {
+    const p = opts.perdu || 0;
+    const d = dessinGabarit({ format: 'DOS', num: '', el: [], tc: 0 },
+      { ...opts, perduCotes: { g: p, d: p, h: p, b: p } });
+    if (d) {
+      const r = opts.impression ? 0 : coinsGabarit;
+      return `<div class="carte dos design ${opts.small ? 'small' : ''} ${opts.clickable ? 'clickable' : ''}"
+        title="${libelle}" style="--ar:${d.w}/${d.h};--fr:1;border-radius:${Math.round((r / d.w) * 10000) / 100}% / ${
+  Math.round((r / d.h) * 10000) / 100}%">
+        <div class="moitie f-PL design" style="--flex:1 1 0%;--gw:${d.w}">${d.html}</div></div>`;
+    }
+  }
   const cls = ['carte', 'dos', opts.small ? 'small' : '', opts.clickable ? 'clickable' : ''].join(' ');
   // Le dos d'une pioche de Plans Larges est un **Plan Large vierge** : le vert
   // du cadrage, sa languette, son bandeau — la carte telle qu'elle est, sans

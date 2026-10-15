@@ -1,0 +1,11 @@
+Polices de l'Atelier — toutes sous licence SIL Open Font License 1.1 (OFL),
+libres d'usage, y compris commercial, et d'embarquement dans un PDF.
+
+DSEG7 Classic     Keshikan — https://www.keshikan.net/fonts-e.html (paquet npm « dseg »)
+Les autres        via Fontsource (paquets npm « @fontsource/… »), d'après Google Fonts :
+                  Montserrat, Inter, Oswald, Bebas Neue, Anton, Archivo Black,
+                  Barlow Condensed, Roboto Condensed, Teko, Orbitron, Russo One,
+                  Black Ops One, Bangers, Courier Prime, Special Elite.
+
+Seul le sous-ensemble « latin » est servi (accents français compris).
+Licence : https://openfontlicense.org

@@ -1,0 +1,202 @@
+// ---------------------------------------------------------------------------
+// EDIT — les GABARITS : le dessin des cartes, en données
+// ---------------------------------------------------------------------------
+// Une carte se dessine à partir de deux choses : ce qu'elle PORTE — minutage,
+// icônes, pouvoir, illustration, tout ce que le Matériel règle — et COMMENT on
+// le pose sur le carton — l'affaire du gabarit. Le gabarit ne sait rien d'une
+// carte en particulier : il dit où va le minutage, dans quelle police, sur
+// quel fond, et le site en tire toutes les cartes du jeu d'un coup.
+//
+// Tout se mesure en MILLIMÈTRES, sur le carton réel : 88 × 63 mm pour une
+// carte entière. Une carte Plan Moyen / Gros Plan est faite de deux moitiés —
+// 58,5 et 29,5 mm de large —, et chacune a son gabarit. Les mesures sont celles
+// des cartes du Set 3.1 : 1 mm de noir tout autour, la boîte du minutage en haut
+// à gauche, la languette des icônes, le bandeau du pouvoir, le type de plan
+// écrit dans la bande noire du bas.
+
+/** La hauteur d'une carte, et la largeur de chaque mise en page. */
+export const HAUTEUR = 63;
+
+export const MISES = [
+  { id: 'PL', label: 'Plan Large', w: 88 },
+  { id: 'DEP', label: 'Plan de départ', w: 88 },
+  { id: 'PM', label: 'Plan Moyen', w: 58.5 },
+  { id: 'GP', label: 'Gros Plan', w: 29.5 },
+  { id: 'PM-TR', label: 'Raccord · Plan Moyen', w: 58.5 },
+  { id: 'GP-TR', label: 'Raccord · Gros Plan', w: 29.5 },
+  { id: 'DOS', label: 'Dos des Plans Larges', w: 88 },
+];
+
+export const largeurMise = (cle) => (MISES.find((m) => m.id === cle) || MISES[0]).w;
+
+/**
+ * La mise en page d'un plan. Un Raccord — Ouverture et Générique de fin
+ * compris — a la sienne : il n'a ni la couleur ni le libellé d'un plan.
+ */
+export function cleMise(h) {
+  if (!h) return 'PM';
+  if (h.format === 'DOS') return 'DOS';
+  if (h.format === 'PL') return 'PL';
+  if (h.format === 'DEP' || h.depart) return 'DEP';
+  return `${h.format === 'GP' ? 'GP' : 'PM'}${h.transition ? '-TR' : ''}`;
+}
+
+// --- Les polices -------------------------------------------------------------
+// Toutes LIBRES (licence SIL OFL 1.1) et servies par le site lui-même, dans
+// assets/polices : un export ne peut pas aller chercher une police ailleurs, et
+// l'impression doit montrer exactement ce que l'écran montre. Une police n'est
+// téléchargée que si un gabarit s'en sert.
+export const POLICES = [
+  { famille: 'DSEG7 Classic', dossier: 'dseg7', note: 'afficheur à segments — le minutage', fichiers: [[400, 'normal'], [700, 'normal'], [400, 'italic'], [700, 'italic']] },
+  { famille: 'Montserrat', dossier: 'montserrat', fichiers: [[400, 'normal'], [400, 'italic'], [700, 'normal'], [700, 'italic'], [800, 'normal'], [800, 'italic'], [900, 'normal'], [900, 'italic']] },
+  { famille: 'Inter', dossier: 'inter', fichiers: [[400, 'normal'], [400, 'italic'], [600, 'normal'], [600, 'italic'], [700, 'normal'], [700, 'italic'], [800, 'normal'], [800, 'italic'], [900, 'normal'], [900, 'italic']] },
+  { famille: 'Oswald', dossier: 'oswald', fichiers: [[400, 'normal'], [500, 'normal'], [600, 'normal'], [700, 'normal']] },
+  { famille: 'Bebas Neue', dossier: 'bebas-neue', fichiers: [[400, 'normal']] },
+  { famille: 'Anton', dossier: 'anton', fichiers: [[400, 'normal']] },
+  { famille: 'Archivo Black', dossier: 'archivo-black', fichiers: [[400, 'normal']] },
+  { famille: 'Barlow Condensed', dossier: 'barlow-condensed', fichiers: [[400, 'normal'], [400, 'italic'], [600, 'normal'], [600, 'italic'], [700, 'normal'], [700, 'italic'], [800, 'normal'], [800, 'italic'], [900, 'normal'], [900, 'italic']] },
+  { famille: 'Roboto Condensed', dossier: 'roboto-condensed', fichiers: [[400, 'normal'], [400, 'italic'], [700, 'normal'], [700, 'italic'], [900, 'normal'], [900, 'italic']] },
+  { famille: 'Teko', dossier: 'teko', fichiers: [[400, 'normal'], [600, 'normal'], [700, 'normal']] },
+  { famille: 'Orbitron', dossier: 'orbitron', fichiers: [[400, 'normal'], [700, 'normal'], [900, 'normal']] },
+  { famille: 'Russo One', dossier: 'russo-one', fichiers: [[400, 'normal']] },
+  { famille: 'Black Ops One', dossier: 'black-ops-one', fichiers: [[400, 'normal']] },
+  { famille: 'Bangers', dossier: 'bangers', fichiers: [[400, 'normal']] },
+  { famille: 'Courier Prime', dossier: 'courier-prime', fichiers: [[400, 'normal'], [400, 'italic'], [700, 'normal'], [700, 'italic']] },
+  { famille: 'Special Elite', dossier: 'special-elite', fichiers: [[400, 'normal']] },
+];
+
+/** Les polices de l'ordinateur : elles ne voyagent pas, l'export les remplace. */
+export const POLICES_SYSTEME = ['Arial', 'Arial Black', 'Impact', 'Georgia', 'Verdana', 'Courier New'];
+
+export const policeLocale = (f) => POLICES.find((p) => p.famille === f) || null;
+
+// --- Ce qu'un texte peut citer -----------------------------------------------
+// Un élément texte écrit ce qu'on veut, et peut citer la carte : `{cadrage}`
+// devient « Plan Moyen », `{num}` son numéro. C'est ainsi que le libellé du bas
+// est un texte comme un autre — qu'on déplace, qu'on change de police, ou
+// qu'on remplace par autre chose.
+export const CHAMPS_TEXTE = [
+  ['{cadrage}', 'le type de plan — « Plan Moyen »'],
+  ['{num}', 'le numéro du plan'],
+  ['{titre}', 'le titre d’un Raccord — « BBG présente », « Fin »'],
+  ['{minutage}', 'le minutage, en texte'],
+  ['{set}', 'le set de cartes'],
+  ['{version}', 'le nom du gabarit et sa version'],
+];
+
+// --- Le gabarit de départ ----------------------------------------------------
+
+const COULEURS = {
+  PL: { bande: '#8dcd68', texte: '#8fe45c' },
+  DEP: { bande: '#7fc4e8', texte: '#6cc6f2' },
+  PM: { bande: '#f3b531', texte: '#f7b52b' },
+  GP: { bande: '#ec7d4f', texte: '#f2793a' },
+  TR: { bande: '#b9b3ae', texte: '#cfd0d6' },
+};
+
+/** Les éléments d'une face, mesurés sur les cartes du Set 3.1. */
+function elementsDe(W, c) {
+  return [
+    { id: 'illustration', type: 'illustration', nom: 'Illustration', x: 1, y: 1, w: W - 2, h: 50.6,
+      ancrage: 'haut', rayon: 0 },
+    { id: 'minutage', type: 'minutage', nom: 'Minutage', x: 1.4, y: 1.5, w: 16.4, h: 5.4,
+      fond: '#090909', bord: 0.3, bordCouleur: '#8b9098', rayon: 0.9,
+      police: 'DSEG7 Classic', graisse: 700, italique: false, taille: 3.6, couleur: '#ff4a2a',
+      couleurSpeciale: '#59b9ff', lueur: true, alignement: 'centre' },
+    { id: 'icones', type: 'icones', nom: 'Icônes', x: 1, y: 42.6, w: Math.min(W - 2, 40), h: 8.7,
+      fond: c.bande, texture: 'papier', dechire: true, rayon: 0.3, tailleIcones: 76, espacement: 1.2,
+      alignement: 'gauche', ajuste: true },
+    { id: 'bandeau', type: 'bandeau', nom: 'Pouvoir', x: 1, y: 51.3, w: W - 2, h: 7.7,
+      fond: c.bande, texture: 'papier', echelle: 1 },
+    { id: 'libelle', type: 'texte', nom: 'Type de plan', texte: '{cadrage}', x: 1, y: 59.1, w: W - 2, h: 3.6,
+      police: 'Montserrat', graisse: 900, italique: true, majuscules: true, taille: 3.1,
+      couleur: c.texte, alignement: 'centre', ombre: true },
+  ];
+}
+
+function miseDe(W, c) {
+  return { carte: { fond: '#0b0b0b' }, elements: elementsDe(W, c) };
+}
+
+/**
+ * Un Raccord n'a pas d'icônes ; son second pouvoir — le « −5 si ◀ Plan Large »
+ * du 290 — se pose dans l'onglet, au-dessus du bandeau qui porte le premier.
+ */
+function miseRaccord(W, c) {
+  const m = miseDe(W, c);
+  const b = m.elements.find((e) => e.id === 'bandeau');
+  b.quel = 'premier';
+  m.elements.splice(m.elements.indexOf(b) + 1, 0, {
+    id: 'bandeau2', type: 'bandeau', nom: 'Second pouvoir', quel: 'second',
+    x: 1, y: 43, w: Math.min(W - 2, 26), h: 7.7, fond: c.bande, texture: 'papier', dechire: true, rayon: 0.3, echelle: 1,
+  });
+  return m;
+}
+
+/** Le dos d'une pioche de Plans Larges : la couleur du cadrage, le nom du jeu. */
+function miseDos() {
+  return {
+    carte: { fond: '#0b0b0b' },
+    elements: [
+      { id: 'fond-dos', type: 'forme', nom: 'Fond', x: 1, y: 1, w: 86, h: 61, fond: COULEURS.PL.bande,
+        texture: 'papier', rayon: 1.2 },
+      { id: 'titre-dos', type: 'texte', nom: 'Nom du jeu', texte: 'EDIT', x: 4, y: 14, w: 80, h: 26,
+        police: 'Anton', graisse: 400, taille: 24, couleur: '#ffffff', alignement: 'centre',
+        majuscules: true, ombre: true, interlettre: 0.06 },
+      { id: 'type-dos', type: 'texte', nom: 'Pioche', texte: 'Plans Larges', x: 4, y: 42, w: 80, h: 7,
+        police: 'Montserrat', graisse: 900, italique: true, majuscules: true, taille: 4.6,
+        couleur: '#1d3a12', alignement: 'centre' },
+    ],
+  };
+}
+
+/** Le gabarit de départ : les cartes du Set 3.1, refaites en données. */
+export function gabaritDeBase() {
+  return {
+    nom: 'Cartes 3.1',
+    // Le rayon des coins du carton, à l'écran seulement : l'impression les
+    // laisse droits, c'est la découpe qui les arrondit.
+    coins: 3,
+    mises: {
+      PL: miseDe(88, COULEURS.PL),
+      DEP: miseDe(88, COULEURS.DEP),
+      PM: miseDe(58.5, COULEURS.PM),
+      GP: miseDe(29.5, COULEURS.GP),
+      'PM-TR': miseRaccord(58.5, COULEURS.TR),
+      'GP-TR': miseRaccord(29.5, COULEURS.TR),
+      DOS: miseDos(),
+    },
+  };
+}
+
+/**
+ * Les versions PUBLIÉES — celles que tout le monde voit. Un essai fait dans
+ * l'Atelier vit dans le navigateur qui l'a fait ; « 📋 Copier le gabarit » le
+ * met en texte, et c'est ainsi qu'il entre ici, comme version suivante.
+ */
+export const VERSIONS_GABARIT = [
+  { id: 'v1', nom: 'Cartes 3.1', date: '15/10/2026', gabarit: gabaritDeBase() },
+];
+
+export const VERSION_DEFAUT = 'v1';
+
+export const versionPubliee = (id) => VERSIONS_GABARIT.find((v) => v.id === id) || null;
+
+/**
+ * Un gabarit tel qu'on l'a enregistré peut dater d'avant un élément ou une
+ * mise : on complète ce qui manque par la version de départ, sans toucher à ce
+ * qui est là.
+ */
+export function normaliserGabarit(g) {
+  const base = gabaritDeBase();
+  const out = g && typeof g === 'object' ? JSON.parse(JSON.stringify(g)) : base;
+  if (!out.mises || typeof out.mises !== 'object') out.mises = {};
+  for (const m of MISES) {
+    const mise = out.mises[m.id];
+    if (!mise || !Array.isArray(mise.elements)) out.mises[m.id] = base.mises[m.id];
+    else if (!mise.carte) mise.carte = { ...base.mises[m.id].carte };
+  }
+  if (typeof out.coins !== 'number') out.coins = base.coins;
+  if (!out.nom) out.nom = base.nom;
+  return out;
+}

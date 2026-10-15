@@ -110,7 +110,7 @@ const fini = await page.waitForSelector('#rejouer', { timeout: 30000 }).then(() 
 dit(fini, 'une partie se joue jusqu’au décompte dans le navigateur');
 dit(objectif, 'la Carte Objectif commune se pose sur la table');
 
-const ECRANS = ['#/', '#/partie', '#/materiel', '#/regles', '#/variables', '#/labo', '#/banc',
+const ECRANS = ['#/', '#/partie', '#/materiel', '#/atelier', '#/regles', '#/variables', '#/labo', '#/banc',
   '#/historique', '#/versions', '#/enligne'];
 const debords = [];
 for (const largeur of [1400, 820, 390]) {
@@ -122,7 +122,7 @@ for (const largeur of [1400, 820, 390]) {
     if (d > 0) debords.push(`${h} à ${largeur}px (+${d})`);
   }
 }
-dit(debords.length === 0, 'les dix écrans tiennent dans la fenêtre — 1400, 820 et 390 px',
+dit(debords.length === 0, 'les onze écrans tiennent dans la fenêtre — 1400, 820 et 390 px',
   debords.slice(0, 3).join(', '));
 dit(erreurs.length === 0, 'aucune erreur de page', erreurs.slice(0, 2).join(' | '));
 

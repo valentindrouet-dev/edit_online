@@ -27,6 +27,8 @@ index.html              amorçage : demande la version publiée, puis charge le 
 version.json            version publiée, relue hors cache (généré)
 sw.js                   service worker réseau d'abord
 outils/publier.mjs      publie une version en une commande
+outils/exporter-cartes.mjs  export maître des cartes en PDF vectoriel
+outils/illustrations.py     fait entrer les illustrations seules du Set 3.1
 outils/verifier.mjs     contrôle rapide (≈ 15 s) : moteur, chargement, écrans
 outils/versionner.mjs   version.json, cache du service worker, inventaire des visuels
 outils/extraire-visuels.py  régénère illustrations et icônes depuis les PDF
@@ -47,6 +49,9 @@ js/engine.js     paquet, chutiers, phases, coups légaux, pose
 js/ai.js         Novice, Équilibré, Stratège
 js/lab.js        simulation par lots et agrégats statistiques
 js/app.js        routage et écrans
+js/gabarits.js   le dessin des cartes en données (Atelier)
+js/design.js     dessine une carte d'après son gabarit
+js/atelier.js    l'écran Atelier et la page d'impression
 ```
 
 ## Publier une version
