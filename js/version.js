@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.51';
-export const BUILD_DATE = '2026-10-15 21:00';
+export const VERSION = '2.52';
+export const BUILD_DATE = '2026-10-15 21:13';
 
 export const CHANGELOG = [
+  {
+    v: '2.52',
+    date: '15/10/2026',
+    items: [
+      "<b>Atelier — le texte des pouvoirs s'écrit.</b> Des mots et des jetons entre crochets (<code>[2] [x] [heroine] [>]</code>), avec une palette ; la police, la graisse et la couleur des mots se règlent. Le texte vaut pour tous les plans qui portent ce même pouvoir.",
+      "<b>Icônes et logos.</b> Importés de l'ordinateur et nommés par leur fichier, ils se citent en jeton dans les pouvoirs comme dans les textes, alignés sur la ligne ; nommés <code>heroine</code>, <code>arme</code>…, ils remplacent l'icône du jeu sur toutes les cartes.",
+    ],
+  },
   {
     v: '2.51',
     date: '15/10/2026',

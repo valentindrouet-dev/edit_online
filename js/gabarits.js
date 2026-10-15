@@ -70,6 +70,43 @@ export const POLICES_SYSTEME = ['Arial', 'Arial Black', 'Impact', 'Georgia', 'Ve
 
 export const policeLocale = (f) => POLICES.find((p) => p.famille === f) || null;
 
+// --- Les icônes et logos de l'auteur ---------------------------------------------
+// Une image importée porte un NOM ; « [nom] » la place dans un texte ou un
+// pouvoir. Un nom d'icône du jeu la remplace partout où le jeu la dessine.
+export const ICONES_JEU = {
+  heroine: 'HEROINE', ennemi: 'ENNEMI', allie: 'ALLIE', objet: 'OBJET', arme: 'ARME',
+  vehicule: 'VEHICULE', mort: 'MORT',
+};
+
+const sansAccents = (s) => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+/** Le nom d'une icône : en minuscules, sans accents ni espaces — « Héroïne.png » → heroine. */
+export const nomIcone = (s) => sansAccents(s).toLowerCase().trim().replace(/\.(png|jpe?g|webp|gif|svg|avif)$/, '')
+  .replace(/[^a-z0-9:]+/g, '-').replace(/^-+|-+$/g, '');
+
+/**
+ * L'empreinte d'un pouvoir : deux plans qui portent exactement le même pouvoir
+ * partagent son texte écrit à la main. Les clés sont triées, pour qu'un même
+ * pouvoir donne toujours la même empreinte.
+ */
+export function signaturePouvoir(o) {
+  if (!o) return '';
+  const tri = (v) => (Array.isArray(v) ? v.map(tri) : v && typeof v === 'object'
+    ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, tri(v[k])])) : v);
+  return JSON.stringify(tri(o));
+}
+
+/** Les jetons qu'un texte ou un pouvoir peut citer, pour l'aide-mémoire de l'Atelier. */
+export const JETONS = [
+  ['[2]', 'une valeur — [1], [6], [-5]…'], ['[x]', 'le ×'],
+  ['[<]', 'flèche à gauche'], ['[>]', 'flèche à droite'], ['[<<]', 'tout ce qui précède'], ['[>>]', 'toute la suite'],
+  ['[seq]', 'Séquence'], ['[pl]', 'Plan Large'], ['[pm]', 'Plan Moyen'], ['[gp]', 'Gros Plan'], ['[dep]', 'Plan de départ'],
+  ['[raccord]', 'Raccord'], ['[plan]', 'Plan'], ['[carte]', 'Carte'], ['[timecode]', 'Timecode'],
+  ['[heroine]', 'Héroïne'], ['[ennemi]', 'Ennemi'], ['[allie]', 'Allié'], ['[objet]', 'Objet'],
+  ['[arme]', 'Arme'], ['[vehicule]', 'Véhicule'], ['[mort]', 'Mort'],
+  ['[non:allie]', 'barré d’une croix — « sans »'],
+];
+
 // --- Ce qu'un texte peut citer -----------------------------------------------
 // Un élément texte écrit ce qu'on veut, et peut citer la carte : `{cadrage}`
 // devient « Plan Moyen », `{num}` son numéro. C'est ainsi que le libellé du bas
@@ -197,6 +234,8 @@ export function normaliserGabarit(g) {
     else if (!mise.carte) mise.carte = { ...base.mises[m.id].carte };
   }
   if (typeof out.coins !== 'number') out.coins = base.coins;
+  if (!Array.isArray(out.icones)) out.icones = [];
+  if (!out.textes || typeof out.textes !== 'object') out.textes = {};
   if (!out.nom) out.nom = base.nom;
   return out;
 }

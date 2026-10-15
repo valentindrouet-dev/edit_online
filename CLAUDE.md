@@ -38,6 +38,9 @@ interface, commentaires, commits.
   et la page d'impression (`#/impression`).
 - Un essai de l'auteur arrive en JSON (« 📋 Copier le gabarit ») : l'ajouter **en tête** de
   `VERSIONS_GABARIT` avec l'identifiant suivant (`v2`, `v3`…), puis publier.
+- Pouvoirs et icônes : le texte d'un pouvoir se range dans `g.textes[signaturePouvoir(o)]`, en mots et en
+  jetons (`[2] [x] [heroine] [>]`, liste `JETONS`) ; les logos de l'auteur dans `g.icones` (`{nom, src}`) — un
+  nom d'icône du jeu (`ICONES_JEU`) la remplace partout. Rendu : `phraseJetons` dans `js/design.js`.
 - Illustrations seules : `python3 outils/illustrations.py <dossier>` (numéros comme noms de fichiers) →
   `assets/s31/nu` (écran) et `assets/s31/hd` (impression), et `js/illus31.js`.
 - Export maître vectoriel : `node outils/exporter-cartes.mjs <fichier-de-partage.json> [--cartes] [--perdu 3]`

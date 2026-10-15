@@ -13,16 +13,112 @@
 // composer ; le gabarit ne lui donne que sa place.
 
 import { tcTexte, FORMATS, objsDe, transformeCadre, TC_VIDE, TC_PREMIER, TC_DERNIER } from './data.js';
-import { elIcon } from './icons.js';
-import { bandeauGabarit, reglerDessinGabarit } from './cards.js';
+import { elIcon, numIcon } from './icons.js';
+import {
+  bandeauGabarit, reglerDessinGabarit, tagSeq, tagCadrage, croixNon, avanceRapide,
+} from './cards.js';
 import {
   HAUTEUR, cleMise, largeurMise, POLICES, POLICES_SYSTEME, policeLocale,
+  ICONES_JEU, nomIcone, signaturePouvoir,
 } from './gabarits.js';
 import { urlVisuel, urlVisuelHD, estVisuelApporte } from './visuels.js';
 
 const echapper = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;');
 const n2 = (v) => Math.round(v * 1000) / 1000;
+
+// --- Les icônes de l'auteur, et les jetons ------------------------------------------
+
+/** L'image d'une icône importée sous ce nom, s'il y en a une. */
+function urlIcone(nom, g, opts) {
+  const e = ((g && g.icones) || []).find((i) => i.nom === nom);
+  if (!e) return '';
+  return opts.hd ? urlVisuelHD(e.src) : urlVisuel(e.src);
+}
+
+/** Une icône du jeu — ou celle que l'auteur a importée sous son nom. */
+function iconeJeu(id, g, opts) {
+  const u = urlIcone(id.toLowerCase(), g, opts);
+  return u ? `<img class="pastille g-ic" src="${u}" alt="${id}">` : elIcon(id);
+}
+
+/** Les icônes du jeu d'un bandeau composé par le site, remplacées par celles de l'auteur. */
+function remplacerIcones(html, g, opts) {
+  let out = html;
+  for (const [nom, id] of Object.entries(ICONES_JEU)) {
+    const u = urlIcone(nom, g, opts);
+    if (u) out = out.split(`src="assets/icones/${id}.webp"`).join(`src="${u}"`);
+  }
+  return out;
+}
+
+/**
+ * Un JETON — ce qu'on écrit entre crochets dans un texte ou un pouvoir —, en
+ * HTML, avec ce qu'il réclame de place, en em du bandeau.
+ */
+function jeton(brut, g, opts) {
+  const r = brut.trim();
+  if (/^[+\-−]?\d+$/.test(r)) return { html: numIcon(parseInt(r.replace('−', '-'), 10)), l: 2.11 };
+  if (r === '>' || r === '▶') return { html: '<span class="fleche-pos">▶</span>', l: 1.1 };
+  if (r === '<' || r === '◀') return { html: '<span class="fleche-pos">◀</span>', l: 1.1 };
+  if (r === '>>') return { html: avanceRapide(), l: 1.9 };
+  if (r === '<<') return { html: avanceRapide(true), l: 1.9 };
+  if (r.toLowerCase() === 'x' || r === '×') return { html: '<span class="x">×</span>', l: 0.9 };
+  if (/^non:/i.test(r)) {
+    const j = jeton(r.slice(4), g, opts);
+    return { html: `<span class="barre">${j.html}${croixNon()}</span>`, l: j.l };
+  }
+  const k = nomIcone(r);
+  const tag = (cls, mot) => ({ html: `<span class="tag ${cls}">${mot}</span>`, l: 0.62 * (0.9 + 0.62 * mot.length) });
+  if (k === 'seq' || k === 'sequence') return { html: tagSeq(false), l: 0.62 * (0.9 + 0.62 * 8) };
+  if (['pl', 'pm', 'gp', 'dep'].includes(k)) {
+    const nom = { pl: 'Plan Large', pm: 'Plan Moyen', gp: 'Gros Plan', dep: 'Plan de départ' }[k];
+    return { html: tagCadrage(k.toUpperCase(), false), l: 0.62 * (0.9 + 0.62 * Math.ceil(nom.length / 2)) };
+  }
+  if (k === 'raccord') return tag('tag-gris', 'Raccord');
+  if (k === 'plan') return tag('tag-blanc', 'Plan');
+  if (k === 'carte') return tag('tag-blanc', 'Carte');
+  if (k === 'icone') return tag('tag-blanc', 'Icône');
+  if (k === 'timecode' || k === 'ordre') return tag('tag-chrono', 'Timecode');
+  const u = urlIcone(k, g, opts);
+  if (u) return { html: `<img class="pastille g-ic" src="${u}" alt="${echapper(k)}">`, l: 2.11 };
+  if (ICONES_JEU[k]) return { html: elIcon(ICONES_JEU[k]), l: 2.11 };
+  return { html: `<span class="g-inconnu" title="Aucune icône ne porte ce nom">[${echapper(r)}]</span>`, l: 0.6 * (r.length + 2) };
+}
+
+/**
+ * Un texte à jetons, en pièces alignées sur la ligne : les mots, et entre eux
+ * les icônes, les valeurs, les cartouches. Rend le HTML et la largeur qu'il
+ * réclame, en em.
+ */
+export function phraseJetons(texte, g, opts = {}) {
+  const pieces = [];
+  let besoin = 0;
+  for (const bout of String(texte || '').split(/(\[[^\]]+\]|\n)/)) {
+    if (!bout) continue;
+    if (bout === '\n') { pieces.push('<i class="g-br"></i>'); continue; }
+    if (bout.startsWith('[') && bout.endsWith(']')) {
+      const j = jeton(bout.slice(1, -1), g, opts);
+      pieces.push(j.html); besoin += j.l + 0.24;
+      continue;
+    }
+    for (const mot of bout.split(/\s+/).filter(Boolean)) {
+      pieces.push(`<span class="mot-libre">${echapper(mot)}</span>`);
+      besoin += 0.6 * mot.length + 0.24;
+    }
+  }
+  return { html: pieces.join(''), besoin };
+}
+
+/** La typographie d'un bandeau : sa police, sa graisse, la couleur de ses mots. */
+function typoBande(e) {
+  return [
+    e.police ? `font-family:${familleCss(e.police)}` : '',
+    e.graisse ? `--g-graisse:${e.graisse}` : '',
+    e.italique ? 'font-style:italic' : '',
+    e.couleur ? `--g-encre:${e.couleur}` : '',
+  ].filter(Boolean).join(';');
+}
 
 /** Ce que le libellé « {cadrage} » écrit pour ce plan. */
 export function nomCadrage(h) {
@@ -120,7 +216,7 @@ function contenu(e, h, g, opts, w, hh) {
       return `<div class="g-languette-boite" style="justify-content:${al}">
         <div class="g-languette ${e.texture === 'papier' ? 'g-tex-papier' : ''} ${e.dechire ? 'g-dechire' : ''}"
           style="${styleBoite(e)};gap:${esp}em;padding:0 ${n2(esp + (e.dechire ? 0.6 : 0))}em 0 ${esp}em;${
-  e.ajuste === false ? 'width:100%;' : ''}--ti:${e.tailleIcones || 76}%">${ic.map((x) => elIcon(x)).join('')}</div></div>`;
+  e.ajuste === false ? 'width:100%;' : ''}--ti:${e.tailleIcones || 76}%">${ic.map((x) => iconeJeu(x, g, opts)).join('')}</div></div>`;
     }
     case 'bandeau': {
       // `quel` : un bandeau peut ne montrer que le premier pouvoir, ou que le
@@ -135,11 +231,33 @@ function contenu(e, h, g, opts, w, hh) {
       const corps = (hh / (objs.length > 1 ? 3.73 : 2.58)) * (e.echelle || 1);
       const dispo = Math.max(2, (w / corps) * 0.96);
       const f = h.format === 'DEP' ? 'PL' : h.format;
-      return `<div class="g-bande" style="font-size:${n2(corps)}em">${bandeauGabarit(objs, f, opts.cfg, dispo)}</div>`;
+      // Un pouvoir peut avoir son texte ÉCRIT par l'auteur — mots, icônes,
+      // valeurs, en jetons. Il vaut pour tous les plans qui portent exactement
+      // ce pouvoir. Sinon, le site le compose.
+      const textes = g.textes || {};
+      const ecrits = objs.map((o) => textes[signaturePouvoir(o)]);
+      const rang = (o, i) => {
+        if (ecrits[i] == null) return remplacerIcones(bandeauGabarit([o], f, opts.cfg, dispo), g, opts);
+        const p = phraseJetons(ecrits[i], g, opts);
+        const ec = Math.max(0.35, Math.min(1.2, Math.round((dispo / Math.max(1, p.besoin * 1.1)) * 100) / 100));
+        return `<div class="bandeau g-phrase-bande" style="--ec:${ec}">${p.html}</div>`;
+      };
+      const typo = typoBande(e);
+      if (ecrits.every((t) => t == null)) {
+        return `<div class="g-bande" style="font-size:${n2(corps)}em;${typo}">${
+          remplacerIcones(bandeauGabarit(objs, f, opts.cfg, dispo), g, opts)}</div>`;
+      }
+      return `<div class="g-bande ${objs.length > 1 ? 'g-deux' : ''}" style="font-size:${n2(corps)}em;${typo}">${
+        objs.map((o, i) => `<div class="g-rang">${rang(o, i)}</div>`).join('')}</div>`;
     }
     case 'texte': {
       const t = remplir(e.texte, h, g, opts);
       if (!t.trim()) return '';
+      // Des jetons dans le texte : les icônes s'y alignent sur la ligne.
+      if (/\[[^\]]+\]/.test(t)) {
+        return `<div class="g-texte g-libre g-phrase" style="${styleTexte(e)};--gi:${e.tailleIcones || 1.3}em">${
+          phraseJetons(t, g, opts).html}</div>`;
+      }
       return `<div class="g-texte g-libre" style="${styleTexte(e)}">${echapper(t).replace(/\n/g, '<br>')}</div>`;
     }
     case 'image': {

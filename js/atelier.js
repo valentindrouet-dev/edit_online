@@ -19,12 +19,13 @@
 import {
   MISES, HAUTEUR, largeurMise, cleMise, POLICES, POLICES_SYSTEME, CHAMPS_TEXTE,
   VERSIONS_GABARIT, VERSION_DEFAUT, versionPubliee, normaliserGabarit,
+  ICONES_JEU, nomIcone, signaturePouvoir, JETONS,
 } from './gabarits.js';
 import { rendreMoitie, declarerPolices, cssPolicesEmbarquees, brancherGabarit } from './design.js';
-import { buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, DEPARTS } from './data.js';
-import { renderCarte, renderDos } from './cards.js';
+import { buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, DEPARTS, objsDe } from './data.js';
+import { renderCarte, renderDos, bandeauGabarit } from './cards.js';
 import { planchesCartes, archiveCartes, PLANCHE } from './export-pdf.js';
-import { visuelsApportes, ajouterVisuel, cleVisuel } from './visuels.js';
+import { visuelsApportes, ajouterVisuel, cleVisuel, urlVisuel } from './visuels.js';
 
 let C = null;   // ce que l'application prête à l'atelier — voir app.js
 
@@ -454,11 +455,17 @@ function champsDe(e) {
       return geo + `<div class="at-groupe"><h4>Pouvoir</h4>
         ${champ(e, 'quel', 'Montre', 'choix', { options: [['', 'tous les pouvoirs'], ['premier', 'le premier pouvoir'], ['second', 'le second pouvoir']] })}
         ${champ(e, 'dechire', 'Bord déchiré', 'bool')}
-        ${champ(e, 'echelle', 'Taille du contenu', 'nombre', { min: 0.4, max: 2, pas: 0.05, unite: '×' })}
-        <p class="aide">Le contenu — valeur, icônes, flèches — est celui du site, et se resserre de lui-même pour tenir.</p></div>` + boite;
+        ${champ(e, 'echelle', 'Taille du contenu', 'nombre', { min: 0.4, max: 2, pas: 0.05, unite: '×' })}</div>
+        ${textesPouvoirs(e)}
+        <div class="at-groupe"><h4>Typographie des pouvoirs</h4>${champ(e, 'police', 'Police', 'police')}
+        ${champ(e, 'graisse', 'Graisse des mots', 'choix', { options: GRAISSES, nombres: true, defaut: 800 })}
+        ${champ(e, 'couleur', 'Couleur des mots', 'couleur')}${champ(e, 'italique', 'Italique', 'bool')}
+        <p class="aide">Vaut pour les mots du bandeau — « si », « × », « avec »… — écrits par le site comme par vous.</p></div>` + boite;
     case 'texte':
       return `<div class="at-groupe"><h4>Contenu</h4>${champ(e, 'texte', 'Texte', 'zone')}
-        <p class="aide">Peut citer la carte : ${CHAMPS_TEXTE.map(([k, l]) => `<code title="${l}">${k}</code>`).join(' ')}</p></div>`
+        <p class="aide">Peut citer la carte : ${CHAMPS_TEXTE.map(([k, l]) => `<code title="${l}">${k}</code>`).join(' ')}</p>
+        ${paletteJetons()}
+        ${champ(e, 'tailleIcones', 'Taille des icônes', 'nombre', { min: 0.5, max: 4, pas: 0.05, unite: '× le corps' })}</div>`
         + geo + texte + boite;
     case 'image':
       return `<div class="at-groupe"><h4>Image</h4>${champ(e, 'src', 'Image', 'image')}
@@ -467,6 +474,162 @@ function champsDe(e) {
     default:
       return geo + boite + `<div class="at-groupe">${champ(e, 'ombreBoite', 'Ombre portée', 'bool')}</div>`;
   }
+}
+
+// --- Les textes des pouvoirs, et les jetons -----------------------------------------------
+// Un pouvoir s'écrit en mots et en JETONS : « [2] [x] [heroine] [>] ». Le texte
+// est rangé dans le gabarit sous la SIGNATURE du pouvoir — sa sorte, sa valeur,
+// ses cibles, sa portée — : il vaut donc pour tous les plans qui portent ce
+// même pouvoir, et l'on n'écrit chaque pouvoir qu'une fois.
+
+/** Les plans qui portent ce pouvoir, toutes mises en page confondues. */
+function porteurs(sig) {
+  let n = 0;
+  for (const m of MISES) {
+    if (m.id === 'DOS') continue;
+    for (const { h } of echantillons(m.id)) if (objsDe(h).some((o) => signaturePouvoir(o) === sig)) n++;
+  }
+  return n;
+}
+
+/**
+ * Le texte qu'écrirait le site pour ce pouvoir, en jetons : on relit son propre
+ * bandeau, pièce par pièce. C'est le point de départ qu'on retouche.
+ */
+function formuleDe(o, h) {
+  const div = document.createElement('div');
+  div.innerHTML = bandeauGabarit([o], h.format === 'DEP' ? 'PL' : h.format, C.store.cfg, 30);
+  const out = [];
+  const CADRAGES = { 'Plan Large': 'pl', PL: 'pl', 'Plan Moyen': 'pm', PM: 'pm', 'Gros Plan': 'gp', GP: 'gp' };
+  const marcher = (n) => {
+    for (const x of n.childNodes) {
+      if (x.nodeType === 3) { const t = x.textContent.trim(); if (t) out.push(t); continue; }
+      if (x.nodeType !== 1) continue;
+      const cl = x.classList;
+      const src = x.getAttribute('src') || '';
+      const m = /icones\/([A-Z_]+)\./.exec(src);
+      if (x.tagName === 'IMG') { if (m) out.push(`[${m[1].toLowerCase()}]`); continue; }
+      if (cl.contains('pastille-num')) { out.push(`[${x.getAttribute('aria-label')}]`); continue; }
+      if (cl.contains('x')) { out.push('[x]'); continue; }
+      if (cl.contains('avance-rapide')) { out.push(cl.contains('recul') ? '[<<]' : '[>>]'); continue; }
+      if (cl.contains('fleche-pos')) { out.push(x.textContent.includes('◀') ? '[<]' : '[>]'); continue; }
+      if (cl.contains('croix-non')) {
+        const avant = out.pop();
+        if (avant) out.push(/^\[.+\]$/.test(avant) ? `[non:${avant.slice(1, -1)}]` : avant);
+        continue;
+      }
+      if (cl.contains('tag-seq')) { out.push('[seq]'); continue; }
+      if (cl.contains('tag-fmt')) { out.push(`[${CADRAGES[x.textContent.trim()] || 'plan'}]`); continue; }
+      if (cl.contains('tag-chrono')) { out.push('[timecode]'); continue; }
+      if (cl.contains('tag') && /raccord/i.test(x.textContent)) { out.push('[raccord]'); continue; }
+      if (x.tagName.toLowerCase() === 'svg') continue;
+      marcher(x);
+    }
+  };
+  marcher(div);
+  return out.join(' ').replace(/\s+\+/g, '+');
+}
+
+/** Les jetons, en pastilles qu'un clic écrit à l'endroit du curseur. */
+function paletteJetons() {
+  const perso = (brouillon().icones || []).filter((i) => !ICONES_JEU[i.nom]);
+  return `<div class="at-jetons" title="Cliquer pour écrire le jeton là où est le curseur">
+    ${JETONS.map(([j, l]) => `<button class="at-jeton" data-jeton="${echapper(j)}" title="${echapper(l)}">${echapper(j)}</button>`).join('')}
+    ${perso.map((i) => `<button class="at-jeton perso" data-jeton="[${echapper(i.nom)}]" title="Votre icône « ${echapper(i.nom)} »"><img src="${urlVisuel(i.src)}" alt="">${echapper(i.nom)}</button>`).join('')}
+  </div>`;
+}
+
+function textesPouvoirs(e) {
+  const h = planCourant();
+  if (!h || h.format === 'DOS') return '';
+  const tous = objsDe(h);
+  const objs = e.quel === 'premier' ? tous.slice(0, 1) : e.quel === 'second' ? tous.slice(1, 2) : tous;
+  const textes = brouillon().textes || {};
+  const blocs = objs.map((o, i) => {
+    const sig = signaturePouvoir(o);
+    const t = textes[sig];
+    const n = porteurs(sig);
+    return `<div class="at-pouvoir">
+      <div class="at-pouvoir-tete"><b>${objs.length > 1 ? `Pouvoir ${i + 1}` : 'Ce pouvoir'}</b>
+        <span class="aide"><span class="at-qui">${t == null ? 'composé par le site' : 'écrit par vous'}</span> · ${n} plan${n > 1 ? 's' : ''} le porte${n > 1 ? 'nt' : ''}</span></div>
+      <textarea rows="2" class="at-pouvoir-texte" data-pouvoir="${echapper(sig)}" data-formule="${echapper(formuleDe(o, h))}"
+        placeholder="${echapper(formuleDe(o, h))}">${echapper(t ?? '')}</textarea>
+      <div class="rangee-mini">
+        <button class="pill mini" data-proposer="${echapper(sig)}">✎ Partir du texte du site</button>
+        <button class="pill mini" data-auto="${echapper(sig)}" ${t == null ? 'disabled' : ''}>↺ Automatique</button>
+      </div></div>`;
+  }).join('');
+  return `<div class="at-groupe"><h4>Le texte des pouvoirs</h4>
+    ${objs.length ? blocs : '<p class="aide">Ce plan ne porte pas de pouvoir.</p>'}
+    ${objs.length ? `${paletteJetons()}
+    <p class="aide">Des mots, et des jetons entre crochets : <code>[2]</code> une valeur, <code>[x]</code> le ×, <code>[heroine]</code> une
+    icône, <code>[non:allie]</code> barrée, <code>[>]</code> <code>[>>]</code> la portée, et le nom de vos propres icônes. Un retour à la
+    ligne se respecte. Vide : le site compose le pouvoir. Le texte vaut pour tous les plans qui portent ce même pouvoir.</p>` : ''}
+  </div>`;
+}
+
+// --- La bibliothèque d'icônes ----------------------------------------------------------------------
+// Les logos et icônes de l'auteur, importés de son ordinateur et NOMMÉS : un
+// nom se cite en jeton — « [monlogo] » — dans un texte ou un pouvoir. Une icône
+// qui porte le nom d'une icône du jeu (heroine, ennemi, allie, objet, arme,
+// vehicule, mort) la remplace partout : languettes, bandeaux, textes.
+
+function dessinerIcones() {
+  const z = q('#at-icones');
+  if (!z) return;
+  const l = brouillon().icones || [];
+  z.innerHTML = `<div class="entete-ligne"><h3>Icônes et logos <span class="aide">— ${l.length} dans ce gabarit</span></h3>
+      <span class="rangee-mini"><button class="pill mini creer" id="at-ic-importer">⭱ Importer des images…</button>
+      <input type="file" id="at-ic-fichiers" accept="image/*" multiple hidden></span></div>
+    <p class="aide">Le nom du fichier devient le nom de l'icône — <code>logo-bbg.png</code> se cite <code>[logo-bbg]</code>. Nommez-en une
+    ${Object.keys(ICONES_JEU).map((k) => `<code>${k}</code>`).join(' ')} et elle remplace l'icône du jeu sur toutes les cartes.
+    Un PNG transparent garde sa transparence ; l'original entier sert à l'impression.</p>
+    <div class="at-icones">${l.length ? l.map((i, k) => `<div class="at-icone ${ICONES_JEU[i.nom] ? 'remplace' : ''}">
+        <img src="${urlVisuel(i.src)}" alt="">
+        <input type="text" value="${echapper(i.nom)}" data-ic-nom="${k}" spellcheck="false" title="Le nom de l'icône, cité entre crochets">
+        <span class="aide">${ICONES_JEU[i.nom] ? 'remplace l’icône du jeu' : `[${echapper(i.nom)}]`}</span>
+        <button class="at-mini suppr" data-ic-suppr="${k}" title="Retirer">✕</button></div>`).join('')
+    : '<div class="vide">Aucune icône pour l’instant.</div>'}</div>`;
+  const fic = z.querySelector('#at-ic-fichiers');
+  z.querySelector('#at-ic-importer').addEventListener('click', () => fic.click());
+  fic.addEventListener('change', async () => {
+    const fichiers = [...(fic.files || [])];
+    const entrees = [];
+    for (const f of fichiers) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const v = await ajouterVisuel(f);
+        entrees.push({ nom: nomIcone(f.name) || 'icone', src: cleVisuel(v.id) });
+      } catch (err) { window.alert(`« ${f.name} » n’a pas pu entrer : ${err.message || err}`); }
+    }
+    if (!entrees.length) return;
+    changer((g) => {
+      for (const x of entrees) {
+        let nom = x.nom; let i = 2;
+        while (g.icones.some((y) => y.nom === nom)) nom = `${x.nom}-${i++}`;
+        g.icones.push({ nom, src: x.src });
+      }
+    });
+  });
+  z.querySelectorAll('[data-ic-nom]').forEach((el) => el.addEventListener('change', () => {
+    const k = +el.dataset.icNom;
+    const ancien = brouillon().icones[k].nom;
+    let nom = nomIcone(el.value);
+    if (!nom || nom === ancien) { el.value = ancien; return; }
+    if (brouillon().icones.some((y, j) => j !== k && y.nom === nom)) {
+      window.alert(`Une autre icône s’appelle déjà « ${nom} ».`); el.value = ancien; return;
+    }
+    // Le nouveau nom suit partout où l'ancien était cité.
+    const remplacer = (t) => String(t).split(`[${ancien}]`).join(`[${nom}]`).split(`[non:${ancien}]`).join(`[non:${nom}]`);
+    changer((g) => {
+      g.icones[k].nom = nom;
+      for (const s of Object.keys(g.textes)) g.textes[s] = remplacer(g.textes[s]);
+      for (const m of Object.values(g.mises)) for (const x of m.elements) if (x.type === 'texte' && x.texte) x.texte = remplacer(x.texte);
+    });
+  }));
+  z.querySelectorAll('[data-ic-suppr]').forEach((b) => b.addEventListener('click', () => changer((g) => {
+    g.icones.splice(+b.dataset.icSuppr, 1);
+  })));
 }
 
 /** Le plan que la scène montre en ce moment. */
@@ -550,6 +713,7 @@ function dessinerPanneau() {
     </div>
     <div class="at-reglages">${reglages}</div>`;
   brancherPanneau();
+  dessinerIcones();
 }
 
 /** Les champs de position suivent un glisser sans redessiner tout le panneau. */
@@ -675,6 +839,56 @@ function brancherPanneau() {
     const z = p.querySelector('textarea[data-champ="texte"]');
     if (z) z.addEventListener('input', () => { e.texte = z.value; dessinerScene(); });
   }
+
+  // Le texte des pouvoirs : la carte suit la frappe ; la sortie du champ
+  // l'enregistre. Vide, le pouvoir repart au site.
+  const ecrire = (sig, t) => {
+    const g = brouillon();
+    if (t == null || !String(t).trim()) delete g.textes[sig]; else g.textes[sig] = t;
+  };
+  let dernier = p.querySelector('textarea[data-champ="texte"], .at-pouvoir-texte');
+  p.querySelectorAll('.at-pouvoir-texte').forEach((z) => {
+    z.addEventListener('focus', () => { at.instantane = JSON.stringify(brouillon()); dernier = z; });
+    z.addEventListener('input', () => {
+      ecrire(z.dataset.pouvoir, z.value);
+      const bloc = z.closest('.at-pouvoir');
+      const ecrit = !!z.value.trim();
+      bloc.querySelector('.at-qui').textContent = ecrit ? 'écrit par vous' : 'composé par le site';
+      bloc.querySelector('[data-auto]').disabled = !ecrit;
+      dessinerScene();
+    });
+    z.addEventListener('change', () => {
+      ecrire(z.dataset.pouvoir, z.value);
+      memoriser(at.instantane || undefined); at.instantane = JSON.stringify(brouillon());
+      enregistrer(); dessinerEtat(); planifierToutes(); dessinerScene();
+    });
+  });
+  p.querySelectorAll('textarea[data-champ="texte"]').forEach((z) => z.addEventListener('focus', () => { dernier = z; }));
+  p.querySelectorAll('[data-proposer]').forEach((b) => b.addEventListener('click', () => {
+    const z = [...p.querySelectorAll('.at-pouvoir-texte')].find((x) => x.dataset.pouvoir === b.dataset.proposer);
+    changer((g) => { g.textes[b.dataset.proposer] = z.dataset.formule; });
+  }));
+  p.querySelectorAll('[data-auto]').forEach((b) => b.addEventListener('click', () => changer((g) => {
+    delete g.textes[b.dataset.auto];
+  })));
+  // Un jeton s'écrit là où était le curseur, dans le dernier champ touché.
+  p.querySelectorAll('[data-jeton]').forEach((b) => {
+    b.addEventListener('pointerdown', (ev) => ev.preventDefault());
+    b.addEventListener('click', () => {
+      const z = dernier;
+      if (!z) return;
+      if (document.activeElement !== z) at.instantane = JSON.stringify(brouillon());
+      const j = b.dataset.jeton;
+      const a = z.selectionStart ?? z.value.length; const f = z.selectionEnd ?? a;
+      const avant = z.value.slice(0, a);
+      const ajout = (avant && !/\s$/.test(avant) ? ' ' : '') + j;
+      z.value = avant + ajout + z.value.slice(f);
+      z.focus();
+      z.selectionStart = z.selectionEnd = a + ajout.length;
+      z.dispatchEvent(new Event('input'));
+      z.dispatchEvent(new Event('change'));
+    });
+  });
 }
 
 let compteur = 0;
@@ -1060,6 +1274,7 @@ export function vueAtelier(ctx) {
       </div>
       <div class="panneau at-droite" id="at-panneau"></div>
     </div>
+    <div class="panneau at-biblio" id="at-icones"></div>
     <div class="panneau">
       <div class="entete-ligne"><h3>Toutes les cartes <span class="aide" id="at-toutes-compte"></span></h3>
         <span class="at-filtres">${FILTRES.map(([k, l]) => `<button class="pill mini ${k === at.filtre ? 'on' : ''}" data-filtre="${k}">${l}</button>`).join('')}</span></div>
@@ -1080,8 +1295,8 @@ export function vueAtelier(ctx) {
     dessinerOnglets(); dessinerScene(); dessinerPanneau(); dessinerExport();
     if (at.filtre === 'MISE') planifierToutes();
   }));
-  q('#at-prec').addEventListener('click', () => { at.ech--; dessinerScene(); });
-  q('#at-suiv').addEventListener('click', () => { at.ech++; dessinerScene(); });
+  q('#at-prec').addEventListener('click', () => { at.ech--; dessinerScene(); dessinerPanneau(); });
+  q('#at-suiv').addEventListener('click', () => { at.ech++; dessinerScene(); dessinerPanneau(); });
   q('#at-grille').addEventListener('change', (e) => { at.grille = e.target.checked; dessinerScene(); });
   q('#at-sure').addEventListener('change', (e) => { at.sure = e.target.checked; dessinerScene(); });
   q('#at-zoom').addEventListener('change', (e) => { at.zoom = +e.target.value; dessinerScene(); });

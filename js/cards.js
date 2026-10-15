@@ -71,7 +71,7 @@ export function avanceRapide(recul = false) {
  * barres laissent quatre quartiers ouverts — la croix domine, l'icône se lit
  * encore. Le liseré blanc la détache de tout ce qu'elle recouvre.
  */
-function croixNon() {
+export function croixNon() {
   const traits = '<line x1="15" y1="15" x2="85" y2="85"/><line x1="85" y1="15" x2="15" y2="85"/>';
   return `<span class="croix-non" aria-hidden="true"><svg viewBox="0 0 100 100">
     <g stroke="#fff" stroke-width="19" stroke-linecap="round" opacity=".9">${traits}</g>
@@ -352,7 +352,7 @@ function cibleHTML(cible, taille, compact) {
 }
 
 /** L'étiquette d'un cadrage, dans sa couleur. */
-function tagCadrage(f, compact) {
+export function tagCadrage(f, compact) {
   return `<span class="tag tag-fmt" style="--c:${FORMATS[f].color}">${
     compact ? FORMATS[f].short : FORMATS[f].label}</span>`;
 }
@@ -371,7 +371,7 @@ function nombreCible(n, cible, grand) {
 }
 
 /** La pastille « Séquence » des bandeaux qui comptent des séquences. */
-function tagSeq(compact) {
+export function tagSeq(compact) {
   return `<span class="tag tag-seq">${compact ? 'Séq' : 'Séquence'}</span>`;
 }
 

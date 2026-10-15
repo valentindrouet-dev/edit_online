@@ -2836,3 +2836,53 @@ body.mode-impression { background: #d9d6e2; }
   body.mode-impression .imp-page { box-shadow: none; break-after: page; page-break-after: always; margin: 0; }
   body.mode-impression * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* --- Les jetons : icônes et mots alignés sur la ligne ------------------------- */
+.g-bande .x, .g-bande .si, .g-bande .mot { color: var(--g-encre, #fff); }
+.g-bande.g-deux { flex-direction: column; }
+.g-rang { flex: 1 1 0; min-height: 0; display: flex; }
+.g-rang > .bandeau { flex: 1 1 auto; height: 100%; }
+.g-phrase-bande { flex-wrap: wrap; column-gap: .26em; row-gap: 0; align-content: center; }
+.g-phrase-bande .mot-libre, .g-phrase .mot-libre {
+  font-weight: var(--g-graisse, 800); color: var(--g-encre, #fff); line-height: 1; white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+}
+.g-phrase-bande .mot-libre { font-size: calc(1.1em * var(--ec, 1)); }
+.g-phrase .mot-libre { font-weight: inherit; color: inherit; text-shadow: inherit; }
+.g-br { flex-basis: 100%; height: 0; }
+.g-phrase { flex-wrap: wrap; column-gap: .28em; row-gap: .15em; align-content: center; }
+.g-phrase .pastille, .g-phrase .pastille-num, .g-phrase .g-ic {
+  height: var(--gi, 1.3em); width: auto; aspect-ratio: auto; flex: 0 0 auto; object-fit: contain;
+}
+.g-phrase .pastille-num { aspect-ratio: 1 / 1; }
+.g-phrase .tag {
+  font-size: .62em; font-weight: 800; padding: .25em .45em; border-radius: .3em;
+  text-transform: uppercase; line-height: 1.08; white-space: nowrap;
+}
+.g-phrase .barre { height: var(--gi, 1.3em); }
+.g-phrase .barre .croix-non { height: 56%; bottom: -4%; }
+.bandeau .g-ic { object-fit: contain; }
+.g-inconnu { color: #ff6b6b; font-weight: 800; outline: 1px dashed #ff6b6b; padding: 0 .1em; }
+
+/* --- Atelier : textes des pouvoirs, jetons, bibliothèque d'icônes ------------- */
+.at-pouvoir { display: grid; gap: 6px; padding: 8px; border-radius: 10px; background: var(--violet-pale); margin-bottom: 8px; }
+.at-pouvoir-tete { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.at-pouvoir-texte { width: 100%; box-sizing: border-box; font: 600 13px/1.4 ui-monospace, Menlo, Consolas, monospace; resize: vertical; }
+.at-jetons { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
+.at-jeton {
+  font: 700 11px/1 ui-monospace, Menlo, Consolas, monospace; padding: 4px 6px; border-radius: 6px; cursor: pointer;
+  border: 1px solid #d8c8f5; background: #fff; color: #5b21b6; display: inline-flex; align-items: center; gap: 4px;
+}
+.at-jeton:hover { background: #f1e8ff; }
+.at-jeton.perso { border-color: #fdba74; color: #9a3412; }
+.at-jeton img { height: 14px; width: auto; }
+.at-icones { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 8px; }
+.at-icone {
+  display: grid; align-content: start; grid-template-columns: 1fr auto; gap: 4px 6px; align-items: center; padding: 8px; border-radius: 10px;
+  background: repeating-conic-gradient(#ece6f5 0 25%, #fff 0 50%) 0 0 / 12px 12px; border: 1px solid #e3d8f5;
+}
+.at-icone.remplace { border-color: #fb923c; }
+.at-icone img { grid-column: 1 / -1; height: 64px; width: 100%; object-fit: contain; }
+.at-icone input { min-width: 0; font: 700 12px ui-monospace, Menlo, Consolas, monospace; }
+.at-icone .aide { grid-column: 1; font-size: 11px; }
+.at-icone .suppr { grid-row: 2; grid-column: 2; }
