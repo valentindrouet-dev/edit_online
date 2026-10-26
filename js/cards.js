@@ -14,7 +14,7 @@
 // puis le libellé.
 
 import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre } from './data.js';
-import { HAUTEUR, cleMise, largeurMise } from './gabarits.js';
+import { cleMise, largeurMise, formatDe } from './gabarits.js';
 import { elIcon, numIcon, cadrageIcon } from './icons.js';
 import { urlVisuel } from './visuels.js';
 
@@ -784,9 +784,11 @@ export function bandeauGabarit(objs, format, cfg, dispo) {
 // mécanique que la lecture nue —, et ce module n'a rien à savoir des gabarits.
 let dessinGabarit = null;
 let coinsGabarit = 3;
-export function reglerDessinGabarit(fn, coins) {
+let formatGabarit = formatDe(null);
+export function reglerDessinGabarit(fn, coins, format) {
   dessinGabarit = fn || null;
   if (typeof coins === 'number') coinsGabarit = coins;
+  if (format) formatGabarit = formatDe(format);
 }
 export const dessinGabaritActif = () => !!dessinGabarit;
 
@@ -951,21 +953,23 @@ export function renderCarte(carte, verso, opts = {}) {
     return `<div class="carte solo carte-vide ${opts.small ? 'small' : ''}" data-carte="${carte.id}"
       data-verso="${verso ? 1 : 0}"><span>carte vide</span></div>`;
   }
-  // Dessinée par un gabarit, la carte est un carton de 88 × 63 mm : ses
-  // moitiés se partagent la largeur en proportion de leurs millimètres. Le
+  // Dessinée par un gabarit, la carte est un carton au format du gabarit —
+  // 120 × 80 mm, 88 × 63… — : ses moitiés se partagent la largeur en
+  // proportion de leurs millimètres. Le
   // fond perdu (`opts.perdu`, en mm) s'ajoute sur les bords EXTÉRIEURS — pas
   // entre les deux moitiés, qui se touchent.
   if (dessinGabarit && !opts.classique) {
     const p = opts.perdu || 0;
     const n = plans.length;
-    const W = plans.reduce((s, h) => s + largeurMise(cleMise(h)), 0) + 2 * p;
-    const H = HAUTEUR + 2 * p;
+    const F = formatGabarit;
+    const W = plans.reduce((s, h) => s + largeurMise(cleMise(h), F), 0) + 2 * p;
+    const H = F.hauteur + 2 * p;
     const r = opts.impression ? 0 : coinsGabarit;
     const clsD = ['carte', 'design', m && n === 1 ? 'solo' : '',
       opts.selected ? 'sel' : '', opts.small ? 'small' : '', opts.tiny ? 'tiny' : '',
       opts.clickable ? 'clickable' : '', opts.moitiesChoisissables ? 'choix-moitie' : ''].join(' ');
     return `<div class="${clsD}" data-carte="${carte.id}" data-verso="${verso ? 1 : 0}"
-      style="--ar:${W}/${H};--fr:${Math.round((W / (88 + 2 * p)) * 1000) / 1000};border-radius:${
+      style="--ar:${W}/${H};--fr:${Math.round((W / (F.largeur + 2 * p)) * 1000) / 1000};border-radius:${
   Math.round((r / W) * 10000) / 100}% / ${Math.round((r / H) * 10000) / 100}%">
     ${plans.map((h, i) => renderPlan(h, {
     ...opts,

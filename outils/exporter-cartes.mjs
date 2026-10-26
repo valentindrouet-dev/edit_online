@@ -90,7 +90,8 @@ if ((partage.images || []).length) {
     for (const im of images) {
       const blob = await (await fetch(im.data)).blob();
       const original = im.dataHD ? await (await fetch(im.dataHD)).blob() : null;
-      await v.importerVisuel(im.id, blob, im.nom, im.largeur, im.hauteur, original, im.largeurOrig, im.hauteurOrig);
+      await v.importerVisuel(im.id, blob, im.nom, im.largeur, im.hauteur, original, im.largeurOrig, im.hauteurOrig,
+        im.brut ? { brut: true, empreinte: im.empreinte } : null);
     }
   }, partage.images);
 }

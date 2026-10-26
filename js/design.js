@@ -18,7 +18,7 @@ import {
   bandeauGabarit, reglerDessinGabarit, tagSeq, tagCadrage, croixNon, avanceRapide,
 } from './cards.js';
 import {
-  HAUTEUR, cleMise, largeurMise, POLICES, POLICES_SYSTEME, policeLocale,
+  hauteurDe, formatDe, cleMise, largeurMise, POLICES, POLICES_SYSTEME, policeLocale,
   ICONES_JEU, nomIcone, signaturePouvoir,
 } from './gabarits.js';
 import { urlVisuel, urlVisuelHD, estVisuelApporte } from './visuels.js';
@@ -344,8 +344,8 @@ export function rendreMoitie(h, g, opts = {}) {
   const cle = cleMise(h);
   const mise = g.mises[cle];
   if (!mise) return null;
-  const W = largeurMise(cle);
-  const H = HAUTEUR;
+  const W = largeurMise(cle, g);
+  const H = hauteurDe(g);
   const pc = opts.perduCotes || { g: 0, d: 0, h: 0, b: 0 };
   const TW = W + pc.g + pc.d;
   const TH = H + pc.h + pc.b;
@@ -368,8 +368,30 @@ export function rendreMoitie(h, g, opts = {}) {
   return {
     w: n2(TW),
     h: n2(TH),
-    html: `<div class="g-carte" style="${unite}--gw:${n2(TW)};background-color:${mise.carte.fond || '#000'}">${els}</div>`,
+    html: `<div class="g-carte" style="${unite}--gw:${n2(TW)};background-color:${mise.carte.fond || '#000'}">${
+      fondDeCarte(mise.carte, W, H, pc, opts)}${els}</div>`,
   };
+}
+
+/**
+ * Le FOND DE CARTE : l'image de l'auteur, sous tous les calques. Elle couvre la
+ * carte à la coupe — et, si elle a été faite avec son fond perdu, ce fond perdu
+ * aussi : `perduInclus` mm de chaque côté, que l'écran ne montre pas et que
+ * l'impression emploie. L'image est servie telle qu'elle est entrée, sans
+ * copie d'écran : c'est le fichier même.
+ */
+const AJUSTEMENTS = { remplit: 'cover', entier: 'contain', etire: '100% 100%' };
+const POSITIONS = {
+  centre: 'center', gauche: 'left center', droite: 'right center', haut: 'center top', bas: 'center bottom',
+};
+function fondDeCarte(c, W, H, pc, opts) {
+  if (!c || !c.image) return '';
+  const url = opts.hd ? urlVisuelHD(c.image) : urlVisuel(c.image);
+  if (!url) return '';
+  const n = Math.max(0, Number(c.perduInclus) || 0);
+  return `<div class="g-fond" style="left:${n2(pc.g - n)}em;top:${n2(pc.h - n)}em;width:${n2(W + 2 * n)}em;height:${
+    n2(H + 2 * n)}em;background-image:url('${url}');background-size:${AJUSTEMENTS[c.ajuste] || 'cover'};background-position:${
+    POSITIONS[c.position] || 'center'}"></div>`;
 }
 
 // --- Le gabarit en vigueur ----------------------------------------------------
@@ -385,7 +407,7 @@ export function brancherGabarit(g, opts = {}) {
   enVigueur = g || null;
   if (!g) { reglerDessinGabarit(null); return; }
   declarerPolices(g);
-  reglerDessinGabarit((h, o) => rendreMoitie(h, g, { ...opts, ...o }), g.coins ?? 3);
+  reglerDessinGabarit((h, o) => rendreMoitie(h, g, { ...opts, ...o }), g.coins ?? 3, formatDe(g));
 }
 
 export const gabaritEnVigueur = () => enVigueur;

@@ -121,7 +121,31 @@ export async function rasterCarte(html, large, css, opts = {}) {
   ctx.fillRect(0, 0, large, haut);
   ctx.drawImage(img, 0, 0, large, haut);
   if (opts.png) return { png: pngAvecDpi(base64Bytes(cv.toDataURL('image/png').split(',')[1]), opts.dpi || 300), large, haut };
+  // SANS PERTE : les pixels du canevas tels quels, en RVB, serrés par Flate —
+  // la compression sans perte que tout lecteur de PDF relit. Plus lourd qu'un
+  // JPEG, mais pas un pixel ne bouge.
+  if (opts.sansPerte) {
+    const d = ctx.getImageData(0, 0, large, haut).data;
+    const rgb = new Uint8Array(large * haut * 3);
+    for (let i = 0, j = 0; i < d.length; i += 4, j += 3) { rgb[j] = d[i]; rgb[j + 1] = d[i + 1]; rgb[j + 2] = d[i + 2]; }
+    const flate = await deflate(rgb);
+    return flate ? { flate, large, haut } : { rgb, large, haut };
+  }
   return { jpeg: base64Bytes(cv.toDataURL(`image/jpeg`, opts.qualite || 0.94).split(',')[1]), large, haut };
+}
+
+/** Flate (zlib), par le navigateur lui-même ; `null` s'il ne sait pas. */
+async function deflate(u8) {
+  if (typeof CompressionStream === 'undefined') return null;
+  const flux = new Blob([u8]).stream().pipeThrough(new CompressionStream('deflate'));
+  return new Uint8Array(await new Response(flux).arrayBuffer());
+}
+
+/** Le filtre et les octets d'une image de carte : JPEG, Flate sans perte, ou brute. */
+function fluxImage(c) {
+  if (c.flate) return [' /Filter /FlateDecode', c.flate];
+  if (c.rgb) return ['', c.rgb];
+  return [' /Filter /DCTDecode', c.jpeg];
 }
 
 /**
@@ -174,6 +198,7 @@ function coller(morceaux) {
  * (filtre DCTDecode), il n'y a donc ni recompression ni perte.
  */
 export function pdfJpeg(jpeg, largePx, hautPx, largeMm, hautMm) {
+  const [filtre, data] = jpeg instanceof Uint8Array ? fluxImage({ jpeg }) : fluxImage(jpeg);
   const pt = (mm) => Math.round((mm * 72 / 25.4) * 100) / 100;
   const L = pt(largeMm), H = pt(hautMm);
   const objets = [
@@ -206,7 +231,7 @@ export function pdfJpeg(jpeg, largePx, hautPx, largeMm, hautMm) {
   objet(2, objets[1]);
   objet(3, objets[2]);
   objet(4, '<< /Type /XObject /Subtype /Image /Width ' + largePx + ' /Height ' + hautPx
-    + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jpeg.length + ' >>', jpeg);
+    + ' /ColorSpace /DeviceRGB /BitsPerComponent 8' + filtre + ' /Length ' + data.length + ' >>', data);
   objet(5, `<< /Length ${contenu.length} >>`, octets(contenu));
 
   const debutXref = taille;
@@ -237,6 +262,20 @@ export const PLANCHE = {
 
 const MM = 72 / 25.4;
 const pt2 = (v) => Math.round(v * 100) / 100;
+
+/**
+ * La grille d'une planche A4 pour une carte de ce format : autant de cartes
+ * que la feuille en tient, en paysage ou en portrait, avec 5 mm de marge au
+ * moins. 88 × 63 donne les neuf cartes de la planche de référence ; 120 × 80,
+ * quatre en paysage.
+ */
+export function grilleA4(largeurMm, hautMm, perduMm = 0, margeMin = 5) {
+  const pw = largeurMm + 2 * perduMm; const ph = hautMm + 2 * perduMm;
+  const essai = (L, H) => ({ pageMm: [L, H],
+    colonnes: Math.max(1, Math.floor((L - 2 * margeMin) / pw)), rangees: Math.max(1, Math.floor((H - 2 * margeMin) / ph)) });
+  const a = essai(297, 210); const b = essai(210, 297);
+  return a.colonnes * a.rangees >= b.colonnes * b.rangees ? a : b;
+}
 
 /**
  * Où tombe la case `i` d'une planche, en points, coin bas-gauche (repère PDF).
@@ -373,8 +412,9 @@ export function pdfPlanches(pages, gabarit = PLANCHE) {
   });
 
   for (const c of images) {
+    const [filtre, data] = fluxImage(c);
     objet(c.id, `<< /Type /XObject /Subtype /Image /Width ${c.largePx} /Height ${c.hautPx}`
-      + ` /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${c.jpeg.length} >>`, c.jpeg);
+      + ` /ColorSpace /DeviceRGB /BitsPerComponent 8${filtre} /Length ${data.length} >>`, data);
   }
 
   const total = prochaine;
@@ -392,10 +432,10 @@ export function pdfPlanches(pages, gabarit = PLANCHE) {
  * la page des versos plutôt que de décaler tout le reste.
  */
 export async function planchesCartes(couples, {
-  largeurPx = 1040, hautPx, version = '', gabarit = PLANCHE, avance, cssEnPlus = '',
+  largeurPx = 1040, hautPx, version = '', gabarit = PLANCHE, avance, cssEnPlus = '', sansPerte = false,
 } = {}) {
   const css = (await cssCartes(version)) + cssEnPlus;
-  const opt = { haut: hautPx, polices: !!cssEnPlus };
+  const opt = { haut: hautPx, polices: !!cssEnPlus, sansPerte };
   const parPage = gabarit.colonnes * gabarit.rangees;
   const pages = [];
   const total = couples.length;
@@ -409,11 +449,11 @@ export async function planchesCartes(couples, {
       // eslint-disable-next-line no-await-in-loop -- une carte à la fois : cent
       // canvas de front feraient tomber l'onglet, et l'avancement doit se voir.
       const r = await rasterCarte(c.recto, largeurPx, css, opt);
-      rectos.push({ jpeg: r.jpeg, largePx: r.large, hautPx: r.haut, place: k });
+      rectos.push({ jpeg: r.jpeg, flate: r.flate, rgb: r.rgb, largePx: r.large, hautPx: r.haut, place: k });
       if (!c.verso) continue;
       // eslint-disable-next-line no-await-in-loop -- même raison.
       const v = await rasterCarte(c.verso, largeurPx, css, opt);
-      versos.push({ jpeg: v.jpeg, largePx: v.large, hautPx: v.haut, place: k });
+      versos.push({ jpeg: v.jpeg, flate: v.flate, rgb: v.rgb, largePx: v.large, hautPx: v.haut, place: k });
     }
     pages.push({ cartes: rectos, miroir: false });
     if (versos.length) pages.push({ cartes: versos, miroir: true });
@@ -487,7 +527,7 @@ export function zipStore(fichiers, quand = new Date()) {
  */
 export async function archiveCartes(faces, {
   largeurMm = 88, hautMm: hautDonne, largeurPx = 1040, hautPx, version = '', avance,
-  png = false, dpi = 300, cssEnPlus = '',
+  png = false, dpi = 300, cssEnPlus = '', sansPerte = false,
 } = {}) {
   const css = (await cssCartes(version)) + cssEnPlus;
   const hautMm = hautDonne || Math.round((largeurMm * 227 / 317) * 100) / 100;
@@ -496,9 +536,9 @@ export async function archiveCartes(faces, {
     if (avance) avance(i, faces.length);
     // eslint-disable-next-line no-await-in-loop -- une carte à la fois : cent
     // canvas de front feraient tomber l'onglet, et l'avancement doit se voir.
-    const r = await rasterCarte(f.html, largeurPx, css, { haut: hautPx, png, dpi, polices: !!cssEnPlus });
+    const r = await rasterCarte(f.html, largeurPx, css, { haut: hautPx, png, dpi, polices: !!cssEnPlus, sansPerte });
     fichiers.push(png ? { nom: `${f.nom}.png`, data: r.png }
-      : { nom: `${f.nom}.pdf`, data: pdfJpeg(r.jpeg, r.large, r.haut, largeurMm, hautMm) });
+      : { nom: `${f.nom}.pdf`, data: pdfJpeg(r.jpeg || r, r.large, r.haut, largeurMm, hautMm) });
   }
   if (avance) avance(faces.length, faces.length);
   return zipStore(fichiers);

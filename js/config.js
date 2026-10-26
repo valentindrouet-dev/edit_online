@@ -206,7 +206,7 @@ export const DEFAULTS = {
   // Le DESSIN des cartes, réglé dans l'Atelier : le brouillon de gabarit, la
   // version dont il est tiré, et s'il dessine les cartes du site. Éteint, le
   // site garde son dessin à lui.
-  design: { actif: false, gabarit: null, base: 'v1' },
+  design: { actif: false, gabarit: null, base: 'v2' },
   materiel: {
     plans: {}, paires: {},
     ajouts: { scenes: [], larges: [], departs: [], paires: [] },

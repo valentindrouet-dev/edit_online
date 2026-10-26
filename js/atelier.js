@@ -17,7 +17,8 @@
 // du texte et les illustrations gardent toute leur définition.
 
 import {
-  MISES, HAUTEUR, largeurMise, cleMise, POLICES, POLICES_SYSTEME, CHAMPS_TEXTE,
+  MISES, hauteurDe, formatDe, largeurMise, cleMise, POLICES, POLICES_SYSTEME, CHAMPS_TEXTE,
+  FORMAT_120, mettreAuFormat,
   VERSIONS_GABARIT, VERSION_DEFAUT, versionPubliee, normaliserGabarit,
   ICONES_JEU, nomIcone, signaturePouvoir, JETONS,
 } from './gabarits.js';
@@ -26,8 +27,10 @@ import {
   buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, DEPARTS, objsDe, planDeCle, transformeCadre,
 } from './data.js';
 import { renderCarte, renderDos, bandeauGabarit } from './cards.js';
-import { planchesCartes, archiveCartes, PLANCHE } from './export-pdf.js';
-import { visuelsApportes, ajouterVisuel, cleVisuel, urlVisuel } from './visuels.js';
+import { planchesCartes, archiveCartes, PLANCHE, grilleA4 } from './export-pdf.js';
+import {
+  visuelsApportes, ajouterVisuel, ajouterVisuelBrut, cleVisuel, urlVisuel, infoVisuel, retirerVisuel, idDeCle,
+} from './visuels.js';
 
 let C = null;   // ce que l'application prête à l'atelier — voir app.js
 
@@ -40,7 +43,7 @@ fetch('assets/images.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() 
 
 const at = {
   cle: 'PM', sel: null, ech: 0, zoom: 1, grille: true, sure: true,
-  comparer: '', filtre: 'MISE', choix: '', recadrer: true, seuleFace: false,
+  comparer: '', filtre: 'MISE', choix: '', recadrer: true, seuleFace: false, poserFond: null,
   annuler: [], refaire: [], instantane: null,
   exp: null, enCours: false,
 };
@@ -156,18 +159,19 @@ function echantillons(cle) {
 
 // --- La scène : la carte en grand, et ses poignées --------------------------------------
 
-const mmPx = () => (500 * at.zoom) / HAUTEUR;
+const mmPx = () => (500 * at.zoom) / hauteurDe(brouillon());
 
 const POIGNEES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 
 function feuille(h, g, editable) {
-  const W = largeurMise(at.cle);
+  const W = largeurMise(at.cle, g);
+  const H = hauteurDe(g);
   const k = mmPx();
   const px = (v) => r2(v * k);
   const r = rendreMoitie(h, g, { mmPx: k, set: C.store.cfg.set, cfg: C.store.cfg });
   let calques = '';
   if (editable) {
-    const grille = at.grille ? `<svg class="at-grille" width="${px(W)}" height="${px(HAUTEUR)}">
+    const grille = at.grille ? `<svg class="at-grille" width="${px(W)}" height="${px(H)}">
       <defs><pattern id="mm1" width="${k}" height="${k}" patternUnits="userSpaceOnUse">
         <path d="M ${k} 0 L 0 0 0 ${k}" fill="none" stroke="rgba(124,58,237,.13)" stroke-width="1"/></pattern>
         <pattern id="mm5" width="${k * 5}" height="${k * 5}" patternUnits="userSpaceOnUse">
@@ -184,7 +188,7 @@ function feuille(h, g, editable) {
     }).join('');
     calques = `${grille}${sure}<div class="at-cadres">${cadres}</div><div class="at-guides"></div>`;
   }
-  return `<div class="at-feuille ${editable ? 'editable' : ''}" style="width:${px(W)}px;height:${px(HAUTEUR)}px">
+  return `<div class="at-feuille ${editable ? 'editable' : ''}" style="width:${px(W)}px;height:${px(H)}px">
     ${r ? r.html : ''}${calques}</div>`;
 }
 
@@ -230,8 +234,9 @@ function dessinerGuides(lignes) {
  * s'affiche. Alt maintenue, rien ne colle : on pose au dixième de millimètre.
  */
 function reperes(axe, sauf) {
-  const W = largeurMise(at.cle);
-  const out = axe === 'x' ? [0, W / 2, W, 3, W - 3] : [0, HAUTEUR / 2, HAUTEUR, 3, HAUTEUR - 3];
+  const W = largeurMise(at.cle, brouillon());
+  const H = hauteurDe(brouillon());
+  const out = axe === 'x' ? [0, W / 2, W, 3, W - 3] : [0, H / 2, H, 3, H - 3];
   for (const e of mise().elements) {
     if (e.id === sauf || e.visible === false) continue;
     if (axe === 'x') out.push(e.x, e.x + e.w / 2, e.x + e.w);
@@ -597,6 +602,146 @@ function textesPouvoirs(e) {
   </div>`;
 }
 
+// --- Les fonds de carte ------------------------------------------------------------------------
+// Un FOND DE CARTE est l'image que l'auteur pose sous tous les calques d'une
+// mise en page. Il entre BRUT — le fichier même, octet pour octet, vérifié par
+// son empreinte — et c'est ce fichier que l'écran, l'export et le partage
+// emploient : rien ne le réduit ni ne le recompresse. Les fonds se rangent dans
+// le gabarit, nommés ; chaque mise en page choisit le sien.
+
+const NOMS_TYPES = { 'image/png': 'PNG', 'image/jpeg': 'JPEG', 'image/webp': 'WebP', 'image/avif': 'AVIF', 'image/gif': 'GIF' };
+const mo = (o) => `${(o / 1048576).toLocaleString('fr-FR', { maximumFractionDigits: o < 10485760 ? 1 : 0 })} Mo`;
+
+/** Ce qu'un fond donne sur une mise : sa définition réelle, et si sa proportion est la bonne. */
+function bilanFond(src, cle, carte) {
+  const v = infoVisuel(src);
+  if (!v || !v.largeur) return '';
+  const g = brouillon();
+  const n = Math.max(0, Number(carte.perduInclus) || 0);
+  const W = largeurMise(cle, g) + 2 * n; const H = hauteurDe(g) + 2 * n;
+  const dpi = Math.round(Math.min(v.largeur / (W / 25.4), v.hauteur / (H / 25.4)));
+  const ecart = (v.largeur / v.hauteur) / (W / H) - 1;
+  const px = (d) => `${Math.round((W / 25.4) * d)} × ${Math.round((H / 25.4) * d)} px`;
+  return `<p class="aide at-bilan-fond">${v.largeur} × ${v.hauteur} px sur ${r2(W)} × ${r2(H)} mm : <b>${dpi} dpi</b>.
+    ${Math.abs(ecart) > 0.005 ? `<span class="at-alerte">Proportion différente de la carte (${r2(v.largeur / v.hauteur)} contre ${r2(W / H)}) :
+    « remplit » rogne, « étiré » déforme.</span>` : 'Proportion exacte.'}
+    Pour 300 dpi : ${px(300)} ; pour 600 dpi : ${px(600)}.</p>`;
+}
+
+function reglagesFond(m) {
+  const g = brouillon();
+  const c = m.carte;
+  const fonds = g.fonds || [];
+  const label = MISES.find((x) => x.id === at.cle).label;
+  return `<div class="at-groupe"><h4>Fond de carte — ${label}</h4>
+    <div class="at-champ"><label>Image</label><span class="at-saisie"><select data-carte="image">
+      <option value="">— aucune —</option>
+      ${fonds.map((f) => `<option value="${echapper(f.src)}" ${f.src === c.image ? 'selected' : ''}>${echapper(f.nom)}</option>`).join('')}
+      ${c.image && !fonds.some((f) => f.src === c.image) ? `<option value="${echapper(c.image)}" selected>(retiré de la liste)</option>` : ''}
+    </select><button class="pill mini" id="at-fond-importer">⭱ Importer…</button></span></div>
+    ${c.image ? `
+    <div class="at-champ"><label>Ajustement</label><span class="at-saisie"><select data-carte="ajuste">
+      ${[['remplit', 'remplit la carte — rogne le surplus'], ['etire', 'étiré exactement à la carte'], ['entier', 'entier — sans rien rogner']]
+    .map(([v, l]) => `<option value="${v}" ${(c.ajuste || 'remplit') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></span></div>
+    <div class="at-champ"><label>Calé</label><span class="at-saisie"><select data-carte="position">
+      ${[['centre', 'au centre'], ['gauche', 'à gauche'], ['droite', 'à droite'], ['haut', 'en haut'], ['bas', 'en bas']]
+    .map(([v, l]) => `<option value="${v}" ${(c.position || 'centre') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></span></div>
+    <div class="at-champ"><label>Fond perdu dans l'image</label><span class="at-saisie"><input type="number" step="0.5" min="0" value="${c.perduInclus || 0}" data-carte="perduInclus"><i class="at-unite">mm</i></span></div>
+    ${bilanFond(c.image, at.cle, c)}` : ''}
+    <p class="aide">Sous tous les calques. Fait avec son fond perdu — 3 mm de chaque côté, par exemple —, il le
+    dit ici : l'écran le rogne, l'impression s'en sert.</p></div>`;
+}
+
+function reglagesFormat() {
+  const F = formatDe(brouillon());
+  const champ = (k, v) => `<input type="number" step="0.5" min="5" value="${v}" data-format="${k}">`;
+  return `<div class="at-groupe"><h4>Format des cartes</h4>
+    <p class="aide">${F.largeur} × ${F.hauteur} mm — Plan Moyen ${r2(F.largeur - F.gp)} mm et Gros Plan ${F.gp} mm, côte à côte.</p>
+    <div class="at-champ"><label>Largeur</label><span class="at-saisie">${champ('largeur', F.largeur)}<i class="at-unite">mm</i></span></div>
+    <div class="at-champ"><label>Hauteur</label><span class="at-saisie">${champ('hauteur', F.hauteur)}<i class="at-unite">mm</i></span></div>
+    <div class="at-champ"><label>Gros Plan</label><span class="at-saisie">${champ('gp', F.gp)}<i class="at-unite">mm de large</i></span></div>
+    <div class="rangee-mini"><button class="pill mini" data-format-type="120">120 × 80</button>
+      <button class="pill mini" data-format-type="88">88 × 63</button>
+      <button class="pill mini creer" id="at-format-appliquer">Mettre le gabarit à ce format</button></div></div>`;
+}
+
+/** Un fond est-il encore cité — par le brouillon ou un essai gardé ? */
+function fondCite(src) {
+  const dans = (g) => !!g && JSON.stringify(g).includes(`"${src}"`);
+  return dans(brouillon()) || essais().some((e) => dans(e.gabarit));
+}
+
+function dessinerFonds() {
+  const z = q('#at-fonds');
+  if (!z) return;
+  const g = brouillon();
+  const l = g.fonds || [];
+  const usages = (src) => MISES.filter((m) => g.mises[m.id] && g.mises[m.id].carte.image === src).map((m) => m.label);
+  z.innerHTML = `<div class="entete-ligne"><h3>Fonds de carte <span class="aide">— ${l.length} dans ce gabarit</span></h3>
+      <span class="rangee-mini"><button class="pill mini creer" id="at-fonds-importer">⭱ Importer des fonds…</button>
+      <input type="file" id="at-fonds-fichiers" accept="image/png,image/jpeg,image/webp,image/avif" multiple hidden>
+      <span class="aide" id="at-fonds-avance"></span></span></div>
+    <p class="aide">Importés <b>bruts</b> : le fichier même, octet pour octet — ni réduit, ni recompressé, à l'écran comme
+    à l'export —, et son empreinte est vérifiée à l'entrée. PNG ou JPEG à qualité maximale, à la taille de la carte :
+    ${(() => { const F = formatDe(g); return `${F.largeur} × ${F.hauteur} mm, soit ${Math.round((F.largeur / 25.4) * 600)} × ${Math.round((F.hauteur / 25.4) * 600)} px à 600 dpi`; })()}
+    (davantage avec un fond perdu). Chaque mise en page choisit le sien dans « La carte ».</p>
+    <div class="at-fonds">${l.length ? l.map((f, k) => {
+    const v = infoVisuel(f.src);
+    const u = usages(f.src);
+    return `<div class="at-fond ${u.includes(MISES.find((m) => m.id === at.cle).label) ? 'pose' : ''}">
+        <img src="${urlVisuel(f.src)}" alt="" loading="lazy" decoding="async">
+        <input type="text" value="${echapper(f.nom)}" data-fond-nom="${k}" title="Le nom du fond — libre">
+        <span class="aide">${v ? `${v.largeur} × ${v.hauteur} px · ${NOMS_TYPES[v.type] || v.type} · ${mo(v.taille)} · ${
+    v.brut && v.verifie ? '<b class="at-intact" title="Empreinte SHA-256 vérifiée à l’entrée">✓ intact</b>' : v.brut ? 'brut' : 'redessiné'}` : 'image absente de ce navigateur'}</span>
+        <span class="aide">${u.length ? `sur : ${u.join(', ')}` : 'posé nulle part'}</span>
+        <span class="rangee-mini"><button class="pill mini" data-fond-poser="${k}">Poser sur « ${MISES.find((m) => m.id === at.cle).label} »</button>
+        <button class="at-mini suppr" data-fond-suppr="${k}" title="Retirer">✕</button></span></div>`;
+  }).join('') : '<div class="vide">Aucun fond pour l’instant.</div>'}</div>`;
+  const fic = z.querySelector('#at-fonds-fichiers');
+  z.querySelector('#at-fonds-importer').addEventListener('click', () => { at.poserFond = null; fic.click(); });
+  fic.addEventListener('change', async () => {
+    const fichiers = [...(fic.files || [])];
+    const av = z.querySelector('#at-fonds-avance');
+    const entrees = [];
+    for (const [i, f] of fichiers.entries()) {
+      av.textContent = `⏳ ${f.name} — ${i + 1} / ${fichiers.length}`;
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const v = await ajouterVisuelBrut(f);
+        entrees.push({ nom: f.name.replace(/\.[a-z0-9]+$/i, ''), src: cleVisuel(v.id) });
+      } catch (err) { window.alert(err.message || String(err)); }
+    }
+    av.textContent = '';
+    if (!entrees.length) return;
+    const ou = at.poserFond;
+    at.poserFond = null;
+    changer((g2) => {
+      g2.fonds.push(...entrees);
+      if (ou && g2.mises[ou]) g2.mises[ou].carte.image = entrees[0].src;
+    });
+  });
+  z.querySelectorAll('[data-fond-nom]').forEach((el) => el.addEventListener('change', () => {
+    const nom = el.value.trim();
+    if (!nom) { el.value = brouillon().fonds[+el.dataset.fondNom].nom; return; }
+    changer((g2) => { g2.fonds[+el.dataset.fondNom].nom = nom; });
+  }));
+  z.querySelectorAll('[data-fond-poser]').forEach((b) => b.addEventListener('click', () => changer((g2) => {
+    g2.mises[at.cle].carte.image = g2.fonds[+b.dataset.fondPoser].src;
+  })));
+  z.querySelectorAll('[data-fond-suppr]').forEach((b) => b.addEventListener('click', async () => {
+    const f = brouillon().fonds[+b.dataset.fondSuppr];
+    const u = usages(f.src);
+    if (!window.confirm(`Retirer le fond « ${f.nom} »${u.length ? ` ? Il est posé sur : ${u.join(', ')}` : ' ?'}`)) return;
+    changer((g2) => {
+      g2.fonds = g2.fonds.filter((x) => x.src !== f.src);
+      for (const m of Object.values(g2.mises)) if (m.carte && m.carte.image === f.src) delete m.carte.image;
+    });
+    // Le fichier lui-même quitte la réserve s'il n'est plus cité nulle part :
+    // un fond pèse lourd.
+    if (!fondCite(f.src)) { try { await retirerVisuel(idDeCle(f.src)); } catch { /* déjà parti */ } }
+  }));
+}
+
 // --- La bibliothèque d'icônes ----------------------------------------------------------------------
 // Les logos et icônes de l'auteur, importés de son ordinateur et NOMMÉS : un
 // nom se cite en jeton — « [monlogo] » — dans un texte ou un pouvoir. Une icône
@@ -847,12 +992,14 @@ function dessinerPanneau() {
     : `<div class="at-groupe"><h4>La carte — ${MISES.find((x) => x.id === at.cle).label}</h4>
       <div class="at-champ"><label>Fond du carton</label><span class="at-saisie">
         <input type="color" value="${m.carte.fond || '#000000'}" data-carte="fond"></span></div>
-      <p class="aide">Le fond se voit partout où rien n'est posé — c'est le liseré noir des cartes 3.1 — et
+      <p class="aide">La couleur se voit partout où rien n'est posé — c'est le liseré noir des cartes 3.1 — et
       emplit le fond perdu à l'impression.</p></div>
+      ${reglagesFond(m)}
       <div class="at-groupe"><h4>Tout le gabarit</h4>
       <div class="at-champ"><label>Nom</label><span class="at-saisie"><input type="text" value="${echapper(g.nom)}" data-global="nom"></span></div>
       <div class="at-champ"><label>Coins (écran)</label><span class="at-saisie"><input type="number" step="0.5" min="0" value="${g.coins}" data-global="coins"><i class="at-unite">mm</i></span></div>
       </div>
+      ${reglagesFormat()}
       <div class="at-groupe"><h4>Copier cette mise en page</h4>
       <p class="aide">Reprend tous les calques de « ${MISES.find((x) => x.id === at.cle).label} » sur une autre — les positions
       sont ramenées à sa largeur.</p>
@@ -871,6 +1018,7 @@ function dessinerPanneau() {
     </div>
     <div class="at-reglages">${reglages}</div>`;
   brancherPanneau();
+  dessinerFonds();
   dessinerIcones();
 }
 
@@ -977,8 +1125,33 @@ function brancherPanneau() {
     else x[c.dataset.sans] = p.querySelector(`[data-champ="${c.dataset.sans}"]`).value;
   })));
   p.querySelectorAll('[data-carte]').forEach((el) => el.addEventListener('change', () => changer((g) => {
-    g.mises[at.cle].carte[el.dataset.carte] = el.value;
+    const k = el.dataset.carte;
+    const v = el.type === 'number' ? Math.max(0, parseFloat(el.value) || 0) : el.value;
+    if (v === '' || v === 0) delete g.mises[at.cle].carte[k]; else g.mises[at.cle].carte[k] = v;
   })));
+  const pf = p.querySelector('#at-fond-importer');
+  if (pf) pf.addEventListener('click', () => { const i = q('#at-fonds-fichiers'); if (i) { at.poserFond = at.cle; i.click(); } });
+  const fa = p.querySelector('#at-format-appliquer');
+  if (fa) {
+    const lire = () => ({ largeur: parseFloat(p.querySelector('[data-format="largeur"]').value),
+      hauteur: parseFloat(p.querySelector('[data-format="hauteur"]').value), gp: parseFloat(p.querySelector('[data-format="gp"]').value) });
+    p.querySelectorAll('[data-format-type]').forEach((b) => b.addEventListener('click', () => {
+      const f = b.dataset.formatType === '120' ? FORMAT_120 : { largeur: 88, hauteur: 63, gp: 29.5 };
+      for (const k of ['largeur', 'hauteur', 'gp']) p.querySelector(`[data-format="${k}"]`).value = f[k];
+    }));
+    fa.addEventListener('click', () => {
+      const f = lire();
+      if (!(f.largeur >= 20 && f.hauteur >= 20 && f.gp > 5 && f.gp < f.largeur - 5)) {
+        window.alert('Un format se donne en millimètres : largeur et hauteur d’au moins 20 mm, et un Gros Plan plus étroit que la carte.');
+        return;
+      }
+      const a = formatDe(brouillon());
+      if (!window.confirm(`Passer le brouillon de ${a.largeur} × ${a.hauteur} à ${f.largeur} × ${f.hauteur} mm ?\n\n`
+        + 'Chaque calque garde sa place en proportion, et le texte grandit avec sa boîte. Ctrl+Z ramène le format d’avant.')) return;
+      changer((g) => { const n = mettreAuFormat(g, f); g.mises = n.mises; g.format = n.format; });
+      dessinerExport();
+    });
+  }
   p.querySelectorAll('[data-global]').forEach((el) => el.addEventListener('change', () => changer((g) => {
     g[el.dataset.global] = el.dataset.global === 'coins' ? Math.max(0, parseFloat(el.value) || 0) : el.value;
   })));
@@ -989,12 +1162,12 @@ function brancherPanneau() {
       const label = MISES.find((x) => x.id === vers).label;
       if (!window.confirm(`Remplacer la mise en page « ${label} » par celle-ci ?\n\nAnnuler (Ctrl+Z) la rendra.`)) return;
       changer((g) => {
-        const k = largeurMise(vers) / largeurMise(at.cle);
+        const k = largeurMise(vers, g) / largeurMise(at.cle, g);
         const copie = JSON.parse(JSON.stringify(g.mises[at.cle]));
         for (const x of copie.elements) {
           // Ce qui était calé sur les bords le reste ; le reste suit la largeur.
-          const W = largeurMise(at.cle);
-          if (x.x + x.w >= W - 0.05) { x.w = r2(largeurMise(vers) - x.x - (W - x.x - x.w)); } else { x.x = r2(x.x * k); x.w = r2(x.w * k); }
+          const W = largeurMise(at.cle, g);
+          if (x.x + x.w >= W - 0.05) { x.w = r2(largeurMise(vers, g) - x.x - (W - x.x - x.w)); } else { x.x = r2(x.x * k); x.w = r2(x.w * k); }
           if (x.w < 1) x.w = 1;
         }
         g.mises[vers] = copie;
@@ -1074,7 +1247,7 @@ let compteur = 0;
 const nouvelId = (type) => `${type}-${Date.now().toString(36)}${(compteur++).toString(36)}`;
 
 function ajouter(type) {
-  const W = largeurMise(at.cle);
+  const W = largeurMise(at.cle, brouillon());
   const base = { id: nouvelId(type), type, x: r2(W / 2 - Math.min(10, W / 3)), y: 22, w: r2(Math.min(20, W * 2 / 3)), h: type === 'texte' ? 6 : 12 };
   const el = type === 'texte'
     ? { ...base, nom: 'Texte', texte: 'Texte', police: 'Montserrat', graisse: 800, taille: 4, couleur: '#ffffff', alignement: 'centre', ombre: true }
@@ -1301,15 +1474,17 @@ function brancherToutes() {
 
 // --- L'export ----------------------------------------------------------------------------------
 
-const EXPORT_DEFAUT = { quoi: 'TOUT', format: 'PLANCHES', dpi: 300, perdu: 0, traits: true };
+const EXPORT_DEFAUT = { quoi: 'TOUT', format: 'PLANCHES', dpi: 300, perdu: 0, traits: true, compression: 'sans' };
 
 function dessinerExport() {
   const z = q('#at-export');
   if (!z) return;
   const o = at.exp;
   const sel = (k, opts) => `<select data-exp="${k}">${opts.map(([v, l]) => `<option value="${v}" ${String(o[k]) === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
-  const W = 88 + 2 * o.perdu; const H = 63 + 2 * o.perdu;
+  const F = formatDe(brouillon());
+  const W = F.largeur + 2 * o.perdu; const H = F.hauteur + 2 * o.perdu;
   const px = (mm) => Math.round((mm / 25.4) * o.dpi);
+  const gr = grilleA4(F.largeur, F.hauteur, o.perdu);
   z.innerHTML = `<h3>Imprimer</h3>
     <p class="aide">Les cartes du set <b>${C.store.cfg.set}</b>, dessinées par le <b>brouillon</b> — qu'il soit
     branché sur le site ou non —, dans le jeu <b>Modifié</b> que le Matériel montre. Les cartes à qui il manque
@@ -1319,12 +1494,17 @@ function dessinerExport() {
       <label>Format ${sel('format', [['PLANCHES', 'Planches A4 recto-verso (PDF)'], ['CARTES_PDF', 'Une carte par fichier (PDF, en ZIP)'], ['CARTES_PNG', 'Une carte par fichier (PNG, en ZIP)']])}</label>
       <label>Définition ${sel('dpi', [[300, '300 dpi — impression courante'], [450, '450 dpi'], [600, '600 dpi — le maximum utile']])}</label>
       <label>Fond perdu ${sel('perdu', [[0, 'aucun'], [2, '2 mm'], [3, '3 mm — standard imprimeur']])}</label>
+      <label>Compression ${sel('compression', [['sans', 'Sans perte — aucun pixel ne bouge'], ['jpeg', 'JPEG 94 % — fichier léger']])}</label>
       <label class="at-case"><input type="checkbox" data-exp="traits" ${o.traits ? 'checked' : ''}> Traits de coupe</label>
       <label>Verso ${sel('retournement', C.retournements)}</label>
     </div>
-    <p class="aide">Chaque carte : ${r2(W)} × ${r2(H)} mm, soit ${px(W)} × ${px(H)} pixels.${
-  o.dpi > 300 && o.format === 'PLANCHES' ? ' À cette définition le PDF est lourd — compter 1 Mo par face.' : ''}
-    La netteté réelle ne dépasse pas celle des illustrations elles-mêmes.</p>
+    <p class="aide">Chaque carte : ${r2(W)} × ${r2(H)} mm, soit ${px(W)} × ${px(H)} pixels${
+  o.format === 'PLANCHES' ? ` — ${gr.colonnes * gr.rangees} par planche A4 ${gr.pageMm[0] > gr.pageMm[1] ? 'paysage' : 'portrait'}` : ''}.
+    ${o.format === 'CARTES_PNG' ? 'Le PNG est toujours sans perte.' : o.compression === 'sans'
+    ? `Sans perte, le PDF est lourd — compter ${Math.max(1, Math.round((px(W) * px(H) * 3) / 2.5 / 1048576))} Mo par face.`
+    : 'Le JPEG allège le fichier, au prix d’une légère perte.'}
+    Un fond de carte à la même définition que l'export passe pixel pour pixel ; la version vectorielle, elle,
+    emporte chaque image telle qu'elle est entrée.</p>
     <div class="rangee-mini">
       <button class="cta" id="at-exporter">⭳ Exporter</button>
       <button class="pill" id="at-vectoriel" title="Une page à imprimer par le navigateur — « Enregistrer au format PDF » : le texte et les formes restent vectoriels, les illustrations gardent toute leur définition">🖨 Version vectorielle</button>
@@ -1346,7 +1526,8 @@ async function exporter() {
   const o = at.exp;
   const b = q('#at-exporter'); const av = q('#at-avance');
   const g = brouillon();
-  const W = 88 + 2 * o.perdu; const H = 63 + 2 * o.perdu;
+  const F = formatDe(brouillon());
+  const W = F.largeur + 2 * o.perdu; const H = F.hauteur + 2 * o.perdu;
   const largeurPx = Math.round((W / 25.4) * o.dpi);
   const hautPx = Math.round((H / 25.4) * o.dpi);
   at.enCours = true; b.disabled = true;
@@ -1365,8 +1546,9 @@ async function exporter() {
     const nomBase = `edit-${C.store.cfg.set}-${(g.nom || 'gabarit').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${quand}`;
     if (o.format === 'PLANCHES') {
       const pdf = await planchesCartes(cartes.map((c) => ({ recto: c.recto, verso: c.verso })), {
-        largeurPx, hautPx, avance, cssEnPlus: css, version: C.VERSION,
-        gabarit: { ...PLANCHE, retournement: C.LS.get('planche.retournement', 'colonnes'), perduMm: o.perdu, traits: o.traits },
+        largeurPx, hautPx, avance, cssEnPlus: css, version: C.VERSION, sansPerte: o.compression !== 'jpeg',
+        gabarit: { ...PLANCHE, ...grilleA4(F.largeur, F.hauteur, o.perdu), carteMm: [F.largeur, F.hauteur],
+          retournement: C.LS.get('planche.retournement', 'colonnes'), perduMm: o.perdu, traits: o.traits },
       });
       C.telecharger(new Blob([pdf], { type: 'application/pdf' }), `${nomBase}-planches-${o.dpi}dpi.pdf`);
     } else {
@@ -1374,7 +1556,7 @@ async function exporter() {
         ...(c.verso ? [{ nom: `${c.nom}-verso`, html: c.verso }] : [])]);
       const zip = await archiveCartes(faces, {
         largeurMm: W, hautMm: H, largeurPx, hautPx, avance, cssEnPlus: css, version: C.VERSION,
-        png: o.format === 'CARTES_PNG', dpi: o.dpi,
+        png: o.format === 'CARTES_PNG', dpi: o.dpi, sansPerte: o.compression !== 'jpeg',
       });
       C.telecharger(new Blob([zip], { type: 'application/zip' }), `${nomBase}-cartes-${o.dpi}dpi.zip`);
     }
@@ -1453,6 +1635,7 @@ export function vueAtelier(ctx) {
       </div>
       <div class="panneau at-droite" id="at-panneau"></div>
     </div>
+    <div class="panneau at-biblio" id="at-fonds"></div>
     <div class="panneau at-biblio" id="at-icones"></div>
     <div class="panneau">
       <div class="entete-ligne"><h3>Toutes les cartes <span class="aide" id="at-toutes-compte"></span></h3>
@@ -1529,7 +1712,8 @@ export function vueImpression(ctx) {
   const g = normaliserGabarit(design().gabarit || gabaritDeVersion(design().base || VERSION_DEFAUT));
   declarerPolices(g);
   const p = +o.perdu || 0;
-  const W = 88 + 2 * p; const H = 63 + 2 * p;
+  const F = formatDe(g);
+  const W = F.largeur + 2 * p; const H = F.hauteur + 2 * p;
   brancherGabarit(g, { set: C.store.cfg.set, hd: true, unite: 'mm' });
   let cartes = [];
   try {
@@ -1543,22 +1727,23 @@ export function vueImpression(ctx) {
     pages = cartes.flatMap((c) => [c.recto, c.verso].filter(Boolean))
       .map((h) => `<section class="imp-page" style="width:${W}mm;height:${H}mm">${carte(h)}</section>`).join('');
   } else {
-    taillePage = '297mm 210mm';
-    const [L, Hp] = [297, 210];
-    const cols = 3; const rangs = 3;
+    const gr = grilleA4(F.largeur, F.hauteur, p);
+    const [L, Hp] = gr.pageMm;
+    taillePage = `${L}mm ${Hp}mm`;
+    const cols = gr.colonnes; const rangs = gr.rangees; const parPage = cols * rangs;
     const mx = (L - cols * W) / 2; const my = (Hp - rangs * H) / 2;
     const reperes = () => {
       if (!o.traits) return '';
       const t = [];
       const trait = (x, y, w, h) => t.push(`<i class="imp-trait" style="left:${r2(x)}mm;top:${r2(y)}mm;width:${r2(w)}mm;height:${r2(h)}mm"></i>`);
       for (let c = 0; c < cols; c++) {
-        for (const x of [mx + c * W + p, mx + c * W + p + 88]) {
+        for (const x of [mx + c * W + p, mx + c * W + p + F.largeur]) {
           if (p === 0) trait(x - 0.1, 0, 0.2, Hp);
           else if (my > 2.5) { trait(x - 0.1, Math.max(0, my - 7), 0.2, Math.min(6, my - 1)); trait(x - 0.1, Hp - my + 1, 0.2, Math.min(6, my - 1)); }
         }
       }
       for (let r = 0; r < rangs; r++) {
-        for (const y of [my + r * H + p, my + r * H + p + 63]) {
+        for (const y of [my + r * H + p, my + r * H + p + F.hauteur]) {
           if (p === 0) trait(0, y - 0.1, L, 0.2);
           else if (mx > 2.5) { trait(Math.max(0, mx - 7), y - 0.1, Math.min(6, mx - 1), 0.2); trait(L - mx + 1, y - 0.1, Math.min(6, mx - 1), 0.2); }
         }
@@ -1571,11 +1756,11 @@ export function vueImpression(ctx) {
       const r = miroir && o.retournement === 'rangees' ? rangs - 1 - r0 : r0;
       return `left:${r2(mx + c * W)}mm;top:${r2(my + r * H)}mm`;
     };
-    for (let i = 0; i < cartes.length; i += 9) {
-      const lot = cartes.slice(i, i + 9);
-      pages += `<section class="imp-page planche" style="width:297mm;height:210mm">${reperes()}${lot.map((c, k) => `<div class="imp-place" style="${place(k, false)}">${carte(c.recto)}</div>`).join('')}</section>`;
+    for (let i = 0; i < cartes.length; i += parPage) {
+      const lot = cartes.slice(i, i + parPage);
+      pages += `<section class="imp-page planche" style="width:${L}mm;height:${Hp}mm">${reperes()}${lot.map((c, k) => `<div class="imp-place" style="${place(k, false)}">${carte(c.recto)}</div>`).join('')}</section>`;
       if (lot.some((c) => c.verso)) {
-        pages += `<section class="imp-page planche" style="width:297mm;height:210mm">${reperes()}${lot.map((c, k) => (c.verso ? `<div class="imp-place" style="${place(k, true)}">${carte(c.verso)}</div>` : '')).join('')}</section>`;
+        pages += `<section class="imp-page planche" style="width:${L}mm;height:${Hp}mm">${reperes()}${lot.map((c, k) => (c.verso ? `<div class="imp-place" style="${place(k, true)}">${carte(c.verso)}</div>` : '')).join('')}</section>`;
       }
     }
   }

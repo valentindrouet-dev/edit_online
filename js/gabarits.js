@@ -7,27 +7,43 @@
 // carte en particulier : il dit où va le minutage, dans quelle police, sur
 // quel fond, et le site en tire toutes les cartes du jeu d'un coup.
 //
-// Tout se mesure en MILLIMÈTRES, sur le carton réel : 88 × 63 mm pour une
-// carte entière. Une carte Plan Moyen / Gros Plan est faite de deux moitiés —
-// 58,5 et 29,5 mm de large —, et chacune a son gabarit. Les mesures sont celles
-// des cartes du Set 3.1 : 1 mm de noir tout autour, la boîte du minutage en haut
-// à gauche, la languette des icônes, le bandeau du pouvoir, le type de plan
-// écrit dans la bande noire du bas.
+// Tout se mesure en MILLIMÈTRES, sur le carton réel. Le FORMAT est celui du
+// gabarit : 88 × 63 mm pour les cartes du Set 3.1, 120 × 80 mm pour les
+// nouvelles. Une carte Plan Moyen / Gros Plan est faite de deux moitiés — le
+// Gros Plan a sa largeur, le Plan Moyen le reste —, et chacune a son gabarit.
+// Les mesures de départ sont celles des cartes du Set 3.1 : 1 mm de noir tout
+// autour, la boîte du minutage en haut à gauche, la languette des icônes, le
+// bandeau du pouvoir, le type de plan écrit dans la bande noire du bas.
 
-/** La hauteur d'une carte, et la largeur de chaque mise en page. */
-export const HAUTEUR = 63;
+/** Les formats : la carte entière, et la largeur de sa moitié Gros Plan. */
+export const FORMAT_31 = { largeur: 88, hauteur: 63, gp: 29.5 };
+export const FORMAT_120 = { largeur: 120, hauteur: 80, gp: 40 };
+
+/** Le format d'un gabarit — ou d'un format donné tel quel. Sans format, c'est celui du Set 3.1. */
+export function formatDe(g) {
+  const f = g && (g.format || (g.largeur ? g : null));
+  return f && f.largeur > 0 && f.hauteur > 0 ? { gp: f.largeur / 3, ...f } : FORMAT_31;
+}
+
+export const hauteurDe = (g) => formatDe(g).hauteur;
 
 export const MISES = [
-  { id: 'PL', label: 'Plan Large', w: 88 },
-  { id: 'DEP', label: 'Plan de départ', w: 88 },
-  { id: 'PM', label: 'Plan Moyen', w: 58.5 },
-  { id: 'GP', label: 'Gros Plan', w: 29.5 },
-  { id: 'PM-TR', label: 'Raccord · Plan Moyen', w: 58.5 },
-  { id: 'GP-TR', label: 'Raccord · Gros Plan', w: 29.5 },
-  { id: 'DOS', label: 'Dos des Plans Larges', w: 88 },
+  { id: 'PL', label: 'Plan Large' },
+  { id: 'DEP', label: 'Plan de départ' },
+  { id: 'PM', label: 'Plan Moyen' },
+  { id: 'GP', label: 'Gros Plan' },
+  { id: 'PM-TR', label: 'Raccord · Plan Moyen' },
+  { id: 'GP-TR', label: 'Raccord · Gros Plan' },
+  { id: 'DOS', label: 'Dos des Plans Larges' },
 ];
 
-export const largeurMise = (cle) => (MISES.find((m) => m.id === cle) || MISES[0]).w;
+/** La largeur d'une mise en page, dans le format du gabarit `g`. */
+export function largeurMise(cle, g) {
+  const f = formatDe(g);
+  if (cle === 'GP' || cle === 'GP-TR') return f.gp;
+  if (cle === 'PM' || cle === 'PM-TR') return Math.round((f.largeur - f.gp) * 100) / 100;
+  return f.largeur;
+}
 
 /**
  * La mise en page d'un plan. Un Raccord — Ouverture et Générique de fin
@@ -203,6 +219,7 @@ function miseDos() {
 export function gabaritDeBase() {
   return {
     nom: 'Cartes 3.1',
+    format: { ...FORMAT_31 },
     // Le rayon des coins du carton, à l'écran seulement : l'impression les
     // laisse droits, c'est la découpe qui les arrondit.
     coins: 3,
@@ -223,11 +240,38 @@ export function gabaritDeBase() {
  * l'Atelier vit dans le navigateur qui l'a fait ; « 📋 Copier le gabarit » le
  * met en texte, et c'est ainsi qu'il entre ici, comme version suivante.
  */
+/**
+ * Un gabarit porté à un autre format : chaque calque garde sa PLACE — en
+ * proportion de la largeur de sa mise et de la hauteur de la carte —, et ce
+ * qui se mesure en épaisseur — corps du texte, contour, arrondi, bordure —
+ * suit la hauteur, pour que le texte grandisse avec la boîte qui le porte.
+ */
+export function mettreAuFormat(g, format) {
+  const out = JSON.parse(JSON.stringify(g));
+  const avant = formatDe(g);
+  const apres = formatDe(format);
+  const r = (v) => Math.round(v * 100) / 100;
+  const ky = apres.hauteur / avant.hauteur;
+  for (const m of MISES) {
+    const mise = out.mises && out.mises[m.id];
+    if (!mise) continue;
+    const kx = largeurMise(m.id, apres) / largeurMise(m.id, avant);
+    for (const e of mise.elements || []) {
+      e.x = r(e.x * kx); e.w = r(e.w * kx); e.y = r(e.y * ky); e.h = r(e.h * ky);
+      for (const k of ['taille', 'trait', 'rayon', 'bord', 'espacement']) if (typeof e[k] === 'number') e[k] = r(e[k] * ky);
+    }
+  }
+  out.format = { largeur: apres.largeur, hauteur: apres.hauteur, gp: apres.gp };
+  return out;
+}
+
 export const VERSIONS_GABARIT = [
-  { id: 'v1', nom: 'Cartes 3.1', date: '15/10/2026', gabarit: gabaritDeBase() },
+  { id: 'v2', nom: 'Cartes 120 × 80', date: '26/10/2026',
+    gabarit: { ...mettreAuFormat(gabaritDeBase(), FORMAT_120), nom: 'Cartes 120 × 80' } },
+  { id: 'v1', nom: 'Cartes 3.1 — 88 × 63', date: '15/10/2026', gabarit: gabaritDeBase() },
 ];
 
-export const VERSION_DEFAUT = 'v1';
+export const VERSION_DEFAUT = 'v2';
 
 export const versionPubliee = (id) => VERSIONS_GABARIT.find((v) => v.id === id) || null;
 
@@ -237,8 +281,11 @@ export const versionPubliee = (id) => VERSIONS_GABARIT.find((v) => v.id === id) 
  * qui est là.
  */
 export function normaliserGabarit(g) {
-  const base = gabaritDeBase();
-  const out = g && typeof g === 'object' ? JSON.parse(JSON.stringify(g)) : base;
+  const out = g && typeof g === 'object' ? JSON.parse(JSON.stringify(g)) : gabaritDeBase();
+  // Un gabarit d'avant les formats est au format du Set 3.1 ; ce qui lui
+  // manque se complète à SON format.
+  out.format = formatDe(out);
+  const base = mettreAuFormat(gabaritDeBase(), out.format);
   if (!out.mises || typeof out.mises !== 'object') out.mises = {};
   for (const m of MISES) {
     const mise = out.mises[m.id];
@@ -260,6 +307,7 @@ export function normaliserGabarit(g) {
     }
   }
   if (!Array.isArray(out.icones)) out.icones = [];
+  if (!Array.isArray(out.fonds)) out.fonds = [];
   if (!out.textes || typeof out.textes !== 'object') out.textes = {};
   if (!out.nom) out.nom = base.nom;
   return out;

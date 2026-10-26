@@ -14,8 +14,10 @@ import {
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
   SETS, SET_DEFAUT, setValide, contenuSet,
 } from './data.js';
-import { brancherGabarit } from './design.js';
-import { normaliserGabarit, versionPubliee as gabaritPublie, VERSION_DEFAUT } from './gabarits.js';
+import { brancherGabarit, gabaritEnVigueur } from './design.js';
+import {
+  normaliserGabarit, versionPubliee as gabaritPublie, VERSION_DEFAUT, formatDe, mettreAuFormat, FORMAT_120,
+} from './gabarits.js';
 import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js';
 import { elIcon, numIcon } from './icons.js';
 import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue, reglerGabarits } from './cards.js';
@@ -41,7 +43,7 @@ import {
 } from './scoring.js';
 import { releve, voler, stopperVols } from './anim.js';
 import { campagne } from './lab.js';
-import { archiveCartes, planchesCartes, PLANCHE } from './export-pdf.js';
+import { archiveCartes, planchesCartes, PLANCHE, grilleA4 } from './export-pdf.js';
 import { CONTRAINTES, CONTRAINTES_PAR_DEFAUT, fautes, bilan, melangerMoities, repartition } from './melange.js';
 import { Salon } from './net/salon.js';
 import { TransportLocal } from './net/local.js';
@@ -300,6 +302,22 @@ function surLeModifie(fn) {
   try { return fn(); } finally { if (--profondeurModifie === 0) appliquerJeuActif(); }
 }
 function sauverJoueurs() { LS.set('joueurs', store.joueurs); }
+
+// Les cartes passent au 120 × 80 mm. Un brouillon de l'Atelier d'avant les
+// formats y est porté une fois — chaque calque à sa place, en proportion — et
+// l'ancien est gardé parmi les essais : rien n'est perdu.
+(function passerAu120() {
+  const d = store.cfg.design;
+  if (!d || !d.gabarit || d.gabarit.format || LS.get('atelier.format120', false)) return;
+  const n = new Date(); const p = (v) => String(v).padStart(2, '0');
+  LS.set('atelier.essais', [{ id: `e${Date.now().toString(36)}`, nom: `${d.gabarit.nom || 'Brouillon'} — 88 × 63, avant le 120 × 80`,
+    date: `${p(n.getDate())}/${p(n.getMonth() + 1)} ${p(n.getHours())}:${p(n.getMinutes())}`,
+    gabarit: JSON.parse(JSON.stringify(d.gabarit)) }, ...LS.get('atelier.essais', [])]);
+  d.gabarit = mettreAuFormat(normaliserGabarit(d.gabarit), FORMAT_120);
+  d.base = 'v2';
+  LS.set('atelier.format120', true);
+  LS.set('cfg', store.cfg);
+}());
 
 // Le dessin des cartes se règle avant le premier écran.
 appliquerDesign();
@@ -5856,6 +5874,7 @@ async function imagesPourPartage() {
     /* eslint-enable no-await-in-loop */
     if (data) {
       out.push({ id: v.id, nom: v.nom, largeur: v.largeur, hauteur: v.hauteur, data,
+        ...(v.brut ? { brut: true, empreinte: v.empreinte } : {}),
         ...(dataHD ? { dataHD, largeurOrig: v.largeurOrig, hauteurOrig: v.hauteurOrig } : {}) });
     }
   }
@@ -5949,7 +5968,8 @@ async function appliquerPartage(partage, demander) {
       /* eslint-disable no-await-in-loop */
       const blob = await (await fetch(im.data)).blob();
       const original = im.dataHD ? await (await fetch(im.dataHD)).blob() : null;
-      await importerVisuel(im.id, blob, im.nom, im.largeur, im.hauteur, original, im.largeurOrig, im.hauteurOrig);
+      await importerVisuel(im.id, blob, im.nom, im.largeur, im.hauteur, original, im.largeurOrig, im.hauteurOrig,
+        im.brut ? { brut: true, empreinte: im.empreinte } : null);
       /* eslint-enable no-await-in-loop */
     } catch { /* une image illisible ne fait pas tomber le partage */ }
   }
@@ -6471,9 +6491,16 @@ const RETOURNEMENTS = [
   ['aucun', 'aucune inversion'],
 ];
 
+/** Le format des cartes dessinées par le gabarit de l'Atelier, s'il est branché ; sinon `null`. */
+function formatDessine() {
+  const g = gabaritEnVigueur();
+  return g ? formatDe(g) : null;
+}
+
 function gabaritPlanche() {
   const sens = LS.get('planche.retournement', 'colonnes');
-  return { ...PLANCHE, retournement: sens };
+  const F = formatDessine();
+  return { ...PLANCHE, ...(F ? { ...grilleA4(F.largeur, F.hauteur), carteMm: [F.largeur, F.hauteur] } : {}), retournement: sens };
 }
 
 async function exporterPlanchesPDF(bouton) {
@@ -6482,9 +6509,11 @@ async function exporterPlanchesPDF(bouton) {
   const libelle = bouton.textContent;
   bouton.disabled = true;
   try {
+    const F = formatDessine();
     const pdf = await planchesCartes(couples, {
       version: VERSION,
       gabarit: gabaritPlanche(),
+      ...(F ? { largeurPx: 1040, hautPx: Math.round((1040 * F.hauteur) / F.largeur) } : {}),
       avance: (fait, total) => { bouton.textContent = `⏳ ${fait} / ${total}`; },
     });
     const d = new Date();
@@ -6504,8 +6533,10 @@ async function exporterCartesPDF(bouton) {
   const libelle = bouton.textContent;
   bouton.disabled = true;
   try {
+    const F = formatDessine();
     const zip = await archiveCartes(faces, {
       version: VERSION,
+      ...(F ? { largeurMm: F.largeur, hautMm: F.hauteur, largeurPx: 1040, hautPx: Math.round((1040 * F.hauteur) / F.largeur) } : {}),
       avance: (fait, total) => { bouton.textContent = `⏳ ${fait} / ${total}`; },
     });
     const d = new Date();

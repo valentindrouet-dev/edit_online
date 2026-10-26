@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.54';
-export const BUILD_DATE = '2026-10-15 21:41';
+export const VERSION = '2.55';
+export const BUILD_DATE = '2026-10-26 16:15';
 
 export const CHANGELOG = [
+  {
+    v: '2.55',
+    date: '26/10/2026',
+    items: [
+      "<b>Fonds de carte dans l'Atelier.</b> Importés <b>bruts</b> — le fichier même, octet pour octet, empreinte SHA-256 vérifiée —, nommés et renommables ; chaque mise en page choisit le sien (ajustement, calage, fond perdu compris dans l'image), avec sa définition réelle en dpi.",
+      "<b>Les cartes passent au 120 × 80 mm.</b> Le format appartient au gabarit (v2 « Cartes 120 × 80 » par défaut, v1 garde le 88 × 63) ; le brouillon existant y est porté en proportion, l'ancien gardé parmi les essais. Planches A4 à 4 cartes.",
+      "<b>Export sans perte</b> : les PDF de l'Atelier passent en Flate au lieu du JPEG (JPEG 94 % reste au choix) ; la version vectorielle emporte chaque fond à sa pleine définition.",
+    ],
+  },
   {
     v: '2.54',
     date: '15/10/2026',

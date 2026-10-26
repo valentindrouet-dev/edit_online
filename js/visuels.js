@@ -27,6 +27,12 @@
 // légère, l'IMPRESSION de l'original — sans réduction ni recompression. C'est
 // lui que l'Atelier envoie à l'export, et lui que le fichier de partage emporte.
 //
+// **Un FOND DE CARTE, lui, n'est jamais redessiné.** Il entre BRUT : le fichier
+// de l'auteur, octet pour octet — ni canevas, ni réduction, ni réencodage —, et
+// c'est ce même fichier que l'écran montre, que l'export reçoit, que le partage
+// emporte. Son empreinte SHA-256 est prise à l'entrée et vérifiée sur ce que la
+// réserve a rendu : on sait qu'il est intact, on ne le suppose pas.
+//
 // **Elle se désigne par une CLÉ, pas par un chemin.** Un plan retouché retient
 // `perso:xxxx` et non une URL : les URL d'objet changent à chaque ouverture de
 // page, et une retouche enregistrée pointerait dans le vide dès le lendemain.
@@ -45,6 +51,9 @@ export const COTE_MAX = 900;
 export const TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif'];
 // Un garde-fou à l'entrée : au-delà, c'est une photo brute ou une méprise.
 export const POIDS_MAX = 25 * 1024 * 1024;
+// Un fond de carte au format d'impression, à 600 dpi et en 16 bits, pèse vite
+// des dizaines de mégaoctets : on le laisse entrer tel quel.
+export const POIDS_MAX_BRUT = 200 * 1024 * 1024;
 
 // Les URL d'objet vivent le temps de la page : on les fabrique une fois, au
 // chargement, et tout le dessin y puise. `INFOS` garde de quoi les nommer dans
@@ -148,7 +157,8 @@ function inscrire(v) {
   URLS.set(v.id, URL.createObjectURL(v.blob));
   if (v.original) URLS_HD.set(v.id, URL.createObjectURL(v.original));
   INFOS.set(v.id, { id: v.id, nom: v.nom, taille: v.blob.size, ajoutee: v.ajoutee || 0,
-    largeur: v.largeur || 0, hauteur: v.hauteur || 0,
+    largeur: v.largeur || 0, hauteur: v.hauteur || 0, type: v.blob.type || '',
+    brut: !!v.brut, empreinte: v.empreinte || '', verifie: !!v.verifie,
     original: !!v.original, tailleOrig: v.original ? v.original.size : 0,
     largeurOrig: v.largeurOrig || v.largeur || 0, hauteurOrig: v.hauteurOrig || v.hauteur || 0 });
 }
@@ -230,15 +240,71 @@ export async function ajouterVisuel(fichier) {
  * L'image arrive déjà redessinée — elle l'a été chez celui qui partage —, on ne
  * la repasse donc pas au canevas : ce serait une seconde compression pour rien.
  */
-export async function importerVisuel(id, blob, nom, largeur, hauteur, original, largeurOrig, hauteurOrig) {
+export async function importerVisuel(id, blob, nom, largeur, hauteur, original, largeurOrig, hauteurOrig, brut = null) {
   if (!id || !blob) throw new Error('visuel incomplet');
+  // Un fond brut qui arrive par un partage garde son empreinte : on la
+  // recalcule sur ce qui est arrivé, et l'on sait si le voyage l'a abîmé.
+  const surBrut = brut && brut.brut
+    ? { brut: true, empreinte: await empreinte(blob), verifie: !!brut.empreinte && (await empreinte(blob)) === brut.empreinte }
+    : {};
   const v = { id: String(id), nom: nom || 'image', blob,
-    largeur: largeur || 0, hauteur: hauteur || 0, ajoutee: Date.now(),
+    largeur: largeur || 0, hauteur: hauteur || 0, ajoutee: Date.now(), ...surBrut,
     ...(original ? { original, largeurOrig: largeurOrig || 0, hauteurOrig: hauteurOrig || 0 } : {}) };
   await transaction(true, (m) => m.put(v));
   inscrire(v);
   return INFOS.get(v.id);
 }
+
+/** L'empreinte SHA-256 d'un fichier, en hexadécimal — vide si le navigateur ne sait pas la prendre. */
+export async function empreinte(blob) {
+  try {
+    const h = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
+    return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  } catch { return ''; }
+}
+
+/**
+ * Fait entrer un fichier BRUT — un fond de carte. Rien n'y touche : le blob
+ * rangé est le fichier lui-même, avec son type. On le décode une fois, pour
+ * savoir que le navigateur sait le lire et pour connaître ses dimensions, mais
+ * ce décodage ne sert qu'à mesurer : ce n'est pas lui qu'on garde.
+ *
+ * Puis on relit la réserve, et l'empreinte de ce qu'elle rend doit être celle
+ * du fichier choisi, octet pour octet.
+ */
+export async function ajouterVisuelBrut(fichier) {
+  if (!fichier) throw new Error('aucun fichier');
+  if (fichier.size > POIDS_MAX_BRUT) {
+    throw new Error(`« ${fichier.name} » pèse ${Math.round(fichier.size / 1048576)} Mo — le maximum est ${POIDS_MAX_BRUT / 1048576} Mo`);
+  }
+  if (!fichier.type || !TYPES.includes(fichier.type)) {
+    throw new Error(`« ${fichier.name} » n’est pas une image que le navigateur sache afficher (${fichier.type || 'type inconnu'}) — PNG, JPEG, WebP ou AVIF`);
+  }
+  const blob = new Blob([fichier], { type: fichier.type });
+  let largeur = 0; let hauteur = 0;
+  try {
+    const b = await creerBitmap(blob);
+    largeur = b.width || b.naturalWidth || 0; hauteur = b.height || b.naturalHeight || 0;
+    if (b.close) b.close();
+  } catch { throw new Error(`« ${fichier.name} » ne se laisse pas lire comme une image`); }
+  const e = await empreinte(blob);
+  const v = { id: nouvelId(), nom: fichier.name || 'fond', blob, largeur, hauteur, ajoutee: Date.now(),
+    brut: true, empreinte: e };
+  await transaction(true, (m) => m.put(v));
+  // La preuve : ce que la réserve rend est le fichier même.
+  const relu = await transaction(false, (m) => m.get(v.id));
+  v.verifie = !!relu && relu.blob && relu.blob.size === fichier.size && (!e || (await empreinte(relu.blob)) === e);
+  if (!v.verifie) {
+    await transaction(true, (m) => m.delete(v.id));
+    throw new Error(`« ${fichier.name} » n’a pas été rangé intact par le navigateur — rien n’a été gardé`);
+  }
+  await transaction(true, (m) => m.put(v));
+  inscrire(v);
+  return INFOS.get(v.id);
+}
+
+/** La fiche d'un visuel apporté, par sa clé `perso:…` ou son identifiant. */
+export const infoVisuel = (src) => INFOS.get(estVisuelApporte(src) ? idDeCle(src) : src) || null;
 
 /** Retire un visuel de la réserve. Les plans qui le portaient perdent leur image. */
 export async function retirerVisuel(id) {

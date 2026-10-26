@@ -33,9 +33,15 @@ interface, commentaires, commits.
 
 ## L'Atelier — le dessin des cartes
 
-- Un **gabarit** (`js/gabarits.js`) dit où se posent les éléments d'une carte, en **millimètres** sur le
-  carton de 88 × 63 mm ; `js/design.js` le dessine (1 em = 1 mm), `js/atelier.js` est l'écran d'édition
-  et la page d'impression (`#/impression`).
+- Un **gabarit** (`js/gabarits.js`) dit où se posent les éléments d'une carte, en **millimètres** ; il porte
+  son **format** (`g.format` : `largeur`, `hauteur`, `gp` = largeur du Gros Plan) — 120 × 80 mm (v2, par
+  défaut), 88 × 63 pour l'ancien Set 3.1 (v1). Toujours `largeurMise(cle, g)` / `hauteurDe(g)`, jamais
+  88 ou 63 en dur. `js/design.js` le dessine (1 em = 1 mm), `js/atelier.js` est l'écran d'édition et la page
+  d'impression (`#/impression`).
+- **Fonds de carte** : `g.fonds` (`{nom, src}`), posés par mise dans `mise.carte.image` (+ `ajuste`,
+  `position`, `perduInclus`). Ils entrent BRUTS par `ajouterVisuelBrut` (`js/visuels.js`) : le fichier même,
+  empreinte SHA-256 vérifiée — ne jamais les faire passer par `ajouterVisuel`, qui redessine. L'export PDF
+  de l'Atelier est sans perte (Flate) par défaut.
 - Un essai de l'auteur arrive en JSON (« 📋 Copier le gabarit ») : l'ajouter **en tête** de
   `VERSIONS_GABARIT` avec l'identifiant suivant (`v2`, `v3`…), puis publier.
 - Pouvoirs et icônes : le texte d'un pouvoir se range dans `g.textes[signaturePouvoir(o)]`, en mots et en
