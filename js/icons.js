@@ -6,7 +6,7 @@
 // L'application affiche donc exactement les icônes imprimées, partout — sur
 // les cartes comme dans les colonnes de score.
 
-import { ELEMENTS } from './data.js';
+import { ELEMENTS, dossierIcones } from './data.js';
 
 const SPECIAUX = {
   MORT:  { label: 'Mort' },
@@ -26,7 +26,7 @@ export function libelleIcone(id) {
 export function elIcon(id, size) {
   if (!ELEMENTS[id] && !SPECIAUX[id]) return '';
   const style = size ? ` style="width:${size}px;height:${size}px"` : '';
-  return `<img class="pastille" src="assets/icones/${id}.webp" alt="${libelleIcone(id)}" title="${libelleIcone(id)}"${style}>`;
+  return `<img class="pastille" src="${dossierIcones()}/${id}.webp" alt="${libelleIcone(id)}" title="${libelleIcone(id)}"${style}>`;
 }
 
 /** La pastille numérotée du bandeau — le « 2 » de « 2 × Raccord ». */

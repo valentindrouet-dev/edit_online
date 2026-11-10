@@ -12,7 +12,7 @@ import {
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-  SETS, SET_DEFAUT, setValide, contenuSet,
+  SETS, SET_DEFAUT, setValide, contenuSet, setActif, formatSet,
 } from './data.js';
 import { brancherGabarit, gabaritEnVigueur } from './design.js';
 import {
@@ -226,6 +226,9 @@ function appliquerJeuActif() {
   const src = enl || (store.partie && !store.partie.finie ? store.partie.cfg : store.cfg);
   const modifie = src.materielActif === 'MODIFIE';
   appliquerMateriel(modifie ? src.materiel : null, src.cartesDesactivees, src.materiel, src.set);
+  // La feuille de style suit le set : les vraies cartes de la 4.1 sont en
+  // 120 × 80, et se montrent à cette proportion — pas étirées dans l'ancienne.
+  if (typeof document !== 'undefined' && document.body) document.body.dataset.set = setActif();
 }
 
 /**
@@ -350,11 +353,7 @@ function topbar(actif) {
   const info = infoPartage();
   return `<div class="topbar">
     <div class="marque" data-go="#/">
-      <div class="logo-mark">
-        <i style="background:#7c3aed"></i><i style="background:#f97316"></i>
-        <i style="background:#f59e0b"></i><i style="background:#c026d3"></i>
-      </div>
-      <div class="wordmark">EDIT</div>
+      <img class="logo-edit" src="assets/marque/edit.webp" alt="EDIT" width="888" height="378">
       <div class="version-pill">v${VERSION}</div>
     </div>
     ${partage ? `<button class="jeton-partage" id="sortir-partage"
@@ -395,7 +394,6 @@ function html(s, garderDefilement = false) {
 
 function vueAccueil() {
   const n = store.joueurs.length;
-  const titre = 'EDIT'.split('').map((c) => `<span>${c}</span>`).join('');
   // Sur une version partagée, tout ce qui DÉFINIT le jeu est déjà réglé par
   // celui qui l'a envoyée : le mode, les variantes, le matériel en jeu. On ne
   // les montre pas — les changer ferait tester autre chose que ce qu'il a
@@ -405,7 +403,7 @@ function vueAccueil() {
 
   html(`${topbar('#/')}
   <div class="hero">
-    <h1>${titre}</h1>
+    <h1><img class="logo-edit" src="assets/marque/edit.webp" alt="EDIT" width="888" height="378"></h1>
     <div class="credits">
       Un jeu de <b>Valentin Drouet</b>, illustré par <b>Anders Lazaret</b><br>
       Édité par <b>Big Budi Games</b>
@@ -4102,8 +4100,9 @@ function blocPouvoir(o, ou, rang = 1) {
       <span class="plus">icône${o.seuil > 1 ? 's' : ''}</span>`;
   } else if (kind === 'PIOCHER') {
     complement = `<select data-champ-obj="${ou}"${R} data-part="cible">
-        ${opt('PMGP', 'sur la pioche PM / GP', o.cible !== 'PL')}
+        ${opt('PMGP', 'sur la pioche PM / GP', o.cible !== 'PL' && o.cible !== 'CHUTIER')}
         ${opt('PL', 'sur la pioche Plans Larges', o.cible === 'PL')}
+        ${opt('CHUTIER', 'vos Plans sur le Chutier', o.cible === 'CHUTIER')}
       </select>`;
   } else if (kind === 'SEQ_PLUS' || kind === 'PLAN_PLUS') {
     // `n` n'est pas un nombre de points mais un nombre de lignes, ou de plans :
@@ -5729,7 +5728,7 @@ function construireObj(kind, actuel) {
     // Les pouvoirs de règle. `n` y change de sens — des lignes, des plans, ou
     // des points par Raccord —, on repart donc de leur valeur naturelle plutôt
     // que de reprendre le compte de points du bandeau précédent.
-    PIOCHER:      () => OBJ.piocher(actuel && actuel.cible === 'PL' ? 'PL' : 'PMGP'),
+    PIOCHER:      () => OBJ.piocher(actuel ? actuel.cible : 'PMGP'),
     SEQ_PLUS:     () => OBJ.sequencePlus(actuel && actuel.kind === 'PLAN_PLUS' ? actuel.n : 1),
     PLAN_PLUS:    () => OBJ.planPlus(actuel && actuel.kind === 'SEQ_PLUS' ? actuel.n : 1),
     RACCORD_VAUT: () => OBJ.raccordVaut(actuel && actuel.kind === 'RACCORD_VAUT' ? actuel.n : 1),
@@ -6242,7 +6241,7 @@ function objDepuisCSV(r, suf = '') {
       ? OBJ.domine(n, cible, sens0 === 'MOINS' ? 'MOINS' : 'PLUS', portee) : null;
     // Les pouvoirs de règle. `points` y porte un nombre de lignes, de plans ou
     // de points par Raccord — pas un compte de points de bandeau.
-    case 'PIOCHER':      return OBJ.piocher(cible === 'PL' ? 'PL' : 'PMGP');
+    case 'PIOCHER':      return OBJ.piocher(cible);
     case 'SEQ_PLUS':     return OBJ.sequencePlus(n);
     case 'PLAN_PLUS':    return OBJ.planPlus(n);
     case 'RACCORD_VAUT': return OBJ.raccordVaut(n);
@@ -6502,7 +6501,7 @@ const RETOURNEMENTS = [
 /** Le format des cartes dessinées par le gabarit de l'Atelier, s'il est branché ; sinon `null`. */
 function formatDessine() {
   const g = gabaritEnVigueur();
-  return g ? formatDe(g) : null;
+  return g ? formatDe(g) : formatSet();
 }
 
 function gabaritPlanche() {

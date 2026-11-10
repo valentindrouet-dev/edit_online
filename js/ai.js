@@ -351,6 +351,8 @@ export function valeurDepartDesDroits(plan, state) {
     if (!o) continue;
     if (o.kind === 'PLAN_PLUS') v += o.n * PRIX_TOUR;
     else if (o.kind === 'PIOCHER') {
+      // Le Chutier n'a pas encore sa règle dans le moteur : ce droit ne vaut rien ici.
+      if (o.cible === 'CHUTIER') continue;
       const deja = o.cible === 'PL' ? cfg.piocheDirectePL : cfg.piocheDirectePMGP;
       if (!deja) v += PRIX_PIOCHE;
     } else if (o.kind === 'SEQ_PLUS') {

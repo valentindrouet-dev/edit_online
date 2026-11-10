@@ -28,6 +28,15 @@ interface, commentaires, commits.
 - En 4.1, le jeu montre les **vraies cartes importées** (`faces[cle].visuel`), jamais un dessin refait.
   L'Atelier est **fermé** : constante `ATELIER_OUVERT = false` dans `app.js` (onglet, écrans, dessin par
   gabarit). Le code reste en place, dormant — ne pas le rouvrir sans demande.
+- **Set 4.1** (`TABLES['4.1']` dans `js/data.js`) : l'auteur livre ses cartes en PNG 300 dpi (120 × 80 mm) ;
+  `python3 outils/cartes.py <dossier> assets/s41 [--illus]` en fait les copies d'écran, et chaque carte
+  reçoit son `visuel`. Les données du moteur (minutage en minutes, icônes — la dominante en premier —,
+  pouvoir) se LISENT sur l'image. Icônes du set : `assets/icones/41` (`SETS[].icones`) ; proportion :
+  `SETS[].format` + règles CSS `body[data-set="4.1"]`. Plans Larges = L1 à L19, dont les Plans de départ
+  L5, L7, L12, L16 (`departSeul` : une carte, une face, une par joueuse).
+  En attente de l'auteur : cartes PM / GP, règles 4.1 (le « Chutier » du L16 est sans effet dans le moteur),
+  statut de l'Entracte (L10), largeurs des moitiés PM / GP.
+- Titre du site : le logo `assets/marque/edit.webp` (barre du haut et accueil).
 - Statistiques d'abord, tout réglable (Variables), design pastel violet / orange.
 - Les imports entre modules s'écrivent **sans** `?v=` : la table d'imports d'`index.html` les versionne.
   Un nouveau module dans `js/` y entre tout seul.

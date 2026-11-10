@@ -91,9 +91,11 @@ export function phraseRegle(obj, compact) {
   // Raccord » se lirait comme une valeur et non comme un bonus.
   const signeRegle = (n) => (n < 0 ? `−${Math.abs(n)}` : `+${n}`);
   switch (obj.kind) {
-    case 'PIOCHER': return compact
-      ? `Pioche ${obj.cible === 'PL' ? 'PL' : 'PM/GP'}`
-      : `Vous pouvez piocher la Carte du dessus de la pioche ${obj.cible === 'PL' ? 'Plans Larges' : 'PM / GP'}`;
+    case 'PIOCHER':
+      if (obj.cible === 'CHUTIER') return compact ? 'Pioche Chutier' : 'Vous pouvez piocher vos Plans sur le Chutier';
+      return compact
+        ? `Pioche ${obj.cible === 'PL' ? 'PL' : 'PM/GP'}`
+        : `Vous pouvez piocher la Carte du dessus de la pioche ${obj.cible === 'PL' ? 'Plans Larges' : 'PM / GP'}`;
     case 'SEQ_PLUS': return compact ? `+${obj.n} séquence`
       : `Vous pouvez poser ${obj.n} séquence${s(obj.n)} supplémentaire${s(obj.n)}`;
     case 'PLAN_PLUS': return compact ? `+${obj.n} Carte`
@@ -128,7 +130,7 @@ function phraseRegleHTML(obj, compact) {
   const rac = `<span class="tag tag-gris">Raccord</span>`;
   switch (obj.kind) {
     case 'PIOCHER': {
-      if (compact) return phraseRegle(obj, compact);
+      if (compact || obj.cible === 'CHUTIER') return phraseRegle(obj, compact);
       const quoi = obj.cible === 'PL' ? tagCadrage('PL', false)
         : `${tagCadrage('PM', true)}<span class="mot-regle">/</span>${tagCadrage('GP', true)}`;
       return `Vous pouvez piocher la Carte du dessus de la pioche ${lie(quoi)}`;
@@ -347,6 +349,8 @@ function cibleHTML(cible, taille, compact) {
     case 'SEQUENCE': return tagSeq(compact);
     case 'ICONE':    return `<span class="tag tag-blanc">${compact ? 'Ic.' : 'Icône'}</span>`;
     case 'VALEUR':   return `<span class="tag tag-blanc">${compact ? 'Val.' : 'Valeur de Plan'}</span>`;
+    case 'TC_VIDE':  return '<span class="tag tag-chrono">--</span>';
+    case 'ORDRE':    return '<span class="tag tag-chrono">↗ ordre</span>';
     default:         return FORMATS[cible] ? tagCadrage(cible, compact) : elIcon(cible, taille);
   }
 }

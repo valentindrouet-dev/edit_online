@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.01';
-export const BUILD_DATE = '2026-11-10 23:14';
+export const VERSION = '4.1.02';
+export const BUILD_DATE = '2026-11-10 23:38';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.02',
+    date: '10/11/2026',
+    items: [
+      "<b>Le nouveau titre d'EDIT</b> remplace l'ancien, dans la barre du haut et sur l'accueil.",
+      "<b>Set 4.1 : les 19 Plans Larges.</b> Les vraies cartes, montrées telles quelles à leur proportion 120 × 80 — 15 Plans Larges et les 4 Plans de départ (L5, L7, L12, L16) —, avec leurs icônes, découpées sur les cartes. Le set se choisit sur l'accueil et dans le Matériel ; il sera jouable à l'arrivée des Plans Moyens et Gros Plans.",
+      "Minutage, icônes et pouvoir de chaque carte sont relevés pour le décompte ; deux libellés nouveaux sont comptés (<i>séquence sans « -- »</i>, <i>séquence dans l'ordre</i>), le <i>Chutier</i> attend sa règle.",
+    ],
+  },
   {
     v: '4.1.01',
     date: '10/11/2026',

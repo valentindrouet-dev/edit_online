@@ -59,9 +59,10 @@ button { font-family: inherit; }
   box-shadow: 0 2px 8px rgba(90,50,150,.25);
 }
 .logo-mark i { display: block; }
-.wordmark {
-  font-weight: 800; font-size: 1.32rem; letter-spacing: .30em; color: var(--encre);
-}
+/* Le titre du jeu : son logo, tel que l'éditeur le fournit. */
+.marque .logo-edit { height: 40px; width: auto; display: block; }
+.hero h1 .logo-edit { width: min(420px, 78vw); height: auto; display: block; margin: 0 auto; }
+.hero h1 { letter-spacing: 0; text-indent: 0; }
 .version-pill {
   background: var(--violet-pale); color: var(--violet);
   font-weight: 700; font-size: .74rem; padding: 3px 9px; border-radius: 999px;
@@ -102,10 +103,6 @@ button { font-family: inherit; }
   font-size: clamp(2.6rem, 7vw, 4.4rem); font-weight: 800; margin: 0;
   letter-spacing: .22em; text-indent: .22em;
 }
-.hero h1 span:nth-child(4n+1) { color: var(--violet); }
-.hero h1 span:nth-child(4n+2) { color: var(--orange); }
-.hero h1 span:nth-child(4n+3) { color: #c026d3; }
-.hero h1 span:nth-child(4n+4) { color: #f59e0b; }
 .hero .credits { color: var(--encre-doux); margin-top: 16px; line-height: 1.6; font-size: .98rem; }
 .hero .credits b { color: var(--encre); }
 
@@ -2912,3 +2909,13 @@ body.mode-impression { background: #d9d6e2; }
 .at-intact { color: #15803d; }
 .at-alerte { color: #c2410c; font-weight: 600; }
 .at-bilan-fond { background: var(--violet-pale); padding: 6px 8px; border-radius: 8px; }
+
+/* --- Le Set 4.1 : les vraies cartes, en 120 × 80 ------------------------------- */
+body[data-set="4.1"] .carte:not(.design):not(.solo) { aspect-ratio: 3 / 2; }
+body[data-set="4.1"] .tuile-illus { aspect-ratio: 3 / 2; }
+/* Un Plan Large seul, dans une galerie ou sur le banc : même hauteur que les
+   autres cartes, et une largeur d'une fois et demie. Les moitiés PM / GP
+   recevront les leurs avec leurs cartes. */
+body[data-set="4.1"] .carte.solo .moitie.f-PL, body[data-set="4.1"] .carte.solo .moitie.f-DEP { width: 21.5em; }
+body[data-set="4.1"] .banc .moitie.f-PL, body[data-set="4.1"] .banc .moitie.f-DEP,
+body[data-set="4.1"] .apercu-pose .moitie.f-PL, body[data-set="4.1"] .apercu-pose .moitie.f-DEP { width: 273px; }

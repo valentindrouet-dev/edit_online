@@ -9,7 +9,7 @@
 // Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
 // Seul le Générique compte sur le montage entier.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE, TC_PREMIER, TC_DERNIER } from './data.js';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE, TC_PREMIER, TC_DERNIER, TC_VIDE } from './data.js';
 
 export function bancVide() {
   return { sequences: [], ouverture: false, fermeture: false };
@@ -92,6 +92,14 @@ export function compteCible(plans, cible, banc) {
     // Un Raccord n'est pas un plan : il n'a pas de Valeur de Plan.
     case 'VALEUR':   return new Set(plans.filter((p) => !estRaccord(p)).map((p) => p.format)).size;
     case 'SEQUENCE': return banc ? banc.sequences.length : 0;
+    // Les plans sans minutage — l'afficheur « -- » des cartes.
+    case 'TC_VIDE':  return plans.filter((p) => p.tc === TC_VIDE).length;
+    // « Dans l'ordre » : 1 si les minutages de la suite ne reculent jamais. Un
+    // plan sans minutage n'a pas d'heure — il ne peut pas être à contretemps.
+    case 'ORDRE': {
+      const tcs = plans.filter((p) => p.tc !== TC_VIDE).map((p) => p.tc);
+      return tcs.every((t, i) => i === 0 || t >= tcs[i - 1]) ? 1 : 0;
+    }
     default:
       if (CADRAGES_POUVOIR.includes(cible)) return plans.filter((p) => aCeCadrage(p, cible)).length;
       // Un GROUPE — « HEROINE+ENNEMI+ALLIE » — se compte en groupes COMPLETS :

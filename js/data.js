@@ -329,7 +329,8 @@ export const OBJ = {
   //
   // Le droit de piocher au sommet d'une pile plutôt que dans la rivière : on
   // prend une carte que personne n'a vue, mais on la prend seul.
-  piocher: (cible) => ({ kind: 'PIOCHER', n: 0, cible: cible === 'PL' ? 'PL' : 'PMGP' }),
+  // `CHUTIER` : « Vous pouvez piocher vos Plans sur le Chutier » — carte 4.1.
+  piocher: (cible) => ({ kind: 'PIOCHER', n: 0, cible: ['PL', 'CHUTIER'].includes(cible) ? cible : 'PMGP' }),
   // Une ligne de plus que les cinq de la règle, ou un plan de plus que les dix.
   // `n` n'est pas un nombre de points mais un nombre de lignes, ou de plans.
   sequencePlus: (n) => ({ kind: 'SEQ_PLUS', n: Math.max(1, Math.min(9, Math.floor(n || 1))) }),
@@ -471,6 +472,10 @@ export const CIBLES_COMPTE = [
   { id: 'VALEUR',   label: 'Valeur de Plan (cadrage différent)',
     court: 'Valeur de Plan', pl: 'Valeurs de Plan', f: true },
   { id: 'SEQUENCE', label: 'Séquence du banc',          court: 'séquence', pl: 'séquences', f: true },
+  // Les deux cibles des cartes 4.1 : le plan SANS MINUTAGE — l'afficheur bleu
+  // « -- » —, et l'ORDRE — une séquence dont les minutages se suivent.
+  { id: 'TC_VIDE',  label: 'Plan sans minutage (« -- »)', court: 'plan sans minutage', pl: 'plans sans minutage' },
+  { id: 'ORDRE',    label: 'Minutages dans l’ordre',      court: 'minutages dans l’ordre', pl: 'minutages dans l’ordre' },
 ];
 
 export const CIBLE_IDS = CIBLES_COMPTE.map((c) => c.id);
@@ -687,8 +692,8 @@ export function objLabel(o, cfg, opts = {}) {
   const si = nu ? 'si' : `${o.n} si`;
   switch (o.kind) {
     // --- Les pouvoirs de règle : une phrase, pas un compte ------------------
-    case 'PIOCHER': return `Vous pouvez piocher la Carte du dessus de la pioche ${
-      o.cible === 'PL' ? 'Plans Larges' : 'PM / GP'}`;
+    case 'PIOCHER': return o.cible === 'CHUTIER' ? 'Vous pouvez piocher vos Plans sur le Chutier'
+      : `Vous pouvez piocher la Carte du dessus de la pioche ${o.cible === 'PL' ? 'Plans Larges' : 'PM / GP'}`;
     case 'SEQ_PLUS': return `Vous pouvez poser ${o.n} séquence${
       o.n > 1 ? 's' : ''} supplémentaire${o.n > 1 ? 's' : ''}${
       cfg && cfg.sequencesMax > 0 ? ` (${cfg.sequencesMax + o.n})` : ''}`;
@@ -1034,6 +1039,15 @@ export function buildDeparts(six) {
   // l'objet de la variante : chaque joueuse en pioche une, et deux joueuses
   // n'ont jamais le même couple.
   // Un set dont les cartes de départ SONT les six couples n'a que cette forme.
+  // Un set dont chaque Plan de départ est une carte à part entière, à une
+  // face : elles se mélangent, et chaque joueuse en reçoit une — comme les six
+  // couples, sans le choix de la face.
+  if (T().departSeul) {
+    return DEPARTS().map((d) => {
+      const faces = d.faces.filter((f) => carteActive(`S${d.type}f${f.num}`));
+      return faces.length ? { id: `S${d.type}`, type: 'DEPART', version: d.type, six: true, faces } : null;
+    }).filter(Boolean);
+  }
   if (six || T().sixSeul) {
     return DEPARTS_SIX().map((d) => {
       const faces = d.faces.filter((f) => carteActive(`S${d.type}f${f.num}`));
@@ -1259,14 +1273,23 @@ const facePM31 = (p, f) => {
 // cartes ; les retouches de l'éditeur s'y ajoutent par-dessus — « 3.1
 // Origine », « 3.1 Modifiée ». Le Set 3.1 ne porte QUE les cartes que
 // l'auteur a fournies : rien n'y est repris du Set 2.
+// Un set peut avoir SES icônes — `icones`, un dossier — et SON format de carte,
+// en millimètres : le Set 4.1 montre les vraies cartes, à leur proportion.
 export const SETS = [
   { id: '2',   label: 'Set 2',   detail: 'boîte v29' },
   { id: '3.1', label: 'Set 3.1', detail: 'nouvelles cartes' },
+  { id: '4.1', label: 'Set 4.1', detail: 'les vraies cartes de la 4.1', icones: 'assets/icones/41',
+    format: { largeur: 120, hauteur: 80 } },
 ];
 export const SET_DEFAUT = '2';
 export const setValide = (id) => (SETS.some((x) => x.id === id) ? id : SET_DEFAUT);
 let setCourant = SET_DEFAUT;
 export const setActif = () => setCourant;
+const ficheSet = () => SETS.find((x) => x.id === setCourant) || SETS[0];
+/** Le dossier des icônes du set en vigueur. */
+export const dossierIcones = () => ficheSet().icones || 'assets/icones';
+/** Le format des cartes du set en vigueur, s'il n'est pas celui d'origine ; sinon `null`. */
+export const formatSet = () => ficheSet().format || null;
 
 const TABLES = {
   '2': {
@@ -1390,6 +1413,51 @@ const TABLES = {
     },
   },
 };
+// --- Le Set 4.1 --------------------------------------------------------------
+// Les VRAIES cartes de la 4.1, livrées par l'auteur et montrées telles quelles
+// (`visuel`) : le site ne les redessine pas. Ce qui suit est ce que le MOTEUR a
+// besoin d'en savoir pour compter — minutage en minutes, icônes, pouvoir —, lu
+// sur chaque carte. La première icône est la DOMINANTE, la grande, qui donne sa
+// couleur à la carte ; le L6 n'en a pas, et l'Entracte (L10) n'a aucune icône.
+//
+// Les dix-neuf Plans Larges sont numérotés L1 à L19, par minutage croissant.
+// Quatre d'entre eux sont les Plans de départ : L5, L7, L12 et L16 (PD1 à PD4).
+const L41 = (n, tc, el, obj, extra = {}) => PL(n, tc, el, obj, extra);
+const PD41 = { 5: '1', 7: '2', 12: '3', 16: '4' };
+const PLANS_41 = [
+  L41(1, 10, ['OBJET', 'ARME', 'HEROINE'], OBJ.seqAvec(5, 'AVEC', 'OBJET', 3)),
+  L41(2, 10, ['ALLIE', 'VEHICULE', 'ENNEMI'], OBJ.seqAvec(3, 'AVEC', 'RACCORD')),
+  L41(3, 10, ['HEROINE', 'ENNEMI', 'ARME'], OBJ.seqVoisines(3, 'APRES')),
+  L41(4, 20, ['ALLIE', 'HEROINE', 'OBJET'], OBJ.absentes(10, 'MONTAGE')),
+  L41(5, 20, ['OBJET', 'HEROINE', 'ALLIE', 'VEHICULE'], OBJ.raccordVaut(1)),
+  L41(6, 20, ['OBJET', 'ARME', 'VEHICULE'], OBJ.seqLongue(2)),
+  L41(7, 30, ['ALLIE', 'ENNEMI', 'ARME'], OBJ.planPlus(1)),
+  L41(8, 30, ['ENNEMI', 'ALLIE', 'OBJET'], OBJ.seqAvec(4, 'SANS', 'HEROINE')),
+  L41(9, 30, ['VEHICULE', 'HEROINE', 'ENNEMI'], OBJ.seqAvec(4, 'SANS', 'TC_VIDE')),
+  L41(10, 35, [], OBJ.seqAvec(3, 'AVEC', 'ORDRE')),
+  L41(11, 40, ['HEROINE', 'ENNEMI', 'VEHICULE', 'ARME'], OBJ.seqAvec(3, 'AVEC', 'PLAN', 3)),
+  L41(12, 40, ['VEHICULE', 'VEHICULE', 'HEROINE', 'ENNEMI'], OBJ.sequencePlus(1)),
+  L41(13, 40, ['ENNEMI', 'ALLIE', 'OBJET'], OBJ.seqAvec(4, 'SANS', 'ARME')),
+  L41(14, 50, ['HEROINE', 'ENNEMI', 'ARME'], OBJ.seqAvec(4, 'SANS', 'ALLIE')),
+  L41(15, 50, ['ENNEMI', 'ALLIE', 'ARME'], OBJ.seqAvec(4, 'AVEC', 'ARME', 3)),
+  L41(16, 50, ['ARME', 'ARME', 'HEROINE', 'ENNEMI'], OBJ.piocher('CHUTIER')),
+  L41(17, 60, ['ALLIE', 'HEROINE', 'VEHICULE'], OBJ.extreme(1, 'PLUS', 'MONTAGE')),
+  L41(18, 60, ['ENNEMI', 'HEROINE', 'ALLIE'], OBJ.seqAvec(4, 'AVEC', 'HEROINE+ALLIE+ENNEMI'), { mort: true }),
+  L41(19, 60, ['HEROINE', 'VEHICULE', 'OBJET'], OBJ.seqVoisines(3, 'AVANT'), { mort: true }),
+];
+TABLES['4.1'] = {
+  // Les Plans Moyens et les Gros Plans ne sont pas encore arrivés.
+  scenes: [],
+  paires: [],
+  larges: PLANS_41.filter((p) => !PD41[p.num]),
+  // Un Plan de départ est UNE carte, à une face : chaque joueuse en reçoit une.
+  departs: PLANS_41.filter((p) => PD41[p.num])
+    .map((p) => ({ type: PD41[p.num], faces: [{ ...p, depart: true }] })),
+  departSeul: true,
+  images: Object.fromEntries(PLANS_41.map((p) => [`pl${p.num}`, `assets/s41/illus/L${p.num}.webp`])),
+  faces: Object.fromEntries(PLANS_41.map((p) => [String(p.num), { visuel: `assets/s41/L${p.num}.webp` }])),
+};
+
 // Les illustrations SEULES, quand elles sont arrivées (outils/illustrations.py) :
 // elles prennent la place de l'illustration découpée dans la carte imprimée. Une
 // face qui a la sienne — « 391V » — la reçoit en propre.

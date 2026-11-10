@@ -89,6 +89,9 @@
     "391.webp",
     "392.webp"
   ],
+  "marque": [
+    "edit.webp"
+  ],
   "perso": [
     "301.webp",
     "capuche.webp",
@@ -322,5 +325,26 @@
     "PM291.webp",
     "PM291R-carte.webp",
     "PM291V-carte.webp"
+  ],
+  "s41": [
+    "L1.webp",
+    "L2.webp",
+    "L3.webp",
+    "L4.webp",
+    "L5.webp",
+    "L6.webp",
+    "L7.webp",
+    "L8.webp",
+    "L9.webp",
+    "L10.webp",
+    "L11.webp",
+    "L12.webp",
+    "L13.webp",
+    "L14.webp",
+    "L15.webp",
+    "L16.webp",
+    "L17.webp",
+    "L18.webp",
+    "L19.webp"
   ]
 }
