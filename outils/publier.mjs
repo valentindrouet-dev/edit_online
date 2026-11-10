@@ -4,7 +4,9 @@
 //   node outils/publier.mjs "<b>Ce qui change.</b> En une ou deux phrases." ["Autre point"…]
 //
 // Dans l'ordre, et sans rien demander :
-//   1. monte la version (2.28 → 2.29) et la date dans js/version.js ;
+//   1. monte la version (4.1.01 → 4.1.02) et la date dans js/version.js : le
+//      dernier nombre est le compteur de livraisons, les premiers la version du
+//      jeu ; il garde ses zéros de tête ;
 //   2. ajoute l'entrée du journal des Versions — un argument par point ;
 //   3. lance le versionneur (version.json, sw.js, inventaire des illustrations) ;
 //   4. relit la syntaxe de tous les modules — moins d'une seconde ;
@@ -58,9 +60,9 @@ if (opt.verifier) {
 const cheminV = join(racine, 'js/version.js');
 let src = readFileSync(cheminV, 'utf8');
 const srcAvant = src;
-const avant = src.match(/VERSION = '(\d+)\.(\d+)'/);
+const avant = src.match(/VERSION = '((?:\d+\.)+)(\d+)'/);
 if (!avant) stop('VERSION introuvable dans js/version.js');
-const version = opt.version || `${avant[1]}.${Number(avant[2]) + 1}`;
+const version = opt.version || `${avant[1]}${String(Number(avant[2]) + 1).padStart(avant[2].length, '0')}`;
 
 const maintenant = Object.fromEntries(new Intl.DateTimeFormat('fr-FR', {
   timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
@@ -80,7 +82,7 @@ ${opt.items.map((t) => `      ${JSON.stringify(t)},`).join('\n')}
   },
 `);
 writeFileSync(cheminV, src);
-etape(`version ${avant[1]}.${avant[2]} → ${version}, journal à jour`);
+etape(`version ${avant[1]}${avant[2]} → ${version}, journal à jour`);
 
 // --- 3. Versionneur -------------------------------------------------------------
 execFileSync('node', [join(racine, 'outils/versionner.mjs')], { stdio: 'inherit' });

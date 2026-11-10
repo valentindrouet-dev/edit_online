@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '2.55';
-export const BUILD_DATE = '2026-10-26 16:15';
+export const VERSION = '4.1.01';
+export const BUILD_DATE = '2026-11-10 23:14';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.01',
+    date: '10/11/2026',
+    items: [
+      "<b>Le site passe en 4.1.</b> La numérotation suit désormais la version du jeu : <code>4.1.01</code>, puis 4.1.02… à chaque livraison. Les cartes et les règles de la 4.1 arrivent dans les livraisons suivantes.",
+      "<b>L'Atelier est fermé.</b> L'onglet disparaît et aucune carte ne prend plus le dessin d'un gabarit : le jeu montrera les vraies cartes importées. Rien n'est effacé, le brouillon reste dans le navigateur.",
+    ],
+  },
   {
     v: '2.55',
     date: '26/10/2026',

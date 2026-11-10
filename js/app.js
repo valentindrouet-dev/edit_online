@@ -81,6 +81,13 @@ const infoPartage = () => LS.get('partage.recu', null) || {};
 /** Les écrans que le mode partagé ferme. */
 const ECRANS_FERMES = ['#/materiel', '#/labo', '#/versions', '#/atelier', '#/impression'];
 
+// L'ATELIER est fermé depuis la 4.1 : les cartes du jeu sont les VRAIES cartes,
+// importées telles quelles, et non plus un dessin refait par le site. L'onglet
+// disparaît, ses deux écrans ne s'ouvrent plus, et aucune carte ne prend le
+// dessin d'un gabarit. Rien n'est effacé — ni le code, ni le brouillon gardé
+// dans le navigateur : remettre `true` suffit à tout rouvrir.
+const ATELIER_OUVERT = false;
+
 function entrerEnPartage(p) {
   LS.set('partage.recu', { version: p.version, date: p.date, signature: p.signature || '' });
 }
@@ -264,7 +271,7 @@ appliquerJeuActif();
 let gabaritMemo = { cle: null, g: null };
 function appliquerDesign() {
   const d = store.cfg.design;
-  if (!d || !d.actif) { brancherGabarit(null); return; }
+  if (!ATELIER_OUVERT || !d || !d.actif) { brancherGabarit(null); return; }
   const brut = d.gabarit || (gabaritPublie(d.base || VERSION_DEFAUT) || {}).gabarit;
   const cle = JSON.stringify(brut || null);
   if (gabaritMemo.cle !== cle) gabaritMemo = { cle, g: normaliserGabarit(brut) };
@@ -338,7 +345,8 @@ const ONGLETS = [
 function topbar(actif) {
   const enPartie = store.partie && !store.partie.finie;
   const partage = enPartage();
-  const onglets = partage ? ONGLETS.filter(([h]) => !ECRANS_FERMES.includes(h)) : ONGLETS;
+  const ouverts = ATELIER_OUVERT ? ONGLETS : ONGLETS.filter(([h]) => h !== '#/atelier');
+  const onglets = partage ? ouverts.filter(([h]) => !ECRANS_FERMES.includes(h)) : ouverts;
   const info = infoPartage();
   return `<div class="topbar">
     <div class="marque" data-go="#/">
@@ -7695,7 +7703,7 @@ function route() {
   // Un écran fermé par le mode partagé ne s'ouvre pas non plus à la main, dans
   // la barre d'adresse : masquer l'onglet sans fermer la route ne fermerait
   // rien du tout.
-  if (enPartage() && ECRANS_FERMES.includes(hash)) {
+  if ((enPartage() && ECRANS_FERMES.includes(hash)) || (!ATELIER_OUVERT && ['#/atelier', '#/impression'].includes(hash))) {
     history.replaceState(null, '', `${location.pathname}#/`);
     vueAccueil();
     window.scrollTo(0, 0);

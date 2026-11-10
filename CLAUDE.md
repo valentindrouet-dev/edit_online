@@ -23,7 +23,11 @@ interface, commentaires, commits.
 
 ## Règles du projet
 
-- Un compteur de version monte à **chaque** livraison (fait par `publier.mjs`).
+- Version : `4.1.NN` depuis le passage du jeu en 4.1 — `4.1` est la version du jeu, `NN` le compteur qui
+  monte à **chaque** livraison (fait par `publier.mjs`, qui garde les zéros de tête : 4.1.01 → 4.1.02).
+- En 4.1, le jeu montre les **vraies cartes importées** (`faces[cle].visuel`), jamais un dessin refait.
+  L'Atelier est **fermé** : constante `ATELIER_OUVERT = false` dans `app.js` (onglet, écrans, dessin par
+  gabarit). Le code reste en place, dormant — ne pas le rouvrir sans demande.
 - Statistiques d'abord, tout réglable (Variables), design pastel violet / orange.
 - Les imports entre modules s'écrivent **sans** `?v=` : la table d'imports d'`index.html` les versionne.
   Un nouveau module dans `js/` y entre tout seul.
@@ -31,7 +35,7 @@ interface, commentaires, commits.
 - Matériel en trois couches : imprimé → publié (`materiel.json`) → local (`edit.cfg`).
 - Mode partagé : Matériel, Laboratoire et Versions restent fermés (`ECRANS_FERMES` dans `app.js`).
 
-## L'Atelier — le dessin des cartes
+## L'Atelier — le dessin des cartes (fermé depuis la 4.1, code dormant)
 
 - Un **gabarit** (`js/gabarits.js`) dit où se posent les éléments d'une carte, en **millimètres** ; il porte
   son **format** (`g.format` : `largeur`, `hauteur`, `gp` = largeur du Gros Plan) — 120 × 80 mm (v2, par
