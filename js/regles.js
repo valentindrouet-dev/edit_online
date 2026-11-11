@@ -252,9 +252,10 @@ export function corpsRegles(cfg) {
         entre deux cartes déjà posées, et une carte posée ne se déplace plus.</li>
     </ul>
     ${encart('Le Raccord', `Le Raccord est une moitié de carte : il se monte au bout d’une séquence,
-      comme un Gros Plan. Mais son bord libre n’accepte ensuite qu’un <b>Plan Large</b> — ni Gros
-      Plan, ni autre Raccord. C’est la <b>seule façon</b> de monter un second Plan Large dans une
-      séquence. Ce Plan Large n’est pas un nouveau centre ; après lui, on accroche de nouveau des
+      comme un Gros Plan. ${c.raccordAppellePL
+    ? 'Mais son bord libre n’accepte ensuite qu’un <b>Plan Large</b> — ni Gros Plan, ni autre Raccord.'
+    : 'Son bord libre accepte ensuite un <b>Plan Large</b> ou un Gros Plan — jamais un autre Raccord.'}
+      C’est la <b>seule façon</b> de monter un second Plan Large dans une séquence. Ce Plan Large n’est pas un nouveau centre ; après lui, on accroche de nouveau des
       Gros Plans, s’il reste de la place.${parCote ? `<br>Le Raccord <b>ne donne pas de place</b> :
       lui et le Plan Large qui le suit comptent parmi les ${pluriel(parCote, 'carte')} de leur
       côté.` : ''}
@@ -312,7 +313,7 @@ export function corpsRegles(cfg) {
         parmi ${pluriel(riviere, 'carte')}.</li>
       <li>Pioche vide : le <b>Chutier est mélangé</b>, sauf sa carte du dessus, pour refaire une
         pioche.</li>
-      <li>À la suite d’un Raccord, <b>seul un Plan Large</b> peut se monter.</li>
+      ${c.raccordAppellePL ? '' : '<li>Deux <b>Raccords</b> ne se suivent pas dans une séquence.</li>'}
       <li>L’<b>Ouverture</b> et la <b>Fin</b> se montent comme les autres moitiés ; elles ne sont
         ni des plans, ni des Raccords.</li>
       <li>L’<b>Entracte</b> (L10, ${afficheur(35)}, sans icône) est joué comme un Plan Large ordinaire.</li>

@@ -25,7 +25,7 @@ import {
 import {
   creerPartie, choixDepart, poserDepart, optionsDerushage, cartesOffertes, derusher, defausser,
   peutDefausser, passer, sommetChutier, ecarterMain, coupsPossibles, coupsSurBanc, poser, avancer, scores,
-  classement, construirePaquet, nouvelleGraine, planPose, appliquerPlan, limitePlans, tailleRiviere,
+  classement, construirePaquet, nouvelleGraine, planPose, appliquerPlan, limitePlans, limiteSequences, placeDuCote, tailleRiviere,
   resynchroniserBoite, bilanPaquet,
 } from './engine.js';
 import { choisirCoup, choisirDerushage, choisirDefausse, choisirDepart } from './ai.js';
@@ -1105,14 +1105,48 @@ function aideTable(st, humaine) {
   if (v) {
     const carte = carteOption(st, v.o);
     if (carte && !coupsPossibles(st, p, carte).some((c) => c.moitie === v.moitie)) {
-      return carte.type === 'DOUBLE'
-        ? `La moitié <b>${v.moitie === 'G' ? 'gauche' : 'droite'}</b> ne se monte qu’au bout
-          <b>${v.moitie === 'G' ? 'gauche' : 'droit'}</b> d’une séquence, et aucune n’y a de place — gardez plutôt l’autre moitié.`
-        : 'Ce Plan Large n’a pas d’emplacement dans votre banc.';
+      return pourquoiPasIci(st, p, carte, v.moitie);
     }
     return 'Cliquez un emplacement de votre banc.';
   }
   return `À vous — cliquez la <b>moitié</b> que vous voulez monter, puis son emplacement.${dernierFait(st)}`;
+}
+
+/**
+ * Pourquoi cette moitié-là — ou ce Plan Large — n'a pas d'emplacement. Deux
+ * raisons possibles, et l'on dit la bonne : le bout visé est un Raccord, qui
+ * n'accepte qu'un Plan Large, ou ce côté du centre porte déjà toutes ses cartes.
+ */
+function pourquoiPasIci(st, p, carte, moitie) {
+  const cfg = st.cfg;
+  const banc = st.bancs[p];
+  const seqs = banc.sequences;
+  if (carte.type !== 'DOUBLE') {
+    return `Ce Plan Large n’a pas d’emplacement : votre banc a déjà ses ${limiteSequences(cfg, banc)}
+      séquences, et aucune ne se termine par un Raccord qui lui laisse une place.`;
+  }
+  const cote = moitie === 'G' ? 'gauche' : 'droite';
+  const bout = (q) => (cote === 'gauche' ? q[0] : q[q.length - 1]);
+  const plan = moitiesDe(carte)[moitie];
+  const parRaccord = seqs.filter((q) => bout(q) && bout(q).transition === 'RACCORD'
+    && (cfg.raccordAppellePL !== false || (plan && plan.transition === 'RACCORD'))).length;
+  const pleines = seqs.filter((q) => !placeDuCote(cfg, q, cote)).length;
+  const une = seqs.length === 1;
+  const debut = `La moitié <b>${cote}</b> ne se monte qu’au bout <b>${cote === 'gauche' ? 'gauche' : 'droit'}</b>
+    d’une séquence`;
+  const regle = plan && plan.transition === 'RACCORD' && cfg.raccordAppellePL === false
+    ? 'deux Raccords ne se suivent pas' : 'après un Raccord, seul un <b>Plan Large</b> peut se monter';
+  let raison;
+  if (parRaccord && !pleines) {
+    raison = `${une ? 'et le vôtre est' : 'et chacun des vôtres est'} un <b>Raccord</b> : ${regle}`;
+  } else if (pleines && !parRaccord) {
+    raison = `${une ? 'et votre séquence a' : 'et vos séquences ont'} déjà
+      ${cfg.plansParCote} cartes à ${cote} du centre`;
+  } else {
+    raison = `: ${parRaccord > 1 ? `${parRaccord} se terminent` : 'l’une se termine'} par un <b>Raccord</b> —
+      ${regle} —, ${pleines > 1 ? `${pleines} ont` : 'l’autre a'} déjà ses ${cfg.plansParCote} cartes de ce côté`;
+  }
+  return `${debut} ${raison}. Gardez plutôt l’autre moitié.`;
 }
 
 /** Ce que la table vient de voir, en une ligne : le dernier fait du journal. */
@@ -1132,7 +1166,7 @@ function aideMontage(st, choisie, humaine = true) {
   if (carte.type !== 'DOUBLE') return 'Cliquez un emplacement de votre banc.';
   if (!choisie) return 'Cliquez la moitié que vous voulez monter : la gauche va à gauche d’une séquence, la droite à droite.';
   if (!coupsPossibles(st, st.courant).some((c) => c.moitie === choisie)) {
-    return 'Cette moitié n’a pas d’emplacement dans votre banc — gardez plutôt l’autre.';
+    return pourquoiPasIci(st, st.courant, carte, choisie);
   }
   return 'Cliquez un emplacement de votre banc.';
 }

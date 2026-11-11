@@ -45,10 +45,13 @@ Cartes Objectif, modes, sets, Atelier) sans demande de l'auteur.
   face visible). À son tour : défausser une carte de la rivière (facultatif, une fois), puis en prendre
   une et la monter. Un Plan Large ouvre une séquence (3 par banc, 4 avec le L12) ; une moitié gauche se
   monte à gauche d'une séquence, une droite à droite ; 3 cartes au plus de chaque côté du centre. Après
-  un Raccord, un Plan Large peut entrer dans la séquence. Le L16 laisse prendre sur le Chutier, le L7
+  un Raccord, un Plan Large peut entrer dans la séquence — ou un Gros Plan, jamais un second Raccord
+  (variante `raccordAppellePL` : Plan Large seulement). Le L16 laisse prendre sur le Chutier, le L7
   donne une carte après le dernier tour. Fin à 10 plans.
-- Points encore à confirmer par l'auteur : fin de partie, pioche vide (le Chutier est remélangé), ce qui
-  suit un Raccord (un Plan Large seulement), l'Entracte (L10).
+- Points encore à confirmer par l'auteur : fin de partie, pioche vide (le Chutier est remélangé), deux
+  Raccords à la suite (interdits), l'Entracte (L10).
+- En cas de doute sur l'assemblage ou la lecture d'une carte, les **planches et images de l'auteur**
+  font foi.
 
 ## Règles du projet
 

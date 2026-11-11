@@ -75,8 +75,10 @@ function respiration(banc, cfg, reste) {
   let v = 0;
   const manque = reste - placeRestante(banc, cfg);
   if (manque > 0) v -= manque * PRIX_PLACE;
-  const gauche = banc.sequences.some((s) => placeDuCote(cfg, s, 'gauche') && !estRaccordSimple(s[0]));
-  const droite = banc.sequences.some((s) => placeDuCote(cfg, s, 'droite') && !estRaccordSimple(s[s.length - 1]));
+  // Un bout fermé par un Raccord n'accepte plus qu'un Plan Large.
+  const ferme = (p) => cfg.raccordAppellePL !== false && estRaccordSimple(p);
+  const gauche = banc.sequences.some((s) => placeDuCote(cfg, s, 'gauche') && !ferme(s[0]));
+  const droite = banc.sequences.some((s) => placeDuCote(cfg, s, 'droite') && !ferme(s[s.length - 1]));
   if (!gauche && !droite) v -= PRIX_PLACE * Math.min(reste, 3);
   else if (!gauche || !droite) v -= 0.6 * Math.min(reste, 3);
   return v;

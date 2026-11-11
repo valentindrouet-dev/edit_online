@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.07';
-export const BUILD_DATE = '2026-11-11 17:36';
+export const VERSION = '4.1.08';
+export const BUILD_DATE = '2026-11-11 17:51';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.08',
+    date: '11/11/2026',
+    items: [
+      "<b>Après un Raccord, on peut monter un Gros Plan</b> — ou un Plan Large, comme avant ; jamais un second Raccord. L'ancienne règle reste en variante dans Variables.",
+      "Quand une moitié ne peut pas se monter, la table en dit la <b>vraie raison</b> : un Raccord au bout visé, ou un côté déjà plein.",
+    ],
+  },
   {
     v: '4.1.07',
     date: '11/11/2026',

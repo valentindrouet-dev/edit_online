@@ -467,8 +467,8 @@ export function ouverturesBanc(banc, cfg) {
  *
  * **Une carte à deux Gros Plans** se monte par une moitié : la moitié GAUCHE
  * s'accroche au bout gauche d'une séquence, la moitié DROITE à son bout droit.
- * Le bord libre d'un Raccord n'accepte qu'un Plan Large : ni Gros Plan, ni
- * second Raccord.
+ * Après un Raccord, un Plan Large ou un Gros Plan — jamais un second Raccord.
+ * La variante `raccordAppellePL` n'y laisse passer qu'un Plan Large.
  */
 export function coupsSurBanc(banc, carte, cfg) {
   const out = [];
@@ -495,7 +495,8 @@ export function coupsSurBanc(banc, carte, cfg) {
     if (!m[moitie]) continue;
     seqs.forEach((seq, si) => {
       const voisin = cote === 'gauche' ? seq[0] : seq[seq.length - 1];
-      if (estRaccordPur(voisin) || !placeDuCote(cfg, seq, cote)) return;
+      if (estRaccordPur(voisin) && (cfg.raccordAppellePL !== false || estRaccordPur(m[moitie]))) return;
+      if (!placeDuCote(cfg, seq, cote)) return;
       out.push({ carte, moitie, action: 'ETENDRE', seq: si, cote });
     });
   }

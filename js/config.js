@@ -28,6 +28,10 @@ export const DEFAULTS = {
   // et le Plan Large qui le suit y comptent : ils prennent une place comme les
   // autres.
   plansParCote: 3,
+  // Après un Raccord, on monte un Plan Large — c'est ce qui ouvre la séquence à
+  // un second Plan Large — ou un Gros Plan ; jamais un second Raccord. Variante :
+  // à true, le bord libre d'un Raccord n'accepte qu'un Plan Large.
+  raccordAppellePL: false,
 
   // --- Décompte ------------------------------------------------------------
   objectifsActifs: {
@@ -194,6 +198,9 @@ export const SCHEMA = [
     { k: 'plansParCote', l: 'Cartes de chaque côté du centre', t: 'int', min: 1, max: 12,
       aide: 'trois par les règles, à gauche comme à droite du Plan Large — ou du Plan de départ — '
         + 'qui a ouvert la séquence. Un Raccord, et le Plan Large posé après lui, y comptent' },
+    { k: 'raccordAppellePL', l: 'Variante — après un Raccord, seul un Plan Large', t: 'bool',
+      aide: 'par les règles, un Plan Large ou un Gros Plan peut suivre un Raccord — jamais un second '
+        + 'Raccord ; cochée, le bord libre d’un Raccord n’accepte plus qu’un Plan Large' },
   ] },
   { groupe: 'Décompte', champs: [
     { k: 'porteeParDefaut', l: 'Portée des pouvoirs', t: 'choix', options: [

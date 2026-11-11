@@ -388,7 +388,9 @@ export function aideDeJeu(cfg) {
       ${parCote ? point(`<b>${parCote} cartes</b> au plus à gauche du centre, et ${parCote} à droite.`) : ''}
       ${point('Un <b>Plan Large</b> ouvre une séquence, au-dessus ou en dessous des autres.')}
       ${point('Une <b>moitié gauche</b> se monte au bout gauche d’une séquence, une <b>moitié droite</b> à son bout droit.')}
-      ${point('À la suite d’un <b>Raccord</b> : un Plan Large, et rien d’autre.')}
+      ${point(c.raccordAppellePL
+    ? 'À la suite d’un <b>Raccord</b> : un Plan Large, et rien d’autre.'
+    : 'À la suite d’un <b>Raccord</b> : un Plan Large ou un Gros Plan — jamais un autre Raccord.')}
       ${point(`Fin : au <b>${tours}<sup>e</sup> plan</b> d’une joueuse, les autres jouent un dernier tour.`)}
     </div>
 
