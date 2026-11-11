@@ -335,7 +335,9 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
     }
     case 'MINUTAGE':
       // Le seuil est strict : « avant 25:00 » ne compte pas un plan à 25:00.
-      return n * portee.filter((p) => (obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
+      // `EGAL` : les plans À ce minutage — « 2 × 50' », « 1 × -- » des cartes 4.1.
+      return n * portee.filter((p) => (obj.sens === 'EGAL' ? p.tc === obj.seuil
+        : obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
     case 'CHRONO':
       return chronologique(portee, cfg) ? n : 0;
     // Le bout de ligne. La portée est déjà ce qu'il y a au-delà du porteur, de

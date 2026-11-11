@@ -34,8 +34,13 @@ interface, commentaires, commits.
   pouvoir) se LISENT sur l'image. Icônes du set : `assets/icones/41` (`SETS[].icones`) ; proportion :
   `SETS[].format` + règles CSS `body[data-set="4.1"]`. Plans Larges = L1 à L19, dont les Plans de départ
   L5, L7, L12, L16 (`departSeul` : une carte, une face, une par joueuse).
-  En attente de l'auteur : cartes PM / GP, règles 4.1 (le « Chutier » du L16 est sans effet dans le moteur),
-  statut de l'Entracte (L10), largeurs des moitiés PM / GP.
+  **Plus de Plan Moyen en 4.1** : la carte est coupée au centre, chaque moitié est un Gros Plan de
+  60 × 80 mm (`format.gp: 60`, `partGP()`). Les 54 Gros Plans (`GP_41`, fichiers `GP00`…`GP66`, `GP100`
+  Raccord, `GP101` Ouverture 01', `GP102` Fin 70') sont chacun une demi-carte `[null, n]` à une seule face
+  (verso `absente`) ; les numéros se répètent d'un cadrage à l'autre (`numerosParCadrage`).
+  En attente de l'auteur : comment les Gros Plans se regroupent sur les cartes (paires, recto / verso,
+  exemplaires), les règles 4.1 (le « Chutier » du L16 est sans effet dans le moteur), le statut de
+  l'Entracte (L10). Tant que les cartes ne sont pas assemblées, le set n'est pas jouable.
 - Titre du site : le logo `assets/marque/edit.webp` (barre du haut et accueil).
 - Statistiques d'abord, tout réglable (Variables), design pastel violet / orange.
 - Les imports entre modules s'écrivent **sans** `?v=` : la table d'imports d'`index.html` les versionne.

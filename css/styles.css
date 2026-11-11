@@ -2919,3 +2919,8 @@ body[data-set="4.1"] .tuile-illus { aspect-ratio: 3 / 2; }
 body[data-set="4.1"] .carte.solo .moitie.f-PL, body[data-set="4.1"] .carte.solo .moitie.f-DEP { width: 21.5em; }
 body[data-set="4.1"] .banc .moitie.f-PL, body[data-set="4.1"] .banc .moitie.f-DEP,
 body[data-set="4.1"] .apercu-pose .moitie.f-PL, body[data-set="4.1"] .apercu-pose .moitie.f-DEP { width: 273px; }
+/* En 4.1 la carte est coupée au centre : un Gros Plan fait 60 × 80 mm — la
+   moitié de la largeur d'un Plan Large, à la même hauteur. */
+body[data-set="4.1"] .carte.solo .moitie.f-GP, body[data-set="4.1"] .carte.solo .moitie.f-PM { width: 10.75em; }
+body[data-set="4.1"] .banc .moitie.f-GP, body[data-set="4.1"] .banc .moitie.f-PM,
+body[data-set="4.1"] .apercu-pose .moitie.f-GP, body[data-set="4.1"] .apercu-pose .moitie.f-PM { width: 136.5px; }

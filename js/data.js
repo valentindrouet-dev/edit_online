@@ -618,7 +618,7 @@ function objQuoi(o) {
     }
     case 'MORT':    return 'Mort';
     case 'DOMINE': return `${libelleCibleCompte(cibleDe(o))} ${o.sens === 'MOINS' ? 'min' : 'max'}`;
-    case 'MINUTAGE': return `Plan ${o.sens === 'APRES' ? 'après' : 'avant'} ${tcTexte(o.seuil)}`;
+    case 'MINUTAGE': return `Plan ${o.sens === 'APRES' ? 'après' : o.sens === 'EGAL' ? 'à' : 'avant'} ${tcTexte(o.seuil)}`;
     case 'SEQ_TAILLE': return `séquence de ${o.seuil} plan${o.seuil > 1 ? 's' : ''} ou ${o.sens === 'MAX' ? 'moins' : 'plus'}`;
     case 'SEQ_VOISINES': return `séquence ${o.sens === 'APRES' ? 'en dessous' : 'au-dessus'} de celle-ci`;
     case 'SEQ_LONGUE': return 'Plan de votre plus longue séquence';
@@ -723,6 +723,8 @@ export function objLabel(o, cfg, opts = {}) {
       // « Au plus zéro » se dit « aucun » : c'est la lecture qui vient à
       // l'esprit, et celle qu'on écrirait sur la carte.
       const ou2 = o.cible === 'SEQUENCE' ? ' dans le banc' : ou;
+      // « 4 si ◀ 00' ↗ ▶ » : l'ordre se tient, ou il ne se tient pas.
+      if (o.cible === 'ORDRE') return `${si} les minutages ${o.sens === 'MAX' ? 'ne sont pas' : 'sont'} dans l’ordre${ou2}`;
       if (o.sens === 'MAX' && o.seuil === 0) return `${si} ${aucunCible(o.cible)}${ou2}`;
       return `${si} ${o.sens === 'MAX' ? 'au plus' : 'au moins'} ${
         cibleNombre(o.cible, o.seuil)}${ou2}`;
@@ -1279,7 +1281,7 @@ export const SETS = [
   { id: '2',   label: 'Set 2',   detail: 'boîte v29' },
   { id: '3.1', label: 'Set 3.1', detail: 'nouvelles cartes' },
   { id: '4.1', label: 'Set 4.1', detail: 'les vraies cartes de la 4.1', icones: 'assets/icones/41',
-    format: { largeur: 120, hauteur: 80 } },
+    format: { largeur: 120, hauteur: 80, gp: 60 } },
 ];
 export const SET_DEFAUT = '2';
 export const setValide = (id) => (SETS.some((x) => x.id === id) ? id : SET_DEFAUT);
@@ -1290,6 +1292,14 @@ const ficheSet = () => SETS.find((x) => x.id === setCourant) || SETS[0];
 export const dossierIcones = () => ficheSet().icones || 'assets/icones';
 /** Le format des cartes du set en vigueur, s'il n'est pas celui d'origine ; sinon `null`. */
 export const formatSet = () => ficheSet().format || null;
+/**
+ * La part de la carte que prend sa moitié Gros Plan, en pour-cent. Un tiers
+ * dans les sets d'origine ; la moitié en 4.1, où la carte est coupée au centre.
+ */
+export function partGP() {
+  const f = formatSet();
+  return f && f.gp ? Math.round((f.gp / f.largeur) * 1000) / 10 : 33.6;
+}
 
 const TABLES = {
   '2': {
@@ -1445,17 +1455,98 @@ const PLANS_41 = [
   L41(18, 60, ['ENNEMI', 'HEROINE', 'ALLIE'], OBJ.seqAvec(4, 'AVEC', 'HEROINE+ALLIE+ENNEMI'), { mort: true }),
   L41(19, 60, ['HEROINE', 'VEHICULE', 'OBJET'], OBJ.seqVoisines(3, 'AVANT'), { mort: true }),
 ];
+// Les cinquante-quatre GROS PLANS. En 4.1 il n'y a plus de Plan Moyen : la
+// carte est coupée en deux au centre, et chaque moitié — 60 × 80 mm — est un
+// Gros Plan. Leur numéro dit leur minutage : GP0x « -- », GP1x 10', … GP6x 60',
+// et GP100 à 102 le Raccord, l'Ouverture (01') et la Fin (70').
+const X41 = (n, tc, el, obj, extra = {}) => ({ n, tc, el, obj, ...extra });
+const GP_41 = [
+  X41(0, 0, ['OBJET', 'ARME', 'VEHICULE'], OBJ.minutage(1, 'EGAL', 0, 'MONTAGE')),
+  X41(1, 0, ['HEROINE'], OBJ.element(1, 'HEROINE', 'MONTAGE')),
+  X41(2, 0, ['ENNEMI'], OBJ.element(1, 'ENNEMI', 'MONTAGE')),
+  X41(3, 0, ['ALLIE'], OBJ.element(1, 'ALLIE', 'MONTAGE')),
+  X41(4, 0, ['HEROINE'], OBJ.paire(2, 'HEROINE', 'ALLIE', 'MONTAGE')),
+  X41(5, 0, ['ENNEMI', 'HEROINE'], OBJ.paire(2, 'ENNEMI', 'HEROINE', 'MONTAGE')),
+  X41(6, 0, ['ALLIE'], OBJ.paire(2, 'ALLIE', 'ENNEMI', 'MONTAGE')),
+  X41(7, 0, ['OBJET'], OBJ.element(1, 'OBJET', 'MONTAGE')),
+  X41(8, 0, ['ARME'], OBJ.element(1, 'ARME', 'MONTAGE')),
+  X41(9, 0, ['VEHICULE'], OBJ.element(1, 'VEHICULE', 'MONTAGE')),
+  X41(10, 10, ['ALLIE', 'OBJET'], OBJ.element(1, 'ALLIE', 'SUITE')),
+  X41(11, 10, ['OBJET', 'ARME'], OBJ.element(2, 'OBJET', 'SEQUENCE')),
+  X41(12, 10, ['ARME', 'OBJET'], OBJ.paire(2, 'ARME', 'OBJET', 'MONTAGE')),
+  X41(13, 10, ['HEROINE', 'ARME'], OBJ.seuilCible(4, 'ORDRE', 'MIN', 1, 'SEQUENCE')),
+  X41(14, 10, ['HEROINE', 'VEHICULE'], OBJ.seuilCible(6, 'HEROINE', 'MIN', 6, 'MONTAGE')),
+  X41(15, 10, ['ARME', 'HEROINE'], OBJ.element(1, 'ARME', 'SUITE')),
+  X41(16, 10, ['ENNEMI', 'VEHICULE'], OBJ.seqTaille(2, 1)),
+  X41(20, 20, ['ARME', 'HEROINE'], OBJ.bout(4, 'GAUCHE')),
+  X41(21, 20, ['HEROINE', 'VEHICULE'], OBJ.element(1, 'HEROINE', 'SUITE')),
+  X41(22, 20, ['ENNEMI', 'VEHICULE'], OBJ.domine(6, 'ENNEMI')),
+  X41(23, 20, ['ALLIE', 'OBJET'], OBJ.absent(5, 'ENNEMI', 'SEQUENCE')),
+  X41(24, 20, ['OBJET', 'ALLIE'], OBJ.domine(6, 'OBJET')),
+  X41(25, 20, ['OBJET', 'ALLIE'], OBJ.seuilCible(6, 'OBJET', 'MIN', 5, 'MONTAGE')),
+  X41(26, 20, ['VEHICULE', 'OBJET'], OBJ.absent(4, 'TC_VIDE', 'SEQUENCE')),
+  X41(30, 30, ['ARME', 'ENNEMI'], OBJ.domine(6, 'ARME')),
+  X41(31, 30, ['OBJET', 'ENNEMI'], OBJ.seuilCible(4, 'ORDRE', 'MIN', 1, 'SEQUENCE')),
+  X41(32, 30, ['ENNEMI', 'OBJET'], OBJ.seuilCible(6, 'ENNEMI', 'MIN', 6, 'MONTAGE')),
+  X41(33, 30, ['ALLIE', 'OBJET'], OBJ.element(1, 'ALLIE', 'APRES')),
+  X41(34, 30, ['OBJET', 'ARME'], OBJ.absent(5, 'HEROINE', 'SEQUENCE')),
+  X41(35, 30, ['HEROINE', 'ALLIE'], OBJ.seqTaille(2, 1)),
+  X41(40, 40, ['VEHICULE', 'VEHICULE'], OBJ.element(2, 'VEHICULE', 'SEQUENCE')),
+  X41(41, 40, ['HEROINE', 'VEHICULE'], OBJ.seuilCible(6, 'VEHICULE', 'MIN', 6, 'MONTAGE')),
+  X41(42, 40, ['VEHICULE', 'ENNEMI'], OBJ.absent(6, 'RACCORD', 'MONTAGE')),
+  X41(43, 40, ['VEHICULE', 'HEROINE'], OBJ.domine(6, 'VEHICULE')),
+  X41(44, 40, ['VEHICULE', 'OBJET'], OBJ.absent(5, 'VEHICULE', 'SUITE')),
+  X41(45, 40, ['ENNEMI', 'VEHICULE'], OBJ.absent(5, 'ENNEMI', 'AMONT')),
+  X41(46, 40, ['ALLIE', 'VEHICULE'], OBJ.absent(4, 'TC_VIDE', 'SEQUENCE')),
+  X41(50, 50, ['ARME', 'ARME'], OBJ.seuilCible(6, 'ARME', 'MIN', 6, 'MONTAGE')),
+  X41(51, 50, ['HEROINE', 'ARME'], OBJ.absent(5, 'ALLIE', 'SEQUENCE')),
+  X41(52, 50, ['ENNEMI', 'ARME'], OBJ.mort(3, 'SUITE')),
+  X41(53, 50, ['ENNEMI', 'ARME'], OBJ.absent(5, 'ENNEMI', 'SUITE')),
+  X41(54, 50, ['HEROINE', 'ARME'], OBJ.element(2, 'ARME', 'SEQUENCE')),
+  X41(55, 50, ['ARME', 'ALLIE'], OBJ.seuilCible(6, 'MORT', 'MIN', 2, 'MONTAGE')),
+  X41(56, 50, ['ALLIE', 'ARME'], OBJ.minutage(2, 'EGAL', 50, 'SEQUENCE')),
+  X41(60, 60, ['VEHICULE'], OBJ.element(1, 'VEHICULE', 'AMONT'), { mort: true }),
+  X41(61, 60, ['HEROINE', 'VEHICULE'], OBJ.element(1, 'HEROINE', 'AMONT'), { mort: true }),
+  X41(62, 60, ['HEROINE', 'OBJET'], OBJ.domine(6, 'HEROINE'), { mort: true }),
+  X41(63, 60, ['ENNEMI', 'HEROINE', 'ALLIE'], OBJ.absent(6, 'MORT', 'MONTAGE')),
+  X41(64, 60, ['OBJET', 'ENNEMI'], OBJ.mort(3, 'SEQUENCE'), { mort: true }),
+  X41(65, 60, ['ALLIE', 'OBJET'], OBJ.domine(6, 'ALLIE'), { mort: true }),
+  X41(66, 60, ['ARME', 'ALLIE'], OBJ.seuilCible(4, 'ORDRE', 'MIN', 1, 'SEQUENCE'), { mort: true }),
+  X41(100, 0, [], OBJ.raccord(1), { transition: 'RACCORD', titre: 'Raccord' }),
+  X41(101, 1, [], OBJ.seuilCible(5, 'PLAN', 'MAX', 0, 'AMONT'), { transition: 'OUVERTURE', titre: 'BBG présente' }),
+  X41(102, 70, [], OBJ.seuilCible(5, 'PLAN', 'MAX', 0, 'SUITE'), { transition: 'CREDITS', titre: 'Fin' }),
+];
+/** La famille d'un Gros Plan : le crâne d'abord, puis ce que montre sa grande icône. */
+const famille41 = (p) => (p.transition ? 'TRANSITION' : p.mort ? 'MORT'
+  : ['OBJET', 'ARME', 'VEHICULE'].includes(p.el[0]) ? p.el[0] : 'PERSONNAGE');
+/** Le nom de fichier d'un Gros Plan : GP00, GP07, GP100. */
+const fichierGP41 = (n) => `GP${String(n).padStart(2, '0')}`;
+
 TABLES['4.1'] = {
-  // Les Plans Moyens et les Gros Plans ne sont pas encore arrivés.
-  scenes: [],
-  paires: [],
+  scenes: GP_41.map((p) => S(p.n + 1, p.tc, famille41(p), null, p.n, [], p.el, p.obj, {
+    ...(p.mort ? { mort: true } : {}),
+    ...(p.transition ? { transition: p.transition, titre: p.titre } : {}) })),
+  // On ne sait pas encore comment les Gros Plans se répartissent sur les
+  // cartes : chacun est, en attendant, la moitié d'une carte à compléter.
+  paires: GP_41.map((p) => [null, p.n]),
   larges: PLANS_41.filter((p) => !PD41[p.num]),
   // Un Plan de départ est UNE carte, à une face : chaque joueuse en reçoit une.
   departs: PLANS_41.filter((p) => PD41[p.num])
     .map((p) => ({ type: PD41[p.num], faces: [{ ...p, depart: true }] })),
   departSeul: true,
-  images: Object.fromEntries(PLANS_41.map((p) => [`pl${p.num}`, `assets/s41/illus/L${p.num}.webp`])),
-  faces: Object.fromEntries(PLANS_41.map((p) => [String(p.num), { visuel: `assets/s41/L${p.num}.webp` }])),
+  numerosParCadrage: true,
+  images: {
+    ...Object.fromEntries(PLANS_41.map((p) => [`pl${p.num}`, `assets/s41/illus/L${p.num}.webp`])),
+    ...Object.fromEntries(GP_41.map((p) => [`gp${p.n}`, `assets/s41/illus/${fichierGP41(p.n)}.webp`])),
+  },
+  faces: {
+    ...Object.fromEntries(PLANS_41.map((p) => [String(p.num), { visuel: `assets/s41/L${p.num}.webp` }])),
+    // Un Gros Plan n'a qu'une face connue : son image. Pas de verso composé
+    // par le site à sa place.
+    ...Object.fromEntries(GP_41.flatMap((p) => [
+      [`${p.n}R`, { visuel: `assets/s41/${fichierGP41(p.n)}.webp` }],
+      [`${p.n}V`, { absente: true }]])),
+  },
 };
 
 // Les illustrations SEULES, quand elles sont arrivées (outils/illustrations.py) :
@@ -1918,13 +2009,18 @@ export function moitiesDisponibles(format) {
  */
 export function doublonsNumeros() {
   const par = new Map();
+  // En 4.1 l'auteur numérote chaque cadrage à part — L1 à L19, GP00 à GP102 :
+  // un Plan Large 5 et un Gros Plan 5 ne se confondent pas, et ne sont pas des
+  // doublons. Ailleurs, un numéro est unique dans tout le jeu.
+  const groupe = (p) => (T().numerosParCadrage ? (p.format === 'PL' || p.format === 'DEP' ? 'L' : 'G') : '');
   for (const p of catalogue()) {
-    if (!par.has(p.num)) par.set(p.num, new Set());
-    par.get(p.num).add(`${p.format}${p.numOrigine}`);
+    const k = `${groupe(p)}${p.num}`;
+    if (!par.has(k)) par.set(k, { num: p.num, plans: new Set() });
+    par.get(k).plans.add(`${p.format}${p.numOrigine}`);
   }
-  return [...par.entries()]
-    .filter(([, s]) => s.size > 1)
-    .map(([num, s]) => ({ num, plans: [...s].sort() }))
+  return [...par.values()]
+    .filter((x) => x.plans.size > 1)
+    .map((x) => ({ num: x.num, plans: [...x.plans].sort() }))
     .sort((a, b) => a.num - b.num);
 }
 

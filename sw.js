@@ -7,7 +7,7 @@
 // site, et ne se rabat sur sa copie en cache qu'en cas de coupure — le site
 // reste donc consultable hors ligne, mais n'est jamais périmé en ligne.
 
-const CACHE = 'edit-4.1.02';
+const CACHE = 'edit-4.1.03';
 
 self.addEventListener('install', () => {
   // La nouvelle version du worker prend la main sans attendre.

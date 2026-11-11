@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.02';
-export const BUILD_DATE = '2026-11-10 23:38';
+export const VERSION = '4.1.03';
+export const BUILD_DATE = '2026-11-11 12:22';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.03',
+    date: '11/11/2026',
+    items: [
+      "<b>Set 4.1 : les 54 Gros Plans.</b> Les vraies cartes, à leur proportion 60 × 80 — la carte coupée au centre, sans Plan Moyen —, du GP00 au GP66, plus le Raccord, l'Ouverture et la Fin. À voir dans Matériel → Set 4.1 → Gros Plans.",
+      "Minutage, icônes et pouvoir de chacun sont relevés pour le décompte, avec deux lectures nouvelles : <i>n × plans à tel minutage</i> (« 2 × 50' », « 1 × -- ») et <i>si la séquence est dans l'ordre</i>.",
+      "Le set attend encore la répartition des Gros Plans sur les cartes pour être jouable. Corrigé au passage : l'alerte des numéros en double plantait le Matériel quand un Plan de départ partageait son numéro.",
+    ],
+  },
   {
     v: '4.1.02',
     date: '10/11/2026',

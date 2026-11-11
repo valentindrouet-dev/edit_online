@@ -2943,7 +2943,8 @@ function vueMateriel() {
 function alerteDoublons() {
   const d = surLeModifie(doublonsNumeros);
   if (!d.length) return '';
-  const nom = (s) => `${FORMATS[s.slice(0, 2)].label} ${s.slice(2)}`;
+  // « DEP5 », « GP12 », « PL101 » : le cadrage, puis le numéro.
+  const nom = (s) => { const m = /^([A-Z]+)(.*)$/.exec(s) || []; return `${(FORMATS[m[1]] || { label: m[1] || '' }).label} ${m[2] ?? s}`; };
   return `<div class="alerte-doublons">
     <b>⚠ ${d.length} numéro${d.length > 1 ? 's' : ''} en double dans le matériel modifié</b>
     <ul>${d.map((x) => `<li><b>n°${x.num}</b> — porté par ${x.plans.map(nom).join(', ')}</li>`).join('')}</ul>
@@ -4018,7 +4019,8 @@ function blocPouvoir(o, ou, rang = 1) {
       <span class="tc-apercu">${tc(o.seuil)}</span>`;
   } else if (kind === 'MINUTAGE') {
     complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
-        ${opt('AVANT', 'avant', o.sens !== 'APRES')}${opt('APRES', 'après', o.sens === 'APRES')}
+        ${opt('AVANT', 'avant', o.sens !== 'APRES' && o.sens !== 'EGAL')}${opt('APRES', 'après', o.sens === 'APRES')}
+        ${opt('EGAL', 'à', o.sens === 'EGAL')}
       </select>
       <input type="number" class="pts" min="0" max="99" value="${o.seuil}" data-champ-obj="${ou}"${R} data-part="seuil">
       <span class="tc-apercu">${tc(o.seuil)}</span>`;
@@ -4819,7 +4821,8 @@ function declencheurs(obj, plans) {
     // le décompte qui sait le faire — il n'y a pas deux façons de compter.
     case 'PAIRE': return compteGroupes(plans, obj.els);
     case 'MORT':    return plans.filter((p) => p.mort).length;
-    case 'MINUTAGE': return plans.filter((p) => (obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
+    case 'MINUTAGE': return plans.filter((p) => (obj.sens === 'EGAL' ? p.tc === obj.seuil
+      : obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
     // Les « si » : le pouvoir se déclenche, ou pas — jamais plusieurs fois.
     case 'ABSENT': case 'CHRONO': case 'SANS_TC': case 'SEUIL': case 'BOUT': return 1;
     // Les bandeaux de séquence ne se déclenchent pas sur une carte mais sur la

@@ -13,7 +13,7 @@
 // hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
 // puis le libellé.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre } from './data.js';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre, partGP } from './data.js';
 import { cleMise, largeurMise, formatDe } from './gabarits.js';
 import { elIcon, numIcon, cadrageIcon } from './icons.js';
 import { urlVisuel } from './visuels.js';
@@ -168,7 +168,7 @@ function objCoeur(obj, taille, compact, large) {
     // Sur un bandeau, la place manque : « avant / après » se lit « < » et « > ».
     // Le libellé en toutes lettres reste dans l'aperçu au survol.
     case 'MINUTAGE': return `${compact ? '' : '<span class="tag tag-blanc">Plan</span>'}
-      <span class="tc-seuil minutage">${obj.sens === 'APRES' ? '&gt;' : '&lt;'}&nbsp;${
+      <span class="tc-seuil minutage">${obj.sens === 'APRES' ? '&gt;&nbsp;' : obj.sens === 'EGAL' ? '' : '&lt;&nbsp;'}${
         tcTexte(obj.seuil)}</span>`;
     case 'CHRONO':  return `<span class="tag tag-chrono">↗ ordre</span>`;
     // Le bout de ligne : « aucun PLAN de ce côté-ci ». C'est le MOT qui porte la
@@ -841,7 +841,7 @@ export function renderPlan(h, opts = {}) {
   }
   // Une face que l'auteur n'a pas encore fournie : sa place, sans rien dessus.
   if (h.absente) {
-    const flexA = h.format === 'GP' ? '0 0 33.6%' : '1 1 66.4%';
+    const flexA = h.format === 'GP' ? `0 0 ${partGP()}%` : `1 1 ${100 - partGP()}%`;
     return `<div class="moitie f-${h.format} face-absente" style="--flex:${flexA}" data-format="${h.format}" data-num="${h.num}">
     <span>${F.label} ${h.num}<br>verso à venir</span></div>`;
   }
@@ -857,7 +857,7 @@ export function renderPlan(h, opts = {}) {
     opts.bandeauDouble || objsIci.length > 1 ? 'bande-deux' : '',
     opts.clickable ? 'choisissable' : '', opts.selected ? 'choisi' : '', opts.neuf ? 'neuf' : '',
     opts.horsFilm ? 'hors-film' : '', gabarits && h.format === 'PL' ? 'gabarit' : ''].join(' ');
-  const flex = large ? '1 1 100%' : (h.format === 'GP' ? '0 0 33.6%' : '1 1 66.4%');
+  const flex = large ? '1 1 100%' : (h.format === 'GP' ? `0 0 ${partGP()}%` : `1 1 ${100 - partGP()}%`);
   // Le libellé du bas dit le TYPE du plan, pas son rôle : une Ouverture, un
   // Générique de fin et un Raccord sont tous trois des Raccords. Ce que la
   // carte fait — ouvrir, fermer, relier — se lit à son illustration et aux
