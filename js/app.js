@@ -6087,6 +6087,20 @@ const JETON_LIAISON = {
   erreur: ['liaison-ko', 'liaison interrompue'],
 };
 
+/**
+ * Pourquoi la liaison est tombée, quand on le sait — et ce que l'on peut y faire.
+ * La raison vient du transport (texte du serveur compris) : on l'échappe.
+ */
+function raisonLiaison(s) {
+  if (s.liaison !== 'erreur' || !enLigneDisponible()) return '';
+  const texte = String(s.raisonLiaison || 'La connexion temps réel ne s’établit pas.')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `<p class="liaison-raison"><b>Liaison interrompue.</b> ${texte}
+    <span class="aide">${s.salon ? 'Les autres appareils ne voient pas ce salon.'
+    : 'Les salons des autres appareils n’apparaissent pas.'} Rechargez la page pour réessayer ; la console
+    du navigateur donne le détail.</span></p>`;
+}
+
 function vueEnLigne() {
   const s = salonCourant();
   if (s.partie) { location.hash = '#/partie'; return; }
@@ -6102,6 +6116,7 @@ function vueEnLigne() {
       ${jeton}
       <button class="pill" id="ligne-retour">${s.salon ? '← Quitter le salon' : '← Retour'}</button>
     </div>
+    ${raisonLiaison(s)}
     ${s.salon ? vueSalon(s) : vueHall(s)}
   </div>
   ${pied()}`);

@@ -18,10 +18,17 @@
 import { ANNONCE_MS, estPerime, resume } from './protocole.js';
 import { CANAL_HALL, canalSalon, SUPABASE_ANON_KEY, SUPABASE_URL } from './config.js';
 
-/** D'où vient le client temps réel. Pas de bundler ici : on le prend au vol. */
-const CDN = 'https://esm.sh/@supabase/supabase-js@2';
+/**
+ * D'où vient le client temps réel. Pas de bundler ici : on le prend au vol,
+ * sur un second CDN si le premier ne répond pas.
+ */
+const SOURCES = [
+  'https://esm.sh/@supabase/supabase-js@2',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm',
+];
 
 let client = null;
+let chargement = null;
 
 /**
  * Charge le client une seule fois, et seulement si on en a besoin : il pèse
@@ -29,12 +36,40 @@ let client = null;
  */
 async function getClient() {
   if (client) return client;
-  const { createClient } = await import(/* @vite-ignore */ CDN);
-  client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { persistSession: false },          // on n'authentifie personne
-    realtime: { params: { eventsPerSecond: 20 } },
-  });
-  return client;
+  if (!chargement) {
+    chargement = (async () => {
+      for (const source of SOURCES) {
+        try {
+          const { createClient } = await import(/* @vite-ignore */ source);
+          client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: { persistSession: false },          // on n'authentifie personne
+            realtime: { params: { eventsPerSecond: 20 } },
+          });
+          return client;
+        } catch (e) {
+          console.warn(`[EDIT en ligne] client Supabase introuvable sur ${source}`, e);
+        }
+      }
+      chargement = null;   // on réessaiera à la prochaine ouverture
+      throw new Error('Le client Supabase ne se charge pas : esm.sh et jsDelivr sont injoignables depuis ce navigateur.');
+    })();
+  }
+  return chargement;
+}
+
+/**
+ * Ce qu'on peut dire d'un abonnement refusé. Supabase passe parfois l'erreur
+ * du serveur ; sinon, le statut seul oriente déjà.
+ */
+function raisonDe(statut, err) {
+  const detail = err && (err.message || String(err));
+  console.warn(`[EDIT en ligne] canal ${statut}`, err || '');
+  if (statut === 'TIMED_OUT') {
+    return 'Le serveur Supabase ne répond pas : le projet est peut-être en pause (offre gratuite inactive une semaine).';
+  }
+  if (detail && !/^\[object /.test(detail)) return `Supabase refuse le canal : ${detail}`;
+  return 'La connexion temps réel à Supabase échoue : projet en pause, clé refusée ou accès public des canaux '
+    + 'fermé dans les réglages Realtime du projet.';
 }
 
 export class TransportSupabase {
@@ -54,7 +89,7 @@ export class TransportSupabase {
     return () => { if (this.onEtat === cb) this.onEtat = null; };
   }
 
-  majEtat(e) { if (this.onEtat) this.onEtat(e); }
+  majEtat(e, raison = '') { if (this.onEtat) this.onEtat(e, raison); }
 
   // ------------------------------------------------------------------ le hall
   salons(onChange) {
@@ -78,7 +113,7 @@ export class TransportSupabase {
 
     (async () => {
       let c;
-      try { c = await getClient(); } catch { this.majEtat('erreur'); return; }
+      try { c = await getClient(); } catch (e) { this.majEtat('erreur', e.message); return; }
       // Le chargement est asynchrone : l'écran a pu être quitté entre-temps, et
       // l'on s'abonnerait alors à un canal que personne n'écoute et que
       // personne ne fermera.
@@ -95,12 +130,12 @@ export class TransportSupabase {
           this.annoncer();
         }
       });
-      this.hall.subscribe((statut) => {
+      this.hall.subscribe((statut, err) => {
         if (statut === 'SUBSCRIBED') {
           this.majEtat('ok');
           this.envoyerHall({ t: 'qui' });   // APRÈS l'abonnement, jamais avant
         } else if (statut === 'CHANNEL_ERROR' || statut === 'TIMED_OUT') {
-          this.majEtat('erreur');
+          this.majEtat('erreur', raisonDe(statut, err));
         }
       });
     })();
@@ -125,15 +160,16 @@ export class TransportSupabase {
   // --------------------------------------------------------------- les salons
   async brancher(salonId) {
     this.quitterCanal();
-    const c = await getClient();
+    let c;
+    try { c = await getClient(); } catch (e) { this.majEtat('erreur', e.message); throw e; }
     const canal = c.channel(canalSalon(salonId), { config: { broadcast: { self: false } } });
     canal.on('broadcast', { event: 'msg' }, ({ payload }) => {
       if (this.onMessage) this.onMessage(payload);
     });
     await new Promise((resolve) => {
-      canal.subscribe((statut) => {
+      canal.subscribe((statut, err) => {
         if (statut === 'SUBSCRIBED') { this.majEtat('ok'); resolve(); }
-        else if (statut === 'CHANNEL_ERROR' || statut === 'TIMED_OUT') this.majEtat('erreur');
+        else if (statut === 'CHANNEL_ERROR' || statut === 'TIMED_OUT') this.majEtat('erreur', raisonDe(statut, err));
       });
       // On n'attend jamais indéfiniment : une interface qui répond et une liste
       // vide valent mieux qu'un écran figé si le réseau boude.

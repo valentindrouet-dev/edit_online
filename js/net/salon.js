@@ -50,6 +50,7 @@ export class Salon {
     this.partie = null;
     this.liste = [];
     this.liaison = transport.surEtat ? 'connexion' : 'ok';
+    this.raisonLiaison = '';    // pourquoi la liaison est tombée, quand on le sait
     this.arretHall = null;
     this.arretEcoute = null;
     this.battement = null;
@@ -88,7 +89,11 @@ export class Salon {
   ecouterHall() {
     if (this.arretHall) return;
     if (this.transport.surEtat) {
-      this.arretLiaison = this.transport.surEtat((e) => { this.liaison = e; this.changer(); });
+      this.arretLiaison = this.transport.surEtat((e, raison = '') => {
+        this.liaison = e;
+        this.raisonLiaison = e === 'erreur' ? raison : '';
+        this.changer();
+      });
     }
     this.arretHall = this.transport.salons((liste) => { this.liste = liste; this.changer(); });
   }

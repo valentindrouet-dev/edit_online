@@ -2175,6 +2175,11 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 .liaison-ok { background: #dcf5e3; color: #1f7a3d; }
 .liaison-ko { background: #fde2e0; color: #b3261e; }
 .liaison-locale { background: var(--gris-clair); color: var(--gris); }
+.liaison-raison {
+  margin: -6px 0 18px; padding: 12px 16px; border-radius: 14px;
+  background: #fdf0ef; color: #8c1d18; border: 1px solid #f6c9c5; line-height: 1.45;
+}
+.liaison-raison .aide { display: block; margin-top: 4px; color: #8c1d18; opacity: .8; }
 
 #ligne-nom {
   width: 100%; max-width: 340px; font: inherit; padding: 9px 12px; border-radius: 10px;

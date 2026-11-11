@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.09';
-export const BUILD_DATE = '2026-11-11 18:09';
+export const VERSION = '4.1.10';
+export const BUILD_DATE = '2026-11-11 18:22';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.10',
+    date: '11/11/2026',
+    items: [
+      "<b>En ligne : la panne dit sa cause.</b> Sous « Liaison interrompue », l’écran affiche pourquoi : client introuvable, serveur muet ou canal refusé par Supabase, avec le message du serveur.",
+      "Le client Supabase se charge sur <b>jsDelivr</b> si esm.sh ne répond pas.",
+    ],
+  },
   {
     v: '4.1.09',
     date: '11/11/2026',
