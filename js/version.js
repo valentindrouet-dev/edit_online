@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.08';
-export const BUILD_DATE = '2026-11-11 17:51';
+export const VERSION = '4.1.09';
+export const BUILD_DATE = '2026-11-11 18:09';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.09',
+    date: '11/11/2026',
+    items: [
+      "<b>Fin de partie à 12 plans.</b> Une configuration enregistrée à l’ancienne valeur reprend les douze.",
+      "<b>Pioche vide :</b> chaque carte prise dans la rivière est remplacée par la carte du dessus du Chutier, une par une — et l’on ne défausse plus.",
+      "Deux <b>Raccords</b> côte à côte restent interdits : la règle sort des points à confirmer.",
+    ],
+  },
   {
     v: '4.1.08',
     date: '11/11/2026',

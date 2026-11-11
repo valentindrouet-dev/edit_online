@@ -45,10 +45,10 @@ export function corpsRegles(cfg) {
   const c = cfg || {};
 
   // --- Ce que la configuration règle ---------------------------------------
-  const tours = c.tours || 10;
+  const tours = c.tours || 12;
   const riviere = Math.max(1, (c.riviere | 0) || 4);
   const defausse = c.defausse !== false;
-  const recycle = c.recyclerChutier !== false;
+  const parChutier = c.chutierRiviere !== false;
   const seqMax = c.sequencesMax > 0 ? c.sequencesMax : 0;     // 0 : aucune limite
   const parCote = c.plansParCote > 0 ? c.plansParCote : 0;    // 0 : aucune limite
 
@@ -216,9 +216,9 @@ export function corpsRegles(cfg) {
       défaussez-en une pour en faire venir une autre. S’il n’y a toujours rien à monter,` : `Si aucune
       carte offerte n’a de place dans votre banc,`} vous <b>passez</b> votre tour. Si toutes les
       joueuses passent l’une après l’autre, la partie s’arrête et l’on compte.`)}
-    ${encart('La pioche est vide', recycle
-    ? `Mélangez le Chutier — <b>sauf sa carte du dessus</b>, qui reste en place — pour refaire une
-        pioche.`
+    ${encart('La pioche est vide', parChutier
+    ? `Chaque carte prise dans la rivière est remplacée par la <b>carte du dessus du Chutier</b> — la
+        dernière défaussée —, une par une. ${defausse ? 'On ne défausse plus : la carte écartée reviendrait aussitôt.' : ''}`
     : `La rivière ne se recomplète plus : on joue avec les cartes qui restent.`)}
   `, 'lv-etapes')}
 
@@ -307,13 +307,11 @@ export function corpsRegles(cfg) {
   ${section('Points à confirmer avec l’auteur', `
     ${encart('', `<p>Ces règles sont celles que le site joue. Voici où il a fallu trancher :</p>
     <ul class="lv-liste">
-      <li>La partie s’achève au <b>${eme(tours)} plan</b>, Plan de départ compris, après un dernier
-        tour ; le Raccord, l’Ouverture et la Fin ne sont pas des plans.</li>
+      <li>Le <b>Plan de départ</b> compte parmi les ${tours} plans qui arrêtent la partie ; le Raccord,
+        l’Ouverture et la Fin n’en sont pas.</li>
       <li>Après une défausse, la rivière est <b>recomplétée tout de suite</b> : on choisit toujours
         parmi ${pluriel(riviere, 'carte')}.</li>
-      <li>Pioche vide : le <b>Chutier est mélangé</b>, sauf sa carte du dessus, pour refaire une
-        pioche.</li>
-      ${c.raccordAppellePL ? '' : '<li>Deux <b>Raccords</b> ne se suivent pas dans une séquence.</li>'}
+      ${parChutier && defausse ? '<li>Pioche vide : on <b>ne défausse plus</b> — la carte écartée reviendrait aussitôt du Chutier dans la rivière.</li>' : ''}
       <li>L’<b>Ouverture</b> et la <b>Fin</b> se montent comme les autres moitiés ; elles ne sont
         ni des plans, ni des Raccords.</li>
       <li>L’<b>Entracte</b> (L10, ${afficheur(35)}, sans icône) est joué comme un Plan Large ordinaire.</li>

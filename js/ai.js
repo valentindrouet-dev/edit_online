@@ -357,7 +357,7 @@ export function valeurDepartDesDroits(plan, state) {
       // deux ou trois.
       const limite = cfg.sequencesMax;
       if (limite && limite > 0) {
-        const voulues = Math.max(2, Math.round((cfg.tours || 10) / 3));
+        const voulues = Math.max(2, Math.round((cfg.tours || 12) / 3));
         v += o.n * (limite < voulues ? 4.5 : limite === voulues ? 1.5 : 0.2);
       }
     } else if (o.kind === 'RACCORD_VAUT') {

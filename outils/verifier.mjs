@@ -35,9 +35,9 @@ const { DEFAULTS, cloneConfig } = await import(pathToFileURL(join(racine, 'js/co
 const joueurs = [{ nom: 'A', type: 'NOVICE' }, { nom: 'B', type: 'EQUILIBRE' }, { nom: 'C', type: 'STRATEGE' }];
 let parties = 0; let fautes = 0;
 // Les règles telles quelles, puis deux réglages qui les éprouvent : sans défausse
-// ni recyclage du Chutier — la pioche peut alors se vider —, et une rivière
-// réduite.
-for (const variante of [{}, { defausse: false, recyclerChutier: false }, { riviere: 2, tours: 12 }]) {
+// ni retour du Chutier dans la rivière — la table peut alors se vider —, et une
+// rivière réduite.
+for (const variante of [{}, { defausse: false, chutierRiviere: false }, { riviere: 2, tours: 14 }]) {
   for (let i = 0; i < 4; i++) {
     try {
       const r = lab.simulerPartie(joueurs, { ...cloneConfig(DEFAULTS), ...variante }, `verif-${i}`);

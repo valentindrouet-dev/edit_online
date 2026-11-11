@@ -352,7 +352,7 @@ export function aideDeJeu(cfg) {
   const c = cfg || {};
   const boite = lireBoite();
   const B = recenserBoite(c);
-  const tours = c.tours || 10;
+  const tours = c.tours || 12;
   const riviere = Math.max(1, (c.riviere | 0) || 4);
   const seqMax = c.sequencesMax > 0 ? c.sequencesMax : 0;
   const parCote = c.plansParCote > 0 ? c.plansParCote : 0;
@@ -377,7 +377,8 @@ export function aideDeJeu(cfg) {
       ${defausse ? pas(1, `<b>Défausser</b> <i>(facultatif, une fois)</i> — une carte de la rivière part au
         Chutier ; la rivière se recomplète.`) : ''}
       ${pas(defausse ? 2 : 1, `<b>Prendre</b> une des ${riviere} cartes de la rivière — elle doit avoir
-        une place dans votre banc.`)}
+        une place dans votre banc.${c.chutierRiviere !== false ? `
+        Pioche vide : la carte du dessus du Chutier prend sa place.` : ''}`)}
       ${pas(defausse ? 3 : 2, `<b>La monter</b> aussitôt. Rien à monter : vous passez.`)}
     </div>
 

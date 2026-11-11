@@ -76,7 +76,7 @@ export function tailleRiviere(cfg) {
 export function bilanPaquet(cfg, n) {
   const { doubles, larges, departs } = construirePaquet();
   const aCompleter = buildCartesDoubles().filter((c) => c.actif && !carteComplete(c)).map((c) => c.id);
-  const besoin = Math.max(0, (cfg.tours || 10) - 1) * n + tailleRiviere(cfg);
+  const besoin = Math.max(0, (cfg.tours || 12) - 1) * n + tailleRiviere(cfg);
   const total = doubles.length + larges.length;
   const departsManquants = Math.max(0, n - departs.length);
   const manque = Math.max(0, besoin - total);
@@ -131,7 +131,6 @@ export function creerPartie(joueurs, cfg, graine) {
     // La défausse, face visible. La dernière carte défaussée est au bout.
     chutier: [],
     defausseFaite: false,     // la joueuse en cours a-t-elle déjà défaussé ?
-    recyclages: 0,
     passes: 0,
     tour: 1,
     phase: 'DEPART',          // DEPART | DERUSHAGE (choisir sa carte) | MONTAGE (la poser)
@@ -210,20 +209,18 @@ export function sommetChutier(state) {
 }
 
 /**
- * Une carte de la pioche. Quand elle est vide, le Chutier — sa carte du dessus
- * exceptée, qui reste visible — est mélangé pour en refaire une. Le mélange se
- * tire de la graine : deux appareils qui rejouent la même partie obtiennent la
- * même pioche.
+ * La carte qui vient remplacer, dans la rivière, une carte PRISE. Elle sort de
+ * la pioche ; quand la pioche est vide, c'est la carte du DESSUS du Chutier — la
+ * dernière défaussée — qui revient, une par une, compenser les cartes prises.
  */
-function piocher(state) {
-  if (!state.pioche.length && state.cfg.recyclerChutier !== false && state.chutier.length > 1) {
-    const dessus = state.chutier.pop();
-    state.recyclages = (state.recyclages || 0) + 1;
-    state.pioche = melanger(state.chutier, rng(`${state.seed}|chutier|${state.recyclages}`));
-    state.chutier = [dessus];
-    journal(state, 'La pioche est vide — le Chutier est mélangé pour en refaire une');
+function remplacante(state) {
+  if (state.pioche.length) return state.pioche.shift();
+  if (state.cfg.chutierRiviere !== false && state.chutier.length) {
+    const carte = state.chutier.pop();
+    journal(state, `La pioche est vide : ${nomCarte(carte)} revient du Chutier dans la rivière`);
+    return carte;
   }
-  return state.pioche.length ? state.pioche.shift() : null;
+  return null;
 }
 
 /**
@@ -231,14 +228,19 @@ function piocher(state) {
  * se pose exactement là où était l'ancienne, et les autres ne bougent pas.
  */
 function sortirDeLaRiviere(state, i) {
-  const neuve = piocher(state);
+  const neuve = remplacante(state);
   return (neuve ? state.riviere.splice(i, 1, neuve) : state.riviere.splice(i, 1))[0];
 }
 
-/** La joueuse en cours peut-elle encore défausser une carte de la rivière ? */
+/**
+ * La joueuse en cours peut-elle encore défausser une carte de la rivière ? Pas
+ * quand la pioche est vide : la rivière se recomplète alors sur le Chutier, et
+ * la carte écartée y reviendrait aussitôt.
+ */
 export function peutDefausser(state, p = state.courant) {
   return !state.finie && state.phase === 'DERUSHAGE' && p === state.courant
-    && state.cfg.defausse !== false && !state.defausseFaite && state.riviere.length > 0;
+    && state.cfg.defausse !== false && !state.defausseFaite && state.riviere.length > 0
+    && state.pioche.length > 0;
 }
 
 /**
@@ -249,12 +251,9 @@ export function defausser(state, p, index) {
   if (!peutDefausser(state, p)) return null;
   const carte = state.riviere[index];
   if (!carte) return null;
-  // La carte rejoint le Chutier AVANT que la rivière se recomplète : si la
-  // pioche est vide, c'est le reste du Chutier qui est mélangé, pas elle.
+  // La rivière se recomplète sur la pioche — on ne défausse pas quand elle est vide.
   state.chutier.push(carte);
-  state.riviere.splice(index, 1);
-  const neuve = piocher(state);
-  if (neuve) state.riviere.splice(index, 0, neuve);
+  state.riviere.splice(index, 1, state.pioche.shift());
   state.defausseFaite = true;
   state.defausses = (state.defausses || 0) + 1;
   journal(state, `${state.joueurs[p].nom} défausse ${nomCarte(carte)} au Chutier`, p);

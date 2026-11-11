@@ -6,18 +6,23 @@
 
 export const DEFAULTS = {
   // --- Déroulé -------------------------------------------------------------
-  tours: 10,                 // plans dans le banc, Plan de départ compris
+  tours: 12,                 // plans dans le banc, Plan de départ compris
   // Une seule pioche, face cachée, et devant elle la RIVIÈRE : quatre cartes
   // visibles, quel que soit le nombre de joueuses.
   riviere: 4,
   // Avant de choisir sa carte, on peut en défausser une de la rivière au
   // CHUTIER — la défausse face visible —, et la rivière se recomplète.
   defausse: true,
-  // Quand la pioche est vide, le Chutier — sa carte du dessus exceptée — est
-  // mélangé pour en refaire une.
-  recyclerChutier: true,
+  // Quand la pioche est vide, chaque carte prise dans la rivière est remplacée
+  // par la carte du DESSUS du Chutier, une par une. À false, la rivière cesse de
+  // se recompléter.
+  chutierRiviere: true,
   premierJoueurAleatoire: true,
   premierJoueur: 0,          // qui commence quand le tirage au sort est écarté
+  // L'édition des règles par défaut de cette configuration. Quand l'auteur
+  // change une règle — la fin de partie passée à douze plans —, une
+  // configuration enregistrée avant reprend la nouvelle valeur.
+  editionRegles: 2,
 
   // --- Pose ----------------------------------------------------------------
   // Un banc porte trois séquences, l'une au-dessus de l'autre ; le pouvoir d'un
@@ -144,6 +149,12 @@ export function migrerCfg(lu) {
   // `publieAdopte` n'est pas une variable de partie mais la mémoire de la
   // dernière configuration publiée qu'on a adoptée : elle se garde.
   if (lu.publieAdopte !== undefined) out.publieAdopte = lu.publieAdopte;
+  // Une configuration d'une édition précédente des règles reprend les valeurs
+  // que l'auteur a changées depuis.
+  if ((Number(lu.editionRegles) || 1) < DEFAULTS.editionRegles) {
+    delete out.tours;
+    out.editionRegles = DEFAULTS.editionRegles;
+  }
   if (lu.boite !== DEFAULTS.boite) {
     delete out.materiel;
     delete out.cartesDesactivees;
@@ -173,14 +184,16 @@ export function migrerCfg(lu) {
 
 export const SCHEMA = [
   { groupe: 'Déroulé', champs: [
-    { k: 'tours', l: 'Plans dans le banc', t: 'int', min: 2, max: 30, aide: 'Plan de départ compris' },
+    { k: 'tours', l: 'Plans dans le banc', t: 'int', min: 2, max: 30,
+      aide: 'douze par les règles, Plan de départ compris : le premier banc qui les a déclenche la fin' },
     { k: 'riviere', l: 'Cartes visibles dans la rivière', t: 'int', min: 1, max: 8,
       aide: 'quatre par les règles, quel que soit le nombre de joueuses' },
     { k: 'defausse', l: 'On peut défausser une carte au Chutier', t: 'bool',
       aide: 'avant de choisir sa carte, on peut en écarter une de la rivière ; elle part au Chutier, '
         + 'face visible, et la rivière se recomplète' },
-    { k: 'recyclerChutier', l: 'Pioche vide : le Chutier refait une pioche', t: 'bool',
-      aide: 'il est mélangé, sa carte du dessus exceptée ; décoché, la rivière cesse de se recompléter' },
+    { k: 'chutierRiviere', l: 'Pioche vide : le Chutier recomplète la rivière', t: 'bool',
+      aide: 'chaque carte prise est remplacée par la carte du dessus du Chutier, une par une — et l’on ne '
+        + 'défausse plus ; décoché, la rivière cesse de se recompléter' },
     { k: 'premierJoueurAleatoire', l: 'Première joueuse tirée au sort', t: 'bool' },
     { k: 'premierJoueur', l: 'Sinon, qui commence', t: 'int', min: 0, max: 3,
       aide: 'le rang de la joueuse, 0 pour la première de la liste' },

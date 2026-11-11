@@ -34,7 +34,7 @@ export function estRaccord(p) {
 /**
  * Les plans qui comptent dans le total du banc. Un Raccord, l'Ouverture, la Fin
  * ne sont pas des plans : ils relient ou encadrent le film, ils ne le racontent
- * pas. Ils ne comptent donc pas dans les dix plans qui arrêtent la partie.
+ * pas. Ils ne comptent donc pas dans les douze plans qui arrêtent la partie.
  */
 export function plansComptes(banc) {
   return tousLesPlans(banc).filter((p) => !estRaccord(p)).length;
