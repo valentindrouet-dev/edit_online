@@ -202,16 +202,17 @@ export function porteeDe(obj, sequence, banc, cfg, porteur) {
   // qu'il n'est pas sur ce banc-là — un aperçu, un plan repris en main — ne
   // doit pas faire tomber le décompte entier.
   if (p === 'SEQUENCE') return sequence || [];
-  // ▷▷ — cette carte et tout ce qui la suit : le reste de sa ligne, puis les
-  // lignes du dessous en entier. Le montage se lit ligne après ligne.
+  // ▷▷ — tout ce qui SUIT cette carte : le reste de sa ligne, puis les lignes
+  // du dessous en entier. Le montage se lit ligne après ligne. L'aide de jeu
+  // de l'auteur le dit : « après, dans tout le montage (elle exclue) ».
   if (p === 'SUITE') {
     const i = montage.indexOf(porteur);
-    return i < 0 ? [] : montage.slice(i);
+    return i < 0 ? [] : montage.slice(i + 1);
   }
-  // ◁◁ — son reflet : tout ce qui la précède, et elle.
+  // ◁◁ — son reflet : tout ce qui la PRÉCÈDE, elle exclue.
   if (p === 'AMONT') {
     const i = montage.indexOf(porteur);
-    return i < 0 ? [] : montage.slice(0, i + 1);
+    return i < 0 ? [] : montage.slice(0, i);
   }
   if (p === 'AVANT' || p === 'APRES') {
     // La ligne du porteur. `sequence` la donne d'ordinaire ; on la retrouve

@@ -181,16 +181,16 @@ export const PORTEES = [
     court: 'séquence', gauche: true,  droite: true },
   { id: 'MONTAGE',  label: 'dans le montage entier', phrase: 'dans le montage entier',
     court: 'montage',  gauche: false, droite: false },
-  // ▷▷ — cette carte et TOUT ce qui la suit dans le montage, séquences du
-  // dessous comprises. La seule portée qui descende d'une ligne à l'autre :
-  // le montage se lit ligne après ligne, chacune de gauche à droite.
-  { id: 'SUITE',    label: 'cette carte et toute la suite du montage',
-    phrase: 'de cette carte à la fin du montage',
+  // ▷▷ — TOUT ce qui suit cette carte dans le montage, séquences du dessous
+  // comprises, elle exclue. Le montage se lit ligne après ligne, chacune de
+  // gauche à droite.
+  { id: 'SUITE',    label: 'tout ce qui suit cette carte dans le montage',
+    phrase: 'après cette carte, dans tout le montage',
     court: 'suite',    gauche: false, droite: false, avance: true },
-  // ◁◁ — son reflet : du début du montage jusqu'à cette carte comprise, les
-  // lignes du dessus en entier.
-  { id: 'AMONT',    label: 'le début du montage jusqu’à cette carte',
-    phrase: 'du début du montage à cette carte',
+  // ◁◁ — son reflet : tout ce qui précède cette carte, les lignes du dessus en
+  // entier, elle exclue.
+  { id: 'AMONT',    label: 'tout ce qui précède cette carte dans le montage',
+    phrase: 'avant cette carte, dans tout le montage',
     court: 'amont',    gauche: false, droite: false, recul: true },
 ];
 
@@ -1054,15 +1054,15 @@ const GP_41 = [
   X41(1, 0, ['HEROINE'], OBJ.element(1, 'HEROINE', 'MONTAGE')),
   X41(2, 0, ['ENNEMI'], OBJ.element(1, 'ENNEMI', 'MONTAGE')),
   X41(3, 0, ['ALLIE'], OBJ.element(1, 'ALLIE', 'MONTAGE')),
-  X41(4, 0, ['HEROINE'], OBJ.paire(2, 'HEROINE', 'ALLIE', 'MONTAGE')),
-  X41(5, 0, ['ENNEMI', 'HEROINE'], OBJ.paire(2, 'ENNEMI', 'HEROINE', 'MONTAGE')),
-  X41(6, 0, ['ALLIE'], OBJ.paire(2, 'ALLIE', 'ENNEMI', 'MONTAGE')),
+  X41(4, 0, ['HEROINE'], OBJ.paire(2, 'HEROINE', 'ALLIE', 'SEQUENCE')),
+  X41(5, 0, ['ENNEMI', 'HEROINE'], OBJ.paire(2, 'ENNEMI', 'HEROINE', 'SEQUENCE')),
+  X41(6, 0, ['ALLIE'], OBJ.paire(2, 'ALLIE', 'ENNEMI', 'SEQUENCE')),
   X41(7, 0, ['OBJET'], OBJ.element(1, 'OBJET', 'MONTAGE')),
   X41(8, 0, ['ARME'], OBJ.element(1, 'ARME', 'MONTAGE')),
   X41(9, 0, ['VEHICULE'], OBJ.element(1, 'VEHICULE', 'MONTAGE')),
   X41(10, 10, ['ALLIE', 'OBJET'], OBJ.element(1, 'ALLIE', 'SUITE')),
   X41(11, 10, ['OBJET', 'ARME'], OBJ.element(2, 'OBJET', 'SEQUENCE')),
-  X41(12, 10, ['ARME', 'OBJET'], OBJ.paire(2, 'ARME', 'OBJET', 'MONTAGE')),
+  X41(12, 10, ['ARME', 'OBJET'], OBJ.paire(2, 'ARME', 'OBJET', 'SEQUENCE')),
   X41(13, 10, ['HEROINE', 'ARME'], OBJ.seuilCible(4, 'ORDRE', 'MIN', 1, 'SEQUENCE')),
   X41(14, 10, ['HEROINE', 'VEHICULE'], OBJ.seuilCible(6, 'HEROINE', 'MIN', 6, 'MONTAGE')),
   X41(15, 10, ['ARME', 'HEROINE'], OBJ.element(1, 'ARME', 'SUITE')),

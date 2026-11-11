@@ -2552,3 +2552,17 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
   .lv-ana-carte .lv-carte { height: 210px; }
   .lv-encart-carte .lv-carte { height: 84px; }
 }
+
+/* Les aides de jeu imprimées de l'auteur : des cartes 3/2, montrées telles quelles. */
+.lv-aide { display: block; width: 100%; max-width: 620px; height: auto; border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(60, 40, 90, .16); }
+.lv-figure-aide .lv-figure-cartes { min-height: 0; }
+.aj-aides { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;
+  margin: 0 0 22px; }
+.aj-aide img { display: block; width: 100%; height: auto; border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(60, 40, 90, .14); }
+.accueil-aides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; cursor: pointer; }
+.accueil-aides img { display: block; width: 100%; height: auto; border-radius: 8px;
+  box-shadow: 0 3px 10px rgba(60, 40, 90, .12); transition: transform .15s ease; }
+.accueil-aides:hover img { transform: translateY(-2px); }
+@media print { .aj-aides { break-inside: avoid; } }

@@ -111,14 +111,27 @@ function mots(cible) {
   }
 }
 
+/**
+ * Les deux aides de jeu imprimées de l'auteur, telles quelles : les icônes, et
+ * les effets de plans. Le reste de l'aide les détaille, compté sur le matériel.
+ */
+export function aidesDeLaBoite() {
+  const aide = (nom, alt) => `<a class="aj-aide" href="assets/aides/${nom}.webp" target="_blank" rel="noopener">
+    <img src="assets/aides/${nom}.webp" alt="${alt}" loading="lazy" decoding="async" draggable="false"></a>`;
+  return `<div class="aj-aides">
+    ${aide('ICONES', 'Aide de jeu de la boîte : les icônes')}
+    ${aide('EFFETS', 'Aide de jeu de la boîte : les effets de plans')}
+  </div>`;
+}
+
 /** Où un pouvoir regarde, dit en toutes lettres. */
 const OU = {
   MONTAGE: 'dans tout votre montage',
   SEQUENCE: 'dans sa séquence',
   APRES: 'de ce plan au bout droit de sa séquence',
   AVANT: 'du début de sa séquence à ce plan',
-  SUITE: 'de ce plan à la fin du montage',
-  AMONT: 'du début du montage à ce plan',
+  SUITE: 'après ce plan, dans tout le montage',
+  AMONT: 'avant ce plan, dans tout le montage',
 };
 const ou = (pt) => OU[pt] || OU.MONTAGE;
 
@@ -315,16 +328,16 @@ export function porteesHTML(cfg, boite = lireBoite()) {
     [exemple(de('APRES')), '<b>Une flèche à droite</b> — de ce plan au bout droit de sa séquence.'],
     [exemple((o, p) => (simple.includes(o.kind) && p === 'AVANT') || (o.kind === 'BOUT' && o.sens === 'GAUCHE')),
       '<b>Une flèche à gauche</b> — du début de sa séquence à ce plan.'],
-    [exemple(de('SUITE')), '<b>Une double flèche à droite</b> — de ce plan à la fin du montage : le reste '
-      + 'de sa séquence, puis toutes les séquences du dessous.'],
-    [exemple(de('AMONT')), '<b>Une double flèche à gauche</b> — du début du montage à ce plan : toutes les '
-      + 'séquences du dessus, puis la sienne jusqu’à lui.'],
+    [exemple(de('SUITE')), '<b>Une double flèche à droite</b> — <b>après</b> ce plan, dans tout le montage : '
+      + 'le reste de sa séquence, puis toutes les séquences du dessous. Lui exclu.'],
+    [exemple(de('AMONT')), '<b>Une double flèche à gauche</b> — <b>avant</b> ce plan, dans tout le montage : '
+      + 'toutes les séquences du dessus, puis la sienne jusqu’à lui. Lui exclu.'],
   ];
   return `<div class="aj-bloc">
     <h3>Où un pouvoir regarde</h3>
     ${rangs.map(([s, t]) => ligne(s, t, 'lv-lex')).join('')}
-    <p class="aide lv-apres">Le plan qui porte le pouvoir fait partie de ce qu’il compte — sauf quand le
-      pouvoir demande une <b>absence</b> : celui-là ne se regarde pas lui-même.</p>
+    <p class="aide lv-apres">Le plan qui porte le pouvoir fait partie de ce qu’il compte — sauf avec une
+      <b>double flèche</b> (avant, après) et quand le pouvoir demande une <b>absence</b>.</p>
   </div>`;
 }
 
@@ -367,6 +380,8 @@ export function aideDeJeu(cfg) {
     <p class="aj-note">Le chiffre de droite compte les <b>cartes de la boîte</b> qui portent ce qui est
     décrit — ${B.cartes} cartes en tout, cartes de départ comprises. Il suit votre matériel : une carte
     retouchée ou écartée dans le Matériel change le compte.</p></header>
+
+  ${aidesDeLaBoite()}
 
   <div class="aj-fiche">
 

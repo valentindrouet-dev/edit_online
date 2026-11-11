@@ -174,6 +174,8 @@ export function corpsRegles(cfg) {
     ${encart('Les icônes du jeu', `<div class="lv-icones">${ELEMENT_IDS
     .map((e) => `<span>${elIcon(e, 34)}${ELEMENTS[e].label}</span>`).join('')}
       <span>${elIcon('MORT', 34)}Le crâne : un plan de mort</span></div>`)}
+    ${figure('<img class="lv-aide" src="assets/aides/ICONES.webp" alt="Aide de jeu : les icônes" loading="lazy" decoding="async" draggable="false">',
+    'L’aide de jeu <b>Icônes</b> de la boîte : les icônes, et les mots que les pouvoirs emploient.', 'lv-figure-aide')}
     <p>Le minutage <b>ne contraint pas la pose</b> : vous montez vos plans dans l’ordre que vous
     voulez. Certains pouvoirs, en revanche, paient un montage dont les minutages se suivent.</p>
   `)}
@@ -282,6 +284,8 @@ export function corpsRegles(cfg) {
   `)}
 
   ${section('Le décompte', `
+    ${figure('<img class="lv-aide" src="assets/aides/EFFETS.webp" alt="Aide de jeu : les effets de plans" loading="lazy" decoding="async" draggable="false">',
+    'L’aide de jeu <b>Effets de plans</b> : comment se lit chaque pouvoir.', 'lv-figure-aide')}
     <p>Chaque plan de votre montage rapporte ce que dit son <b>pouvoir</b>. Additionnez-les : le
     total le plus haut l’emporte. ${c.scorerDepart === false ? 'Le Plan de départ, lui, ne rapporte rien. ' : ''}En
     cas d’égalité, la victoire est partagée.</p>
@@ -289,7 +293,7 @@ export function corpsRegles(cfg) {
       <li>« <b>n ×</b> … » : n points <b>pour chaque</b> chose comptée.</li>
       <li>« <b>n si</b> … » : n points, <b>une seule fois</b>, si la condition est tenue.</li>
       <li>Une <b>croix rouge</b> sur un symbole se lit « aucun » ; <b>MAX</b>, « la plus présente » ;
-        <b>3+</b>, « au moins 3 » ; le <b>?</b>, « n’importe quelle icône ».</li>
+        <b>5+</b>, « au moins 5 » ; le <b>?</b>, « n’importe quelle icône ».</li>
       <li>Les <b>flèches</b> disent où le pouvoir regarde.</li>
     </ul>
     ${c.pointsParPlan ? `<p>Vos Variables ajoutent <b>${pluriel(c.pointsParPlan, 'point')}</b> par
@@ -302,6 +306,8 @@ export function corpsRegles(cfg) {
     </div>
     <p class="lv-fin">Pendant la partie, les points se lisent au <b>coin de chaque plan</b> de votre
     montage : c’est ce que ce plan-là vous rapporte, ici et maintenant.</p>
+    ${figure('<img class="lv-aide" src="assets/aides/SCORE.webp" alt="La feuille de score" loading="lazy" decoding="async" draggable="false">',
+    'La <b>feuille de score</b> de la boîte : une colonne par joueuse, de 1 à 4, et son <b>total</b>.', 'lv-figure-aide')}
   `)}
 
   ${section('Points à confirmer avec l’auteur', `

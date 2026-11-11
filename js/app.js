@@ -340,6 +340,10 @@ function vueAccueil() {
           </ul>
           <p class="aide"><span class="bm-lien" data-go="#/regles">Lire les règles ›</span>
           ${partage ? '' : ' · <span class="bm-lien" data-go="#/variables">régler les variables ›</span>'}</p>
+          <div class="accueil-aides" data-go="#/regles" title="Les aides de jeu de la boîte — lire les règles">
+            <img src="assets/aides/ICONES.webp" alt="Aide de jeu : les icônes" loading="lazy" decoding="async" draggable="false">
+            <img src="assets/aides/EFFETS.webp" alt="Aide de jeu : les effets de plans" loading="lazy" decoding="async" draggable="false">
+          </div>
         </div>
 
         <div class="panneau">

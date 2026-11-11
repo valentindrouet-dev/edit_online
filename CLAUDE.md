@@ -54,7 +54,9 @@ Cartes Objectif, modes, sets, Atelier) sans demande de l'auteur.
 - Points encore à confirmer par l'auteur : le Plan de départ compté parmi les 12 plans, pas de défausse
   quand la pioche est vide, l'Entracte (L10).
 - En cas de doute sur l'assemblage ou la lecture d'une carte, les **planches et images de l'auteur**
-  font foi.
+  font foi — et pour la lecture des pouvoirs, ses **aides de jeu** (`assets/aides/` : ICONES, EFFETS,
+  SCORE) : ×icône = tout le montage, ×duo = la séquence, ◁ ▷ = la séquence, ◁◁ / ▷▷ = avant / après
+  dans tout le montage, la carte exclue.
 
 ## Règles du projet
 

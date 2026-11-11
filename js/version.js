@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.11';
-export const BUILD_DATE = '2026-11-11 18:23';
+export const VERSION = '4.1.12';
+export const BUILD_DATE = '2026-11-11 18:28';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.12',
+    date: '11/11/2026',
+    items: [
+      "<b>Les aides de jeu de la boîte</b> habillent l’accueil, les règles (Icônes, Effets de plans, feuille de score) et l’aide de jeu.",
+      "Lecture alignée sur l’aide : le <b>duo</b> se compte dans la séquence (GP04, GP05, GP06, GP12) ; <b>◁◁ / ▷▷</b> comptent avant / après dans tout le montage, la carte exclue.",
+    ],
+  },
   {
     v: '4.1.11',
     date: '11/11/2026',
