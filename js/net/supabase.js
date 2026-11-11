@@ -67,6 +67,12 @@ function raisonDe(statut, err) {
   if (statut === 'TIMED_OUT') {
     return 'Le serveur Supabase ne répond pas : le projet est peut-être en pause (offre gratuite inactive une semaine).';
   }
+  // « transport failure » : le WebSocket lui-même ne s'ouvre pas — rien n'a
+  // atteint le canal. Le serveur ne l'accepte pas, ou il n'est pas là.
+  if (detail && /transport/i.test(detail)) {
+    return 'Le WebSocket vers Supabase ne s’ouvre pas (« transport failure ») : projet en pause, clé du projet '
+      + 'refusée (anciennes clés « anon » désactivées ou régénérées), ou réseau qui bloque les WebSockets.';
+  }
   if (detail && !/^\[object /.test(detail)) return `Supabase refuse le canal : ${detail}`;
   return 'La connexion temps réel à Supabase échoue : projet en pause, clé refusée ou accès public des canaux '
     + 'fermé dans les réglages Realtime du projet.';

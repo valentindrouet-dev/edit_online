@@ -1,8 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.10';
-export const BUILD_DATE = '2026-11-11 18:22';
+export const VERSION = '4.1.11';
+export const BUILD_DATE = '2026-11-11 18:23';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.11',
+    date: '11/11/2026',
+    items: [
+      "<b>En ligne :</b> « transport failure » se lit enfin juste — le WebSocket vers Supabase ne s’ouvre pas, avec ses trois causes possibles.",
+    ],
+  },
   {
     v: '4.1.10',
     date: '11/11/2026',
