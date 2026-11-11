@@ -3401,15 +3401,15 @@ function vueAssemblage() {
   côté : c’est l’<b>assemblage</b>, et il se règle ici.</p>
   <p class="encart repere-assemblage"><b>La convention de l’auteur</b> — un repère, pas un interdit :
   les minutages <b>01’, 10’, 20’, 30’</b> à gauche de la carte ; <b>40’, 50’, 60’, 70’</b> à droite ;
-  chaque <b>« -- »</b> deux fois, une à gauche et une à droite ; le <b>Raccord</b> où il reste de la
-  place. Une moitié rangée du côté opposé
+  les <b>« -- »</b> et le <b>Raccord</b> d’un côté comme de l’autre. Une moitié rangée du côté opposé
   porte un <b class="demi-repere">⚠</b>.</p>
 
   <div class="bilan-assemblage ${rp.absents || rp.enTrop || rp.enMoins || incompletes ? 'a-revoir' : 'net'}">
     <b>${cartes.length} carte${s(cartes.length)}</b> · ${rp.lignes.length} Gros Plans —
     ${rp.absents ? `<b class="lg-absente">${rp.absents} sur aucune carte</b> :
       ${rp.lignes.filter((m) => !m.n).map(nom).join(', ')}`
-    : `tous sont sur leurs cartes${rp.doubles ? `, les ${rp.doubles} « -- » en deux exemplaires` : ''}`}
+    : `tous sont sur leurs cartes, en autant d’exemplaires que dans la boîte${rp.doubles
+      ? ` — ${rp.doubles} d’entre eux plusieurs fois` : ''}`}
     ${rp.enTrop ? ` · <b class="lg-repetee">${rp.enTrop} en trop</b> :
       ${rp.lignes.filter((m) => m.n > m.attendu).map((m) => `${nom(m)} ×${m.n} (boîte : ${m.attendu})`).join(', ')}` : ''}
     ${rp.enMoins ? ` · <b class="lg-repetee">${rp.enMoins} en moins</b> :
@@ -3460,8 +3460,9 @@ function vueAssemblage() {
     .map((c) => carteAssemblage(c, parRang.get(c.rang))).join('')}</div>
 
   <h3 style="margin-top:22px">Où sont les Gros Plans</h3>
-  <p class="aide">Sur combien de cartes chaque Gros Plan se trouve. La boîte imprime deux fois
-  chaque « -- » — une fois en moitié gauche, une fois en moitié droite — et une fois les autres.
+  <p class="aide">Sur combien de cartes chaque Gros Plan se trouve. La boîte en imprime certains
+  plusieurs fois — le Raccord, l’Ouverture, la Fin, la plupart des « -- » — et chaque case se compare
+  à ce nombre.
   <b class="lg-absente">En rouge</b>, ceux qui ne sont sur <b>aucune carte</b> — ils ne se joueront
   pas. <b class="lg-repetee">En orange</b>, ceux qui n’ont pas le nombre d’exemplaires de la boîte.
   Un clic en prend un <b>en main</b> : les cartes qui le portent s’allument, et un clic sur une

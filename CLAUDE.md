@@ -35,11 +35,12 @@ Cartes Objectif, modes, sets, Atelier) sans demande de l'auteur.
   (L5, L7, L12, L16) : leurs six couples font six **cartes de départ** recto verso — le seul recto verso
   du jeu. Chaque joueuse en reçoit une et choisit sa face.
 - **Gros Plans** : 54 (`GP00`…`GP66`, `GP100` Raccord, `GP101` Ouverture 01', `GP102` Fin 70'), deux par
-  carte — 32 **cartes à deux Gros Plans**, moitié GAUCHE et moitié DROITE (`ASSEMBLAGE_41`, `[gauche,
-  droite]`). Les 20 premières viennent des planches de l'auteur, les 12 autres suivent sa règle : 10' à
-  30' et Ouverture à gauche, 40' à 60' et Fin à droite, chaque « -- » imprimé DEUX FOIS (une fois de
-  chaque côté), deux dominantes différentes par carte. `exemplairesBoite()` dit combien de fois la boîte
-  imprime chaque Gros Plan.
+  carte — 36 **cartes à deux Gros Plans**, moitié GAUCHE et moitié DROITE (`ASSEMBLAGE_41`, `[gauche,
+  droite]`), toutes tirées des planches de l'auteur : 10' à 30' et Ouverture à gauche, 40' à 60' et Fin à
+  droite, deux dominantes différentes par carte. Exemplaires : Raccord ×8 (4 à gauche, 4 à droite),
+  Ouverture ×2, Fin ×2, GP01–GP09 ×2 (une fois de chaque côté), les autres ×1 — 72 moitiés.
+  `exemplairesBoite()` les compte.
+- **Dos des cartes** : `assets/s41/DOS.webp`, le verso de l'auteur (le même pour toute la pioche).
 - **Règles** (`js/engine.js`) : une pioche face cachée, une rivière de 4 cartes, le **Chutier** (défausse
   face visible). À son tour : défausser une carte de la rivière (facultatif, une fois), puis en prendre
   une et la monter. Un Plan Large ouvre une séquence (3 par banc, 4 avec le L12) ; une moitié gauche se
@@ -47,13 +48,13 @@ Cartes Objectif, modes, sets, Atelier) sans demande de l'auteur.
   un Raccord, un Plan Large peut entrer dans la séquence. Le L16 laisse prendre sur le Chutier, le L7
   donne une carte après le dernier tour. Fin à 10 plans.
 - Points encore à confirmer par l'auteur : fin de partie, pioche vide (le Chutier est remélangé), ce qui
-  suit un Raccord (un Plan Large seulement), l'Entracte (L10), les 12 cartes complétées de l'assemblage.
+  suit un Raccord (un Plan Large seulement), l'Entracte (L10).
 
 ## Règles du projet
 
 - Version : `4.1.NN` — `4.1` est la version du jeu, `NN` le compteur qui monte à **chaque** livraison
   (fait par `publier.mjs`, qui garde les zéros de tête).
-- Titre du site : le logo `assets/marque/edit.webp` (barre du haut, accueil, dos des cartes).
+- Titre du site : le logo `assets/marque/edit.webp` (barre du haut, accueil).
 - Statistiques d'abord, tout réglable (Variables), design pastel violet / orange.
 - Vocabulaire à l'écran : Plan Large, Gros Plan, Plan de départ, carte de départ, carte à deux Gros
   Plans, moitié gauche / droite, séquence, banc de montage, pioche, rivière, Chutier, Raccord,

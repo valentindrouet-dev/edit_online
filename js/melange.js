@@ -49,8 +49,9 @@ export const CONTRAINTES = [
   { id: 'SANS_MINUTAGE', label: 'Jamais deux « -- » ensemble',
     aide: 'un plan sans minutage se range partout : en mettre deux sur une carte en gâche un' },
   { id: 'EXEMPLAIRES', label: 'Pas plus d’exemplaires que la boîte',
-    aide: 'la boîte imprime deux fois chaque « -- », une fois les autres Gros Plans ; un Gros Plan posé '
-      + 'plus souvent est en trop — le mélange ne peut pas le corriger, il le signale' },
+    aide: 'la boîte imprime certains Gros Plans plusieurs fois — le Raccord, l’Ouverture, la Fin et '
+      + 'la plupart des « -- » ; un Gros Plan posé plus souvent est en trop — le mélange ne peut pas le '
+      + 'corriger, il le signale' },
 ];
 
 export const CONTRAINTES_PAR_DEFAUT = ['CONVENTION', 'RACCORD', 'DOMINANTE', 'MORT'];

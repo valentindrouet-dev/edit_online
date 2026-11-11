@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.06';
-export const BUILD_DATE = '2026-11-11 17:30';
+export const VERSION = '4.1.07';
+export const BUILD_DATE = '2026-11-11 17:36';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.07',
+    date: '11/11/2026',
+    items: [
+      "<b>Les 36 cartes de l'auteur.</b> L'assemblage suit ses planches au complet, dans leur ordre : le Raccord est imprimé huit fois, l'Ouverture et la Fin deux fois, les « -- » GP01 à GP09 une fois de chaque côté. La pioche passe à 51 cartes.",
+      "<b>Le vrai dos des cartes</b> sur la pioche, et dans les règles.",
+    ],
+  },
   {
     v: '4.1.06',
     date: '11/11/2026',

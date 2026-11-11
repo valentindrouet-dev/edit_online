@@ -58,8 +58,16 @@ export function corpsRegles(cfg) {
   const cartesDepart = buildDeparts();
   const doubles = buildCartesDoubles().filter((x) => x.actif && carteComplete(x));
   const nbGP = SCENES().length;
-  // Les moitiés imprimées : un Gros Plan « -- » l'est deux fois.
-  const nbMoities = doubles.length * 2;
+  // Les moitiés imprimées, et ce que la boîte imprime plus d'une fois.
+  const moities = doubles.flatMap((x) => { const m = moitiesDe(x); return [m.G, m.D]; }).filter(Boolean);
+  const nbMoities = moities.length;
+  const combien = (t) => moities.filter((h) => h.transition === t).length;
+  const parNum = new Map();
+  for (const h of moities) {
+    if (!h.transition && h.tc === TC_VIDE) parNum.set(h.numOrigine, (parNum.get(h.numOrigine) || 0) + 1);
+  }
+  const sansMinutageDoubles = [...parNum.values()].filter((k) => k > 1).length;
+  const fois = (k) => (k > 1 ? `${k} fois` : 'une fois');
   const nbPL = larges.length + plansDepart.length;
   const pioche = larges.length + doubles.length;
   const nomsDepart = plansDepart.map((p) => `L${p.num}`);
@@ -119,6 +127,9 @@ export function corpsRegles(cfg) {
         (120 × 80 mm).`)}
       ${figure(carteDouble(exG, exD), `Une <b>carte à deux Gros Plans</b>, coupée en deux au centre : la
         <b>moitié gauche</b> et la <b>moitié droite</b>, de 60 × 80 mm chacune.`)}
+      ${figure('<img class="lv-carte pl" src="assets/s41/DOS.webp" alt="Le dos des cartes" loading="lazy" decoding="async" draggable="false">',
+    `Le <b>dos</b> des cartes : le même pour toute la pioche — on ne sait pas si l’on tirera un Plan
+        Large ou une carte à deux Gros Plans.`)}
       ${figure(`${vignette(dep1)}<span class="lv-verso">↻</span>${vignette(dep2)}`, `Une <b>carte de
         départ</b> : un Plan de départ sur chaque face. C’est la seule carte recto verso du jeu.`,
     'lv-depart')}
@@ -131,12 +142,16 @@ export function corpsRegles(cfg) {
     Plans</b> forment la <b>pioche</b> : ${pioche} cartes.</p>
     <p>Trois Gros Plans ne sont pas des plans : le <b>Raccord</b>, l’<b>Ouverture</b> et la
     <b>Fin</b>. Ils relient ou encadrent le film ; ils ne portent aucune icône.</p>
-    ${encart('Gauche ou droite ?', `Le plus souvent, les Gros Plans à ${afficheur(10)},
-      ${afficheur(20)} et ${afficheur(30)} sont imprimés sur une moitié <b>gauche</b>, avec
-      l’Ouverture ; ceux à ${afficheur(40)}, ${afficheur(50)} et ${afficheur(60)} sur une moitié
-      <b>droite</b>, avec la Fin. Chaque Gros Plan sans minutage (${afficheur(TC_VIDE)}) est imprimé
-      <b>deux fois</b> : une fois en moitié gauche, une fois en moitié droite — d’où ${nbMoities}
-      moitiés pour ${nbGP} Gros Plans.`)}
+    ${encart('Gauche ou droite ?', `Les Gros Plans à ${afficheur(10)}, ${afficheur(20)} et
+      ${afficheur(30)} sont imprimés sur une moitié <b>gauche</b>, avec l’Ouverture ; ceux à
+      ${afficheur(40)}, ${afficheur(50)} et ${afficheur(60)} sur une moitié <b>droite</b>, avec la
+      Fin. Les Gros Plans sans minutage (${afficheur(TC_VIDE)}) et le Raccord se trouvent des deux
+      côtés.`)}
+    ${encart('Plusieurs exemplaires', `Certains Gros Plans sont imprimés plus d’une fois : le
+      <b>Raccord</b> ${fois(combien('RACCORD'))}, l’<b>Ouverture</b> ${fois(combien('OUVERTURE'))}, la
+      <b>Fin</b> ${fois(combien('CREDITS'))}${sansMinutageDoubles ? `, et ${sansMinutageDoubles} des Gros Plans
+      sans minutage deux fois — une fois en moitié gauche, une fois en moitié droite` : ''}. D’où
+      ${nbMoities} moitiés pour ${nbGP} Gros Plans différents.`)}
   `)}
 
   ${section('Lire un plan', `
@@ -302,9 +317,6 @@ export function corpsRegles(cfg) {
         ni des plans, ni des Raccords.</li>
       <li>L’<b>Entracte</b> (L10, ${afficheur(35)}, sans icône) est joué comme un Plan Large ordinaire.</li>
       <li>Qui ne peut rien monter <b>passe</b> ; à égalité de points, la victoire est partagée.</li>
-      <li>L’<b>assemblage</b> des ${pluriel(doubles.length, 'carte')} à deux Gros Plans : les 20
-        premières sont celles de l’auteur, les ${doubles.length - 20} autres complètent la boîte selon
-        sa règle.</li>
     </ul>`, 'attention')}
     <p class="lv-fin">Chaque nombre de ces règles suit l’onglet <b>Variables</b> : ce que vous lisez
     ici est la règle de <b>votre</b> partie.</p>

@@ -3,8 +3,8 @@
 // ---------------------------------------------------------------------------
 // Les icônes, les cadrages, le vocabulaire des pouvoirs, et la boîte : dix-neuf
 // Plans Larges — dont les quatre plans de départ — et cinquante-quatre Gros
-// Plans, assemblés deux par deux sur trente-deux cartes — les dix « -- » y sont
-// imprimés deux fois.
+// Plans, assemblés deux par deux sur trente-six cartes — certains y sont
+// imprimés plusieurs fois.
 
 // --- Les six éléments ------------------------------------------------------
 // Trois personnages (Héroïne, Ennemi, Allié) et trois éléments (Arme, Objet,
@@ -1111,30 +1111,25 @@ const famille41 = (p) => (p.transition ? 'TRANSITION' : p.mort ? 'MORT'
 /** Le nom de fichier d'un Gros Plan : GP00, GP07, GP100. */
 const fichierGP41 = (n) => `GP${String(n).padStart(2, '0')}`;
 
-// L'ASSEMBLAGE des 32 cartes à deux Gros Plans — [gauche, droite].
+// L'ASSEMBLAGE des 36 cartes à deux Gros Plans — [gauche, droite] —, tel que
+// les planches de l'auteur le montrent, dans leur ordre.
 //
-// Les vingt premières sont celles de l'auteur, telles que ses planches les
-// montrent, dans leur ordre. Sa règle : les 10', 20', 30' et l'Ouverture à
-// gauche ; les 40', 50', 60' et la Fin à droite ; et chaque Gros Plan SANS
-// MINUTAGE (« -- ») imprimé DEUX FOIS — une fois en moitié gauche, une fois en
-// moitié droite. Deux icônes dominantes différentes sur une carte, jamais deux
-// plans de mort.
-//
-// Les douze dernières complètent la boîte avec ce qui restait, selon la même
-// règle : un Gros Plan de gauche avec un de droite, sans icône en commun,
-// l'Ouverture et la Fin sur deux cartes distinctes, et le Raccord avec le
-// second exemplaire du GP00.
+// Sa règle : les 10', 20', 30' et l'Ouverture à gauche ; les 40', 50', 60' et
+// la Fin à droite ; deux icônes dominantes différentes sur une carte, jamais
+// deux plans de mort. Plusieurs Gros Plans sont imprimés plus d'une fois : le
+// Raccord HUIT fois (quatre à gauche, quatre à droite), l'Ouverture et la Fin
+// deux fois, et les Gros Plans sans minutage GP01 à GP09 deux fois — une fois
+// en moitié gauche, une fois en moitié droite. Le GP00 ne l'est qu'une fois.
 const ASSEMBLAGE_41 = [
-  // Les planches de l'auteur.
   [1, 65], [32, 1], [2, 64], [20, 2],
   [3, 43], [30, 3], [4, 55], [26, 4],
   [5, 54], [34, 5], [6, 45], [21, 6],
   [7, 63], [13, 7], [8, 61], [22, 8],
   [9, 62], [25, 9], [0, 52], [15, 42],
-  // Le complément.
-  [35, 44], [11, 46], [16, 56], [14, 66],
-  [12, 41], [31, 50], [10, 53], [23, 40],
-  [33, 51], [24, 102], [101, 60], [100, 0],
+  [31, 60], [14, 56], [35, 46], [16, 66],
+  [101, 40], [101, 51], [33, 102], [24, 102],
+  [100, 50], [100, 44], [100, 41], [100, 53],
+  [23, 100], [12, 100], [11, 100], [10, 100],
 ];
 
 const BOITE = {
@@ -1430,9 +1425,10 @@ export function visuelImprime(cle) {
 }
 
 /**
- * Combien de fois la boîte imprime chaque Gros Plan, par numéro : deux pour les
- * dix « -- », un pour les autres. C'est la référence du relevé de l'Assemblage —
- * un Gros Plan posé plus souvent que la boîte ne l'imprime est en trop.
+ * Combien de fois la boîte imprime chaque Gros Plan, par numéro : huit pour le
+ * Raccord, deux pour l'Ouverture, la Fin et les « -- » GP01 à GP09, un pour les
+ * autres. C'est la référence du relevé de l'Assemblage — un Gros Plan posé plus
+ * souvent que la boîte ne l'imprime est en trop.
  */
 export function exemplairesBoite() {
   const n = new Map();

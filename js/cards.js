@@ -910,7 +910,7 @@ export function enPile(html, reste) {
 export function renderDos(libelle, opts = {}) {
   const cls = ['carte', 'dos', opts.small ? 'small' : '', opts.clickable ? 'clickable' : ''].join(' ');
   return `<div class="${cls}" title="${libelle}">
-    <div class="dos-edit"><img src="assets/marque/edit.webp" alt="" draggable="false"></div>
+    <img class="dos-visuel" src="assets/s41/DOS.webp" alt="" draggable="false">
   </div>`;
 }
 
