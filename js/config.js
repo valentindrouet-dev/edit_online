@@ -185,6 +185,12 @@ export function migrerCfg(lu) {
 }
 
 export const SCHEMA = [
+  { groupe: 'Version du jeu', champs: [
+    { k: 'materielActif', l: 'Matériel en jeu', t: 'choix', options: [
+      ['IMPRIME', 'Boîte 4.1 — les cartes telles que livrées'],
+      ['MODIFIE', 'Boîte modifiée — avec les retouches du Matériel'],
+    ], aide: 'les cartes se retouchent, s’écartent et se publient dans le Matériel' },
+  ] },
   { groupe: 'Déroulé', champs: [
     { k: 'tours', l: 'Plans dans le banc', t: 'int', min: 2, max: 30,
       aide: 'douze par les règles, Plan de départ compris : le premier banc qui les a déclenche la fin' },

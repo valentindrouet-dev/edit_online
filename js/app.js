@@ -301,68 +301,34 @@ function vueAccueil() {
       Édité par <b>Big Budi Games</b>
     </div>
   </div>
-  <div class="wrap">
-    <div class="grid2">
-      <div>
-        <div class="panneau">
-          <h2>Joueuses</h2>
-          <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
-            <div class="segments" id="seg-n">
-              ${[1, 2, 3, 4].map((i) => `<button class="${i === n ? 'on' : ''}" data-n="${i}">${i}</button>`).join('')}
-            </div>
-            <span class="aide">${n} joueuse${n > 1 ? 's' : ''}${n === 1 ? ' — en solo' : ''}</span>
-          </div>
-          <div id="liste-joueurs">${store.joueurs.map((j, i) => ligneJoueur(j, i)).join('')}</div>
+  <div class="wrap accueil">
+    <div class="panneau">
+      <h2>Joueuses</h2>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+        <div class="segments" id="seg-n">
+          ${[1, 2, 3, 4].map((i) => `<button class="${i === n ? 'on' : ''}" data-n="${i}">${i}</button>`).join('')}
         </div>
-
-        ${partage ? `<div class="bandeau-materiel partage-recu">
-          <span class="bm-titre">🔗 Version partagée${info.version ? ` — v${info.version}` : ''}</span>
-          <span class="aide">${info.date ? `reçue du ${info.date} · ` : ''}cartes et réglages sont ceux de qui
-          vous a envoyé le lien — rien à régler, jouez.</span>
-        </div>` : bandeauMateriel()}
-        ${bilanJeu().jouable ? '' : `<p class="aide set-incomplet">${messagePaquetCourt()}</p>`}
-        <button class="cta" id="go" ${bilanJeu().jouable ? '' : 'disabled'}>Commencer la partie</button>
-        <button class="pill large" data-go="#/enligne">🌐 Jouer en ligne, chacun sur son appareil</button>
+        <span class="aide">${n} joueuse${n > 1 ? 's' : ''}${n === 1 ? ' — en solo' : ''}</span>
       </div>
-
-      <div>
-        <div class="panneau">
-          <h2>La partie en bref</h2>
-          <ul class="bref">
-            <li>Chacune ouvre son banc avec un <b>Plan de départ</b> : une carte recto verso, on choisit sa face.</li>
-            <li>Une <b>pioche</b> face cachée, une <b>rivière</b> de ${c.riviere} cartes visibles, et le
-              <b>Chutier</b> — la défausse.</li>
-            <li>À son tour : ${c.defausse !== false ? 'on <b>peut défausser</b> une carte de la rivière, puis ' : ''}on
-              en <b>prend une</b> et on la <b>monte</b>.</li>
-            <li>Un <b>Plan Large</b> ouvre une séquence — ${c.sequencesMax} par banc. Une carte à deux
-              <b>Gros Plans</b> se monte par une moitié : la gauche à gauche, la droite à droite,
-              ${c.plansParCote} cartes au plus de chaque côté.</li>
-            <li>La partie s’arrête quand un banc compte <b>${c.tours} plans</b>, au bout du tour de table.</li>
-          </ul>
-          <p class="aide"><span class="bm-lien" data-go="#/regles">Lire les règles ›</span>
-          ${partage ? '' : ' · <span class="bm-lien" data-go="#/variables">régler les variables ›</span>'}</p>
-          <div class="accueil-aides" data-go="#/regles" title="Les aides de jeu de la boîte — lire les règles">
-            <img src="assets/aides/ICONES.webp" alt="Aide de jeu : les icônes" loading="lazy" decoding="async" draggable="false">
-            <img src="assets/aides/EFFETS.webp" alt="Aide de jeu : les effets de plans" loading="lazy" decoding="async" draggable="false">
-          </div>
-        </div>
-
-        <div class="panneau">
-          <h2>Options d’affichage</h2>
-          <div class="chips">
-            ${chip('pointsSurCartes', 'Points visibles')}
-            ${chip('animerCoups', 'Mouvement des cartes')}
-            ${chip('apercuSurvol', 'Pop-up au survol')}
-          </div>
-        </div>
-      </div>
+      <div id="liste-joueurs">${store.joueurs.map((j, i) => ligneJoueur(j, i)).join('')}</div>
     </div>
 
-    <div class="rangee-boutons">
-      <button class="pill" data-go="#/banc">Banc de montage</button>
-      ${partage ? '' : '<button class="pill" data-go="#/labo">Laboratoire d’équilibrage</button>'}
-      <button class="pill" data-go="#/regles">Règles du jeu</button>
-      ${partage ? '' : '<button class="pill" data-go="#/materiel">Matériel</button>'}
+    ${partage ? `<div class="bandeau-materiel partage-recu">
+      <span class="bm-titre">🔗 Version partagée${info.version ? ` — v${info.version}` : ''}</span>
+      <span class="aide">${info.date ? `reçue du ${info.date} · ` : ''}cartes et réglages sont ceux de qui
+      vous a envoyé le lien — rien à régler, jouez.</span>
+    </div>` : ''}
+    ${bilanJeu().jouable ? '' : `<p class="aide set-incomplet">${messagePaquetCourt()}</p>`}
+    <button class="cta" id="go" ${bilanJeu().jouable ? '' : 'disabled'}>Commencer la partie</button>
+    <button class="pill large" data-go="#/enligne">🌐 Jouer en ligne, chacun sur son appareil</button>
+
+    <div class="panneau options-accueil">
+      <h2>Options d’affichage</h2>
+      <div class="chips">
+        ${chip('pointsSurCartes', 'Points visibles')}
+        ${chip('animerCoups', 'Mouvement des cartes')}
+        ${chip('apercuSurvol', 'Pop-up au survol')}
+      </div>
     </div>
   </div>
   ${pied()}`);
@@ -378,7 +344,12 @@ function vueAccueil() {
   }));
 
   brancherJoueurs();
-  brancherJeuAccueil(vueAccueil);
+  // « Jouer la boîte 4.1 », quand la boîte modifiée ne suffit pas à la partie.
+  app.querySelectorAll('[data-jeu-accueil]').forEach((b) => b.addEventListener('click', () => {
+    store.cfg.materielActif = b.dataset.jeuAccueil;
+    sauverCfg();
+    vueAccueil();
+  }));
   brancherChips(vueAccueil);
   brancherChamps(vueAccueil);
   app.querySelector('#go').addEventListener('click', lancerPartie);
@@ -396,14 +367,6 @@ function ligneJoueur(j, i) {
       ${Object.values(PROFILS_IA).map((p) => `<option value="${p.id}" ${j.type === p.id ? 'selected' : ''}>${p.label}</option>`).join('')}
     </select>
   </div>`;
-}
-
-function brancherJeuAccueil(apres) {
-  app.querySelectorAll('[data-jeu-accueil]').forEach((b) => b.addEventListener('click', () => {
-    store.cfg.materielActif = b.dataset.jeuAccueil;
-    sauverCfg();
-    if (apres) apres();
-  }));
 }
 
 function brancherJoueurs() {
@@ -455,27 +418,6 @@ function resumePaquet() {
     <tr><td>Plans Larges</td><td class="num">${larges.length}</td></tr>
     <tr><td>Cartes de départ</td><td class="num">${departs.length}</td></tr>
   </table>`;
-}
-
-/**
- * Quel jeu de matériel part en partie : les cartes de la boîte, telles que
- * livrées, ou la boîte MODIFIÉE — celle qui porte les retouches du Matériel.
- * Les deux coexistent : ce sélecteur dit lequel se lance.
- */
-function bandeauMateriel() {
-  const modifie = store.cfg.materielActif === 'MODIFIE';
-  const n = Object.keys(store.cfg.materiel.plans).length + Object.keys(store.cfg.materiel.paires).length;
-  const off = store.cfg.cartesDesactivees.length;
-  return `<div class="bandeau-materiel ${modifie ? 'modifie' : ''}">
-    <div class="segments large" id="seg-materiel">
-      <button class="${modifie ? '' : 'on'}" data-jeu-accueil="IMPRIME">Boîte 4.1</button>
-      <button class="${modifie ? 'on' : ''}" data-jeu-accueil="MODIFIE">Boîte modifiée</button>
-    </div>
-    <span class="aide">${modifie
-      ? (n ? `${n} retouche${n > 1 ? 's' : ''} en jeu` : 'aucune retouche pour l’instant')
-      : 'les cartes telles que livrées, sans retouche'}${off ? ` · ${off} carte${off > 1 ? 's' : ''} écartée${off > 1 ? 's' : ''}` : ''}</span>
-    <span class="bm-lien" data-go="#/materiel">éditer ›</span>
-  </div>`;
 }
 
 // ===========================================================================

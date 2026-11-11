@@ -2546,10 +2546,6 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
   margin: 0 0 22px; }
 .aj-aide img { display: block; width: 100%; height: auto; border-radius: 10px;
   box-shadow: 0 4px 14px rgba(60, 40, 90, .14); }
-.accueil-aides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; cursor: pointer; }
-.accueil-aides img { display: block; width: 100%; height: auto; border-radius: 8px;
-  box-shadow: 0 3px 10px rgba(60, 40, 90, .12); transition: transform .15s ease; }
-.accueil-aides:hover img { transform: translateY(-2px); }
 @media print { .aj-aides { break-inside: avoid; } }
 
 /* Les bancs de toutes les joueuses, l'un au-dessus de l'autre. Le sien est
@@ -2918,7 +2914,7 @@ table.tbl tr:hover td { background: var(--orange-pale); }
   font-family: var(--titre); font-weight: 400; font-size: 1.3rem; letter-spacing: .06em; color: var(--encre);
   border-bottom: 0; padding-bottom: 8px; background: var(--rayures) 0 100% / 100% 4px no-repeat;
 }
-.aj-aide img, .accueil-aides img { border-radius: 3px; box-shadow: 0 0 0 2px var(--encre), 5px 5px 0 rgba(20, 16, 24, .35); }
+.aj-aide img { border-radius: 3px; box-shadow: 0 0 0 2px var(--encre), 5px 5px 0 rgba(20, 16, 24, .35); }
 
 /* --- Le pied --------------------------------------------------------------- */
 .pied { font-family: var(--etroit); font-weight: 600; color: var(--encre-doux); }
@@ -2927,3 +2923,8 @@ table.tbl tr:hover td { background: var(--orange-pale); }
 b, strong { font-weight: 700; }
 /* La petite phrase qui suit « Rivière » reste du texte, pas un titre. */
 .table-cartes h3 .raison { font-family: var(--etroit); font-weight: 600; font-size: .82rem; letter-spacing: 0; text-transform: none; }
+
+/* L'accueil : une seule colonne, les joueuses puis le départ. */
+.wrap.accueil { max-width: 760px; }
+.wrap.accueil > .pill.large { display: block; width: 100%; margin-top: 14px; }
+.options-accueil { margin-top: 26px; }

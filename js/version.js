@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.14';
-export const BUILD_DATE = '2026-11-11 18:57';
+export const VERSION = '4.1.15';
+export const BUILD_DATE = '2026-11-11 20:44';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.15',
+    date: '11/11/2026',
+    items: [
+      "<b>Accueil épuré</b> : les joueuses, « Commencer la partie », le jeu en ligne et les options d’affichage — plus de « partie en bref », de bandeau de boîte ni de raccourcis.",
+      "Le choix <b>Boîte 4.1 / Boîte modifiée</b> passe dans les Variables, rubrique « Version du jeu ».",
+    ],
+  },
   {
     v: '4.1.14',
     date: '11/11/2026',
