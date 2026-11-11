@@ -108,11 +108,13 @@ export const PROFILS_IA = {
 // Palette des joueuses : violet, bleu, rose, orange, en teintes pastel.
 // `clair` habille la pastille, `encre` sert au texte, où le pastel manquerait
 // de contraste.
+// Les quatre couleurs de la feuille de score, dans son ordre : la bande claire
+// de chaque colonne, et l'onglet « TOTAL », plus soutenu, pour les textes.
 export const PALETTE_JOUEURS = [
-  { nom: 'Violet', clair: '#c3b1f2', encre: '#7c5cd6' },
-  { nom: 'Bleu',   clair: '#a7cdf5', encre: '#3f7fc4' },
-  { nom: 'Rose',   clair: '#f5b3cd', encre: '#cf5f92' },
-  { nom: 'Orange', clair: '#fbc79a', encre: '#d47b2c' },
+  { nom: 'Violet',    clair: '#d19ad3', encre: '#87499e' },
+  { nom: 'Turquoise', clair: '#9cd3d3', encre: '#46a197' },
+  { nom: 'Vert',      clair: '#b3d69a', encre: '#87a34a' },
+  { nom: 'Rouge',     clair: '#d4a59c', encre: '#a24550' },
 ];
 
 export const COULEURS_JOUEURS = PALETTE_JOUEURS.map((p) => p.clair);

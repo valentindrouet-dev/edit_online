@@ -1,6 +1,7 @@
 /* ==========================================================================
    EDIT — feuille de style
-   Violet / orange, fonds pastel, panneaux blancs arrondis.
+   Le socle (mise en page, composants), puis, en fin de fichier, le THÈME BD
+   qui l'habille dans l'esprit des cartes : papier, encre, trames, Bangers.
    ========================================================================== */
 
 :root {
@@ -2573,3 +2574,356 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 }
 .titre-banc .banc-pts { margin-left: auto; font-size: 1.05rem; font-weight: 900; color: var(--enc, var(--encre)); letter-spacing: 0; }
 .panneau h2.titre-banc .banc-compte { float: none; }
+
+/* ==========================================================================
+   THÈME BD — l'esprit des cartes
+   --------------------------------------------------------------------------
+   Ce qui suit recouvre le premier habillage par l'esprit visuel du jeu : le
+   papier crème des aides, l'encre noire et ses traits épais, les trames de
+   points, les traînées de vitesse dans les coins, les étiquettes noires
+   inclinées (« PLAN », « SÉQUENCE », « CHUTIER »), les titres en lettres de
+   bande dessinée. Les couleurs des joueuses sont celles de la feuille de score.
+   ========================================================================== */
+
+/* Les polices, servies par le site lui-même (licence SIL OFL, dans
+   assets/polices) : Bangers pour les titres, Fira Sans pour le texte. */
+@font-face { font-family: "Bangers"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("../assets/polices/bangers-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Fira Sans"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("../assets/polices/fira-sans-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Fira Sans"; font-style: italic; font-weight: 400; font-display: swap;
+  src: url("../assets/polices/fira-sans-latin-400-italic.woff2") format("woff2"); }
+@font-face { font-family: "Fira Sans"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url("../assets/polices/fira-sans-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Fira Sans"; font-style: normal; font-weight: 600 700; font-display: swap;
+  src: url("../assets/polices/fira-sans-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Fira Sans"; font-style: normal; font-weight: 800 900; font-display: swap;
+  src: url("../assets/polices/fira-sans-latin-800-normal.woff2") format("woff2"); }
+@font-face { font-family: "Fira Sans Condensed"; font-style: normal; font-weight: 600; font-display: swap;
+  src: url("../assets/polices/fira-sans-condensed-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Fira Sans Condensed"; font-style: normal; font-weight: 700 900; font-display: swap;
+  src: url("../assets/polices/fira-sans-condensed-latin-800-normal.woff2") format("woff2"); }
+@font-face { font-family: "Fira Sans Condensed"; font-style: italic; font-weight: 700 900; font-display: swap;
+  src: url("../assets/polices/fira-sans-condensed-latin-800-italic.woff2") format("woff2"); }
+
+:root {
+  /* L'encre et le papier. */
+  --encre: #141018;
+  --encre-doux: #3b3342;
+  --gris: #6f6676;
+  --gris-clair: #e3dccd;
+  --papier: #fbf5e7;
+  --papier-clair: #fffcf4;
+
+  /* Le violet des aides, le jaune du logo, l'orangé des Points de Victoire. */
+  --violet: #7b3f9e;
+  --violet-clair: #b98cc2;
+  --violet-pale: #f1e5f2;
+  --orange: #e88a06;
+  --orange-clair: #f3b313;
+  --orange-pale: #fdf0c9;
+  --jaune: #f3b313;
+  --ciel: #8abdd2;
+  --ciel-pale: #e3f1f6;
+  --rouge: #c8321f;
+
+  /* Les quatre joueuses de la feuille de score. */
+  --j1: #87499e; --j2: #46a197; --j3: #87a34a; --j4: #a24550;
+
+  --trait: 3px solid var(--encre);
+  --trait-fin: 2px solid var(--encre);
+  --ombre: 5px 5px 0 var(--encre);
+  --ombre-forte: 7px 7px 0 var(--encre);
+  --ombre-douce: 3px 3px 0 var(--encre);
+  --r: 4px;
+  --r-s: 3px;
+
+  /* Les trames. */
+  --trame: radial-gradient(circle, rgba(20, 16, 24, .16) 1.15px, transparent 1.6px);
+  --trame-claire: radial-gradient(circle, rgba(20, 16, 24, .09) 1.1px, transparent 1.5px);
+  --rayures: repeating-linear-gradient(-45deg, var(--encre) 0 2px, transparent 2px 6px);
+
+  --titre: "Bangers", "Impact", "Arial Narrow Bold", sans-serif;
+  --texte: "Fira Sans", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --etroit: "Fira Sans Condensed", "Fira Sans", "Arial Narrow", sans-serif;
+}
+
+/* --- Le papier : crème, une trame de points, des traînées dans les coins --- */
+html, body { font-family: var(--texte); color: var(--encre); }
+/* Le papier se peint sur la page entière ; le corps reste transparent pour que
+   la trame et les traînées, posées derrière lui, se voient. */
+html { background: var(--papier); }
+body { background: transparent; position: relative; }
+body::before, body::after {
+  content: ''; position: fixed; z-index: -1; pointer-events: none; inset: 0;
+}
+/* La trame, plus dense dans les coins, comme sur les aides. */
+body::before {
+  background: var(--trame) 0 0 / 10px 10px;
+  -webkit-mask-image: radial-gradient(120% 90% at 0% 0%, #000 0, transparent 38%),
+    radial-gradient(120% 90% at 100% 100%, #000 0, transparent 38%);
+  mask-image: radial-gradient(120% 90% at 0% 0%, #000 0, transparent 38%),
+    radial-gradient(120% 90% at 100% 100%, #000 0, transparent 38%);
+}
+/* Les traînées de vitesse, violettes en haut à droite, bleues en bas à gauche. */
+body::after {
+  background:
+    linear-gradient(162deg, transparent 0 9%, rgba(185, 140, 194, .5) 9% 9.6%, transparent 9.6% 12%,
+      rgba(185, 140, 194, .35) 12% 12.4%, transparent 12.4%) 100% 0 / 46vw 46vh no-repeat,
+    linear-gradient(162deg, transparent 0 87%, rgba(138, 189, 210, .5) 87% 87.6%, transparent 87.6% 90%,
+      rgba(138, 189, 210, .35) 90% 90.4%, transparent 90.4%) 0 100% / 46vw 46vh no-repeat;
+}
+
+/* --- La barre du haut ---------------------------------------------------- */
+.topbar {
+  background: var(--papier-clair);
+  border-bottom: var(--trait);
+  box-shadow: 0 5px 0 -1px var(--violet-clair), 0 8px 0 -1px var(--encre);
+  margin-bottom: 14px;
+}
+.marque .logo-edit { filter: drop-shadow(2px 2px 0 rgba(20, 16, 24, .25)); }
+.version-pill {
+  background: var(--encre); color: var(--jaune); border-radius: 2px;
+  font-family: var(--etroit); font-weight: 800; letter-spacing: .04em;
+  transform: skewX(-12deg);
+}
+.nav { gap: 8px; }
+.nav button, .pill {
+  font-family: var(--etroit); font-weight: 700; letter-spacing: .02em;
+  background: var(--papier-clair); color: var(--encre);
+  border: var(--trait-fin); border-radius: 2px;
+  box-shadow: var(--ombre-douce);
+  transform: skewX(-8deg);
+  transition: transform .12s, box-shadow .12s, background .12s;
+}
+.nav button { font-family: var(--titre); font-weight: 400; font-size: 1.12rem; letter-spacing: .05em; padding: 6px 15px 5px; }
+.nav button:hover, .pill:hover {
+  background: var(--violet-pale); color: var(--encre); border-color: var(--encre);
+  transform: skewX(-8deg) translate(-1px, -1px); box-shadow: 4px 4px 0 var(--encre);
+}
+.nav button:active, .pill:active { transform: skewX(-8deg) translate(2px, 2px); box-shadow: 1px 1px 0 var(--encre); }
+.nav button.actif { background: var(--jaune); color: var(--encre); border-color: var(--encre); }
+.nav button.chaud { background: var(--rouge); border-color: var(--encre); color: #fff; }
+.pill:disabled, .pill[disabled] { opacity: .45; box-shadow: none; transform: skewX(-8deg); cursor: not-allowed; }
+.pill.mini { box-shadow: 2px 2px 0 var(--encre); }
+.jeton-partage { border-radius: 2px; border: var(--trait-fin); box-shadow: var(--ombre-douce); transform: skewX(-8deg); }
+
+/* --- Les titres ------------------------------------------------------------ */
+h1, .entete-ligne h1 {
+  font-family: var(--titre); font-weight: 400; letter-spacing: .03em; color: var(--encre);
+  text-shadow: 3px 3px 0 var(--jaune);
+}
+.entete-ligne h1 { font-size: 2.4rem; }
+.hero .credits { color: var(--encre-doux); }
+
+/* --- Les panneaux : du papier, un trait d'encre, une ombre franche --------- */
+/* La trame ne couvre que le coin haut-droit : le reste du panneau reste net. */
+.panneau {
+  border: var(--trait); border-radius: var(--r);
+  box-shadow: var(--ombre);
+  background:
+    linear-gradient(215deg, transparent 0 70px, var(--papier-clair) 190px),
+    var(--trame) 0 0 / 8px 8px,
+    var(--papier-clair);
+}
+.panneau h2, .titre-section {
+  font-family: var(--titre); font-weight: 400; font-size: 1.32rem; letter-spacing: .06em;
+  color: var(--encre); text-transform: uppercase; line-height: 1.05;
+  padding-bottom: 9px; margin-bottom: 16px;
+  background: var(--rayures) 0 100% / 100% 5px no-repeat;
+}
+.panneau h3 { font-family: var(--etroit); font-weight: 800; font-size: 1.05rem; letter-spacing: .01em; }
+.aide { color: var(--encre-doux); }
+
+/* --- Les commandes --------------------------------------------------------- */
+.cta {
+  font-family: var(--titre); font-weight: 400; font-size: 1.55rem; letter-spacing: .07em;
+  background: var(--jaune); color: var(--encre);
+  border: var(--trait); border-radius: 2px;
+  box-shadow: var(--ombre); transform: skewX(-6deg);
+  text-shadow: 1px 1px 0 rgba(255, 255, 255, .5);
+  padding: 13px 16px 11px;
+}
+.cta:hover { transform: skewX(-6deg) translate(-2px, -2px); box-shadow: var(--ombre-forte); }
+.cta:active { transform: skewX(-6deg) translate(3px, 3px); box-shadow: 2px 2px 0 var(--encre); }
+.cta.violet { background: var(--violet); color: #fff; text-shadow: 2px 2px 0 var(--encre); box-shadow: var(--ombre); }
+.cta:disabled, .cta[disabled] { opacity: .5; transform: skewX(-6deg); box-shadow: 2px 2px 0 var(--encre); }
+
+.segments { background: var(--papier); border: var(--trait-fin); border-radius: 2px; transform: skewX(-8deg); }
+.segments button { border-radius: 1px; font-family: var(--titre); font-weight: 400; font-size: 1.15rem; color: var(--encre); }
+.segments button.on { background: var(--encre); color: var(--jaune); }
+
+input[type=text], input[type=number], input[type=search], select, textarea,
+.ligne-joueur input[type=text], .ligne-joueur select, .champ select, .champ input[type=number], #ligne-nom {
+  font-family: var(--texte);
+  border: var(--trait-fin); border-radius: 2px; background: #fff; color: var(--encre);
+}
+input:focus, select:focus, textarea:focus { outline: 3px solid var(--jaune); outline-offset: 1px; }
+.puce { border-radius: 2px; border: 2px solid var(--encre); box-shadow: none; transform: skewX(-8deg); }
+.puce.on { border-color: var(--encre); box-shadow: 0 0 0 2px var(--papier-clair), 0 0 0 4px var(--encre); }
+.btn-x { border: var(--trait-fin); border-radius: 2px; color: var(--encre); }
+.chip { border: var(--trait-fin); border-radius: 2px; background: var(--papier-clair); color: var(--encre); }
+.chip.on { background: var(--jaune); border-color: var(--encre); color: var(--encre); }
+.champ { border-bottom: 2px dotted var(--gris-clair); }
+.champ input[type=checkbox], .chip input { accent-color: var(--violet); }
+
+/* --- Les étiquettes : noires et inclinées, comme sur les cartes ------------ */
+.badge-bot, .badge-tour, .badge-mien, .jeton-dernier, .epingle, .jeton-liaison, .jeton-materiel,
+.pioche-reste {
+  border-radius: 1px; font-family: var(--etroit); font-weight: 800; text-transform: uppercase;
+  letter-spacing: .04em; transform: skewX(-12deg); display: inline-block;
+}
+.badge-bot { background: var(--encre); color: var(--violet-clair); }
+.badge-tour { background: var(--jaune); color: var(--encre); border: 2px solid var(--encre); }
+.badge-mien { background: var(--encre); color: var(--ciel); }
+.jeton-dernier { background: var(--rouge); color: #fff; border: 2px solid var(--encre); }
+.pioche-reste { background: var(--encre) !important; color: var(--jaune) !important; }
+.pioche-reste.pioche-vide { color: var(--gris-clair) !important; }
+.liaison-ok { background: #1f7a3d; color: #fff; }
+.liaison-ko { background: var(--rouge); color: #fff; }
+.liaison-attente { background: var(--encre); color: var(--violet-clair); }
+.point-couleur { border-radius: 1px; width: 13px; height: 13px; transform: skewX(-12deg);
+  box-shadow: 0 0 0 2px var(--encre); }
+
+/* --- La table de jeu ------------------------------------------------------- */
+.table-cartes h3, .tc-bloc h3, .tc-riviere h3 {
+  font-family: var(--titre); font-weight: 400; font-size: 1.35rem; letter-spacing: .06em;
+}
+/* « Pioche », « Chutier », « Rivière » : l'étiquette noire de l'aide. */
+.table-cartes h3 { color: var(--encre); }
+.zone-phase {
+  background:
+    linear-gradient(200deg, transparent 0 60px, var(--papier-clair) 220px),
+    var(--trame) 0 0 / 8px 8px,
+    var(--papier-clair);
+}
+.riviere-case.visee .carte { box-shadow: 0 0 0 3px var(--jaune), 6px 6px 0 var(--encre); }
+.carte-vide { border: 2px dashed var(--encre-doux) !important; border-radius: 3px !important;
+  background: var(--trame-claire) 0 0 / 8px 8px, var(--papier) !important; }
+.bandeau-tour { border: var(--trait-fin); border-radius: 2px; box-shadow: var(--ombre-douce); background: var(--papier-clair); }
+
+/* Le banc : la table de montage, noire, tramée, rayée sur ses bords. */
+.banc {
+  border-radius: 2px; border: var(--trait);
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, .06) 1.1px, transparent 1.5px) 0 0 / 9px 9px,
+    linear-gradient(180deg, #221d28, #141018);
+}
+.banc-joueur { border-left: 10px solid var(--enc, var(--violet)); }
+.banc-joueur.actif { box-shadow: 0 0 0 3px var(--jaune), var(--ombre); }
+.nom-banc { font-family: var(--titre); font-weight: 400; font-size: 1.45rem; letter-spacing: .05em; }
+.nom-banc.repliable:hover { background: var(--violet-pale); }
+.titre-banc .banc-pts {
+  font-family: var(--titre); font-weight: 400; font-size: 1.5rem; letter-spacing: .04em;
+  color: var(--enc, var(--encre)); -webkit-text-stroke: 0;
+  text-shadow: 1px 1px 0 var(--encre);
+}
+.panneau h2.titre-banc { background: none; padding-bottom: 0; }
+.banc-joueur:not(.replie) .titre-banc { padding-bottom: 9px; background: var(--rayures) 0 100% / 100% 5px no-repeat; }
+.panneau h2 .banc-compte { font-family: var(--etroit); font-weight: 600; font-size: .9rem; color: var(--encre-doux); }
+
+.mini-joueur {
+  border: var(--trait-fin); border-radius: 2px; box-shadow: var(--ombre-douce);
+  background: var(--papier-clair);
+}
+.mini-joueur .entete { font-family: var(--etroit); font-size: 1.05rem; }
+.mini-joueur .pt { font-family: var(--titre); font-weight: 400; font-size: 1.6rem; letter-spacing: .03em; }
+.mini-joueur.actif { background: var(--orange-pale); border-color: var(--encre); box-shadow: 0 0 0 3px var(--jaune), var(--ombre-douce); }
+.mini-joueur.vu { box-shadow: inset 0 0 0 2px var(--violet), var(--ombre-douce); }
+
+/* --- Les tableaux ---------------------------------------------------------- */
+table.tbl th {
+  font-family: var(--etroit); font-weight: 800; color: var(--encre); letter-spacing: .06em;
+  border-bottom: var(--trait);
+}
+table.tbl td { border-bottom: 1px solid var(--gris-clair); }
+table.tbl tr:hover td { background: var(--orange-pale); }
+
+/* --- Les règles et l'aide de jeu ------------------------------------------ */
+.livret, .aide-jeu { color: var(--encre-doux); font-size: 1.02rem; line-height: 1.7; }
+.livret b, .aide-jeu b { color: var(--encre); font-weight: 700; }
+.lv-hero {
+  border: var(--trait); border-radius: 2px; box-shadow: var(--ombre);
+  background:
+    linear-gradient(162deg, transparent 0 74%, rgba(185, 140, 194, .7) 74% 75.5%, transparent 75.5% 79%,
+      rgba(185, 140, 194, .5) 79% 80%, transparent 80%),
+    linear-gradient(162deg, transparent 0 18%, rgba(138, 189, 210, .7) 18% 19.5%, transparent 19.5% 23%,
+      rgba(138, 189, 210, .5) 23% 24%, transparent 24%),
+    var(--trame) 0 0 / 9px 9px,
+    var(--papier-clair);
+}
+.lv-accroche { font-family: var(--etroit); font-weight: 600; font-style: italic; font-size: 1.12rem; color: var(--encre); }
+
+/* Le ruban d'une section : le bandeau des aides — une bande de couleur
+   inclinée, cerclée d'encre, et le titre en lettres blanches détourées. */
+.lv-section { margin-top: 42px; }
+.lv-titre { text-align: left; margin-bottom: 18px; }
+.lv-titre::before {
+  height: 5px; top: auto; bottom: 0; background: var(--rayures);
+}
+.lv-titre span {
+  font-family: var(--titre); font-weight: 400; font-size: 1.85rem; letter-spacing: .05em;
+  text-transform: uppercase; line-height: 1.1;
+  padding: 6px 26px 4px; border-radius: 0;
+  background: var(--violet-clair); color: #fff;
+  border: var(--trait); box-shadow: var(--ombre-douce);
+  transform: skewX(-12deg); margin-left: 6px;
+  text-shadow:
+    -2px -2px 0 var(--encre), 2px -2px 0 var(--encre), -2px 2px 0 var(--encre), 2px 2px 0 var(--encre),
+    0 3px 0 var(--encre), 3px 3px 0 var(--encre);
+}
+.lv-section:nth-of-type(even) .lv-titre span { background: var(--ciel); }
+.lv-sous-titre { font-family: var(--titre); font-weight: 400; font-size: 1.3rem; letter-spacing: .05em; color: var(--violet); }
+.lv-chapeau { font-size: 1.06rem; color: var(--encre); }
+
+.lv-etape h3 { font-family: var(--etroit); font-weight: 800; font-size: 1.1rem; }
+.lv-num {
+  border-radius: 1px; background: var(--encre); color: var(--jaune);
+  font-family: var(--titre); font-weight: 400; font-size: 1.3rem;
+  transform: skewX(-12deg); box-shadow: 2px 2px 0 var(--violet-clair);
+}
+.lv-etapes .lv-etape:nth-child(even) .lv-num { background: var(--encre); color: var(--ciel); }
+
+.lv-encart {
+  border-radius: 2px; border: var(--trait-fin); border-left: 10px solid var(--encre);
+  background:
+    linear-gradient(225deg, transparent 0 36px, var(--violet-pale) 120px),
+    var(--trame) 0 0 / 7px 7px,
+    var(--violet-pale);
+  box-shadow: var(--ombre-douce);
+}
+.lv-encart h4 { font-family: var(--titre); font-weight: 400; font-size: 1.25rem; letter-spacing: .05em; color: var(--encre); }
+.lv-encart.attention {
+  border-left-color: var(--rouge);
+  background:
+    linear-gradient(225deg, transparent 0 36px, var(--orange-pale) 120px),
+    var(--trame) 0 0 / 7px 7px,
+    var(--orange-pale);
+}
+
+.lv-figure, .lv-banc, .aj-bloc, .depart-attente, .barre-retouche {
+  border: var(--trait-fin); border-radius: 2px; box-shadow: var(--ombre-douce); background: var(--papier-clair);
+}
+.lv-figure figcaption { font-family: var(--etroit); font-weight: 600; color: var(--encre-doux); }
+.lv-carte, .lv-double { border-radius: 3px; box-shadow: 0 0 0 2px var(--encre), 4px 4px 0 rgba(20, 16, 24, .35); }
+.lv-double .lv-carte { box-shadow: none; }
+.lv-aide { border-radius: 3px; box-shadow: 0 0 0 3px var(--encre), 6px 6px 0 rgba(20, 16, 24, .4); }
+.lv-rep { background: var(--jaune); color: var(--encre); border: 2px solid var(--encre); border-radius: 1px;
+  font-family: var(--titre); font-weight: 400; font-size: 1.05rem; transform: translate(-50%, -50%) skewX(-12deg); }
+.lv-anatomie .lv-callouts li::marker { color: var(--encre); }
+
+.aj-hero h2 { font-family: var(--titre); font-weight: 400; font-size: 2.6rem; letter-spacing: .05em; color: var(--encre);
+  text-shadow: 3px 3px 0 var(--violet-clair); }
+.aj-bloc h3 {
+  font-family: var(--titre); font-weight: 400; font-size: 1.3rem; letter-spacing: .06em; color: var(--encre);
+  border-bottom: 0; padding-bottom: 8px; background: var(--rayures) 0 100% / 100% 4px no-repeat;
+}
+.aj-aide img, .accueil-aides img { border-radius: 3px; box-shadow: 0 0 0 2px var(--encre), 5px 5px 0 rgba(20, 16, 24, .35); }
+
+/* --- Le pied --------------------------------------------------------------- */
+.pied { font-family: var(--etroit); font-weight: 600; color: var(--encre-doux); }
+
+/* Le gras du texte courant suit la police. */
+b, strong { font-weight: 700; }
+/* La petite phrase qui suit « Rivière » reste du texte, pas un titre. */
+.table-cartes h3 .raison { font-family: var(--etroit); font-weight: 600; font-size: .82rem; letter-spacing: 0; text-transform: none; }

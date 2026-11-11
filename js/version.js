@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.13';
-export const BUILD_DATE = '2026-11-11 18:41';
+export const VERSION = '4.1.14';
+export const BUILD_DATE = '2026-11-11 18:57';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.14',
+    date: '11/11/2026',
+    items: [
+      "<b>Le site prend l’allure du jeu.</b> Papier crème tramé, traits d’encre épais, ombres franches, étiquettes inclinées, traînées de vitesse ; titres en <b>Bangers</b>, texte en <b>Fira Sans</b>, servies par le site.",
+      "Les <b>couleurs des joueuses</b> sont celles de la feuille de score : violet, turquoise, vert, rouge.",
+      "Les règles et l’aide de jeu reprennent les bandeaux des aides : rubans inclinés détourés, encarts tramés.",
+    ],
+  },
   {
     v: '4.1.13',
     date: '11/11/2026',

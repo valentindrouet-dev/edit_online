@@ -63,7 +63,11 @@ Cartes Objectif, modes, sets, Atelier) sans demande de l'auteur.
 - Version : `4.1.NN` — `4.1` est la version du jeu, `NN` le compteur qui monte à **chaque** livraison
   (fait par `publier.mjs`, qui garde les zéros de tête).
 - Titre du site : le logo `assets/marque/edit.webp` (barre du haut, accueil).
-- Statistiques d'abord, tout réglable (Variables), design pastel violet / orange.
+- Statistiques d'abord, tout réglable (Variables). Habillage **BD**, dans l'esprit des cartes et des
+  aides : papier crème, encre noire, traits épais, ombres franches, trames et rayures, étiquettes
+  inclinées ; polices servies par le site (`assets/polices`, OFL) — **Bangers** pour les titres, **Fira
+  Sans** pour le texte. Le thème est en fin de `css/styles.css`. Couleurs des joueuses : celles de la
+  feuille de score (`PALETTE_JOUEURS`, `js/config.js`).
 - Vocabulaire à l'écran : Plan Large, Gros Plan, Plan de départ, carte de départ, carte à deux Gros
   Plans, moitié gauche / droite, séquence, banc de montage, pioche, rivière, Chutier, Raccord,
   Ouverture, Fin, **chrono** (et non plus « minutage »), icône (dominante), **pouvoir**.
