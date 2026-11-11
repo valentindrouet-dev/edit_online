@@ -15,7 +15,7 @@
 //
 // Trois couches, de la plus faible à la plus forte :
 //
-//   1. l'IMPRIMÉ    — ce que le code décrit, la boîte d'origine
+//   1. la BOÎTE     — ce que le code décrit, les cartes telles que livrées
 //   2. le PUBLIÉ    — `materiel.json`, ce que le dépôt porte
 //   3. le LOCAL     — ce que cette machine-ci a réglé dans l'éditeur
 //
@@ -37,7 +37,9 @@ export function chargerPublie(version) {
   if (chargement) return chargement;
   chargement = fetch(`${FICHIER}?v=${version}`, { cache: 'no-cache' })
     .then((r) => (r.ok ? r.json() : null))
-    .then((j) => { publie = j && j.materiel ? j : null; return publie; })
+    // Un matériel publié pour une boîte précédente retouche des cartes qui
+    // n'existent plus : on ne le lit pas.
+    .then((j) => { publie = j && j.materiel && j.boite === '4.1' ? j : null; return publie; })
     .catch(() => { publie = null; return null; });
   return chargement;
 }
@@ -75,8 +77,8 @@ export function composerPublie(cfg, images, version) {
     // Une empreinte courte, pour que l'éditeur sache dire « le site publie un
     // matériel plus récent que le vôtre » sans comparer deux gros objets.
     signature: empreinte(JSON.stringify([cfg.materiel, cfg.cartesDesactivees, images])),
-    // Le set que ces retouches retouchent.
-    set: cfg.set,
+    // La boîte que ces retouches retouchent.
+    boite: cfg.boite,
     materiel: cfg.materiel,
     cartesDesactivees: cfg.cartesDesactivees || [],
     images: images || [],

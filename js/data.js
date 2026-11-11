@@ -1,22 +1,21 @@
 // ---------------------------------------------------------------------------
-// EDIT — matériel de jeu (règles v0.13)
+// EDIT — le matériel du jeu, version 4.1
 // ---------------------------------------------------------------------------
-// Relu depuis les PDF de cartes (PLANS_LARGES, PLANS_MOYENS, GROS_PLANS) et le
-// tableau de répartition EDIT_44_cartes_v29.
-
-import { NUES } from './illus31.js';
+// Les icônes, les cadrages, le vocabulaire des pouvoirs, et la boîte : dix-neuf
+// Plans Larges — dont les quatre plans de départ — et cinquante-quatre Gros
+// Plans, assemblés deux par deux sur vingt-sept cartes.
 
 // --- Les six éléments ------------------------------------------------------
 // Trois personnages (Héroïne, Ennemi, Allié) et trois éléments (Arme, Objet,
 // Véhicule).
 
 export const ELEMENTS = {
-  HEROINE:  { id: 'HEROINE',  label: 'Héroïne',  famille: 'PERSONNAGE', color: '#2f8f1f', ring: '#8ede4e' },
-  ENNEMI:   { id: 'ENNEMI',   label: 'Ennemi',   famille: 'PERSONNAGE', color: '#a51f1f', ring: '#ef4444' },
-  ALLIE:    { id: 'ALLIE',    label: 'Allié',    famille: 'PERSONNAGE', color: '#1b4f80', ring: '#5aa9e6' },
+  HEROINE:  { id: 'HEROINE',  label: 'Héroïne',  famille: 'PERSONNAGE', color: '#1492c4', ring: '#4fc3ea' },
+  ENNEMI:   { id: 'ENNEMI',   label: 'Ennemi',   famille: 'PERSONNAGE', color: '#c22a2a', ring: '#f05252' },
+  ALLIE:    { id: 'ALLIE',    label: 'Allié',    famille: 'PERSONNAGE', color: '#8e4fc0', ring: '#c98df0' },
   OBJET:    { id: 'OBJET',    label: 'Objet',    famille: 'ELEMENT',    color: '#d19100', ring: '#ffd75e' },
   ARME:     { id: 'ARME',     label: 'Arme',     famille: 'ELEMENT',    color: '#63696f', ring: '#c3c9d1' },
-  VEHICULE: { id: 'VEHICULE', label: 'Véhicule', famille: 'ELEMENT',    color: '#9c6b32', ring: '#dda45f' },
+  VEHICULE: { id: 'VEHICULE', label: 'Véhicule', famille: 'ELEMENT',    color: '#c9741a', ring: '#f5a44e' },
 };
 
 export const ELEMENT_IDS = Object.keys(ELEMENTS);
@@ -28,8 +27,8 @@ export const ELEMENT_IDS = Object.keys(ELEMENTS);
  * portée, qui prennent la couleur de ce qu'elles entourent.
  */
 export const ENCRES = {
-  HEROINE: '#14520d', ENNEMI: '#6e1010', ALLIE: '#0e3454',
-  OBJET: '#7d5400', ARME: '#31363c', VEHICULE: '#5f3c18',
+  HEROINE: '#0b5372', ENNEMI: '#6e1010', ALLIE: '#4f2478',
+  OBJET: '#7d5400', ARME: '#31363c', VEHICULE: '#6e3d08',
   MORT: '#141418',
 };
 
@@ -39,7 +38,7 @@ export const ENCRE_NEUTRE = '#26262e';
 // Les cadrages, assombris de la même façon. Cette encre sert aussi au libellé
 // du bas d'un plan, qui s'écrit désormais sur la carte et non plus sur une
 // bande noire : la couleur vive du cadrage y manquerait de contraste.
-export const ENCRES_FORMAT = { PL: '#2b6210', PM: '#7d5400', GP: '#8a330d', DEP: '#1e4b62', TR: '#31363c' };
+export const ENCRES_FORMAT = { PL: '#2b6210', GP: '#8a330d', DEP: '#1e4b62', TR: '#31363c' };
 
 /**
  * L'encre du libellé de cadrage. Sur une carte claire, l'encre sombre ; sur un
@@ -76,7 +75,6 @@ export const PERSONNAGES = ELEMENT_IDS.filter((e) => ELEMENTS[e].famille === 'PE
 
 export const FORMATS = {
   PL: { id: 'PL', label: 'Plan Large',     short: 'PL',  color: '#5aa32b', tint: '#dff0c8' },
-  PM: { id: 'PM', label: 'Plan Moyen',     short: 'PM',  color: '#e0a11b', tint: '#fdeec4' },
   GP: { id: 'GP', label: 'Gros Plan',      short: 'GP',  color: '#e8632a', tint: '#fbdac9' },
   DEP: { id: 'DEP', label: 'Plan de départ', short: 'DÉP', color: '#3f8fbf', tint: '#d8ecf7' },
   TR: { id: 'TR', label: 'Raccord',        short: 'TR',  color: '#7b7f86', tint: '#e4e6e9' },
@@ -85,12 +83,12 @@ export const FORMATS = {
 // Un Plan de départ est un plan comme un autre pour tout ce qui compte des
 // cartes — mais ce n'est pas un Plan Large : « n × Plan Large » ne le compte
 // pas. Les cadrages qu'un bandeau de séquence peut viser :
-export const CADRAGES_VISABLES = ['PL', 'PM', 'GP'];
+export const CADRAGES_VISABLES = ['PL', 'GP'];
 
 // Le bandeau « n × Cadrage », lui, peut viser le Plan de départ : il le
 // **nomme**, il ne le confond pas avec un Plan Large. C'est ce qui permet
 // d'écrire « n × Plan Large & Plan de départ » — deux cadrages désignés.
-export const CADRAGES_POUVOIR = ['PL', 'PM', 'GP', 'DEP'];
+export const CADRAGES_POUVOIR = ['PL', 'GP', 'DEP'];
 
 // --- Objectifs (bandeaux) --------------------------------------------------
 // kind :
@@ -110,7 +108,7 @@ export const CADRAGES_POUVOIR = ['PL', 'PM', 'GP', 'DEP'];
 //   CHRONO    n points si le montage se lit dans l'ordre : chaque minutage
 //             est supérieur ou égal à celui de son voisin de gauche
 //   SANS_TC   n points si aucun plan du montage n'a le minutage visé : égal au
-//             seuil (00:00 pour les Raccords et Génériques), ou strictement
+//             seuil (« -- », l'absence de minutage), ou strictement
 //             avant, ou strictement après
 //   BOUT      n points si AUCUN PLAN ne suit ce plan-ci de son côté : à sa
 //             droite (`DROITE`) ou à sa gauche (`GAUCHE`), dans sa propre
@@ -329,8 +327,9 @@ export const OBJ = {
   //
   // Le droit de piocher au sommet d'une pile plutôt que dans la rivière : on
   // prend une carte que personne n'a vue, mais on la prend seul.
-  // `CHUTIER` : « Vous pouvez piocher vos Plans sur le Chutier » — carte 4.1.
-  piocher: (cible) => ({ kind: 'PIOCHER', n: 0, cible: ['PL', 'CHUTIER'].includes(cible) ? cible : 'PMGP' }),
+  // « Vous pouvez piocher vos Plans sur le Chutier » : la carte du dessus de la
+  // défausse s'ajoute aux quatre de la rivière.
+  piocher: () => ({ kind: 'PIOCHER', n: 0, cible: 'CHUTIER' }),
   // Une ligne de plus que les cinq de la règle, ou un plan de plus que les dix.
   // `n` n'est pas un nombre de points mais un nombre de lignes, ou de plans.
   sequencePlus: (n) => ({ kind: 'SEQ_PLUS', n: Math.max(1, Math.min(9, Math.floor(n || 1))) }),
@@ -352,8 +351,8 @@ export const OBJ = {
   //
   // Ce qu'il ne touche pas : un Raccord qui porte AUTRE CHOSE — « 1 × Plan »,
   // une icône, un minutage — garde son bandeau, le pouvoir ne dit rien de lui ;
-  // et l'Ouverture comme le Générique de fin, qui encadrent le film plutôt que
-  // de relier, ne sont jamais des Cartes Raccord.
+  // et l'Ouverture comme la Fin, qui encadrent le film plutôt que de relier,
+  // ne sont jamais des Raccords.
   //
   // Deux cartes qui le disent s'AJOUTENT — +1 et +2 font +3 : ce sont deux
   // bonus, et deux bonus se cumulent. Du temps où le pouvoir remplaçait, il
@@ -449,15 +448,15 @@ export function seuilTexte(sens, k) {
 //   ICONE   toutes les icônes confondues — un plan à deux armes en porte deux
 //   VALEUR  la **Valeur de Plan**, le mot de cinéma pour le cadrage, et l'on
 //           compte celles qui sont DIFFÉRENTES : une ligne qui alterne Plan
-//           Large, Plan Moyen et Gros Plan en montre trois, quel que soit le
-//           nombre de cartes. Un cadrage nommé — « Gros Plan » — se vise
+//           Large et Gros Plan en montre deux, quel que soit le nombre de
+//           cartes. Un cadrage nommé — « Gros Plan » — se vise
 //           directement, sans passer par là
 // et une dernière ne regarde pas la portée mais la forme du banc :
 //   SEQUENCE  le nombre de séquences du montage
 // `label` nomme la cible dans une liste déroulante, où il faut lever toute
 // ambiguïté ; `court` la nomme dans une phrase, où la parenthèse pèserait. `f`
 // marque le féminin, pour que « aucune Valeur » s'accorde.
-const PLURIELS_CADRAGE = { PL: 'Plans Larges', PM: 'Plans Moyens', GP: 'Gros Plans', DEP: 'Plans de départ' };
+const PLURIELS_CADRAGE = { PL: 'Plans Larges', GP: 'Gros Plans', DEP: 'Plans de départ' };
 
 export const CIBLES_COMPTE = [
   { id: 'CARTE',    label: 'Carte (Raccords compris)', court: 'Carte',   pl: 'Cartes', f: true },
@@ -539,7 +538,7 @@ export function ciblesSequence() {
   return [
     ...ELEMENT_IDS.map((e) => ({ id: e, label: ELEMENTS[e].label })),
     ...CADRAGES_VISABLES.map((f) => ({ id: f, label: FORMATS[f].label })),
-    { id: 'RACCORD', label: 'Carte Raccord' },
+    { id: 'RACCORD', label: 'Raccord' },
     { id: 'MORT', label: 'Plan de mort' },
     // « Séquence avec 3+ Plans » : les plans de la ligne, Raccords exclus.
     { id: 'PLAN', label: 'Plan (hors Raccord)' },
@@ -570,22 +569,19 @@ export function libelleCible(cible) {
 
 // Trois minutages ne se lisent pas comme les autres, et l'afficheur le dit.
 //
-// **00:00** n'est pas un instant du film : c'est l'absence de minutage. Les
-// Raccords et les Génériques relient sans rien raconter, et les six scènes de
-// PERSONNAGE se placent où l'on veut. Écrit « 00:00 », ce vide passait pour un
-// instant très précoce — donc pour le tout début du film, avant l'Ouverture. Il
-// s'écrit donc « --:-- » : un afficheur qui n'affiche rien.
+// **« -- »** n'est pas un instant du film : c'est l'absence de minutage. Le
+// Raccord relie sans rien raconter, et dix Gros Plans se placent où l'on veut.
 //
-// **01:00** et **99:00** sont, eux, des instants — le premier et le dernier
-// plan du film. Ils gardent leur écriture et prennent leur propre couleur.
+// **01'** et **70'** sont, eux, des instants — l'Ouverture et la Fin du film.
+// Ils gardent leur écriture et prennent leur propre couleur.
 export const TC_VIDE = 0;
 export const TC_PREMIER = 1;
-export const TC_DERNIER = 99;
+export const TC_DERNIER = 70;
 
-/** « 25:00 », en toutes lettres d'afficheur — et « --:-- » pour l'absence. */
+/** « 20' », comme l'afficheur des cartes — et « -- » pour l'absence de minutage. */
 export function tcTexte(min) {
-  if (Math.floor(min) === TC_VIDE) return '--:--';
-  return `${String(Math.floor(min)).padStart(2, '0')}:00`;
+  if (Math.floor(min) === TC_VIDE) return '--';
+  return `${String(Math.floor(min)).padStart(2, '0')}'`;
 }
 
 /**
@@ -631,6 +627,10 @@ function objQuoi(o) {
       if (k > 1) {
         return `séquence montrant ${o.sens === 'SANS' ? 'moins de' : 'au moins'} ${cibleNombre(o.cible, k)}`;
       }
+      // Deux cibles ne se disent pas « avec X » : la séquence DANS L'ORDRE, et
+      // celle qui ne porte aucun plan sans minutage.
+      if (o.cible === 'ORDRE') return `séquence ${o.sens === 'SANS' ? 'dans le désordre' : 'dans l’ordre des minutages'}`;
+      if (o.cible === 'TC_VIDE') return `séquence ${o.sens === 'SANS' ? 'sans' : 'avec'} plan sans minutage (« -- »)`;
       return `séquence ${o.sens === 'SANS' ? 'sans' : 'avec'} ${libelleCible(o.cible)}`;
     }
     // --- Les pouvoirs du vocabulaire commun --------------------------------
@@ -692,15 +692,14 @@ export function objLabel(o, cfg, opts = {}) {
   const si = nu ? 'si' : `${o.n} si`;
   switch (o.kind) {
     // --- Les pouvoirs de règle : une phrase, pas un compte ------------------
-    case 'PIOCHER': return o.cible === 'CHUTIER' ? 'Vous pouvez piocher vos Plans sur le Chutier'
-      : `Vous pouvez piocher la Carte du dessus de la pioche ${o.cible === 'PL' ? 'Plans Larges' : 'PM / GP'}`;
+    case 'PIOCHER': return 'Vous pouvez piocher vos Plans sur le Chutier';
     case 'SEQ_PLUS': return `Vous pouvez poser ${o.n} séquence${
       o.n > 1 ? 's' : ''} supplémentaire${o.n > 1 ? 's' : ''}${
       cfg && cfg.sequencesMax > 0 ? ` (${cfg.sequencesMax + o.n})` : ''}`;
-    case 'PLAN_PLUS': return `Après le dernier tour, vous pouvez jouer ${o.n} Carte${
+    case 'PLAN_PLUS': return `Après le dernier tour, vous jouez ${o.n} Plan${
       o.n > 1 ? 's' : ''} supplémentaire${o.n > 1 ? 's' : ''}`;
     case 'RACCORD_VAUT':
-      return `Les cartes Raccord vous rapportent ${signe(o.n)} par Raccord`;
+      return `Chaque Raccord vaut ${signe(o.n)}`;
     case 'ABSENT': {
       const c = cibleDe(o);
       return `${si} ${libelleCibleCompte(c)} est absent${accordCible(c)}${ou}`;
@@ -760,77 +759,15 @@ export function objPortee(o, cfg) {
   return cfg && cfg.porteeParDefaut === 'SEQUENCE' ? 'SEQUENCE' : 'MONTAGE';
 }
 
-// --- Les 33 scènes ---------------------------------------------------------
-// Chaque scène existe en deux cadrages : une moitié PLAN MOYEN (2/3 de carte)
-// et une moitié GROS PLAN (1/3). Seule la moitié Gros Plan porte un objectif.
-//
-// Sauf pour les trois scènes de TRANSITION. Un Raccord, une Ouverture, un
-// Générique de fin ne racontent rien : ils n'ont ni icône ni minutage, et leur
-// pouvoir est leur seule matière. Le réserver à la moitié Gros Plan revenait à
-// laisser la moitié Plan Moyen entièrement vide — un Raccord joué en Plan
-// Moyen ne rapportait rien, alors que les règles disent qu'un Raccord rapporte
-// un point par carte de sa séquence, quel que soit le bout par lequel on le
-// joue. Les deux moitiés d'une transition portent donc le même pouvoir.
+// --- Les Gros Plans ---------------------------------------------------------
+// En 4.1 une carte ordinaire est coupée en deux au centre, et chaque moitié est
+// un GROS PLAN : son minutage, ses icônes, son pouvoir. Une « scène » est ici un
+// Gros Plan, tel que la boîte le porte — voir `GP_41`, plus bas.
 
-const S = (idx, tc, famille, pmNum, gpNum, pmEl, gpEl, obj, extra = {}) => ({
-  idx, tc, famille, pmNum, gpNum,
-  // Une copie, et non la même référence : deux moitiés qui partageraient leur
-  // objectif se retoucheraient l'une l'autre.
-  pm: { el: pmEl, ...(famille === 'TRANSITION' && obj ? { obj: { ...obj } } : {}) },
-  gp: { el: gpEl, obj },
-  ...extra,
-});
+const S = (idx, tc, famille, num, el, obj, extra = {}) => ({ idx, tc, famille, num, el, obj, ...extra });
 
-const SCENES_IMPRIMEES = [
-  // Raccords et génériques --------------------------------------------------
-  S(1,  99, 'TRANSITION', 292, 392, [], [], OBJ.raccord(2), { titre: 'Fin',          transition: 'CREDITS' }),
-  S(2,   1, 'TRANSITION', 291, 391, [], [], OBJ.raccord(2), { titre: 'BBG présente', transition: 'OUVERTURE' }),
-  S(3,   0, 'TRANSITION', 290, 390, [], [], OBJ.plan(1),    { titre: 'Raccord',      transition: 'RACCORD' }),
-
-  // Famille MORT ------------------------------------------------------------
-  S(4,  94, 'MORT', 207, 307, ['HEROINE', 'ARME'],     ['HEROINE', 'ARME'], OBJ.mort(3),  { mort: true }),
-  S(5,  93, 'MORT', 208, 308, ['HEROINE', 'VEHICULE'], ['HEROINE'],         null        , { mort: true }),
-  S(6,  91, 'MORT', 209, 309, ['ENNEMI', 'OBJET'],     ['ENNEMI'],          OBJ.mort(3),  { mort: true }),
-  S(7,  80, 'MORT', 210, 310, ['ENNEMI', 'ARME'],      ['ENNEMI'],          null        , { mort: true }),
-  S(8,  69, 'MORT', 211, 311, ['VEHICULE', 'ENNEMI'],  ['VEHICULE'],        OBJ.mort(3),  { mort: true }),
-  S(9,  92, 'MORT', 212, 312, ['ALLIE', 'OBJET'],      ['ALLIE'],           null        , { mort: true }),
-
-  // Famille ARME ------------------------------------------------------------
-  S(10, 66, 'ARME', 213, 313, ['HEROINE', 'ARME'], ['HEROINE', 'ARME'], OBJ.absent(5, 'ALLIE')),
-  S(11, 79, 'ARME', 214, 314, ['ALLIE', 'ARME'],   ['ALLIE', 'ARME'],   OBJ.raccord(2)),
-  S(12, 76, 'ARME', 215, 315, ['HEROINE', 'ARME'], ['ARME'],            OBJ.paire(2, 'ARME', 'ARME')),
-  S(13, 78, 'ARME', 216, 316, ['HEROINE', 'ARME'], ['HEROINE', 'ARME'], OBJ.element(1, 'ARME')),
-  S(14, 77, 'ARME', 217, 317, ['ENNEMI', 'ARME'],  ['ENNEMI', 'ARME'],  OBJ.format(2, 'PM')),
-
-  // Famille VÉHICULE --------------------------------------------------------
-  S(15, 65, 'VEHICULE', 218, 318, ['HEROINE', 'VEHICULE'], ['HEROINE', 'VEHICULE'], OBJ.format(2, 'GP')),
-  S(16, 67, 'VEHICULE', 219, 319, ['HEROINE', 'VEHICULE'], ['HEROINE', 'VEHICULE'], OBJ.format(2, 'PM')),
-  S(17, 68, 'VEHICULE', 220, 320, ['VEHICULE', 'OBJET'],   ['VEHICULE', 'OBJET'],   OBJ.format(2, 'PL')),
-  S(18, 63, 'VEHICULE', 221, 321, ['ALLIE', 'VEHICULE'],   ['ALLIE', 'VEHICULE'],   OBJ.format(2, 'GP')),
-  S(19, 64, 'VEHICULE', 222, 322, ['ENNEMI', 'VEHICULE'],  ['ENNEMI', 'VEHICULE'],  OBJ.element(1, 'VEHICULE')),
-  S(20, 62, 'VEHICULE', 223, 323, ['HEROINE', 'VEHICULE'], ['HEROINE', 'VEHICULE'], OBJ.raccord(2)),
-  S(21, 61, 'VEHICULE', 224, 324, ['VEHICULE'],            ['VEHICULE'],            OBJ.paire(2, 'VEHICULE', 'VEHICULE')),
-  S(22, 34, 'VEHICULE', 225, 325, ['ENNEMI', 'VEHICULE'],  ['VEHICULE', 'ENNEMI'],  OBJ.format(2, 'PL')),
-
-  // Famille OBJET -----------------------------------------------------------
-  S(23, 31, 'OBJET', 226, 326, ['ALLIE', 'OBJET'],   ['ALLIE', 'OBJET'],   OBJ.paire(2, 'OBJET', 'OBJET')),
-  S(24, 33, 'OBJET', 227, 327, ['ENNEMI', 'OBJET'],  ['OBJET', 'ENNEMI'],  OBJ.format(2, 'GP')),
-  S(25, 32, 'OBJET', 228, 328, ['HEROINE', 'OBJET'], ['OBJET', 'HEROINE'], OBJ.format(2, 'PL')),
-  S(26, 16, 'OBJET', 229, 329, ['OBJET', 'ARME'],    ['ARME', 'OBJET'],    OBJ.element(1, 'OBJET')),
-  S(27, 17, 'OBJET', 230, 330, ['ALLIE', 'OBJET'],   ['ALLIE'],            OBJ.format(2, 'PM')),
-
-  // Famille PERSONNAGE (imprimée en trois exemplaires) -----------------------
-  S(28, 0, 'PERSONNAGE', 201, 301, ['ENNEMI', 'ALLIE'],   ['ALLIE'],   OBJ.paire(2, 'ENNEMI', 'ALLIE')),
-  S(29, 0, 'PERSONNAGE', 202, 302, ['HEROINE', 'ENNEMI'], ['ENNEMI'],  OBJ.paire(2, 'HEROINE', 'ENNEMI')),
-  S(30, 0, 'PERSONNAGE', 203, 303, ['ALLIE', 'HEROINE'],  ['HEROINE'], OBJ.paire(2, 'ALLIE', 'HEROINE')),
-  S(31, 0, 'PERSONNAGE', 204, 304, ['ALLIE'],             ['ALLIE'],   OBJ.element(1, 'ALLIE')),
-  S(32, 0, 'PERSONNAGE', 205, 305, ['ENNEMI'],            ['ENNEMI'],  OBJ.element(1, 'ENNEMI')),
-  S(33, 0, 'PERSONNAGE', 206, 306, ['HEROINE'],           ['HEROINE'], OBJ.element(1, 'HEROINE')),
-];
-
-// Les scènes en vigueur — imprimées, plus celles que l'éditeur a créées, moins
-// celles qu'il a supprimées. `SCENES` était une constante ; c'est désormais une
-// question qu'on pose, puisque la réponse change.
+// Les Gros Plans en vigueur — ceux de la boîte, plus ceux que l'éditeur a
+// créés, moins ceux qu'il a supprimés.
 export function SCENES() {
   const ajoutees = (SURCHARGES.ajouts.scenes || []).map(hydraterScene);
   const out = [...T().scenes, ...ajoutees];
@@ -841,12 +778,10 @@ export function SCENES() {
 
 export const idScene = (idx) => `SC${idx}`;
 
-/** Une scène créée : la même forme que les imprimées, valeurs par défaut comprises. */
+/** Un Gros Plan créé : la même forme que ceux de la boîte, valeurs par défaut comprises. */
 function hydraterScene(a) {
-  // Une scène de TRANSITION porte son pouvoir sur ses deux moitiés — c'est `S`
-  // qui s'en charge, à condition qu'on lui dise la famille et le raccord.
-  return S(a.idx, a.tc || 0, a.famille || 'PERSONNAGE', a.pmNum, a.gpNum,
-    (a.pmEl || []).slice(), (a.gpEl || []).slice(), a.obj ? { ...a.obj } : null,
+  return S(a.idx, a.tc || 0, a.famille || 'PERSONNAGE', a.num, (a.el || []).slice(),
+    a.obj ? { ...a.obj } : null,
     { ...(a.titre ? { titre: a.titre } : {}), ...(a.mort ? { mort: true } : {}),
       ...(a.transition ? { transition: a.transition } : {}), ajoutee: true });
 }
@@ -855,42 +790,19 @@ export function sceneDe(idx) {
   return SCENES().find((s) => s.idx === idx) || null;
 }
 
-/** De quel côté d'une scène vient un numéro de plan. */
+/** La scène d'un Gros Plan, par son numéro. */
 function indexScenes() {
-  const pm = {}, gp = {};
-  for (const s of SCENES()) {
-    if (s.pmNum != null) pm[s.pmNum] = s.idx;
-    if (s.gpNum != null) gp[s.gpNum] = s.idx;
-  }
-  return { pm, gp };
+  const out = {};
+  for (const s of SCENES()) out[s.num] = s.idx;
+  return out;
 }
 
-// --- Les 14 Plans Larges ---------------------------------------------------
-// `brouillon` marquait les cartes dont le PDF source ne donnait ni illustration
-// ni pastilles — les 101 et 102. Elles ont reçu les leurs : plus aucun Plan
-// Large n'est un brouillon. Le marqueur reste dans le modèle, avec le réglage
-// `retirerBrouillons`, pour la prochaine carte encore à dessiner.
+// --- Les Plans Larges ---------------------------------------------------------
+// Une carte à une seule image, qui prend toute la carte.
 
 const PL = (num, tc, el, obj, extra = {}) => ({ num, tc, el, obj, ...extra });
 
-const PL_IMPRIMES = [
-  PL(101, 15, ['HEROINE', 'ENNEMI', 'OBJET', 'VEHICULE'],  null),
-  PL(102, 30, ['OBJET', 'ARME', 'VEHICULE'],               null),
-  PL(103, 45, ['ENNEMI', 'ALLIE', 'OBJET', 'VEHICULE'],    OBJ.raccord(2)),
-  PL(104, 90, ['HEROINE', 'ALLIE', 'VEHICULE'],            null),
-  PL(105, 90, ['HEROINE', 'ENNEMI', 'ALLIE', 'ARME'],      null),
-  PL(106, 90, ['HEROINE', 'OBJET', 'VEHICULE'],            null),
-  PL(107, 15, ['HEROINE', 'ENNEMI', 'ARME'],               null),
-  PL(108, 30, ['ALLIE', 'ENNEMI', 'OBJET'],                null),
-  PL(109, 15, ['ALLIE', 'OBJET', 'ARME'],                  null),
-  PL(110, 60, ['HEROINE', 'ENNEMI', 'ARME', 'VEHICULE'],   null),
-  PL(111, 45, ['HEROINE', 'ALLIE', 'OBJET'],               null),
-  PL(112, 75, ['ENNEMI', 'ALLIE', 'OBJET', 'ARME'],        null),
-  PL(113, 60, ['HEROINE', 'ENNEMI', 'VEHICULE'],           null),
-  PL(114, 75, ['HEROINE', 'ENNEMI', 'ARME'],               null),
-];
-
-/** Les Plans Larges en vigueur — imprimés, plus les créés, moins les supprimés. */
+/** Les Plans Larges en vigueur — ceux de la boîte, plus les créés, moins les supprimés. */
 export function PLANS_LARGES() {
   const ajoutes = (SURCHARGES.ajouts.larges || []).map((a) => PL(a.num, a.tc || 0,
     (a.el || []).slice(), a.obj ? { ...a.obj } : null, { ajoute: true }));
@@ -898,200 +810,102 @@ export function PLANS_LARGES() {
   return SURCHARGES.retires.size ? out.filter((p) => !SURCHARGES.retires.has(`L${p.num}`)) : out;
 }
 
-// --- Les Plans de départ ---------------------------------------------------
-// 8 cartes, en 2 versions recto-verso : 4 faces distinctes dans le PDF.
-// L'appariement recto/verso des deux types est une hypothèse (ordre du PDF).
+// --- Les Plans de départ -------------------------------------------------------
+// La boîte porte QUATRE plans de départ. Une carte de départ est la seule carte
+// recto verso du jeu : elle porte deux de ces plans, un par face. Quatre plans
+// font six couples, donc six cartes différentes ; chaque joueuse en reçoit une
+// et choisit la face qu'elle pose.
 
-const DEPARTS_IMPRIMES = [
-  { type: 'A', faces: [
-    PL(115, 75, ['HEROINE', 'ENNEMI', 'ARME'],            OBJ.format(3, 'PL'), { depart: true }),
-    PL(116, 60, ['HEROINE', 'ENNEMI', 'VEHICULE'],        OBJ.format(2, 'PM'), { depart: true }),
-  ] },
-  { type: 'B', faces: [
-    PL(117, 45, ['ENNEMI', 'ALLIE', 'OBJET', 'ARME'],     OBJ.format(2, 'GP'), { depart: true }),
-    PL(118, 30, ['HEROINE', 'ALLIE', 'VEHICULE'],         OBJ.plan(1),         { depart: true }),
-  ] },
-];
-
-// La boîte contient QUATRE plans de départ — 115, 116, 117, 118 —, et une carte
-// en porte deux, un par face. Les deux cartes imprimées les apparient 115/116 et
-// 117/118 ; la variante « 6 Cartes Départ » ouvre les six appariements que
-// quatre plans permettent, et chaque joueuse en pioche un seul. Elle a donc deux
-// faces au choix, et non quatre — et deux joueuses n'ont jamais le même couple.
-export const PLANS_DEPART = [115, 116, 117, 118];
-export const PAIRES_DEPART = [
-  [115, 116], [116, 117], [117, 118], [118, 115], [116, 118], [115, 117],
-];
-
-/**
- * Les six cartes de la variante, faites des mêmes quatre plans. Chacune porte
- * son couple, et son identité dit lequel : « S1-2 » apparie le premier et le
- * deuxième plan de la boîte.
- */
-export function DEPARTS_SIX() {
-  const faces = new Map();
-  for (const d of DEPARTS()) for (const f of d.faces) faces.set(f.num, f);
-  const plans = T().plansDepart || PLANS_DEPART;
-  return (T().pairesDepart || PAIRES_DEPART)
-    .map(([a2, b2], i) => {
-      const fa = faces.get(a2); const fb = faces.get(b2);
-      if (!fa || !fb) return null;
-      const rang = (x) => plans.indexOf(x) + 1;
-      return { type: `${rang(a2)}-${rang(b2)}`, six: true, rang: i, faces: [fa, fb] };
-    })
-    .filter(Boolean);
-}
-
-/** Les versions de Plan de départ en vigueur. Une version = une carte, deux faces. */
+/** Les plans de départ en vigueur. */
 export function DEPARTS() {
-  const ajoutes = (SURCHARGES.ajouts.departs || []).map((d) => ({
-    type: d.type, ajoutee: true,
-    faces: (d.faces || []).map((f) => PL(f.num, f.tc || 0, (f.el || []).slice(),
-      f.obj ? { ...f.obj } : null, { depart: true, ajoute: true })),
-  }));
+  const ajoutes = (SURCHARGES.ajouts.departs || []).map((d) => PL(d.num, d.tc || 0, (d.el || []).slice(),
+    d.obj ? { ...d.obj } : null, { depart: true, ajoute: true }));
   const out = [...T().departs, ...ajoutes];
-  return SURCHARGES.retires.size ? out.filter((d) => !SURCHARGES.retires.has(`S${d.type}`)) : out;
+  return SURCHARGES.retires.size ? out.filter((p) => !SURCHARGES.retires.has(`P${p.num}`)) : out;
 }
 
-// --- Les 50 cartes Plan Moyen / Gros Plan ----------------------------------
-// Répartition v0.13. Au recto le Gros Plan à gauche et le Plan Moyen à droite,
-// au verso l'inverse — mêmes deux moitiés sur les deux faces.
-// `dual` marque la moitié GÉNÉRIQUE à double lecture : Ouverture quand elle
-// est à gauche, Crédits quand elle passe à droite.
+/** Les six couples que quatre plans permettent — ou ceux de n plans. */
+function couplesDepart() {
+  const plans = DEPARTS();
+  const out = [];
+  for (let i = 0; i < plans.length; i++) for (let j = i + 1; j < plans.length; j++) out.push([plans[i], plans[j]]);
+  return out;
+}
 
-const PAIRES_IMPRIMEES = [
-  [201, 317], [201, 319], [201, 325], [202, 308], [202, 314], [202, 324],
-  [203, 315], [203, 320], [203, 327], [204, 310], [204, 391], [204, 326],
-  [205, 307], [205, 312], [205, 328], [206, 313], [206, 318], [206, 322],
-  [207, 305], [208, 301], [209, 302], [210, 303], [291, 306], [211, 390],
-  [212, 305], [213, 306], [214, 302], [215, 390], [216, 306], [217, 301],
-  [218, 390], [219, 304], [220, 304], [221, 303], [222, 390], [223, 390],
-  [224, 302], [225, 304], [226, 303], [227, 301], [228, 305], [229, 390],
-  [230, 391, { dualGP: true }], [290, 309], [290, 311], [290, 316], [290, 323],
-  [290, 329], [290, 330], [291, 321, { dualPM: true }],
-];
+// --- Les cartes à deux Gros Plans ----------------------------------------------
+// `paires[i] = [gauche, droite]` : les numéros des deux Gros Plans de la i-ème
+// carte, la moitié GAUCHE puis la moitié DROITE. On ne choisit pas seulement
+// quels plans vont ensemble : la moitié gauche ne se pose qu'à gauche d'une
+// séquence, la droite qu'à droite.
 
-/**
- * Les appariements en vigueur. Les cinquante imprimés gardent leurs rangs 0 à
- * 49 quoi qu'il arrive : c'est par ce rang que les retouches d'appariement sont
- * rangées, et une carte créée ne doit pas les décaler. Les nouvelles se
- * mettent donc à la suite, et une carte supprimée laisse son rang vide plutôt
- * que de faire glisser les autres.
- */
 function PAIRES() {
-  const ajoutees = (SURCHARGES.ajouts.paires || []).map((p) => [p.pmNum, p.gpNum, { ajoutee: true }]);
+  const ajoutees = (SURCHARGES.ajouts.paires || []).map((p) => [p.g, p.d, { ajoutee: true }]);
   return [...T().paires, ...ajoutees];
 }
 
 export function buildCartesDoubles() {
-  const { pm: pmIndex, gp: gpIndex } = indexScenes();
-  return PAIRES().map(([pmImp, gpImp, extra], i) => {
-    // L'appariement des deux moitiés est lui aussi réglable : c'est la seule
-    // façon de changer la répartition des Plans Moyens et des Gros Plans.
-    const [pmNum, gpNum] = paireDe(i, [pmImp, gpImp]);
+  const index = indexScenes();
+  return PAIRES().map(([gImp, dImp, extra], i) => {
+    // L'assemblage se règle : c'est une retouche comme une autre.
+    const [gNum, dNum] = paireDe(i, [gImp, dImp]);
+    const id = `D${String(i + 1).padStart(2, '0')}`;
     return {
-      id: `D${String(i + 1).padStart(2, '0')}`,
+      id,
       type: 'DOUBLE',
       rang: i,
-      pmScene: pmIndex[pmNum],
-      gpScene: gpIndex[gpNum],
-      pmNum, gpNum,
-      pmImprime: pmImp, gpImprime: gpImp,
-      appariementModifie: pmNum !== pmImp || gpNum !== gpImp,
-      actif: carteActive(`D${String(i + 1).padStart(2, '0')}`),
+      gNum, dNum,
+      gScene: gNum == null ? undefined : index[gNum],
+      dScene: dNum == null ? undefined : index[dNum],
+      gImprime: gImp, dImprime: dImp,
+      appariementModifie: gNum !== gImp || dNum !== dImp,
+      actif: carteActive(id),
       ...(extra || {}),
     };
   }).filter((c) => {
-    // Une carte supprimée s'en va ; une carte dont une moitié a disparu avec sa
-    // scène s'en va aussi — elle n'a plus rien à montrer.
     if (SURCHARGES.retires.has(c.id)) return false;
-    // Une carte imprimée avec une seule moitié — le Set 3.1 n'a reçu que le
-    // Gros Plan de sa carte — se montre telle quelle.
     // Une carte CRÉÉE peut rester vide : c'est une place qu'on remplit à
-    // l'Assemblage. Une carte imprimée vidée de ses deux moitiés — elles sont
-    // allées compléter d'autres cartes —, elle, disparaît.
-    return (c.pmScene !== undefined || c.pmNum == null) && (c.gpScene !== undefined || c.gpNum == null)
-      && (c.pmNum != null || c.gpNum != null || !!c.ajoutee);
+    // l'Assemblage. Une carte de la boîte vidée de ses deux moitiés disparaît,
+    // comme celle dont un Gros Plan a été supprimé.
+    return (c.gScene !== undefined || c.gNum == null) && (c.dScene !== undefined || c.dNum == null)
+      && (c.gNum != null || c.dNum != null || !!c.ajoutee);
   });
 }
 
-/**
- * Les Plans Larges de la boîte. `avecDeparts` — la variante « pas de Plans de
- * départ » — y verse les quatre faces de départ : elles perdent leur marque
- * `depart`, et deviennent donc des Plans Larges à part entière, jusqu'à la
- * couleur de leur bandeau et de leur fond. Rien d'autre ne change : même
- * minutage, mêmes icônes, même pouvoir.
- */
-export function buildPlansLarges(avecDeparts) {
-  const out = PLANS_LARGES().map((p) => ({ id: `L${p.num}`, type: 'PL', actif: carteActive(`L${p.num}`), ...p }));
-  if (!avecDeparts) return out;
-  for (const d of DEPARTS()) {
-    for (const f of d.faces) {
-      const { depart, ...reste } = f;
-      const id = `S${d.type}f${f.num}`;
-      out.push({ id, type: 'PL', actif: carteActive(id), ...reste });
-    }
-  }
-  return out;
-}
+/** Une carte a-t-elle ses deux moitiés ? Sans cela elle se consulte, elle ne se joue pas. */
+export const carteComplete = (c) => !!c && c.gScene !== undefined && c.dScene !== undefined;
 
-export function buildDeparts(six) {
-  // Variante « 6 Cartes Départ » : six cartes distinctes, une par appariement
-  // des quatre plans. Elles ne sont pas en plusieurs exemplaires — c'est tout
-  // l'objet de la variante : chaque joueuse en pioche une, et deux joueuses
-  // n'ont jamais le même couple.
-  // Un set dont les cartes de départ SONT les six couples n'a que cette forme.
-  // Un set dont chaque Plan de départ est une carte à part entière, à une
-  // face : elles se mélangent, et chaque joueuse en reçoit une — comme les six
-  // couples, sans le choix de la face.
-  if (T().departSeul) {
-    return DEPARTS().map((d) => {
-      const faces = d.faces.filter((f) => carteActive(`S${d.type}f${f.num}`));
-      return faces.length ? { id: `S${d.type}`, type: 'DEPART', version: d.type, six: true, faces } : null;
-    }).filter(Boolean);
-  }
-  if (six || T().sixSeul) {
-    return DEPARTS_SIX().map((d) => {
-      const faces = d.faces.filter((f) => carteActive(`S${d.type}f${f.num}`));
-      return faces.length ? { id: `S${d.type}`, type: 'DEPART', version: d.type, six: true, faces } : null;
-    }).filter(Boolean);
-  }
-  // Sinon, la boîte imprimée : quatre exemplaires de chaque version, soit les
-  // 8 cartes, et chaque joueuse reçoit une carte de chaque.
-  const out = [];
-  DEPARTS().forEach((d) => {
-    const faces = d.faces.filter((f) => carteActive(`S${d.type}f${f.num}`));
-    if (!faces.length) return;
-    for (let k = 0; k < 4; k++) {
-      out.push({ id: `S${d.type}${k + 1}`, type: 'DEPART', version: d.type, faces });
-    }
-  });
-  return out;
+export function buildPlansLarges() {
+  return PLANS_LARGES().map((p) => ({ id: `L${p.num}`, type: 'PL', actif: carteActive(`L${p.num}`), ...p }));
 }
 
 /**
- * Toutes les CARTES de la boîte, chacune avec les plans qu'elle porte.
- *
- * Une carte double montre quatre plans — deux moitiés, deux faces — mais reste
- * **une carte** : c'est ce qu'on compte quand on demande « combien de cartes
- * portent une Arme ». Un Plan Large en porte un ; un Plan de départ, deux.
+ * Les cartes de départ : une par couple de plans. Leur identité dit lequel —
+ * « S5-7 » porte les plans 5 et 7.
  */
-export function cartesDeLaBoite(six) {
+export function buildDeparts() {
+  return couplesDepart().map(([a, b], i) => ({
+    id: `S${a.num}-${b.num}`, type: 'DEPART', rang: i, faces: [a, b],
+    actif: carteActive(`S${a.num}-${b.num}`),
+  })).filter((c) => c.actif);
+}
+
+/**
+ * Toutes les CARTES de la boîte, chacune avec les plans qu'elle porte : deux
+ * Gros Plans, un Plan Large, ou les deux faces d'une carte de départ.
+ */
+export function cartesDeLaBoite() {
   const out = [];
   for (const c of buildCartesDoubles()) {
     if (!c.actif) continue;
-    const r = moitiesDe(c, 'R'); const v = moitiesDe(c, 'V');
-    out.push({ id: c.id, famille: 'DOUBLE', plans: [r.GP, r.PM, v.GP, v.PM] });
+    const m = moitiesDe(c);
+    out.push({ id: c.id, famille: 'DOUBLE', plans: [m.G, m.D] });
   }
-  for (const c of buildPlansLarges(false)) {
+  for (const c of buildPlansLarges()) {
     if (!c.actif) continue;
     out.push({ id: c.id, famille: 'PL', plans: [plHalf(c)] });
   }
-  // Les faces d'un Plan de départ sont des plans bruts : elles n'ont pas encore
-  // de cadrage. `plHalf` le leur donne — DÉP — comme partout où on les joue.
-  for (const d of buildDeparts(six)) {
-    out.push({ id: d.id, famille: 'DEP',
-      plans: d.faces.map((f) => plHalf({ ...f, depart: true })) });
+  for (const d of buildDeparts()) {
+    out.push({ id: d.id, famille: 'DEP', plans: d.faces.map((f) => plHalf({ ...f, depart: true })) });
   }
   return out;
 }
@@ -1153,13 +967,10 @@ export function recenserBoite(cfg) {
       if (p.mort) icones.add('MORT');
       if (p.transition === 'RACCORD') raccord = true;
       else if (!p.transition) cadrages.add(p.format);
-      // Le minutage se range en quatre : les deux bornes du film, l'absence de
-      // minutage, et tout le reste. La moitié Générique à double lecture porte
-      // les DEUX bornes — 01:00 jouée en ouverture, 99:00 jouée en fin de film :
-      // sans cela, aucune carte de la boîte ne comptait pour le 99:00.
+      // Le minutage se range en quatre : l'Ouverture, la Fin, l'absence de
+      // minutage, et tout le reste.
       tcs.add(p.tc === TC_VIDE ? 'VIDE' : p.tc === TC_PREMIER ? 'PREMIER'
         : p.tc === TC_DERNIER ? 'DERNIER' : 'ORDINAIRE');
-      if (p.dual) { tcs.add('PREMIER'); tcs.add('DERNIER'); }
       for (const o of objsDe(p)) {
         kinds.add(o.kind);
         for (const x of ciblesDe(o)) cibles.add(x);
@@ -1178,287 +989,64 @@ export function recenserBoite(cfg) {
 }
 
 // --- Matériel ajustable ----------------------------------------------------
-// Rien de ce qui est imprimé sur une carte n'est figé : le minutage, les
-// pastilles et le bandeau d'objectif de chaque plan sont des données que
-// l'application contrôle, et que l'éditeur de l'écran Matériel remplace plan
-// par plan.
+// Les cartes du jeu sont les vraies cartes, montrées telles quelles. Ce que le
+// moteur en sait — minutage, icônes, pouvoir — a été lu sur chacune, et reste
+// réglable plan par plan dans l'écran Matériel : c'est ce qui permet de corriger
+// une lecture, ou d'essayer un équilibrage. Un plan retouché ne correspond plus
+// à son image ; le site le recompose alors lui-même, le temps de l'essai.
 //
-// Deux jeux de matériel coexistent en permanence — l'IMPRIMÉ, intouchable, et
-// le MODIFIÉ, qui porte les retouches. `appliquerMateriel` reçoit le second
-// quand c'est lui qu'on joue, et rien quand on joue l'imprimé : les retouches
-// ne sont donc jamais perdues, seulement mises de côté.
+// Deux jeux coexistent — celui de la BOÎTE, intouchable, et le MODIFIÉ, qui
+// porte les retouches. `appliquerMateriel` reçoit le second quand c'est lui
+// qu'on joue, et rien quand on joue la boîte.
 //
-//   plans[clé]  = { tc, el, obj, mort }  — chaque champ absent = valeur imprimée
-//   paires[i]   = [pmNum, gpNum]         — l'appariement de la i-ème carte
+//   plans[clé]  = { tc, el, obj, mort }  — chaque champ absent = valeur de la boîte
+//   paires[i]   = [gauche, droite]       — l'assemblage de la i-ème carte
 //   desactives  = [id de carte, …]       — les cartes écartées du paquet
 //
-// La clé d'un plan est son numéro, suivi de sa face pour les moitiés d'une
-// carte Plan Moyen / Gros Plan : « 201R » et « 201V » sont deux plans
-// distincts, réglables séparément, car le recto et le verso d'une carte ne
-// portent pas le même minutage. Les Plans Larges et les Plans de départ ont un
-// vrai dos, donc une seule face : leur clé est leur seul numéro.
-//
-// Numéros : 101-114 les Plans Larges, 115-118 les Plans de départ, 201-230 et
-// 290-292 les Plans Moyens, 301-330 et 390-392 les Gros Plans.
+// La clé d'un plan : « GP13 » pour un Gros Plan, son seul numéro pour un Plan
+// Large ou un Plan de départ — les deux séries se numérotent à part, L1 à L19
+// et GP00 à GP102.
 
-export const FACES = [
-  { id: 'R', label: 'Recto', court: 'R' },
-  { id: 'V', label: 'Verso', court: 'V' },
-];
-
-/** La clé d'un plan : son numéro, plus sa face quand elle en a une. */
-export function cleplan(num, face) {
-  return face ? `${num}${face}` : String(num);
+/** La clé d'un plan. */
+export function cleplan(num, grosPlan) {
+  return grosPlan ? `GP${num}` : String(num);
 }
 
-// --- Les Plans Moyens du Set 3.1 -------------------------------------------
-// Lus sur leurs deux faces. `r` et `v` disent ce que chaque face imprime — son
-// minutage, puis son ou ses pouvoirs ; les icônes sont celles des deux faces.
-// Sans minutage, un plan s'écrit 0 — « --:-- ».
-const PM31 = [
-  { n: 201, el: ['HEROINE', 'ENNEMI'], r: [0, OBJ.paire(2, 'HEROINE', 'ENNEMI', 'APRES')], v: [0, OBJ.paire(2, 'HEROINE', 'ENNEMI', 'AVANT')] },
-  { n: 202, el: ['ENNEMI', 'ALLIE'], r: [0, OBJ.paire(2, 'ENNEMI', 'ALLIE', 'APRES')], v: [0, OBJ.paire(2, 'ENNEMI', 'ALLIE', 'AVANT')] },
-  { n: 203, el: ['HEROINE', 'ALLIE'], r: [0, OBJ.paire(2, 'HEROINE', 'ALLIE', 'APRES')], v: [0, OBJ.paire(2, 'HEROINE', 'ALLIE', 'AVANT')] },
-  { n: 204, el: ['HEROINE', 'ALLIE'], r: [0, OBJ.element(1, 'HEROINE', 'APRES')], v: [0, OBJ.element(1, 'HEROINE', 'AVANT')] },
-  { n: 205, el: ['HEROINE', 'ENNEMI'], r: [0, OBJ.element(1, 'ENNEMI', 'APRES')], v: [0, OBJ.element(1, 'ENNEMI', 'AVANT')] },
-  { n: 206, el: ['ENNEMI', 'ALLIE'], r: [0, OBJ.element(1, 'ALLIE', 'APRES')], v: [0, OBJ.element(1, 'ALLIE', 'AVANT')] },
-  { n: 207, el: ['ALLIE', 'OBJET'], r: [25, OBJ.seuilCible(6, 'OBJET', 'MIN', 5, 'MONTAGE')], v: [35, OBJ.seuilCible(6, 'OBJET', 'MIN', 5, 'MONTAGE')] },
-  { n: 208, el: ['OBJET', 'ARME'], r: [10, OBJ.paire(2, 'OBJET', 'OBJET', 'APRES')], v: [20, OBJ.paire(2, 'OBJET', 'OBJET', 'AVANT')] },
-  { n: 209, el: ['HEROINE', 'OBJET'], r: [25, OBJ.seqAvec(2, 'AVEC', 'OBJET', 2)], v: [35, OBJ.seqAvec(2, 'AVEC', 'OBJET', 2)] },
-  { n: 210, el: ['ALLIE', 'OBJET'], r: [25, OBJ.format(2, 'PM', 'APRES')], v: [35, OBJ.format(2, 'PM', 'AVANT')] },
-  { n: 211, el: ['ALLIE', 'OBJET'], r: [25, OBJ.absent(4, 'ENNEMI', 'SEQUENCE')], v: [35, OBJ.absent(4, 'ENNEMI', 'SEQUENCE')] },
-  { n: 212, el: ['OBJET', 'ARME', 'VEHICULE'], r: [0, OBJ.paire(3, 'OBJET', 'ARME', 'SEQUENCE', 'VEHICULE')], v: [0, OBJ.paire(3, 'OBJET', 'ARME', 'SEQUENCE', 'VEHICULE')] },
-  { n: 213, el: ['ENNEMI', 'VEHICULE'], r: [25, OBJ.seqAvec(2, 'AVEC', 'VEHICULE', 2)], v: [35, OBJ.seqAvec(2, 'AVEC', 'VEHICULE', 2)] },
-  { n: 214, el: ['VEHICULE', 'VEHICULE'], r: [55, OBJ.paire(2, 'VEHICULE', 'VEHICULE', 'APRES')], v: [65, OBJ.paire(2, 'VEHICULE', 'VEHICULE', 'AVANT')] },
-  { n: 215, el: ['HEROINE', 'VEHICULE'], r: [55, OBJ.seuilCible(6, 'VEHICULE', 'MIN', 6, 'MONTAGE')], v: [65, OBJ.seuilCible(6, 'VEHICULE', 'MIN', 6, 'MONTAGE')] },
-  { n: 216, el: ['ENNEMI', 'VEHICULE'], r: [55, OBJ.absent(4, 'RACCORD', 'MONTAGE')], v: [65, OBJ.absent(4, 'RACCORD', 'MONTAGE')] },
-  // Le seul dont le pouvoir change de cible d'une face à l'autre.
-  { n: 217, el: ['ALLIE', 'VEHICULE'], r: [55, OBJ.format(2, 'PM', 'APRES')], v: [65, OBJ.format(2, 'PL', 'AVANT')] },
-  { n: 218, el: ['OBJET', 'VEHICULE'], r: [70, OBJ.absent(4, 'VEHICULE', 'SUITE')], v: [65, OBJ.absent(4, 'VEHICULE', 'SUITE')] },
-  { n: 219, el: ['ALLIE', 'ARME'], r: [70, OBJ.seuilCible(6, 'ARME', 'MIN', 6, 'MONTAGE')], v: [80, OBJ.seuilCible(6, 'ARME', 'MIN', 6, 'MONTAGE')] },
-  { n: 220, el: ['ENNEMI', 'ARME'], r: [70, OBJ.mort(2, 'SUITE')], v: [80, OBJ.mort(2, 'SUITE')] },
-  { n: 221, el: ['HEROINE', 'ARME'], r: [70, OBJ.absent(4, 'ALLIE', 'SEQUENCE')], v: [80, OBJ.absent(4, 'ALLIE', 'SEQUENCE')] },
-  { n: 222, el: ['ARME', 'ARME'], r: [70, OBJ.paire(2, 'ARME', 'ARME', 'APRES')], v: [80, OBJ.paire(2, 'ARME', 'ARME', 'AVANT')] },
-  { n: 223, el: ['ALLIE', 'ARME'], r: [70, OBJ.seqAvec(2, 'AVEC', 'ARME', 2)], v: [80, OBJ.seqAvec(2, 'AVEC', 'ARME', 2)] },
-  // 3 au recto, 2 au verso.
-  { n: 224, el: ['HEROINE', 'ARME'], r: [55, OBJ.format(3, 'GP', 'APRES')], v: [65, OBJ.format(2, 'GP', 'AVANT')] },
-  { n: 225, el: ['ENNEMI', 'ARME'], r: [85, OBJ.absent(4, 'ENNEMI', 'SUITE')], v: [80, OBJ.absent(4, 'ENNEMI', 'SUITE')] },
-  { n: 226, el: ['HEROINE', 'ENNEMI', 'ALLIE'], r: [85, OBJ.absent(6, 'MORT', 'MONTAGE')], v: [95, OBJ.absent(6, 'MORT', 'MONTAGE')] },
-  { n: 227, el: ['ENNEMI', 'VEHICULE'], mort: true, r: [70, OBJ.element(1, 'VEHICULE', 'AMONT')], v: [65, OBJ.element(1, 'VEHICULE', 'AMONT')] },
-  { n: 228, el: ['ENNEMI', 'OBJET'], mort: true, r: [85, OBJ.mort(3, 'SEQUENCE')], v: [95, OBJ.mort(3, 'SEQUENCE')] },
-  { n: 229, el: ['HEROINE', 'VEHICULE'], mort: true, r: [85, OBJ.element(1, 'HEROINE', 'AMONT')], v: [95, OBJ.element(1, 'HEROINE', 'AMONT')] },
-  { n: 230, el: ['ALLIE', 'OBJET'], mort: true, r: [85, OBJ.seqAvec(4, 'AVEC', 'MORT')], v: [95, OBJ.seqAvec(4, 'AVEC', 'MORT')] },
-  // Le Raccord : 1 × Raccord, et −5 s'il n'a pas de Plan Large avant lui au
-  // recto, après lui au verso.
-  { n: 290, el: [], transition: 'RACCORD', titre: 'Raccord',
-    r: [0, OBJ.raccord(1), OBJ.absent(-5, 'PL', 'AVANT')], v: [0, OBJ.raccord(1), OBJ.absent(-5, 'PL', 'APRES')] },
-  // L'Ouverture au recto, la Fin au verso : 6 si le minutage est dans l'ordre,
-  // et 4 si rien ne la précède — ou ne la suit.
-  { n: 291, el: [], transition: 'OUVERTURE', titre: 'BBG présente',
-    r: [1, OBJ.chrono(6), OBJ.seuilCible(4, 'CARTE', 'MAX', 0, 'AMONT')],
-    v: [99, OBJ.chrono(6), OBJ.seuilCible(4, 'CARTE', 'MAX', 0, 'SUITE')], vx: { transition: 'CREDITS', titre: 'Fin' } },
-];
-
-/** La famille d'un plan, d'après ce qu'il montre : le crâne, l'objet, l'arme, le véhicule. */
-const familleDe = (p) => (p.transition ? 'TRANSITION' : p.mort ? 'MORT'
-  : p.el.find((e) => ['OBJET', 'ARME', 'VEHICULE'].includes(e)) || 'PERSONNAGE');
-
-/** Ce qu'une face d'un Plan Moyen du Set 3.1 imprime. */
-const facePM31 = (p, f) => {
-  const [tc, obj, obj2] = p[f];
-  return { tc, obj, ...(obj2 ? { obj2 } : {}), ...(f === 'v' ? p.vx || {} : {}),
-    visuel: `assets/s31/PM${p.n}${f.toUpperCase()}-carte.webp` };
-};
-
-// --- Les sets de cartes ---------------------------------------------------
-// Chaque set est un matériel d'ORIGINE à part entière, avec ses propres
-// cartes ; les retouches de l'éditeur s'y ajoutent par-dessus — « 3.1
-// Origine », « 3.1 Modifiée ». Le Set 3.1 ne porte QUE les cartes que
-// l'auteur a fournies : rien n'y est repris du Set 2.
-// Un set peut avoir SES icônes — `icones`, un dossier — et SON format de carte,
-// en millimètres : le Set 4.1 montre les vraies cartes, à leur proportion.
-export const SETS = [
-  { id: '2',   label: 'Set 2',   detail: 'boîte v29' },
-  { id: '3.1', label: 'Set 3.1', detail: 'nouvelles cartes' },
-  { id: '4.1', label: 'Set 4.1', detail: 'les vraies cartes de la 4.1', icones: 'assets/icones/41',
-    format: { largeur: 120, hauteur: 80, gp: 60 } },
-];
-export const SET_DEFAUT = '2';
-export const setValide = (id) => (SETS.some((x) => x.id === id) ? id : SET_DEFAUT);
-let setCourant = SET_DEFAUT;
-export const setActif = () => setCourant;
-const ficheSet = () => SETS.find((x) => x.id === setCourant) || SETS[0];
-/** Le dossier des icônes du set en vigueur. */
-export const dossierIcones = () => ficheSet().icones || 'assets/icones';
-/** Le format des cartes du set en vigueur, s'il n'est pas celui d'origine ; sinon `null`. */
-export const formatSet = () => ficheSet().format || null;
-/**
- * La part de la carte que prend sa moitié Gros Plan, en pour-cent. Un tiers
- * dans les sets d'origine ; la moitié en 4.1, où la carte est coupée au centre.
- */
-export function partGP() {
-  const f = formatSet();
-  return f && f.gp ? Math.round((f.gp / f.largeur) * 1000) / 10 : 33.6;
-}
-
-const TABLES = {
-  '2': {
-    scenes: SCENES_IMPRIMEES, larges: PL_IMPRIMES, departs: DEPARTS_IMPRIMES, paires: PAIRES_IMPRIMEES,
-  },
-  '3.1': {
-    scenes: [
-      // Les Gros Plans, lus sur leur recto. Sans minutage, un plan s'écrit 0 —
-      // « --:-- ». La famille suit ce que la carte montre : le crâne d'abord,
-      // puis l'objet, l'arme ou le véhicule, sinon les personnages.
-      S(10, 0, 'PERSONNAGE', null, 301, [], ['HEROINE'], OBJ.element(1, 'HEROINE', 'MONTAGE')),
-      S(11, 0, 'PERSONNAGE', null, 302, [], ['ENNEMI'], OBJ.element(1, 'ENNEMI', 'MONTAGE')),
-      S(12, 0, 'PERSONNAGE', null, 303, [], ['ALLIE'], OBJ.element(1, 'ALLIE', 'MONTAGE')),
-      S(13, 0, 'PERSONNAGE', null, 304, [], ['HEROINE'], OBJ.paire(2, 'HEROINE', 'ALLIE', 'MONTAGE')),
-      S(14, 0, 'PERSONNAGE', null, 305, [], ['ENNEMI'], OBJ.paire(2, 'HEROINE', 'ENNEMI', 'MONTAGE')),
-      S(15, 0, 'PERSONNAGE', null, 306, [], ['ALLIE'], OBJ.paire(2, 'ENNEMI', 'ALLIE', 'MONTAGE')),
-      S(16, 35, 'OBJET', null, 307, [], ['OBJET'], OBJ.domine(6, 'OBJET')),
-      S(17, 20, 'ARME', null, 308, [], ['ARME'], OBJ.paire(2, 'OBJET', 'ARME', 'MONTAGE')),
-      S(18, 35, 'OBJET', null, 309, [], ['OBJET'], OBJ.element(1, 'OBJET', 'SUITE')),
-      S(19, 35, 'OBJET', null, 310, [], ['OBJET'], OBJ.format(2, 'PM', 'MONTAGE')),
-      S(20, 35, 'OBJET', null, 311, [], ['OBJET'], OBJ.absent(6, 'ENNEMI', 'MONTAGE')),
-      S(21, 0, 'OBJET', null, 312, [], ['OBJET', 'VEHICULE'], OBJ.paire(3, 'OBJET', 'ARME', 'MONTAGE', 'VEHICULE')),
-      S(22, 35, 'VEHICULE', null, 313, [], ['VEHICULE'], OBJ.element(1, 'VEHICULE', 'SUITE')),
-      S(23, 65, 'VEHICULE', null, 314, [], ['VEHICULE'], OBJ.paire(2, 'VEHICULE', 'VEHICULE', 'MONTAGE')),
-      S(24, 65, 'PERSONNAGE', null, 315, [], ['HEROINE'], OBJ.domine(6, 'VEHICULE')),
-      S(25, 65, 'PERSONNAGE', null, 316, [], ['ENNEMI'], OBJ.absent(4, 'RACCORD', 'MONTAGE')),
-      S(26, 65, 'PERSONNAGE', null, 317, [], ['ALLIE'], OBJ.format(2, 'PL', 'MONTAGE')),
-      S(27, 65, 'VEHICULE', null, 318, [], ['VEHICULE'], OBJ.absent(4, 'VEHICULE', 'SUITE')),
-      S(28, 80, 'ARME', null, 319, [], ['ARME'], OBJ.domine(6, 'ARME')),
-      S(29, 80, 'ARME', null, 320, [], ['ARME'], OBJ.mort(2, 'MONTAGE')),
-      S(30, 80, 'ARME', null, 321, [], ['ARME'], OBJ.absent(6, 'ALLIE', 'MONTAGE')),
-      S(31, 80, 'ARME', null, 322, [], ['ARME'], OBJ.paire(2, 'ARME', 'ARME', 'MONTAGE')),
-      S(32, 80, 'ARME', null, 323, [], ['ARME'], OBJ.element(1, 'ARME', 'AMONT')),
-      S(33, 65, 'PERSONNAGE', null, 324, [], ['HEROINE'], OBJ.format(2, 'GP', 'MONTAGE')),
-      S(34, 80, 'MORT', null, 325, [], ['ENNEMI'], OBJ.domine(6, 'ENNEMI'), { mort: true }),
-      S(35, 95, 'PERSONNAGE', null, 326, [], ['ENNEMI', 'ALLIE'], OBJ.absent(6, 'MORT', 'MONTAGE')),
-      S(36, 65, 'MORT', null, 327, [], ['VEHICULE'], OBJ.seuilCible(6, 'MORT', 'MIN', 2, 'MONTAGE'), { mort: true }),
-      S(37, 95, 'MORT', null, 328, [], ['ENNEMI'], OBJ.element(1, 'ENNEMI', 'AMONT'), { mort: true }),
-      S(38, 95, 'MORT', null, 329, [], ['HEROINE'], OBJ.domine(6, 'HEROINE'), { mort: true }),
-      S(39, 95, 'MORT', null, 330, [], ['ALLIE'], OBJ.domine(6, 'ALLIE'), { mort: true }),
-      S(40, 0, 'TRANSITION', null, 390, [], [], OBJ.raccord(1), { titre: 'Raccord', transition: 'RACCORD' }),
-      S(41, 99, 'TRANSITION', null, 391, [], [], OBJ.seuilCible(6, 'CARTE', 'MAX', 0, 'SUITE'), { titre: 'Fin', transition: 'CREDITS' }),
-      // Les Plans Moyens : ce que chaque face imprime est dans `faces`.
-      ...PM31.map((p, i) => S(100 + i, p.r[0], familleDe(p), p.n, null, p.el.slice(), [], null, {
-        ...(p.mort ? { mort: true } : {}),
-        ...(p.transition ? { transition: p.transition, titre: p.titre } : {}) })),
-    ],
-    larges: [
-      PL(101, 15, ['HEROINE', 'ENNEMI', 'OBJET', 'VEHICULE'], OBJ.chrono(8)),
-      PL(102, 30, ['OBJET', 'ARME', 'VEHICULE'], OBJ.seqLongue(1)),
-      PL(103, 45, ['ENNEMI', 'ALLIE', 'OBJET', 'VEHICULE'], OBJ.seqAvec(4, 'SANS', 'ARME')),
-      PL(104, 90, ['HEROINE', 'ALLIE', 'VEHICULE'], OBJ.extreme(1, 'PLUS', 'MONTAGE')),
-      PL(105, 90, ['HEROINE', 'ENNEMI', 'ALLIE'], OBJ.seqAvec(3, 'AVEC', 'HEROINE+ENNEMI+ALLIE'), { mort: true }),
-      PL(106, 90, ['HEROINE', 'OBJET', 'VEHICULE'], OBJ.seqVoisines(4, 'AVANT')),
-      PL(107, 15, ['HEROINE', 'ENNEMI', 'ARME'], OBJ.seqVoisines(4, 'APRES')),
-      PL(108, 30, ['ALLIE', 'ENNEMI', 'OBJET'], OBJ.seqAvec(4, 'SANS', 'HEROINE')),
-      PL(109, 15, ['ALLIE', 'OBJET', 'ARME'], OBJ.seqAvec(3, 'AVEC', 'RACCORD')),
-      PL(110, 60, ['HEROINE', 'ENNEMI', 'ARME', 'VEHICULE'], OBJ.seqAvec(3, 'AVEC', 'PLAN', 3)),
-      PL(111, 45, ['HEROINE', 'ALLIE', 'OBJET'], OBJ.absentes(10, 'MONTAGE')),
-      PL(112, 75, ['ENNEMI', 'ALLIE', 'OBJET', 'ARME'], OBJ.seqAvec(4, 'AVEC', 'ARME', 3)),
-      PL(113, 60, ['HEROINE', 'ENNEMI', 'VEHICULE'], OBJ.seqAvec(4, 'AVEC', 'VEHICULE', 3)),
-      PL(114, 75, ['HEROINE', 'ENNEMI', 'ARME'], OBJ.seqAvec(4, 'SANS', 'ALLIE')),
-      PL(115, 15, ['OBJET', 'ARME'], OBJ.seqAvec(5, 'AVEC', 'OBJET', 3)),
-    ],
-    // Chaque carte n'a encore qu'une moitié : on ne sait pas lesquelles vont
-    // ensemble.
-    paires: [
-      [null, 301], [null, 302], [null, 303], [null, 304], [null, 305], [null, 306], [null, 307], [null, 308], [null, 309], [null, 310], [null, 311], [null, 312], [null, 313], [null, 314], [null, 315], [null, 316],
-      [null, 317], [null, 318], [null, 319], [null, 320], [null, 321], [null, 322], [null, 323], [null, 324], [null, 325], [null, 326], [null, 327], [null, 328], [null, 329], [null, 330], [null, 390], [null, 391],
-      ...PM31.map((p) => [p.n, null]),
-    ],
-    // Les quatre Plans de départ, 001 à 004. Chacun a un verso différent : les
-    // cartes sont les six couples des quatre plans, comme la variante « 6
-    // Cartes Départ » du Set 2 — qui est ici la règle, pas une variante.
-    departs: [
-      { type: '1', faces: [PL('001', 30, ['HEROINE', 'ALLIE', 'VEHICULE'], OBJ.raccordVaut(1), { depart: true })] },
-      { type: '2', faces: [PL('002', 45, ['ENNEMI', 'ALLIE', 'OBJET', 'ARME'], OBJ.planPlus(1), { depart: true })] },
-      { type: '3', faces: [PL('003', 60, ['HEROINE', 'ENNEMI', 'VEHICULE', 'VEHICULE'], OBJ.sequencePlus(1), { depart: true })] },
-      { type: '4', faces: [PL('004', 75, ['HEROINE', 'ENNEMI', 'ARME', 'ARME'], OBJ.piocher('PMGP'), { depart: true })] },
-    ],
-    plansDepart: ['001', '002', '003', '004'],
-    pairesDepart: [['001', '002'], ['002', '003'], ['003', '004'], ['004', '001'], ['002', '004'], ['001', '003']],
-    sixSeul: true,
-    images: {
-      ...Object.fromEntries([...Array.from({ length: 30 }, (_, i) => 301 + i), 390, 391]
-        .map((n) => [`gp${n}`, `assets/s31/GP${n}.webp`])),
-      ...Object.fromEntries(PM31.map((p) => [`pm${p.n}`, `assets/s31/PM${p.n}.webp`])),
-      pl101: 'assets/s31/PL101.webp', pl102: 'assets/s31/PL102.webp', pl103: 'assets/s31/PL103.webp',
-      pl104: 'assets/s31/PL104.webp', pl105: 'assets/s31/PL105.webp', pl106: 'assets/s31/PL106.webp',
-      pl107: 'assets/s31/PL107.webp', pl108: 'assets/s31/PL108.webp', pl109: 'assets/s31/PL109.webp',
-      pl110: 'assets/s31/PL110.webp', pl111: 'assets/s31/PL111.webp', pl112: 'assets/s31/PL112.webp',
-      pl113: 'assets/s31/PL113.webp', pl114: 'assets/s31/PL114.webp', pl115: 'assets/s31/PL115.webp',
-      pl001: 'assets/s31/DEP001.webp', pl002: 'assets/s31/DEP002.webp',
-      pl003: 'assets/s31/DEP003.webp', pl004: 'assets/s31/DEP004.webp',
-    },
-    // Ce qu'une face imprime autrement que l'autre. `visuel` : la carte
-    // entière, telle qu'elle est imprimée — le site la montre à la place de sa
-    // propre composition (voir `renderPlan`).
-    faces: {
-      // Les Gros Plans, montrés tels qu'imprimés, recto et verso.
-      ...Object.fromEntries([...Array.from({ length: 30 }, (_, i) => 301 + i), 390, 391]
-        .map((n) => [`${n}R`, { visuel: `assets/s31/GP${n}R-carte.webp` }])),
-      // Le verso garde les icônes et le pouvoir du recto ; seul son minutage
-      // change.
-      ...Object.fromEntries(Object.entries({
-        301: 0, 302: 0, 303: 0, 304: 0, 305: 0, 306: 0, 307: 25, 308: 10, 309: 25, 310: 25,
-        311: 25, 312: 0, 313: 25, 314: 55, 315: 55, 316: 55, 317: 55, 318: 70, 319: 70, 320: 70,
-        321: 70, 322: 70, 323: 70, 324: 55, 325: 85, 326: 85, 327: 85, 328: 85, 329: 85, 330: 85,
-        390: 0,
-      }).map(([n, tc]) => [`${n}V`, { tc, visuel: `assets/s31/GP${n}V-carte.webp` }])),
-      // Le 391 est la Fin au recto, l'Ouverture au verso : « BBG présente », à
-      // 01:00, qui rapporte 6 si rien ne la précède.
-      '391V': { tc: 1, transition: 'OUVERTURE', titre: 'BBG présente',
-        obj: OBJ.seuilCible(6, 'CARTE', 'MAX', 0, 'AMONT'),
-        image: 'assets/s31/GP391V.webp', visuel: 'assets/s31/GP391V-carte.webp' },
-      // Les Plans Moyens, recto et verso.
-      ...Object.fromEntries(PM31.flatMap((p) => [[`${p.n}R`, facePM31(p, 'r')], [`${p.n}V`, facePM31(p, 'v')]])),
-      // Les quinze Plans Larges, montrés eux aussi tels qu'imprimés.
-      ...Object.fromEntries(Array.from({ length: 15 }, (_, i) => 101 + i)
-        .map((n) => [String(n), { visuel: `assets/s31/PL${n}-carte.webp` }])),
-    },
-  },
-};
-// --- Le Set 4.1 --------------------------------------------------------------
-// Les VRAIES cartes de la 4.1, livrées par l'auteur et montrées telles quelles
-// (`visuel`) : le site ne les redessine pas. Ce qui suit est ce que le MOTEUR a
-// besoin d'en savoir pour compter — minutage en minutes, icônes, pouvoir —, lu
-// sur chaque carte. La première icône est la DOMINANTE, la grande, qui donne sa
-// couleur à la carte ; le L6 n'en a pas, et l'Entracte (L10) n'a aucune icône.
+// --- La boîte 4.1 --------------------------------------------------------------
+// Les VRAIES cartes, livrées par l'auteur et montrées telles quelles (`visuel`) :
+// le site ne les redessine pas. Ce qui suit est ce que le MOTEUR a besoin d'en
+// savoir pour compter — minutage en minutes, icônes, pouvoir —, lu sur chaque
+// carte. La première icône est la DOMINANTE, la grande, qui donne sa couleur à
+// la carte ; le L6 et le GP00 n'en ont pas, et l'Entracte (L10) n'a aucune icône.
 //
 // Les dix-neuf Plans Larges sont numérotés L1 à L19, par minutage croissant.
-// Quatre d'entre eux sont les Plans de départ : L5, L7, L12 et L16 (PD1 à PD4).
-const L41 = (n, tc, el, obj, extra = {}) => PL(n, tc, el, obj, extra);
-const PD41 = { 5: '1', 7: '2', 12: '3', 16: '4' };
+// Quatre d'entre eux sont les plans de départ : L5, L7, L12 et L16.
+const PD41 = [5, 7, 12, 16];
 const PLANS_41 = [
-  L41(1, 10, ['OBJET', 'ARME', 'HEROINE'], OBJ.seqAvec(5, 'AVEC', 'OBJET', 3)),
-  L41(2, 10, ['ALLIE', 'VEHICULE', 'ENNEMI'], OBJ.seqAvec(3, 'AVEC', 'RACCORD')),
-  L41(3, 10, ['HEROINE', 'ENNEMI', 'ARME'], OBJ.seqVoisines(3, 'APRES')),
-  L41(4, 20, ['ALLIE', 'HEROINE', 'OBJET'], OBJ.absentes(10, 'MONTAGE')),
-  L41(5, 20, ['OBJET', 'HEROINE', 'ALLIE', 'VEHICULE'], OBJ.raccordVaut(1)),
-  L41(6, 20, ['OBJET', 'ARME', 'VEHICULE'], OBJ.seqLongue(2)),
-  L41(7, 30, ['ALLIE', 'ENNEMI', 'ARME'], OBJ.planPlus(1)),
-  L41(8, 30, ['ENNEMI', 'ALLIE', 'OBJET'], OBJ.seqAvec(4, 'SANS', 'HEROINE')),
-  L41(9, 30, ['VEHICULE', 'HEROINE', 'ENNEMI'], OBJ.seqAvec(4, 'SANS', 'TC_VIDE')),
-  L41(10, 35, [], OBJ.seqAvec(3, 'AVEC', 'ORDRE')),
-  L41(11, 40, ['HEROINE', 'ENNEMI', 'VEHICULE', 'ARME'], OBJ.seqAvec(3, 'AVEC', 'PLAN', 3)),
-  L41(12, 40, ['VEHICULE', 'VEHICULE', 'HEROINE', 'ENNEMI'], OBJ.sequencePlus(1)),
-  L41(13, 40, ['ENNEMI', 'ALLIE', 'OBJET'], OBJ.seqAvec(4, 'SANS', 'ARME')),
-  L41(14, 50, ['HEROINE', 'ENNEMI', 'ARME'], OBJ.seqAvec(4, 'SANS', 'ALLIE')),
-  L41(15, 50, ['ENNEMI', 'ALLIE', 'ARME'], OBJ.seqAvec(4, 'AVEC', 'ARME', 3)),
-  L41(16, 50, ['ARME', 'ARME', 'HEROINE', 'ENNEMI'], OBJ.piocher('CHUTIER')),
-  L41(17, 60, ['ALLIE', 'HEROINE', 'VEHICULE'], OBJ.extreme(1, 'PLUS', 'MONTAGE')),
-  L41(18, 60, ['ENNEMI', 'HEROINE', 'ALLIE'], OBJ.seqAvec(4, 'AVEC', 'HEROINE+ALLIE+ENNEMI'), { mort: true }),
-  L41(19, 60, ['HEROINE', 'VEHICULE', 'OBJET'], OBJ.seqVoisines(3, 'AVANT'), { mort: true }),
+  PL(1, 10, ['OBJET', 'ARME', 'HEROINE'], OBJ.seqAvec(5, 'AVEC', 'OBJET', 3)),
+  PL(2, 10, ['ALLIE', 'VEHICULE', 'ENNEMI'], OBJ.seqAvec(3, 'AVEC', 'RACCORD')),
+  PL(3, 10, ['HEROINE', 'ENNEMI', 'ARME'], OBJ.seqVoisines(3, 'APRES')),
+  PL(4, 20, ['ALLIE', 'HEROINE', 'OBJET'], OBJ.absentes(10, 'MONTAGE')),
+  PL(5, 20, ['OBJET', 'HEROINE', 'ALLIE', 'VEHICULE'], OBJ.raccordVaut(1)),
+  PL(6, 20, ['OBJET', 'ARME', 'VEHICULE'], OBJ.seqLongue(2)),
+  PL(7, 30, ['ALLIE', 'ENNEMI', 'ARME'], OBJ.planPlus(1)),
+  PL(8, 30, ['ENNEMI', 'ALLIE', 'OBJET'], OBJ.seqAvec(4, 'SANS', 'HEROINE')),
+  PL(9, 30, ['VEHICULE', 'HEROINE', 'ENNEMI'], OBJ.seqAvec(4, 'SANS', 'TC_VIDE')),
+  PL(10, 35, [], OBJ.seqAvec(3, 'AVEC', 'ORDRE')),
+  PL(11, 40, ['HEROINE', 'ENNEMI', 'VEHICULE', 'ARME'], OBJ.seqAvec(3, 'AVEC', 'PLAN', 3)),
+  PL(12, 40, ['VEHICULE', 'VEHICULE', 'HEROINE', 'ENNEMI'], OBJ.sequencePlus(1)),
+  PL(13, 40, ['ENNEMI', 'ALLIE', 'OBJET'], OBJ.seqAvec(4, 'SANS', 'ARME')),
+  PL(14, 50, ['HEROINE', 'ENNEMI', 'ARME'], OBJ.seqAvec(4, 'SANS', 'ALLIE')),
+  PL(15, 50, ['ENNEMI', 'ALLIE', 'ARME'], OBJ.seqAvec(4, 'AVEC', 'ARME', 3)),
+  PL(16, 50, ['ARME', 'ARME', 'HEROINE', 'ENNEMI'], OBJ.piocher()),
+  PL(17, 60, ['ALLIE', 'HEROINE', 'VEHICULE'], OBJ.extreme(1, 'PLUS', 'MONTAGE')),
+  PL(18, 60, ['ENNEMI', 'HEROINE', 'ALLIE'], OBJ.seqAvec(4, 'AVEC', 'HEROINE+ALLIE+ENNEMI'), { mort: true }),
+  PL(19, 60, ['HEROINE', 'VEHICULE', 'OBJET'], OBJ.seqVoisines(3, 'AVANT'), { mort: true }),
 ];
-// Les cinquante-quatre GROS PLANS. En 4.1 il n'y a plus de Plan Moyen : la
-// carte est coupée en deux au centre, et chaque moitié — 60 × 80 mm — est un
-// Gros Plan. Leur numéro dit leur minutage : GP0x « -- », GP1x 10', … GP6x 60',
-// et GP100 à 102 le Raccord, l'Ouverture (01') et la Fin (70').
+
+// Les cinquante-quatre GROS PLANS, 60 × 80 mm chacun. Leur numéro dit leur
+// minutage : GP0x « -- », GP1x 10', … GP6x 60', et GP100 à 102 le Raccord,
+// l'Ouverture (01') et la Fin (70').
 const X41 = (n, tc, el, obj, extra = {}) => ({ n, tc, el, obj, ...extra });
 const GP_41 = [
   X41(0, 0, ['OBJET', 'ARME', 'VEHICULE'], OBJ.minutage(1, 'EGAL', 0, 'MONTAGE')),
@@ -1522,47 +1110,46 @@ const famille41 = (p) => (p.transition ? 'TRANSITION' : p.mort ? 'MORT'
 /** Le nom de fichier d'un Gros Plan : GP00, GP07, GP100. */
 const fichierGP41 = (n) => `GP${String(n).padStart(2, '0')}`;
 
-TABLES['4.1'] = {
-  scenes: GP_41.map((p) => S(p.n + 1, p.tc, famille41(p), null, p.n, [], p.el, p.obj, {
+// L'ASSEMBLAGE des vingt-sept cartes à deux Gros Plans — [gauche, droite].
+// PROVISOIRE : l'auteur le refera. Il suit sa règle — les 10', 20', 30' et
+// l'Ouverture à gauche ; les 40', 50', 60' et la Fin à droite ; les plans sans
+// minutage (« -- ») et le Raccord où il reste de la place.
+const ASSEMBLAGE_41 = [
+  [10, 6], [11, 7], [12, 8], [13, 9], [14, 100],
+  [15, 40], [16, 41], [20, 42], [21, 43], [22, 44], [23, 45], [24, 46],
+  [25, 50], [26, 51], [30, 52], [31, 53], [32, 54], [33, 55], [34, 56],
+  [35, 60], [101, 61],
+  [0, 62], [1, 63], [2, 64], [3, 65], [4, 66], [5, 102],
+];
+
+const BOITE = {
+  scenes: GP_41.map((p) => S(p.n + 1, p.tc, famille41(p), p.n, p.el, p.obj, {
     ...(p.mort ? { mort: true } : {}),
     ...(p.transition ? { transition: p.transition, titre: p.titre } : {}) })),
-  // On ne sait pas encore comment les Gros Plans se répartissent sur les
-  // cartes : chacun est, en attendant, la moitié d'une carte à compléter.
-  paires: GP_41.map((p) => [null, p.n]),
-  larges: PLANS_41.filter((p) => !PD41[p.num]),
-  // Un Plan de départ est UNE carte, à une face : chaque joueuse en reçoit une.
-  departs: PLANS_41.filter((p) => PD41[p.num])
-    .map((p) => ({ type: PD41[p.num], faces: [{ ...p, depart: true }] })),
-  departSeul: true,
-  numerosParCadrage: true,
+  paires: ASSEMBLAGE_41,
+  larges: PLANS_41.filter((p) => !PD41.includes(p.num)),
+  departs: PLANS_41.filter((p) => PD41.includes(p.num)).map((p) => ({ ...p, depart: true })),
+  // L'illustration seule de chaque carte — la case du dessin —, pour le jour où
+  // un plan retouché doit être recomposé par le site.
   images: {
     ...Object.fromEntries(PLANS_41.map((p) => [`pl${p.num}`, `assets/s41/illus/L${p.num}.webp`])),
     ...Object.fromEntries(GP_41.map((p) => [`gp${p.n}`, `assets/s41/illus/${fichierGP41(p.n)}.webp`])),
   },
+  // La carte elle-même, telle que l'auteur l'a livrée.
   faces: {
-    ...Object.fromEntries(PLANS_41.map((p) => [String(p.num), { visuel: `assets/s41/L${p.num}.webp` }])),
-    // Un Gros Plan n'a qu'une face connue : son image. Pas de verso composé
-    // par le site à sa place.
-    ...Object.fromEntries(GP_41.flatMap((p) => [
-      [`${p.n}R`, { visuel: `assets/s41/${fichierGP41(p.n)}.webp` }],
-      [`${p.n}V`, { absente: true }]])),
+    ...Object.fromEntries(PLANS_41.map((p) => [cleplan(p.num), { visuel: `assets/s41/L${p.num}.webp` }])),
+    ...Object.fromEntries(GP_41.map((p) => [cleplan(p.n, true), { visuel: `assets/s41/${fichierGP41(p.n)}.webp` }])),
   },
 };
 
-// Les illustrations SEULES, quand elles sont arrivées (outils/illustrations.py) :
-// elles prennent la place de l'illustration découpée dans la carte imprimée. Une
-// face qui a la sienne — « 391V » — la reçoit en propre.
-for (const k of NUES) {
-  const m = /^(pl|pm|gp)(\d{3})([RV]?)$/.exec(k);
-  if (!m) continue;
-  const chemin = `assets/s31/nu/${k}.webp`;
-  if (m[3]) {
-    const f = TABLES['3.1'].faces;
-    f[`${m[2]}${m[3]}`] = { ...(f[`${m[2]}${m[3]}`] || {}), image: chemin };
-  } else TABLES['3.1'].images[`${m[1]}${m[2]}`] = chemin;
-}
+const T = () => BOITE;
 
-const T = () => TABLES[setCourant];
+/** Le format des cartes, en millimètres : la carte entière, et sa moitié Gros Plan. */
+export const FORMAT_CARTE = { largeur: 120, hauteur: 80, gp: 60 };
+/** Le dossier des icônes. */
+export const dossierIcones = () => 'assets/icones';
+/** Le nom imprimé d'un plan : « L5 », « GP07 ». */
+export const etiquettePlan = (p) => (p.format === 'GP' ? `GP${String(p.num).padStart(2, '0')}` : `L${p.num}`);
 
 
 /** Les valeurs imprimées d'un plan, face comprise. */
@@ -1571,19 +1158,14 @@ function imprimeDe(cle, defauts) {
   return f ? { ...defauts, ...f } : defauts;
 }
 
-/** Ce que porte un set, d'origine : ses cartes et ses plans. */
-export function contenuSet(id) {
-  const avant = setCourant;
-  setCourant = setValide(id);
+/** Ce que porte la boîte : ses cartes et ses plans. */
+export function contenuBoite() {
   const t = T();
-  try {
-    return {
-      cartes: t.paires.length + t.larges.length + (t.sixSeul ? t.pairesDepart.length : t.departs.length),
-      plans: t.scenes.reduce((n, sc) => n + (sc.pmNum != null ? 2 : 0) + (sc.gpNum != null ? 2 : 0), 0)
-        + t.larges.length + t.departs.reduce((n, d) => n + d.faces.length, 0)
-        - Object.values(t.faces || {}).filter((f) => f.absente).length,
-    };
-  } finally { setCourant = avant; }
+  const d = t.departs.length;
+  return {
+    cartes: t.paires.length + t.larges.length + (d * (d - 1)) / 2,
+    plans: t.scenes.length + t.larges.length + d,
+  };
 }
 
 export const SURCHARGES = {
@@ -1604,8 +1186,7 @@ export const AJOUTS_VIDES = () => ({ scenes: [], larges: [], departs: [], paires
  * de la boîte, pas une retouche de carte. Il en va de même des cartes créées et
  * supprimées, qui voyagent donc avec `table` mais s'appliquent toujours.
  */
-export function appliquerMateriel(table, desactives, composition, set) {
-  setCourant = setValide(set);
+export function appliquerMateriel(table, desactives, composition) {
   for (const k of Object.keys(SURCHARGES.plans)) delete SURCHARGES.plans[k];
   for (const k of Object.keys(SURCHARGES.paires)) delete SURCHARGES.paires[k];
   Object.assign(SURCHARGES.plans, (table && table.plans) || {});
@@ -1692,8 +1273,8 @@ export function miroirDe(cle) {
  *
  * Les visuels de la boîte sont taillés au format exact de leur emplacement :
  * à z = 1 ils tombent juste, et il n'y a rien à régler. Le recadrage sert à
- * **adapter un autre visuel** — tailler un Gros Plan dans un Plan Moyen, ou
- * loger une image qui n'a pas la bonne proportion.
+ * **adapter un autre visuel** — loger une image qui n'a pas la bonne
+ * proportion.
  */
 export function cadreDe(cle) {
   const s = sur(cle);
@@ -1819,49 +1400,36 @@ export function planModifie(cle) {
  * fichier d'assets. Sa case d'illustration part donc vide, et se remplit au
  * sélecteur d'images.
  */
-const NUMS_IMPRIMES = new Set([
-  ...PL_IMPRIMES.map((p) => p.num),
-  ...DEPARTS_IMPRIMES.flatMap((d) => d.faces.map((f) => f.num)),
-  ...SCENES_IMPRIMEES.flatMap((s) => [s.pmNum, s.gpNum]),
-]);
-// Les numéros du Set 2 désignent les fichiers d'assets/pl, pm et gp ; un autre
-// set dit lui-même où sont ses illustrations.
-
 export function imageImprimee(dossier, origine) {
-  if (T().images) return T().images[`${dossier}${origine}`] || '';
-  return NUMS_IMPRIMES.has(origine) ? `assets/${dossier}/${origine}.webp` : '';
+  return T().images[`${dossier}${origine}`] || '';
 }
 
 export function carteActive(id) {
   return !SURCHARGES.desactives.has(id);
 }
 
-// --- Accès aux moitiés -----------------------------------------------------
+// --- Accès aux plans d'une carte ----------------------------------------------
 
 /**
- * Une moitié posée : cadrage, minutage, éléments, objectif.
- * `face` distingue le recto du verso — deux plans différents pour le même
- * numéro de scène.
+ * Un Gros Plan, tel qu'il se pose : minutage, icônes, pouvoir. `moitie` dit de
+ * quel côté de sa carte il est imprimé — « G » ou « D » —, et c'est ce qui
+ * décide de quel côté d'une séquence il peut se poser.
  */
-export function halfInfo(sceneIdx, format, opts = {}) {
+export function halfInfo(sceneIdx, moitie = null) {
   const s = sceneDe(sceneIdx);
   if (!s) return null;
-  const side = format === 'GP' ? s.gp : s.pm;
-  // Le numéro imprimé est l'identité du plan : il fait la clé et désigne son
-  // illustration. `num` n'est que l'étiquette, renumérotable.
-  const origine = format === 'GP' ? s.gpNum : s.pmNum;
-  const face = opts.face || 'R';
-  const cle = cleplan(origine, face);
-  const d = imprimeDe(cle, { tc: s.tc, el: side.el, obj: side.obj, obj2: side.obj2, mort: s.mort,
-    image: imageImprimee(format === 'GP' ? 'gp' : 'pm', origine),
-    transition: s.transition || null, titre: s.titre || null });
+  // Le numéro de la boîte est l'identité du plan : il fait la clé et désigne
+  // son image. `num` n'est que l'étiquette, renumérotable.
+  const origine = s.num;
+  const cle = cleplan(origine, true);
+  const d = imprimeDe(cle, { tc: s.tc, el: s.el, obj: s.obj, obj2: s.obj2, mort: s.mort,
+    image: imageImprimee('gp', origine), transition: s.transition || null, titre: s.titre || null });
   return {
     scene: s.idx,
-    format,
-    face,
+    format: 'GP',
+    moitie,
     cle,
     transition: d.transition || null,
-    dual: !!opts.dual,
     titre: d.titre || null,
     famille: s.famille,
     tc: tcDe(cle, d.tc),
@@ -1872,42 +1440,33 @@ export function halfInfo(sceneIdx, format, opts = {}) {
     num: numDe(cle, origine),
     numOrigine: origine,
     image: imageDe(cle, d.image),
-    // La carte imprimée entière ne vaut que pour le plan tel qu'imprimé : une
+    // La vraie carte ne vaut que pour le plan tel qu'il est dans la boîte : une
     // retouche la rendrait fausse, et l'on revient alors à la composition.
     visuel: d.visuel && !planModifie(cle) ? d.visuel : null,
-    // Une face que l'auteur n'a pas encore fournie : elle se montre en attente.
-    absente: !!d.absente,
     miroir: miroirDe(cle),
     cadre: cadreDe(cle),
   };
 }
 
-/**
- * Les deux moitiés d'une carte double, sur une face donnée. Au recto le Gros
- * Plan est à gauche et le Plan Moyen à droite ; au verso, l'inverse.
- */
-export function moitiesDe(carte, face = 'R') {
+/** Les deux Gros Plans d'une carte : sa moitié gauche et sa moitié droite. */
+export function moitiesDe(carte) {
   return {
-    GP: halfInfo(carte.gpScene, 'GP', { dual: !!carte.dualGP, face }),
-    PM: halfInfo(carte.pmScene, 'PM', { dual: !!carte.dualPM, face }),
+    G: carte.gScene === undefined ? null : halfInfo(carte.gScene, 'G'),
+    D: carte.dScene === undefined ? null : halfInfo(carte.dScene, 'D'),
   };
 }
 
-/** Un Plan Large se comporte comme un plan unique pleine largeur. */
+/** Un Plan Large — ou une face de carte de départ — : un seul plan, pleine carte. */
 export function plHalf(carte) {
-  const cle = cleplan(carte.num, null);
+  const cle = cleplan(carte.num);
   const d = imprimeDe(cle, { tc: carte.tc, el: carte.el, obj: carte.obj, obj2: carte.obj2,
     mort: !!carte.mort, image: imageImprimee('pl', carte.num) });
-  // Un Plan de départ versé dans les Plans Larges change d'habillage : sa
-  // carte imprimée n'est plus la bonne.
-  const visuel = d.visuel && !planModifie(cle) && !(carte.depart === false) ? d.visuel : null;
   return {
     scene: null,
     format: carte.depart ? 'DEP' : 'PL',
-    face: null,
+    moitie: 'PL',
     cle,
     transition: null,
-    dual: false,
     titre: null,
     famille: carte.depart ? 'DÉPART' : 'PLAN LARGE',
     tc: tcDe(cle, d.tc),
@@ -1919,29 +1478,26 @@ export function plHalf(carte) {
     numOrigine: carte.num,
     depart: !!carte.depart,
     image: imageDe(cle, d.image),
-    visuel,
+    visuel: d.visuel && !planModifie(cle) ? d.visuel : null,
     miroir: miroirDe(cle),
     cadre: cadreDe(cle),
   };
 }
 
 // --- Catalogue des plans ---------------------------------------------------
-// La liste complète de ce qui est éditable. Une moitié de carte double y
-// figure deux fois, une par face.
+// La liste complète de ce qui est éditable : chaque Gros Plan, chaque Plan
+// Large, chaque plan de départ.
 
 export function catalogue() {
   const out = [];
-  const pousse = (origine, face, brut, format, famille, extra = {}) => {
-    const cle = cleplan(origine, face);
+  const pousse = (origine, brut, format, famille, extra = {}) => {
+    const cle = cleplan(origine, format === 'GP');
     const num = numDe(cle, origine);
-    const dossier = format === 'PL' || format === 'DEP' ? 'pl' : format === 'GP' ? 'gp' : 'pm';
-    const defauts = imprimeDe(cle, { ...brut, image: imageImprimee(dossier, origine) });
-    // Une face pas encore fournie n'est pas un plan qu'on règle.
-    if (defauts.absente) return;
+    const defauts = imprimeDe(cle, { ...brut, image: imageImprimee(format === 'GP' ? 'gp' : 'pl', origine) });
     const imprimee = defauts.image;
     out.push({
-      cle, num, numOrigine: origine, face, format, famille,
-      quoi: `${FORMATS[format].label} ${num}${face ? ` — ${face === 'R' ? 'recto' : 'verso'}` : ''}`,
+      cle, num, numOrigine: origine, format, famille,
+      quoi: `${FORMATS[format].label} ${num}`,
       tc: tcDe(cle, defauts.tc), el: elDe(cle, defauts.el), obj: objDe(cle, defauts.obj),
       obj2: obj2De(cle, defauts.obj2),
       mort: mortDe(cle, defauts.mort), modifie: planModifie(cle),
@@ -1958,24 +1514,14 @@ export function catalogue() {
   };
 
   for (const s of SCENES()) {
-    for (const f of FACES) {
-      if (s.pmNum != null) {
-        pousse(s.pmNum, f.id, { tc: s.tc, el: s.pm.el, obj: s.pm.obj, obj2: s.pm.obj2, mort: s.mort },
-          'PM', s.famille, { scene: s.idx, titre: s.titre || null });
-      }
-      if (s.gpNum != null) {
-        pousse(s.gpNum, f.id, { tc: s.tc, el: s.gp.el, obj: s.gp.obj, obj2: s.gp.obj2, mort: s.mort },
-          'GP', s.famille, { scene: s.idx, titre: s.titre || null });
-      }
-    }
+    pousse(s.num, { tc: s.tc, el: s.el, obj: s.obj, obj2: s.obj2, mort: s.mort },
+      'GP', s.famille, { scene: s.idx, titre: s.titre || null, transition: s.transition || null });
   }
   for (const p of PLANS_LARGES()) {
-    pousse(p.num, null, { tc: p.tc, el: p.el, obj: p.obj, obj2: p.obj2, mort: !!p.mort },
-      'PL', 'PLAN LARGE', { brouillon: !!p.brouillon });
+    pousse(p.num, { tc: p.tc, el: p.el, obj: p.obj, obj2: p.obj2, mort: !!p.mort }, 'PL', 'PLAN LARGE');
   }
-  for (const d of DEPARTS()) {
-    d.faces.forEach((f, k) => pousse(f.num, null, { tc: f.tc, el: f.el, obj: f.obj, obj2: f.obj2, mort: false },
-      'DEP', 'DÉPART', { version: d.type, faceDepart: k + 1 }));
+  for (const p of DEPARTS()) {
+    pousse(p.num, { tc: p.tc, el: p.el, obj: p.obj, obj2: p.obj2, mort: !!p.mort }, 'DEP', 'DÉPART');
   }
   return out;
 }
@@ -1986,35 +1532,29 @@ export function planDeCle(cle) {
 }
 
 /**
- * Les moitiés disponibles pour un appariement, par cadrage. La valeur reste le
- * numéro imprimé — c'est lui qui identifie la moitié —, seule l'étiquette suit
- * une éventuelle renumérotation.
+ * Les Gros Plans que l'Assemblage peut poser sur une carte. La valeur reste le
+ * numéro de la boîte — c'est lui qui identifie le plan —, seule l'étiquette
+ * suit une éventuelle renumérotation.
  */
-export function moitiesDisponibles(format) {
-  return SCENES().filter((s) => (format === 'GP' ? s.gpNum : s.pmNum) != null).map((s) => {
-    const origine = format === 'GP' ? s.gpNum : s.pmNum;
-    return {
-      num: origine,
-      affiche: numDe(cleplan(origine, 'R'), origine),
-      scene: s.idx,
-      famille: s.famille,
-      titre: s.titre || null,
-    };
-  });
+export function grosPlansDisponibles() {
+  return SCENES().map((s) => ({
+    num: s.num,
+    affiche: numDe(cleplan(s.num, true), s.num),
+    scene: s.idx,
+    famille: s.famille,
+    tc: tcDe(cleplan(s.num, true), s.tc),
+    titre: s.titre || null,
+  }));
 }
 
 /**
- * Les numéros portés par plus d'un plan. Renuméroter est libre : c'est ici que
- * l'éditeur va chercher de quoi prévenir.
+ * Les numéros portés par plus d'un plan d'un même cadrage. Les Plans Larges et
+ * les Gros Plans se numérotent à part — un L5 et un GP05 ne se confondent pas.
  */
 export function doublonsNumeros() {
   const par = new Map();
-  // En 4.1 l'auteur numérote chaque cadrage à part — L1 à L19, GP00 à GP102 :
-  // un Plan Large 5 et un Gros Plan 5 ne se confondent pas, et ne sont pas des
-  // doublons. Ailleurs, un numéro est unique dans tout le jeu.
-  const groupe = (p) => (T().numerosParCadrage ? (p.format === 'PL' || p.format === 'DEP' ? 'L' : 'G') : '');
   for (const p of catalogue()) {
-    const k = `${groupe(p)}${p.num}`;
+    const k = `${p.format === 'GP' ? 'G' : 'L'}${p.num}`;
     if (!par.has(k)) par.set(k, { num: p.num, plans: new Set() });
     par.get(k).plans.add(`${p.format}${p.numOrigine}`);
   }
@@ -2022,20 +1562,4 @@ export function doublonsNumeros() {
     .filter((x) => x.plans.size > 1)
     .map((x) => ({ num: x.num, plans: [...x.plans].sort() }))
     .sort((a, b) => a.num - b.num);
-}
-
-/**
- * La face jouée d'une carte double se déduit de la pose : la moitié laissée
- * visible se retrouve au bout libre de la carte.
- *
- * Le recto porte le Plan Moyen à gauche et le Gros Plan à droite ; le verso,
- * retourné autour de l'axe vertical, les échange. Un Gros Plan accroché à
- * gauche d'une séquence est donc à gauche de sa carte — c'est le verso ; à
- * droite, c'est le recto. Réglable dans Variables : sans cette lecture, une
- * carte est toujours jouée sur son recto.
- */
-export function faceJouee(format, cote, cfg) {
-  if (!cfg || cfg.faceSelonPose === false) return 'R';
-  if (cote !== 'gauche' && cote !== 'droite') return 'R';
-  return (format === 'GP') === (cote === 'gauche') ? 'V' : 'R';
 }

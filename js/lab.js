@@ -3,10 +3,10 @@
 // ---------------------------------------------------------------------------
 
 import {
-  creerPartie, poserDepart, derusher, poser, avancer, scores, rng, nouvelleGraine,
-  coupsPossibles, optionsDerushage,
+  creerPartie, poserDepart, derusher, defausser, passer, ecarterMain, poser, avancer, scores, rng,
+  nouvelleGraine, coupsPossibles,
 } from './engine.js';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js';
+import { choisirCoup, choisirDerushage, choisirDefausse, choisirDepart } from './ai.js';
 import { SOURCES_LABEL } from './scoring.js';
 
 /** Joue une partie entière en mémoire et renvoie son résumé. */
@@ -21,12 +21,17 @@ export function simulerPartie(joueurs, cfg, graine) {
       const d = choisirDepart(state, p, rand);
       if (d) poserDepart(state, p, d);
     } else if (state.phase === 'DERUSHAGE') {
-      const o = choisirDerushage(state, p, rand) || optionsDerushage(state)[0];
-      if (o) derusher(state, p, o);
+      // Le tour d'une joueuse : elle peut défausser, puis elle prend une carte
+      // — ou passe, si rien de ce qu'elle voit ne se monte dans son banc.
+      const d = choisirDefausse(state, p, rand);
+      if (d !== null) defausser(state, p, d);
+      const o = choisirDerushage(state, p, rand);
+      if (!o) { passer(state, p); continue; }
+      derusher(state, p, o);
     } else {
       const coups = coupsPossibles(state, p);
       if (coups.length) poser(state, p, choisirCoup(state, p, rand) || coups[0]);
-      else state.mains[p] = [];
+      else ecarterMain(state, p);
     }
     avancer(state);
   }
@@ -46,6 +51,9 @@ export function simulerPartie(joueurs, cfg, graine) {
     sequences: sc.map((s) => s.sequences),
     plusLongue: sc.map((s) => s.plusLongue),
     raccords: sc.map((s) => s.cartesRaccord),
+    defausses: state.defausses || 0,
+    prisesChutier: state.prisesChutier || 0,
+    passes: state.passesTotal || 0,
   };
 }
 
@@ -123,6 +131,9 @@ export async function campagne(joueurs, cfg, nbParties, opts = {}) {
     sequences: stats(parties.flatMap((p) => p.sequences)),
     plusLongue: stats(parties.flatMap((p) => p.plusLongue)),
     raccords: stats(parties.flatMap((p) => p.raccords)),
+    defausses: stats(parties.map((p) => p.defausses)),
+    prisesChutier: stats(parties.map((p) => p.prisesChutier)),
+    passes: stats(parties.map((p) => p.passes)),
     egalites, tauxEgalite: egalites / parties.length,
     serrees, tauxSerre: parties.length ? serrees / parties.length : 0,
     ecartVainqueur: stats(ecartsVainqueur),

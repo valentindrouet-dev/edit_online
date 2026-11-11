@@ -9,8 +9,8 @@
 // du numéro de js/version.js :
 //   · version.json — la version et la liste des modules, que l'amorce
 //     d'index.html relit sans cache pour charger chaque module à `?v=VERSION` ;
-//   · sw.js — le nom du cache, ce qui purge celui de la version précédente ;
-//   · assets/images.json — l'inventaire des illustrations.
+//   · sw.js — le nom du cache, ce qui purge celui de la version précédente.
+// Il signale au passage les images de cartes trop lourdes.
 
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -75,58 +75,28 @@ if (swMaj !== sw) ecrire('sw.js', swMaj);
 // la table d'imports. Un module ajouté dans js/ y entre tout seul.
 ecrire('version.json', `${JSON.stringify({ version: VERSION, date: DATE, modules: listeModules }, null, 2)}\n`);
 
-// --- L'inventaire des illustrations ----------------------------------------
-// Un site statique ne sait pas lister un dossier : pour proposer le choix d'une
-// illustration, il faut lui dire ce qu'il y a. Le fichier se refait à chaque
-// publication — déposer un visuel dans assets/ suffit donc à le rendre
-// choisissable, sans toucher au code.
-
-// Les dossiers ne sont pas listés en dur : déposer `assets/nuit/` et y mettre
-// des visuels suffit à les rendre choisissables. Seul `icones` est écarté —
-// ce ne sont pas des illustrations de plan mais les symboles du jeu. Les trois
-// dossiers de la boîte viennent d'abord, dans l'ordre des cadrages ; les
-// dossiers apportés suivent, par ordre alphabétique.
-const IMAGES_HORS = new Set(['icones']);
-const ORDRE = ['pl', 'pm', 'gp'];
-const dossiersImages = readdirSync(join(racine, 'assets'), { withFileTypes: true })
-  .filter((e) => e.isDirectory() && !IMAGES_HORS.has(e.name))
-  .map((e) => e.name)
-  .sort((a, b) => {
-    const ia = ORDRE.indexOf(a); const ib = ORDRE.indexOf(b);
-    if (ia !== ib) return (ia < 0 ? ORDRE.length : ia) - (ib < 0 ? ORDRE.length : ib);
-    return a.localeCompare(b, 'fr', { numeric: true });
-  });
-
-// Une illustration hors de proportion coûte cher à CHAQUE affichage : le
-// navigateur la décompresse en entier — un visuel de 6001 × 6001 px occupe
-// 137 Mo de mémoire vive — même pour la peindre grande comme un timbre. Une
-// carte n'en montre jamais plus de 642 px de large ; l'éditeur ramène d'ailleurs
-// à 900 px toute image qu'on lui apporte. Un fichier déposé à la main dans
-// `assets/` échappe à cette règle, et c'est ainsi qu'un poids lourd s'y glisse.
-// Le versionneur le dit plutôt que de le laisser ramer en silence.
+// --- Le poids des cartes ----------------------------------------------------
+// Une image hors de proportion coûte cher à CHAQUE affichage : le navigateur la
+// décompresse en entier, même pour la peindre grande comme un timbre.
+// `outils/cartes.py` ramène les cartes de l'auteur à 1 200 px de large ; un
+// fichier déposé à la main dans `assets/s41` échapperait à cette règle. Le
+// versionneur le dit plutôt que de le laisser ramer en silence.
 const POIDS_ALERTE = 400 * 1024;
 const lourdes = [];
-
-const inventaire = {};
-for (const d of dossiersImages) {
-  const fichiers = readdirSync(join(racine, 'assets', d))
-    .filter((f) => /\.(webp|png|jpe?g|avif)$/i.test(f))
-    .sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
-  for (const f of fichiers) {
-    const poids = statSync(join(racine, 'assets', d, f)).size;
-    if (poids > POIDS_ALERTE) lourdes.push(`assets/${d}/${f} — ${Math.round(poids / 1024)} ko`);
-  }
-  if (fichiers.length) inventaire[d] = fichiers;
+let nbCartes = 0;
+for (const f of readdirSync(join(racine, 'assets', 's41'))) {
+  if (!/\.(webp|png|jpe?g|avif)$/i.test(f)) continue;
+  nbCartes++;
+  const poids = statSync(join(racine, 'assets', 's41', f)).size;
+  if (poids > POIDS_ALERTE) lourdes.push(`assets/s41/${f} — ${Math.round(poids / 1024)} ko`);
 }
-ecrire('assets/images.json', `${JSON.stringify(inventaire, null, 2)}\n`);
-const nbImages = Object.values(inventaire).reduce((s, l) => s + l.length, 0);
 
 console.log(`v${VERSION} — ${listeModules.length} modules en table d'imports`
-  + `${touches ? ` (${touches} estampille(s) ancienne(s) retirée(s))` : ''}, sw.js, version.json`
-  + ` et assets/images.json (${nbImages} illustrations) à jour.`);
+  + `${touches ? ` (${touches} estampille(s) ancienne(s) retirée(s))` : ''}, sw.js et version.json à jour`
+  + ` · ${nbCartes} cartes.`);
 if (lourdes.length) {
-  console.log(`\n⚠  ${lourdes.length} illustration(s) au-dessus de ${
+  console.log(`\n⚠  ${lourdes.length} carte(s) au-dessus de ${
     POIDS_ALERTE / 1024} ko — elles alourdissent chaque affichage :`);
   for (const l of lourdes) console.log(`   ${l}`);
-  console.log('   Ramenez-les à 900 px sur le plus grand côté, comme le fait l’éditeur.');
+  console.log('   Repassez-les par outils/cartes.py.');
 }

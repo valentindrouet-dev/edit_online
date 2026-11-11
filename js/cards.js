@@ -1,27 +1,18 @@
 // ---------------------------------------------------------------------------
 // EDIT — rendu des cartes
 // ---------------------------------------------------------------------------
-// Une carte n'apporte que son illustration : le minutage, sa boîte, les
-// pastilles, le bandeau d'objectif et le libellé de cadrage sont entièrement
-// redessinés par l'application, à partir de ses propres données. Les images
-// d'assets/ sont recadrées au-dessus de la zone d'information et leur minutage
-// imprimé est effacé — voir outils/extraire-visuels.py. La boîte noire du coin,
-// elle, y est restée peinte : l'application la redessine par-dessus, pour que
-// les plans habillés d'une image apportée l'aient eux aussi.
-//
-// Les proportions reprennent la carte réelle : illustration jusqu'à 69 % de la
-// hauteur, languette des pastilles jusqu'à 78,5 %, bandeau jusqu'à 93,7 %,
-// puis le libellé.
+// En 4.1 le jeu montre les VRAIES cartes : l'image livrée par l'auteur, telle
+// quelle (`visuel`). Ce module ne compose une carte lui-même que lorsqu'un plan
+// a été retouché dans le Matériel — son image ne dit alors plus ce qu'il vaut —
+// ou créé de toutes pièces : il pose l'illustration, le minutage, les icônes et
+// le pouvoir à partir des données.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre, partGP } from './data.js';
-import { cleMise, largeurMise, formatDe } from './gabarits.js';
+import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre, etiquettePlan } from './data.js';
 import { elIcon, numIcon, cadrageIcon } from './icons.js';
 import { urlVisuel } from './visuels.js';
 
-// Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Il y avait
-// ici une seconde copie de la même formule ; les deux ont divergé le jour où
-// « 00:00 » est devenu « --:-- », et l'une des deux écritures serait restée en
-// arrière. Le nom court reste, il sert dans tout l'écran.
+// Le minutage s'écrit à un seul endroit — `tcTexte`, dans le modèle. Le nom
+// court sert dans tout l'écran.
 export const tc = tcTexte;
 
 /**
@@ -92,29 +83,26 @@ export function phraseRegle(obj, compact) {
   const signeRegle = (n) => (n < 0 ? `−${Math.abs(n)}` : `+${n}`);
   switch (obj.kind) {
     case 'PIOCHER':
-      if (obj.cible === 'CHUTIER') return compact ? 'Pioche Chutier' : 'Vous pouvez piocher vos Plans sur le Chutier';
-      return compact
-        ? `Pioche ${obj.cible === 'PL' ? 'PL' : 'PM/GP'}`
-        : `Vous pouvez piocher la Carte du dessus de la pioche ${obj.cible === 'PL' ? 'Plans Larges' : 'PM / GP'}`;
+      return compact ? 'Pioche Chutier' : 'Vous pouvez piocher vos Plans sur le Chutier';
     case 'SEQ_PLUS': return compact ? `+${obj.n} séquence`
       : `Vous pouvez poser ${obj.n} séquence${s(obj.n)} supplémentaire${s(obj.n)}`;
-    case 'PLAN_PLUS': return compact ? `+${obj.n} Carte`
-      : `Après le dernier tour, vous pouvez jouer ${obj.n} Carte${s(obj.n)} supplémentaire${s(obj.n)}`;
+    case 'PLAN_PLUS': return compact ? `+${obj.n} Plan`
+      : `Après le dernier tour, vous jouez ${obj.n} Plan${s(obj.n)} supplémentaire${s(obj.n)}`;
     // Un Gros Plan partagé à deux n'a de place que pour une douzaine de
     // caractères : la forme courte garde le sens — les Raccords deviennent
     // « n × Raccord » — en abrégeant le mot. La phrase entière reste dans
     // l'aperçu au survol, comme pour les autres pouvoirs de règle.
     case 'RACCORD_VAUT': return compact
       ? `Racc. ${signeRegle(obj.n)}`
-      : `Les cartes Raccord vous rapportent ${signeRegle(obj.n)} par Raccord`;
+      : `Chaque Raccord vaut ${signeRegle(obj.n)}`;
     default: return '';
   }
 }
 
 /**
  * La même phrase, mais DESSINÉE : les mots qui désignent une carte du jeu y
- * prennent leur cartouche — « la pioche PM / GP » montre les deux étiquettes de
- * cadrage, « les cartes Raccord » l'étiquette grise du Raccord. On lit alors le
+ * prennent leur cartouche — « les cartes Raccord » montre l'étiquette grise du
+ * Raccord. On lit alors le
  * pouvoir avec le même vocabulaire que les bandeaux qui comptent, au lieu d'un
  * texte qui les nomme.
  *
@@ -129,16 +117,10 @@ function phraseRegleHTML(obj, compact) {
   const lie = (x) => `<span class="insec">${x}</span>`;
   const rac = `<span class="tag tag-gris">Raccord</span>`;
   switch (obj.kind) {
-    case 'PIOCHER': {
-      if (compact || obj.cible === 'CHUTIER') return phraseRegle(obj, compact);
-      const quoi = obj.cible === 'PL' ? tagCadrage('PL', false)
-        : `${tagCadrage('PM', true)}<span class="mot-regle">/</span>${tagCadrage('GP', true)}`;
-      return `Vous pouvez piocher la Carte du dessus de la pioche ${lie(quoi)}`;
-    }
     case 'SEQ_PLUS': return compact ? phraseRegle(obj, compact)
       : `Vous pouvez poser ${lie(`${obj.n} ${tagSeq(false)}`)} supplémentaire${s(obj.n)}`;
     case 'RACCORD_VAUT': return compact ? phraseRegle(obj, compact)
-      : `Les cartes ${rac} vous rapportent ${lie(`${signeRegle(obj.n)} par ${rac}`)}`;
+      : `Chaque ${rac} ${lie(`vaut ${signeRegle(obj.n)}`)}`;
     default: return phraseRegle(obj, compact);
   }
 }
@@ -172,7 +154,7 @@ function objCoeur(obj, taille, compact, large) {
         tcTexte(obj.seuil)}</span>`;
     case 'CHRONO':  return `<span class="tag tag-chrono">↗ ordre</span>`;
     // Le bout de ligne : « aucun PLAN de ce côté-ci ». C'est le MOT qui porte la
-    // négation, comme dans « aucun --:-- » et « aucune 🔫 ». Une croix d'angle
+    // négation, comme dans « aucun -- » et « aucune 🔫 ». Une croix d'angle
     // sur le cartouche en aurait fait un détail, et « si PLAN ▶ » se serait lu
     // comme le contraire exact du pouvoir.
     //
@@ -189,11 +171,11 @@ function objCoeur(obj, taille, compact, large) {
       const fl = (d) => `<span class="fleche-pos">${d}</span>`;
       return obj.sens === 'GAUCHE' ? `${fl('◀')}${rien}` : `${rien}${fl('▶')}`;
     }
-    // « n si aucun plan à --:-- » : le mot dit l'absence, et il la dit mieux
+    // « n si aucun plan à -- » : le mot dit l'absence, et il la dit mieux
     // qu'une croix posée sur l'afficheur — elle en recouvrait les chiffres.
     // Le minutage garde sa couleur propre : bleue quand il n'y en a pas,
     // orangée pour les deux bornes du film, rouge partout ailleurs. Et le
-    // « = » disparaît : « aucun --:-- » se lit tout seul, le signe ne servait
+    // « = » disparaît : « aucun -- » se lit tout seul, le signe ne servait
     // qu'à distinguer un sens qui n'a pas de flèche.
     case 'SANS_TC': return bloc2(`<span class="mot grand">aucun</span>`,
       `<span class="tc-seuil minutage grand ${teinteTc(obj.seuil)}">${
@@ -246,7 +228,7 @@ function objCoeur(obj, taille, compact, large) {
             () => cibleHTML(obj.cible, taille, compact)).join('')
         }</span><span class="plus-seuil">+</span>`;
         // Une seule LIGNE, avec le cartouche COURT : « 3 × SÉQ avec 🔑🐒 + »
-        // tient dans un Plan Moyen là où « SÉQUENCE » forçait le repli. Le
+        // tient dans une bande étroite là où « SÉQUENCE » forçait le repli. Le
         // repli coûtait la moitié de la hauteur de bande à chacune des deux
         // lignes ; abréger le seul mot qui déborde rend au bandeau son corps
         // entier. Un Plan Large, lui, a la place d'écrire le mot en entier.
@@ -422,7 +404,7 @@ function bloc2(haut, bas, cls = '') {
 
 function blocSeq(compact, suite, large) {
   // Un Plan Large occupe la carte entière : sa bande est deux fois plus large
-  // que celle d'un Plan Moyen, et tout y tient sur une ligne. Le repli est fait
+  // que celle d'un Gros Plan, et tout y tient sur une ligne. Le repli est fait
   // pour la place qui manque, pas pour elle-même.
   return large ? `${tagSeq(compact)}<span class="mot">avec</span>${suite}`
     : bloc2(`${tagSeq(compact)}<span class="mot">avec</span>`, suite);
@@ -487,23 +469,11 @@ const PLAFOND_PLIE = 0.92;
 // « si » qui les précède : la formule se lit d'un seul corps.
 const MOT_GRAND = 1.9;
 
-// Quel profil vaut en ce moment. L'application le dit — elle seule sait si la
-// lecture nue est demandée, et elle le sait AVANT de dessiner. Interroger le
-// document à la place reviendrait toujours à lire l'état d'avant : la classe
-// n'est posée qu'une fois le HTML construit.
-let lectureNue = false;
-export function reglerLectureNue(v) { lectureNue = !!v; }
-
-// Le TEMPLATE imprimé sur les Plans Larges — l'habillage seul : cadre, boîte de
-// minutage, bande verte à bord déchiré, bandeau noir. Même mécanique que la
-// lecture nue : l'application le dit avant de dessiner, et la classe voyage
-// avec le HTML — jusque dans l'export PDF, où aucune classe du document ne
-// suivrait.
-let gabarits = false;
-export function reglerGabarits(v) { gabarits = !!v; }
+// La composition se lit toujours avec son illustration.
+const lectureNue = false;
 
 /** La place utile d'un bandeau, selon le cadrage de la moitié qui le porte. */
-const LARGEUR_MOITIE = { GP: 6.72, PM: 13.28, PL: 20, DEP: 20 };
+const LARGEUR_MOITIE = { GP: 10, PL: 20, DEP: 20 };
 
 // La hauteur d'une moitié, en em de la carte, et la part qu'y prend le bandeau :
 // 18 % avec l'illustration, 30 % en lecture nue. C'est cette hauteur qui décide
@@ -682,7 +652,7 @@ function coutObj(obj, compact, cfg, P, format, large, rangs = 1, dispo) {
   // côté d'elle.
   if (estRegle(obj)) {
     const phrase = phraseRegle(obj, compact);
-    const corps = corpsPhrase(phrase, dispo || LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM,
+    const corps = corpsPhrase(phrase, dispo || LARGEUR_MOITIE[format] || LARGEUR_MOITIE.GP,
       P === PROFILS.nu, rangs);
     const longMot = phrase.split(/\s+/).reduce((m, w) => Math.max(m, w.length), 0);
     return longMot * corps * 0.56;
@@ -718,14 +688,14 @@ export function serrageBandeau(objs, format, cfg, nu, dispoForce) {
   const couts = objs.map((o) => coutObj(o, compact, cfg, P, format, large, rangs, dispoForce));
   const besoin = (rangs > 1 ? Math.max(...couts) : couts.reduce((x, y) => x + y, 0)) * 1.2;
   // Un gabarit de l'Atelier donne sa propre largeur de bande, en em du bandeau.
-  const dispo = dispoForce || LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM;
+  const dispo = dispoForce || LARGEUR_MOITIE[format] || LARGEUR_MOITIE.GP;
   // On ne descend pas sous une taille de pastille plancher : en dessous plus
   // rien ne se lit, et mieux vaut alors rogner un mot que rendre la carte
   // illisible. Le plancher se dit en taille de rond, pas en facteur — sans
   // quoi la lecture nue, qui part de ronds plus gros, s'arrêterait trop tôt.
   const plancher = ATOME_MIN / P.rond;
   // Et l'on ne s'arrête plus à 1 : un bandeau court — « 2 × Plan Large & Plan
-  // de départ » sur un Plan Moyen — laissait des deux côtés une place que rien
+  // de départ » sur une bande large — laissait des deux côtés une place que rien
   // n'occupait, pendant que sa valeur et ses étiquettes restaient minuscules.
   // Le facteur peut donc dépasser 1, jusqu'à un plafond : au-delà, une pastille
   // déborderait de la hauteur de la bande, qui, elle, ne grandit pas.
@@ -760,7 +730,7 @@ function bandeau(objs, format, cfg, dispo, nu) {
   const pleineLargeur = format === 'PL';
   // Empilés, chacun garde TOUTE la largeur : une phrase s'y met à l'échelle sur
   // la carte entière, et non sur une demi-carte.
-  const large = dispo || LARGEUR_MOITIE[format] || LARGEUR_MOITIE.PM;
+  const large = dispo || LARGEUR_MOITIE[format] || LARGEUR_MOITIE.GP;
   const un = (o) => (estRegle(o)
     ? `<span class="bandeau-obj regle" style="--cp:${
       corpsPhrase(phraseRegle(o, compact), large, nuIci, rangs).toFixed(3)}em">${
@@ -774,29 +744,6 @@ function bandeau(objs, format, cfg, dispo, nu) {
 }
 
 /**
- * Le bandeau d'un plan, pour un GABARIT de l'Atelier : la bande y a la
- * largeur que le gabarit lui donne — `dispo`, en em du bandeau —, et se lit
- * toujours comme une carte illustrée.
- */
-export function bandeauGabarit(objs, format, cfg, dispo) {
-  return bandeau(objs, format, cfg, dispo, false);
-}
-
-// Le DESSIN PAR GABARIT. Quand l'Atelier est branché, une moitié de carte ne se
-// compose plus ici : elle est confiée au gabarit, qui rend son intérieur et sa
-// largeur en millimètres. L'application le règle avant de dessiner — même
-// mécanique que la lecture nue —, et ce module n'a rien à savoir des gabarits.
-let dessinGabarit = null;
-let coinsGabarit = 3;
-let formatGabarit = formatDe(null);
-export function reglerDessinGabarit(fn, coins, format) {
-  dessinGabarit = fn || null;
-  if (typeof coins === 'number') coinsGabarit = coins;
-  if (format) formatGabarit = formatDe(format);
-}
-export const dessinGabaritActif = () => !!dessinGabarit;
-
-/**
  * Les données que le pop-up de survol affiche en grand. `points` n'est fourni
  * que sur un banc de montage : c'est ce que cette carte-là rapporte, ici et
  * maintenant.
@@ -808,6 +755,8 @@ function donneesApercu(h, label, points, detail, objs) {
     // dit ce que la carte porte ET ce qu'elle compte ici.
     objsImprimes: objs ? objsDe(h) : null,
     num: h.num, label, transition: h.transition || null,
+    // La vraie carte : l'aperçu la montre en grand.
+    visuel: h.visuel || null,
     mort: !!h.mort,
     points: points === undefined ? null : points,
     // Ce que chaque bandeau rapporte séparément : l'infobulle montre le calcul
@@ -818,33 +767,7 @@ function donneesApercu(h, label, points, detail, objs) {
 
 /** Un plan : moitié de carte, ou Plan Large pleine largeur. */
 export function renderPlan(h, opts = {}) {
-  const F = FORMATS[h.transition ? 'TR' : h.format] || FORMATS.PM;
-  // Le gabarit de l'Atelier, quand il est branché : il rend l'intérieur de la
-  // moitié ; on garde l'enveloppe — classes, jeton de points, aperçu au
-  // survol —, dont la table de jeu se sert pour désigner et compter.
-  if (dessinGabarit && !h.absente && !opts.classique) {
-    const d = dessinGabarit(h, opts);
-    if (d) {
-      const objsG = opts.objs || objsDe(h);
-      const clsG = ['moitie', `f-${h.format}`, 'design', h.transition ? 'transition' : '', h.depart ? 'depart' : '',
-        opts.clickable ? 'choisissable' : '', opts.selected ? 'choisi' : '', opts.neuf ? 'neuf' : '',
-        opts.horsFilm ? 'hors-film' : ''].join(' ');
-      const labelG = h.depart ? 'Plan de départ' : F.label;
-      const teinteG = opts.bonifie ? 'bonifie' : opts.points < 0 ? 'negatif' : (opts.points ? '' : 'nul');
-      const jetonG = opts.points === undefined ? ''
-        : `<div class="jeton-pts ${teinteG}" title="Ce que ce plan rapporte">${opts.points}</div>`;
-      const bulleG = opts.muet ? ''
-        : ` data-apercu="${donneesApercu(h, labelG, opts.points, opts.detail, objsG)}"`;
-      return `<div class="${clsG}" style="--flex:${d.w} ${d.w} 0%;--gw:${d.w}" data-format="${h.format}" data-num="${h.num}"${bulleG}>
-      ${jetonG}${d.html}</div>`;
-    }
-  }
-  // Une face que l'auteur n'a pas encore fournie : sa place, sans rien dessus.
-  if (h.absente) {
-    const flexA = h.format === 'GP' ? `0 0 ${partGP()}%` : `1 1 ${100 - partGP()}%`;
-    return `<div class="moitie f-${h.format} face-absente" style="--flex:${flexA}" data-format="${h.format}" data-num="${h.num}">
-    <span>${F.label} ${h.num}<br>verso à venir</span></div>`;
-  }
+  const F = FORMATS[h.transition ? 'TR' : h.format] || FORMATS.GP;
   // Un Plan Large et un Plan de départ occupent toute la carte.
   const large = h.format === 'PL' || h.format === 'DEP';
   // `neuf` marque le plan qui vient d'être posé : c'est là que la carte en vol
@@ -856,10 +779,11 @@ export function renderPlan(h, opts = {}) {
   const cls = ['moitie', `f-${h.format}`, h.transition ? 'transition' : '', h.depart ? 'depart' : '',
     opts.bandeauDouble || objsIci.length > 1 ? 'bande-deux' : '',
     opts.clickable ? 'choisissable' : '', opts.selected ? 'choisi' : '', opts.neuf ? 'neuf' : '',
-    opts.horsFilm ? 'hors-film' : '', gabarits && h.format === 'PL' ? 'gabarit' : ''].join(' ');
-  const flex = large ? '1 1 100%' : (h.format === 'GP' ? `0 0 ${partGP()}%` : `1 1 ${100 - partGP()}%`);
-  // Le libellé du bas dit le TYPE du plan, pas son rôle : une Ouverture, un
-  // Générique de fin et un Raccord sont tous trois des Raccords. Ce que la
+    ].join(' ');
+  // Une carte à deux Gros Plans est coupée en deux au centre : chacun en prend la moitié.
+  const flex = large ? '1 1 100%' : '0 0 50%';
+  // Le libellé du bas dit le TYPE du plan, pas son rôle : l'Ouverture, la Fin
+  // et le Raccord sont tous trois des Raccords. Ce que la
   // carte fait — ouvrir, fermer, relier — se lit à son illustration et aux
   // emplacements qu'elle propose.
   const label = h.depart ? 'Plan de départ' : F.label;
@@ -868,7 +792,7 @@ export function renderPlan(h, opts = {}) {
   // les bandeaux de pouvoir. La carte gagne ainsi la bande entière que le
   // libellé occupait — l'illustration et le bandeau descendent d'autant.
   //
-  // Le cadrage s'écrit EN TOUTES LETTRES — « PLAN MOYEN », « GROS PLAN » — et
+  // Le cadrage s'écrit EN TOUTES LETTRES — « PLAN LARGE », « GROS PLAN » — et
   // non par son abréviation : c'est le nom que le jeu emploie partout, et un
   // coin de carte a la place de le porter.
   //
@@ -909,24 +833,22 @@ export function renderPlan(h, opts = {}) {
     : opts.points < 0 ? 'negatif' : (opts.points ? '' : 'nul');
   const jeton = opts.points === undefined ? ''
     : `<div class="jeton-pts ${teinteJeton}" title="${opts.bonifie
-      ? 'Ce que ce plan rapporte — bonifie par une carte de votre montage'
-      : opts.horsFilm
-        ? 'Ce que ce plan rapporte — carte montee HORS DU FILM, avant le 01:00 ou apres le 99:00'
-        : 'Ce que ce plan rapporte'}">${opts.points}</div>`;
+      ? 'Ce que ce plan rapporte — bonifié par une carte de votre montage'
+      : 'Ce que ce plan rapporte'}">${opts.points}</div>`;
   // `muet` : un plan qui n'est pas vraiment sur la table — un aperçu de pose —
   // n'ouvre pas d'infobulle et ne se donne pas pour une carte du banc.
   const bulle = opts.muet ? ''
     : ` data-apercu="${donneesApercu(h, label, opts.points, opts.detail, opts.objs)}"`;
-  // La CARTE IMPRIMÉE entière, quand le set la fournit : on la montre telle
-  // quelle, à la place de la composition — minutage, icônes et bandeau sont
-  // déjà dessus. La lecture sans illustrations revient à la composition.
-  if (h.visuel && !lectureNue) {
-    return `<div class="${cls} carte-image" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"${bulle}>
+  // La VRAIE CARTE : on la montre telle quelle — minutage, icônes et pouvoir
+  // sont déjà dessus.
+  const moitie = h.moitie ? ` data-moitie="${h.moitie}"` : '';
+  if (h.visuel) {
+    return `<div class="${cls} carte-image" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"${moitie}${bulle}>
     ${jeton}
     <img class="carte-visuel" src="${h.visuel}" alt="${label} ${h.num}" loading="lazy" decoding="async" draggable="false">
   </div>`;
   }
-  return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"${bulle}>
+  return `<div class="${cls}" style="--flex:${flex}" data-format="${h.format}" data-num="${h.num}"${moitie}${bulle}>
     ${jeton}
     <div class="illus"${h.cle ? ` data-illus="${h.cle}"` : ''}>
       <div class="illus-image${h.miroir ? ' miroir' : ''}" style="${fond}"></div>
@@ -942,45 +864,16 @@ export function renderPlan(h, opts = {}) {
   </div>`;
 }
 
-/** Une carte entière. `verso` échange la position des deux moitiés. */
-export function renderCarte(carte, verso, opts = {}) {
-  // Le recto porte le Plan Moyen à gauche et le Gros Plan à droite ; le verso,
-  // retourné autour de l'axe vertical, les échange. Il ne se contente pas
-  // d'inverser les moitiés du recto : ce sont d'autres plans, avec leur propre
-  // minutage. Il faut donc les demander.
-  const m = carte.type === 'DOUBLE' ? moitiesDe(carte, verso ? 'V' : 'R') : null;
-  // Une carte dont on n'a qu'une moitié — le Set 3.1 n'a reçu que des Gros
-  // Plans — se montre seule, à la taille de cette moitié.
-  const plans = (m ? (verso ? [m.GP, m.PM] : [m.PM, m.GP]) : [plHalf(carte)]).filter(Boolean);
+/**
+ * Une carte entière : un Plan Large, ou deux Gros Plans côte à côte — la moitié
+ * gauche à gauche, la moitié droite à droite.
+ */
+export function renderCarte(carte, opts = {}) {
+  const m = carte.type === 'DOUBLE' ? moitiesDe(carte) : null;
+  const plans = (m ? [m.G, m.D] : [plHalf(carte)]).filter(Boolean);
   // Une carte créée, encore vide : sa place, à remplir à l'Assemblage.
   if (!plans.length) {
-    return `<div class="carte solo carte-vide ${opts.small ? 'small' : ''}" data-carte="${carte.id}"
-      data-verso="${verso ? 1 : 0}"><span>carte vide</span></div>`;
-  }
-  // Dessinée par un gabarit, la carte est un carton au format du gabarit —
-  // 120 × 80 mm, 88 × 63… — : ses moitiés se partagent la largeur en
-  // proportion de leurs millimètres. Le
-  // fond perdu (`opts.perdu`, en mm) s'ajoute sur les bords EXTÉRIEURS — pas
-  // entre les deux moitiés, qui se touchent.
-  if (dessinGabarit && !opts.classique) {
-    const p = opts.perdu || 0;
-    const n = plans.length;
-    const F = formatGabarit;
-    const W = plans.reduce((s, h) => s + largeurMise(cleMise(h), F), 0) + 2 * p;
-    const H = F.hauteur + 2 * p;
-    const r = opts.impression ? 0 : coinsGabarit;
-    const clsD = ['carte', 'design', m && n === 1 ? 'solo' : '',
-      opts.selected ? 'sel' : '', opts.small ? 'small' : '', opts.tiny ? 'tiny' : '',
-      opts.clickable ? 'clickable' : '', opts.moitiesChoisissables ? 'choix-moitie' : ''].join(' ');
-    return `<div class="${clsD}" data-carte="${carte.id}" data-verso="${verso ? 1 : 0}"
-      style="--ar:${W}/${H};--fr:${Math.round((W / (F.largeur + 2 * p)) * 1000) / 1000};border-radius:${
-  Math.round((r / W) * 10000) / 100}% / ${Math.round((r / H) * 10000) / 100}%">
-    ${plans.map((h, i) => renderPlan(h, {
-    ...opts,
-    perduCotes: { g: i === 0 ? p : 0, d: i === n - 1 ? p : 0, h: p, b: p },
-    selected: opts.formatChoisi ? opts.formatChoisi === h.format : opts.selected,
-  })).join('')}
-  </div>`;
+    return `<div class="carte carte-vide ${opts.small ? 'small' : ''}" data-carte="${carte.id}"><span>carte vide</span></div>`;
   }
   const cls = ['carte', m && plans.length === 1 ? 'solo' : '',
     opts.selected ? 'sel' : '', opts.small ? 'small' : '', opts.tiny ? 'tiny' : '',
@@ -988,21 +881,16 @@ export function renderCarte(carte, verso, opts = {}) {
   // Une carte est une feuille : ses deux moitiés doivent finir à la même
   // hauteur. Si l'une porte deux pouvoirs, les deux bandes grandissent.
   const bandeauDouble = plans.some((h) => (objsDe(h) || []).length > 1);
-  return `<div class="${cls}" data-carte="${carte.id}" data-verso="${verso ? 1 : 0}">
+  return `<div class="${cls}" data-carte="${carte.id}">
     ${plans.map((h) => renderPlan(h, {
       ...opts,
       bandeauDouble,
       // Au montage, la carte reste entière : c'est la moitié que l'on désigne.
-      selected: opts.formatChoisi ? opts.formatChoisi === h.format : opts.selected,
+      selected: opts.moitieChoisie ? opts.moitieChoisie === h.moitie : opts.selected,
     })).join('')}
   </div>`;
 }
 
-/**
- * Le dos d'une pioche, au format d'une carte. Seuls les Plans Larges ont un
- * vrai dos : les cartes Plan Moyen / Gros Plan étant recto-verso, leur pioche
- * montre toujours sa face du dessus.
- */
 /** Enveloppe une carte d'un effet de pile : des cartes décalées dessous. */
 export function enPile(html, reste) {
   const epaisseur = Math.min(3, Math.max(1, Math.ceil(reste / 12)));
@@ -1012,43 +900,24 @@ export function enPile(html, reste) {
   </div>`;
 }
 
-export function renderDos(libelle, reste, opts = {}) {
-  // Le dos d'un gabarit de l'Atelier, quand il est branché.
-  if (dessinGabarit && !opts.classique) {
-    const p = opts.perdu || 0;
-    const d = dessinGabarit({ format: 'DOS', num: '', el: [], tc: 0 },
-      { ...opts, perduCotes: { g: p, d: p, h: p, b: p } });
-    if (d) {
-      const r = opts.impression ? 0 : coinsGabarit;
-      return `<div class="carte dos design ${opts.small ? 'small' : ''} ${opts.clickable ? 'clickable' : ''}"
-        title="${libelle}" style="--ar:${d.w}/${d.h};--fr:1;border-radius:${Math.round((r / d.w) * 10000) / 100}% / ${
-  Math.round((r / d.h) * 10000) / 100}%">
-        <div class="moitie f-PL design" style="--flex:1 1 0%;--gw:${d.w}">${d.html}</div></div>`;
-    }
-  }
+/**
+ * Le dos d'une carte, au format d'une carte : celui de la pioche. Plans Larges
+ * et cartes à deux Gros Plans ont le même — on ne sait pas ce qu'on va tirer.
+ */
+export function renderDos(libelle, opts = {}) {
   const cls = ['carte', 'dos', opts.small ? 'small' : '', opts.clickable ? 'clickable' : ''].join(' ');
-  // Le dos d'une pioche de Plans Larges est un **Plan Large vierge** : le vert
-  // du cadrage, sa languette, son bandeau — la carte telle qu'elle est, sans
-  // rien dessus —, et un point d'interrogation à la place de l'illustration. On
-  // ne sait pas ce qui vient, mais on sait que c'est un Plan Large.
   return `<div class="${cls}" title="${libelle}">
-    <div class="moitie f-PL dos-vierge" style="--flex:1 1 100%">
-      <div class="illus"><span class="dos-question">?</span></div>
-      <div class="pastilles"></div>
-      <div class="bandeau"></div>
-      <div class="libelle"><span class="marque-cadrage">${tagCadrage('PL', false)}</span></div>
-    </div>
+    <div class="dos-edit"><img src="assets/marque/edit.webp" alt="" draggable="false"></div>
   </div>`;
 }
 
-/** Fiche texte d'une carte, ses quatre plans — deux par face. */
+/** Fiche texte d'une carte : ses plans, un par ligne. */
 export function ficheCarte(carte) {
-  const plans = carte.type === 'DOUBLE'
-    ? [...Object.values(moitiesDe(carte, 'R')), ...Object.values(moitiesDe(carte, 'V'))]
-    : [plHalf(carte)];
+  const m = carte.type === 'DOUBLE' ? moitiesDe(carte) : null;
+  const plans = (m ? [m.G, m.D] : [plHalf(carte)]).filter(Boolean);
   return plans.map((h) => {
     const els = h.el.map((e) => ELEMENTS[e].label).join(', ') || '—';
-    return `${h.transition || FORMATS[h.format].label} n°${h.num} · ${tc(h.tc)} · ${els}`;
+    return `${h.transition ? (h.titre || 'Raccord') : FORMATS[h.format].label} ${etiquettePlan(h)} · ${tc(h.tc)} · ${els}`;
   }).join(' | ');
 }
 

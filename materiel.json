@@ -1,7 +1,8 @@
 {
- "version": "2.9",
- "date": "2026-09-05 07:47:21",
- "signature": "origine",
+ "version": "4.1",
+ "boite": "4.1",
+ "date": "2026-11-11 00:00:00",
+ "signature": "origine-4.1",
  "materiel": {
   "plans": {},
   "paires": {},

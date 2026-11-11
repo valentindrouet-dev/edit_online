@@ -39,8 +39,8 @@ export function releve(el) {
 
 /**
  * Fait voler un relevé jusqu'à un élément d'arrivée. `fondu` sert quand la
- * carte n'atterrit pas vraiment — une carte dérushée passe en main, elle ne
- * se pose pas encore : elle rejoint le banc et s'efface. `taille: false` la
+ * carte n'atterrit pas vraiment — une carte prise sans être montée rejoint sa
+ * destination et s'efface. `taille: false` la
  * fait alors voyager sans changer d'échelle, vers le centre de l'arrivée.
  *
  * Rend une promesse tenue quand la carte s'est posée.

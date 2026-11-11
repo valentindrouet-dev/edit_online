@@ -8,7 +8,7 @@
 //      dernier nombre est le compteur de livraisons, les premiers la version du
 //      jeu ; il garde ses zéros de tête ;
 //   2. ajoute l'entrée du journal des Versions — un argument par point ;
-//   3. lance le versionneur (version.json, sw.js, inventaire des illustrations) ;
+//   3. lance le versionneur (version.json, sw.js) ;
 //   4. relit la syntaxe de tous les modules — moins d'une seconde ;
 //   5. valide et envoie sur la branche courante, en réessayant si le réseau
 //      flanche (2, 4, 8 puis 16 s).

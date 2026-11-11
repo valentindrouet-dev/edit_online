@@ -206,15 +206,16 @@ button { font-family: inherit; }
 
 /* --- Cartes --------------------------------------------------------------- */
 
-/* Tout l'intérieur d'une carte est exprimé en em, et la taille de police est
-   calée sur la HAUTEUR : hauteur = 14.33 em. Les proportions reprennent alors
-   exactement la carte imprimée, quelle que soit l'échelle d'affichage. */
+/* Une carte fait 120 × 80 mm. Le jeu montre la vraie carte — une image —, et
+   ne compose lui-même que les plans retouchés ou créés dans le Matériel : leur
+   intérieur est alors exprimé en em, la taille de police calée sur la HAUTEUR
+   (14.33 em). */
 .carte {
   /* Un seul cadre noir, fin, de la même épaisseur sur les quatre bords. Les
      illustrations sont rognées de leur propre cadre imprimé — sans quoi il
      s'ajoutait à celui-ci et le noir était deux fois plus épais autour de
      l'image qu'autour des bandeaux. */
-  display: flex; gap: .26em; width: 300px; aspect-ratio: 317 / 227;
+  display: flex; gap: .26em; width: 300px; aspect-ratio: 3 / 2;
   background: #111; border-radius: 9px; padding: .26em; box-shadow: var(--ombre);
   /* Surlignage au survol : un simple liseré, sans transform ni box-shadow.
      Soulever la carte forçait un repeint complet de l'illustration (grande
@@ -248,7 +249,7 @@ button { font-family: inherit; }
    n'apparaît ni ne disparaît sous le curseur entre deux clics. Elle s'est
    resserrée depuis que la consigne a disparu — la table se lit sans mode
    d'emploi. */
-.zone-phase { min-height: 452px; display: flex; flex-direction: column; justify-content: center; }
+.zone-phase { min-height: 300px; display: flex; flex-direction: column; justify-content: center; }
 
 .moitie {
   position: relative; border-radius: 6px; overflow: hidden;
@@ -256,20 +257,13 @@ button { font-family: inherit; }
   background-color: #e9f2dc;
 }
 .carte > .moitie { flex: var(--flex); }
-/* Une face pas encore fournie : sa place, en pointillé. */
-.moitie.face-absente {
-  display: flex; align-items: center; justify-content: center; text-align: center;
-  background: repeating-linear-gradient(135deg, #f4f1fb 0 8px, #ece7f7 8px 16px);
-  outline: 2px dashed #b9a8e6; outline-offset: -6px; color: #6d5aa8; font-weight: 700;
-}
-.moitie.face-absente span { font-size: .8em; }
-/* La carte imprimée entière, montrée telle quelle — cadre noir compris : elle
-   a exactement la proportion d'une moitié, et seule, elle EST la carte. */
+/* La vraie carte, montrée telle quelle — cadre noir compris. Un Plan Large
+   prend toute la carte ; deux Gros Plans s'y touchent, sans marge entre eux :
+   c'est une seule carte, coupée en deux au centre. */
 .moitie.carte-image { background: #0a0a0a; }
 .moitie.carte-image .carte-visuel { display: block; width: 100%; height: 100%; object-fit: fill; }
-.carte.solo:has(> .moitie.carte-image) { padding: 0; border-radius: 4px; overflow: hidden; }
-.carte.solo > .moitie.carte-image { border-radius: 0; }
-.moitie.f-PM { background-color: #fdf0d3; }
+.carte:has(> .moitie.carte-image) { padding: 0; gap: 0; border-radius: 5px; overflow: hidden; }
+.carte > .moitie.carte-image { border-radius: 0; }
 .moitie.f-GP { background-color: #fbdfd2; }
 .moitie.f-PL { background-color: #e7f2d8; }
 .moitie.f-DEP { background-color: #d8ecf7; }
@@ -954,53 +948,65 @@ body.sans-illus .barre .tc-seuil + .croix-non { height: .8em; bottom: 30%; }
 .table-jeu > * { min-width: 0; }
 @media (max-width: 1000px) { .table-jeu { grid-template-columns: 1fr; } }
 
-/* Les groupes de dérushage se rangent côte à côte tant que la place le permet. */
-/* Une ligne par famille : sa pioche d'abord, puis son chutier. */
-.derushage-lignes { display: flex; flex-direction: column; gap: 12px; }
-/* Le titre d'une famille et le compte de sa pioche tiennent sur la même
-   ligne : sous la pioche, ce compte s'ouvrait une rangée à lui seul. */
-.derushage-ligne h3 {
+/* La table des cartes : à gauche la pioche et, dessous, le Chutier ; à droite
+   la rivière — ses quatre cartes côte à côte, aussi grandes que la place le
+   permet : ce sont elles qu'on lit. */
+.table-cartes { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: 6px 22px; align-items: start; }
+.table-cartes h3 {
   margin: 0 0 6px; font-size: .95rem;
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
-.derushage-cartes { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: flex-start; }
-/* Une carte que l'on voit sans pouvoir la prendre — la rivière des Plans
-   Moyens / Gros Plans tant qu'un banc n'a pas de séquence, dans la variante
-   sans Plans de départ. Elle s'éteint plutôt que de disparaître : escamoter la
-   rivière le temps d'un tour la ferait lire comme une rivière vide. */
-.carte-retournable.bloquee { opacity: .42; filter: grayscale(.5); pointer-events: none; }
-.derushage-ligne h3 .raison {
+.table-cartes h3 .raison {
   font-size: .74rem; font-weight: 600; color: var(--gris); letter-spacing: 0;
   text-transform: none; font-style: italic;
 }
+.tc-colonne { display: flex; flex-direction: column; gap: 12px; }
+.tc-bloc .carte { width: 100%; }
+.tc-bloc.ouvert .chutier-place { outline: 2px dashed var(--orange-clair); outline-offset: 4px; border-radius: 6px; }
+.chutier-droit { display: block; margin-top: 8px; font-size: .7rem; font-weight: 700; color: var(--orange); }
+.carte-vide.chutier-vide, .pioche-place .carte-vide {
+  width: 100%; aspect-ratio: 3 / 2; border-radius: 5px; display: flex; align-items: center; justify-content: center;
+  border: 2px dashed var(--gris-clair); color: var(--gris); font-size: .78rem; background: transparent; box-shadow: none;
+}
+.riviere-cartes {
+  display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: 12px; align-items: start;
+}
+/* La case est la mesure : la carte en prend toute la largeur, et le dessin
+   d'une carte composée par le site suit — 22 em de large. */
+.riviere-case, .chutier-place { container-type: inline-size; }
+.riviere-case { display: flex; flex-direction: column; align-items: center; gap: 6px; transition: transform .14s ease; }
+.riviere-case .carte, .chutier-place .carte { width: 100%; font-size: calc(100cqw / 22); }
+.riviere-carte { width: 100%; }
+/* Une carte que l'on voit sans pouvoir la monter : elle s'éteint plutôt que de
+   disparaître, et dit pourquoi au survol. On peut toujours la défausser. */
+.riviere-carte.bloquee { opacity: .45; filter: grayscale(.5); }
+/* La carte visée : soulevée, et sa moitié retenue encadrée. */
+.riviere-case.visee { transform: translateY(-6px); }
+.riviere-case.visee .carte { box-shadow: 0 10px 26px rgba(249,115,22,.45); }
+.pill.defausser { font-size: .68rem; padding: 3px 10px; color: var(--encre-doux); border-color: var(--gris-clair); }
+.pill.defausser:hover { border-color: #e88; color: #b42323; background: #fdecec; }
+.table-cartes .aide { margin: 10px 0 0; min-height: 1.5em; }
+.dernier-fait { color: var(--gris); font-style: italic; }
+.table-cartes.apercu { opacity: .92; }
+@media (max-width: 760px) {
+  .table-cartes { grid-template-columns: 1fr; }
+  .tc-colonne { flex-direction: row; }
+  .tc-bloc { flex: 1 1 0; min-width: 0; }
+  .riviere-cartes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 
-/* La rivière pendant le choix du Plan de départ : elle se lit, elle ne se
-   prend pas encore. */
+/* La table pendant le choix du Plan de départ : elle se lit, elle ne se joue
+   pas encore. */
 .riviere-apercu {
   margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--gris-clair);
 }
-.riviere-apercu > .aide { margin-bottom: 10px; }
-.riviere-apercu .derushage-ligne h3 { font-size: .82rem; }
+/* La carte de départ : ses deux faces, côte à côte. */
+.depart-consigne { text-align: center; margin: 0 0 4px; }
+.depart-faces .carte.solo { font-size: clamp(9px, 1.25vw, 15px); }
+.depart-face { font-size: .74rem; color: var(--gris); margin-top: 6px; }
 
-/* Une carte du chutier et, dessous, son bouton de rotation : une carte double
-   ne tombe pas toujours du côté de son recto. */
-.carte-retournable { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.carte-retournable .carte { transition: transform .3s cubic-bezier(.3,.7,.4,1); }
-.carte-retournable.tourne .carte { animation: retourne .32s ease; }
-@keyframes retourne {
-  0%   { transform: rotateY(0deg)   scaleX(1); }
-  50%  { transform: rotateY(84deg)  scaleX(.12); }
-  100% { transform: rotateY(0deg)   scaleX(1); }
-}
-.pill.rotation {
-  font-size: .68rem; padding: 3px 9px; display: inline-flex; align-items: center; gap: 6px;
-  color: var(--encre-doux); border-color: var(--gris-clair);
-}
-.pill.rotation .face {
-  font-size: .62rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
-  background: var(--violet-pale); color: var(--violet); padding: 1px 6px; border-radius: 999px;
-}
-.pill.rotation:hover { border-color: var(--violet-clair); color: var(--violet); }
+/* L'accueil : la partie en quelques lignes. */
+.bref { margin: 0 0 10px; padding-left: 1.1em; display: flex; flex-direction: column; gap: 7px; font-size: .92rem; line-height: 1.4; }
 
 /* La pioche se distingue par une pile de cartes décalées sous la première. */
 .pile { position: relative; margin-right: 12px; }
@@ -1087,7 +1093,7 @@ body.sans-illus .barre .tc-seuil + .croix-non { height: .8em; bottom: 30%; }
    Gros Plan, d'un Plan Moyen, d'un Plan Large — et toute la hauteur d'une
    carte : on vise la place que la carte prendra, pas une flèche. */
 .banc-piste.lignes .bord .ecart.actif { width: auto; padding: 0; gap: 2px; }
-.banc-piste.lignes .bord .fente-choix { width: var(--ap, 169px); }
+.banc-piste.lignes .bord .fente-choix { width: var(--ap, 135px); }
 .banc-piste.lignes .bord .fente-btn {
   width: 100%; height: 100%; writing-mode: horizontal-tb; transform: none;
   padding: 7px 9px; display: flex; align-items: center; justify-content: center;
@@ -1103,10 +1109,11 @@ body.sans-illus .barre .tc-seuil + .croix-non { height: .8em; bottom: 30%; }
   display: flex; gap: 2px; align-items: stretch; flex: 0 0 auto;
   padding: 4px; border-radius: 8px; background: rgba(255,255,255,.06);
 }
-.banc .moitie { height: 182px; border-radius: 5px; flex: 0 0 auto; font-size: 12.7px; }
-.banc .moitie.f-GP { width: 85px; }
-.banc .moitie.f-PM { width: 169px; }
-.banc .moitie.f-PL, .banc .moitie.f-DEP { width: 254px; }
+/* Un Plan Large fait 270 × 180, un Gros Plan la moitié : `LARGEUR_BANC`, dans
+   l'application, dit les mêmes largeurs. */
+.banc .moitie { height: 180px; border-radius: 4px; flex: 0 0 auto; font-size: 12.56px; }
+.banc .moitie.f-GP { width: 135px; }
+.banc .moitie.f-PL, .banc .moitie.f-DEP { width: 270px; }
 
 .banc .ecart { flex: 0 0 auto; width: 18px; }
 /* Les emplacements se rangent en bandes verticales, côte à côte : un
@@ -1166,6 +1173,9 @@ body.sans-illus .barre .tc-seuil + .croix-non { height: .8em; bottom: 30%; }
 /* Pendant qu'on vise, le banc laisse déborder : l'aperçu s'avance dans la
    marge du banc, là où la carte ira. */
 .banc.vise { overflow: visible; }
+/* Sur un écran étroit, une seule carte est déjà plus large que le banc : il
+   garde son défilement, même pendant qu'on vise. */
+@media (max-width: 760px) { .banc.vise { overflow-x: auto; overflow-y: hidden; } }
 /* Toute la carte en pointillés se clique, pas seulement son étiquette : c'est
    là que le regard est, et c'est la cible la plus large. */
 .fente-choix.ouverte .apercu-pose {
@@ -1181,10 +1191,9 @@ body.sans-illus .barre .tc-seuil + .croix-non { height: .8em; bottom: 30%; }
    barrer ce qu'on est venu regarder. */
 .fente-choix.ouverte .fente-btn { position: relative; z-index: 1; }
 
-.apercu-pose .moitie { height: 182px; border-radius: 5px; font-size: 12.7px; display: flex; }
-.apercu-pose .moitie.f-GP { width: 85px; }
-.apercu-pose .moitie.f-PM { width: 169px; }
-.apercu-pose .moitie.f-PL, .apercu-pose .moitie.f-DEP { width: 254px; }
+.apercu-pose .moitie { height: 180px; border-radius: 4px; font-size: 12.56px; display: flex; }
+.apercu-pose .moitie.f-GP { width: 135px; }
+.apercu-pose .moitie.f-PL, .apercu-pose .moitie.f-DEP { width: 270px; }
 
 /* Un plan présenté seul (choix de face, Plan de départ) garde sa proportion. */
 /* Une carte qui ne porte qu'un plan se règle sur lui : `auto` la ferait
@@ -1193,34 +1202,19 @@ body.sans-illus .barre .tc-seuil + .croix-non { height: .8em; bottom: 30%; }
 .carte.solo { width: fit-content; aspect-ratio: auto; font-size: 12.7px; }
 /* Tout est en em : la carte suit sa taille de police, comme une carte entière. */
 .carte.solo .moitie { flex: 0 0 auto; height: 14.33em; }
-.carte.solo .moitie.f-GP { width: 6.72em; }
-.carte.solo .moitie.f-PM { width: 13.28em; }
-.carte.solo .moitie.f-PL, .carte.solo .moitie.f-DEP { width: 20em; }
+.carte.solo .moitie.f-GP { width: 10.75em; }
+.carte.solo .moitie.f-PL, .carte.solo .moitie.f-DEP { width: 21.5em; }
 
 .carte.dos { background: #111; }
-/* Une pioche à laquelle on ne peut pas puiser reste lisible : elle se retire
-   d'un cran, elle ne se délave pas. */
-.pioche-fermee { position: relative; }
-.pioche-fermee .carte { opacity: .82; filter: saturate(.8); cursor: not-allowed; }
-/* Le dos de la pioche des Plans Larges est un Plan Large vierge : le fond vert
-   du cadrage, la bande des pastilles, le bandeau et le libellé, tous vides — la
-   carte telle qu'elle est avant d'être imprimée. À la place de l'illustration,
-   un point d'interrogation : on ne sait pas ce qui vient, mais on sait que
-   c'est un Plan Large. */
-.dos-vierge .illus { display: flex; align-items: center; justify-content: center; }
-.dos-question {
-  font-size: 4.2em; font-weight: 800; line-height: 1;
-  color: var(--fmt-pl); opacity: .82; text-shadow: 0 .05em 0 rgba(255, 255, 255, .8);
+/* Le dos d'une carte : le même pour toute la pioche — on ne sait pas si l'on
+   tirera un Plan Large ou une carte à deux Gros Plans. */
+.carte.dos { padding: 0; border-radius: 5px; overflow: hidden; }
+.dos-edit {
+  flex: 1 1 100%; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 42%, #3b2d63 0, #1d1730 72%);
+  border: 3px solid #0d0a16; border-radius: 5px;
 }
-
-.dos-pioche {
-  width: 120px; height: 158px; border-radius: 10px; cursor: pointer; color: #fff;
-  background: repeating-linear-gradient(45deg, #6d28d9 0 10px, #7c3aed 10px 20px);
-  border: 3px solid #4c1d95; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 6px; font-size: .8rem; transition: outline-color .12s;
-}
-.dos-pioche b { font-size: .95rem; }
-.dos-pioche:hover { outline: 3px solid var(--orange-clair); outline-offset: 2px; }
+.dos-edit img { width: 62%; height: auto; opacity: .92; }
 
 .main-cartes { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; padding: 8px 0; }
 .main-cartes .item { text-align: center; }
@@ -1360,21 +1354,8 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .etiquette { background: var(--orange-pale); color: #c2410c; border-radius: 999px; padding: 3px 10px; font-size: .72rem; font-weight: 700; margin-left: 10px; }
 
 /* --- Règles --------------------------------------------------------------- */
-
-.regles { line-height: 1.8; color: var(--encre-doux); }
-.regles h3 { color: var(--encre); margin-top: 28px; font-size: 1.12rem; }
-.regles ul { padding-left: 22px; }
-.regles li { margin-bottom: 7px; }
-/* Le violet est réservé aux modifications de règle : les encarts ordinaires
-   restent neutres pour que la distinction saute aux yeux. */
-.regles .encart {
-  background: #f4f2f7; border-left: 4px solid var(--gris); border-radius: 0 10px 10px 0;
-  padding: 14px 18px; margin: 18px 0; color: var(--encre);
-}
-.regles .encart.attention { background: var(--orange-pale); border-left-color: var(--orange); }
-
-.legende-el { display: flex; flex-wrap: wrap; gap: 14px; margin: 14px 0; }
-.legende-el .e { display: flex; align-items: center; gap: 8px; background: #fff; border-radius: 999px; padding: 6px 14px 6px 6px; box-shadow: var(--ombre); font-weight: 600; font-size: .88rem; }
+/* Les règles et l'aide de jeu sont mises en page plus bas : « Les règles du jeu
+   et l'aide de jeu ». */
 
 /* --- Modale --------------------------------------------------------------- */
 
@@ -1629,49 +1610,6 @@ body .demi { transition: box-shadow .12s; }
 
 .vide { text-align: center; color: var(--gris); padding: 40px 20px; }
 
-/* --- Règles versionnées --------------------------------------------------- */
-
-/* Un passage modifié depuis la version de référence. */
-.regle-maj { color: var(--violet); font-weight: 600; }
-.regle-maj::after {
-  content: attr(data-v); margin-left: 6px; vertical-align: .12em;
-  background: var(--violet-pale); color: var(--violet); border-radius: 999px;
-  padding: 2px 7px; font-size: .68rem; font-weight: 700; letter-spacing: .02em;
-  white-space: nowrap;
-}
-/* Une LIGNE de tableau ajoutée par une version. Un <span> autour d'un <tr>
-   n'est pas du HTML : le navigateur le déplace hors du tableau, et la pastille
-   se retrouve au-dessus, comme si tout le tableau était neuf. Le marquage vit
-   donc sur la ligne, et la pastille sur sa première cellule. */
-.tbl tr.maj-tr td { color: var(--violet); }
-.tbl tr.maj-tr td b { color: var(--violet); }
-.tbl td.maj-pastille::after {
-  content: attr(data-v); margin-left: 6px; vertical-align: .12em;
-  background: var(--violet-pale); color: var(--violet); border-radius: 999px;
-  padding: 2px 7px; font-size: .68rem; font-weight: 700; letter-spacing: .02em;
-  white-space: nowrap;
-}
-
-.regle-maj-bloc {
-  position: relative; color: var(--violet); border-left: 4px solid var(--violet);
-  background: var(--violet-pale); border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 18px 0;
-}
-.regle-maj-bloc::before {
-  content: attr(data-v); position: absolute; top: -10px; right: 14px;
-  background: var(--violet); color: #fff; border-radius: 999px; padding: 2px 9px;
-  font-size: .68rem; font-weight: 700;
-}
-
-/* Le journal des règles suit le code couleur violet des modifications. */
-.version-bloc.regle.actuelle {
-  background: linear-gradient(180deg, #f6f2ff, #fdfcff); border: 1px solid var(--violet-clair);
-}
-.version-bloc.regle .num { color: var(--violet); }
-.version-bloc.regle .etiquette { background: var(--violet-pale); color: var(--violet); }
-.texte-archive {
-  margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--gris-clair);
-}
-
 /* --- Bandeau de mise à jour ------------------------------------------------ */
 
 #maj-bandeau {
@@ -1719,6 +1657,9 @@ body .demi { transition: box-shadow .12s; }
   border-radius: 14px; box-shadow: var(--ombre-forte); padding: 14px 16px;
 }
 #apercu-carte.visible { opacity: 1; }
+#apercu-carte:has(.ap-carte) { max-width: none; padding: 10px; }
+.ap-carte { display: block; border-radius: 6px; height: min(52vh, 420px); width: auto; }
+.ap-carte + .ap-obj { margin-top: 10px; }
 .ap-tete { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .ap-tc {
   background: #0d0d10; color: #ff3b30; font-weight: 700; font-size: 1.15rem;
@@ -2006,13 +1947,6 @@ table.tbl th.th-tri.num { text-align: right; }
 .th-tri.trie i { opacity: 1; }
 /* « ×6 » : le même bandeau posé plusieurs fois tient sur une ligne, et son
    nombre se lit à côté de lui plutôt que de multiplier les lignes. */
-/* La carte visée dans la rivière : soulevée, et sa moitié retenue encadrée.
-   C'est elle que l'on est en train de poser — elle doit se distinguer des
-   autres cartes du chutier sans les effacer. */
-.carte-retournable.visee { transform: translateY(-8px); }
-.carte-retournable { transition: transform .14s ease; }
-.carte-retournable.visee .carte { box-shadow: 0 10px 26px rgba(249,115,22,.45); border-radius: 8px; }
-
 .grp-n {
   display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 999px;
   background: var(--violet-pale); color: var(--violet); font-size: .74em; font-weight: 800;
@@ -2288,13 +2222,13 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 .bandeau-ligne .aide { margin-left: auto; }
 
 /* ===========================================================================
-   LE LIVRET DE RÈGLES ET L'AIDE DE JEU
+   LES RÈGLES DU JEU ET L'AIDE DE JEU
    ===========================================================================
    Une page qui se lit comme un livret imprimé : un ruban par section, des
    étapes numérotées, des encarts en marge. Le fond reste clair — c'est du
    texte qu'on lit longtemps —, et le violet ne sert qu'à baliser : les rubans,
-   les pastilles, les filets. Les bandeaux, eux, gardent leur noir de carte :
-   ce qu'on montre là, c'est exactement ce qui est imprimé. */
+   les pastilles, les filets. Les cartes qu'on y montre sont les VRAIES cartes :
+   leur image, entière ou réduite à la bande du pouvoir. */
 
 .livret, .aide-jeu { color: var(--encre-doux); line-height: 1.75; }
 .livret b, .aide-jeu b { color: var(--encre); font-weight: 650; }
@@ -2305,10 +2239,7 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
   border-radius: var(--r);
   background: linear-gradient(135deg, var(--violet-pale), var(--orange-pale));
 }
-.lv-hero-titre {
-  font-size: clamp(2.4rem, 8vw, 3.6rem); font-weight: 800; letter-spacing: .16em;
-  color: var(--violet); line-height: 1;
-}
+.lv-logo { display: block; width: clamp(150px, 34vw, 230px); height: auto; margin: 0 auto; }
 .lv-accroche {
   max-width: 34em; margin: 14px auto 6px; font-style: italic;
   font-size: 1.05rem; color: var(--encre);
@@ -2361,6 +2292,84 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
   letter-spacing: .02em;
 }
 .lv-encart p:last-child { margin-bottom: 0; }
+.lv-encart p:first-child { margin-top: 0; }
+.lv-encart.attention { background: var(--orange-pale); border-left-color: var(--orange); }
+.lv-encart.attention .lv-liste { margin-bottom: 0; }
+/* La carte dont parle l'encart, sous son texte. */
+.lv-encart-carte { display: flex; gap: 8px; margin-top: 10px; }
+.lv-encart-carte .lv-carte { height: 104px; }
+
+/* --- Les vraies cartes dans le texte --------------------------------------- */
+/* Une vignette garde la proportion de sa carte : 120 × 80 pour un Plan Large,
+   60 × 80 pour un Gros Plan. On ne fixe que la hauteur. */
+.lv-carte {
+  display: block; height: 120px; width: auto; border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(30, 20, 60, .22); background: #111114;
+}
+.lv-carte.pl { aspect-ratio: 3 / 2; }
+.lv-carte.gp { aspect-ratio: 3 / 4; }
+/* Les deux moitiés d'une carte à deux Gros Plans, bord à bord : une seule carte. */
+.lv-double {
+  display: inline-flex; border-radius: 6px; overflow: hidden;
+  box-shadow: 0 2px 8px rgba(30, 20, 60, .22);
+}
+.lv-double .lv-carte { border-radius: 0; box-shadow: none; }
+.lv-double .lv-carte + .lv-carte { border-left: 1px dashed rgba(255, 255, 255, .7); }
+
+.lv-planche {
+  display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  margin: 4px 0 16px;
+}
+.lv-figure {
+  margin: 0; padding: 14px; border-radius: var(--r-s); background: #fff;
+  border: 1px solid var(--gris-clair); text-align: center;
+}
+.lv-figure-cartes { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 120px; }
+.lv-figure figcaption, .lv-banc figcaption { margin-top: 10px; font-size: .88rem; line-height: 1.55; }
+.lv-depart .lv-carte { height: 78px; }
+.lv-verso { font-size: 1.3rem; color: var(--violet); }
+
+/* Un plan, et ses trois repères. */
+.lv-anatomie { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 12px; }
+.lv-ana-carte { position: relative; flex: 0 0 auto; }
+.lv-ana-carte .lv-carte { height: 250px; }
+.lv-rep {
+  position: absolute; width: 26px; height: 26px; border-radius: 999px;
+  display: grid; place-items: center; transform: translate(-50%, -50%);
+  background: var(--violet); color: #fff; font-weight: 800; font-size: .9rem;
+  border: 2px solid #fff; box-shadow: 0 1px 5px rgba(0, 0, 0, .45);
+}
+.lv-rep.r1 { left: 46%; top: 9%; }
+.lv-rep.r2 { left: 30%; top: 27%; }
+.lv-rep.r3 { left: 62%; top: 74%; }
+.lv-anatomie .lv-callouts { flex: 1 1 280px; min-width: 0; padding-left: 26px; }
+.lv-anatomie .lv-callouts li::marker { font-weight: 800; color: var(--violet); }
+
+/* Un banc d'exemple : chaque séquence sur sa ligne, les centres l'un sous
+   l'autre — c'est ainsi qu'on les pose sur la table. */
+.lv-banc {
+  --h: clamp(30px, 9.4vw, 84px);
+  margin: 6px 0 16px; padding: 16px 12px; border-radius: var(--r-s);
+  background: #f4f2f7; border: 1px solid var(--gris-clair); text-align: center;
+  overflow: hidden;
+}
+.lv-rangee {
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: 4px; align-items: center;
+}
+.lv-rangee + .lv-rangee { margin-top: 8px; }
+.lv-cote { display: flex; gap: 4px; }
+.lv-cote.g { justify-content: flex-end; }
+.lv-banc .lv-carte { height: var(--h); border-radius: 4px; }
+.lv-centre .lv-carte { outline: 3px solid var(--orange); outline-offset: 1px; }
+
+/* La bande du pouvoir d'une vraie carte : le bas de son image, rien d'autre. */
+.lv-bande {
+  position: relative; display: block; overflow: hidden; border-radius: 7px;
+  background: #111114; box-shadow: 0 1px 5px rgba(30, 20, 60, .25);
+}
+.lv-bande.gp { width: 168px; aspect-ratio: 709 / 262; }
+.lv-bande.pl { width: 288px; aspect-ratio: 1200 / 272; }
+.lv-bande img { position: absolute; left: 0; bottom: 0; width: 100%; height: auto; display: block; }
 
 /* Le matériel : un chiffre, ce qu'il compte. */
 .lv-materiel { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
@@ -2381,11 +2390,15 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
   display: inline-flex; align-items: center; gap: 7px; font-size: .9rem;
   color: var(--encre);
 }
+/* Une icône nommée dans une phrase reste dans la ligne. */
+.livret .lv-txt .pastille, .aide-jeu .lv-txt .pastille, .livret p .pastille, .livret li .pastille {
+  display: inline-block; vertical-align: -.32em; margin: 0 .1em;
+}
 
-/* Les cartouches de cadrage, hors bandeau. Leur mise en forme est écrite pour
+/* Les cartouches d'un pouvoir REDESSINÉ — celui d'un plan retouché, dont
+   l'image ne dit plus ce qu'il vaut. Leur mise en forme est écrite pour
    l'intérieur d'une carte (`.bandeau .tag`) : posés dans une page, ils
-   n'auraient ni marge ni taille. On les redit ici, en plus lisible — on n'est
-   plus à l'étroit sur un tiers de carte. */
+   n'auraient ni marge ni taille. */
 .livret .tag, .aide-jeu .tag {
   display: inline-block; padding: .3em .6em; border-radius: .35em;
   font-size: .78rem; font-weight: 800; letter-spacing: .03em;
@@ -2393,33 +2406,25 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
   vertical-align: middle;
 }
 
-/* Les minutages, écrits comme sur la boîte noire de la carte. */
-.lv-tc-b, .lv-tc-o, .lv-tc-r {
+/* Un minutage, écrit comme sur l'afficheur des cartes : des chiffres rouges
+   sur leur boîte noire, deux tirets bleus quand il n'y en a pas. */
+.lv-tc {
   display: inline-block; padding: 1px 7px; border-radius: 5px;
-  background: #111114; font-variant-numeric: tabular-nums;
-  font-weight: 700; font-size: .88rem; letter-spacing: .02em;
+  background: #111114; color: #ff5a36; font-variant-numeric: tabular-nums;
+  font-weight: 700; font-size: .88rem; letter-spacing: .04em; line-height: 1.5;
+  white-space: nowrap;
 }
-.lv-tc-b { color: #7fc4ff; }
-.lv-tc-o { color: #ffa24d; }
-.lv-tc-r { color: #f5f5f7; }
+.lv-tc.vide { color: #6cc0ff; }
 
-/* Les portées : la flèche, et ce qu'elle embrasse. */
-.lv-portees { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-.lv-portee {
-  flex: 1 1 160px; display: flex; align-items: center; gap: 10px;
-  padding: 9px 14px; border-radius: var(--r-s); background: #fff;
-  border: 1px solid var(--gris-clair); font-size: .9rem;
-}
-.lv-portee b { color: var(--encre); font-weight: 600; }
-.lv-fleches {
-  display: inline-grid; place-items: center; min-width: 34px; padding: 2px 7px;
-  border-radius: 6px; background: #17171b; color: #fff; font-size: .82rem;
-  letter-spacing: .06em;
-}
-
-.lv-variantes { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-.lv-variantes .lv-encart { margin: 0; }
 .lv-fin { margin-top: 16px; font-size: .93rem; }
+
+/* Le lexique des pouvoirs, dans le texte des règles : les mêmes blocs que
+   l'aide de jeu, l'un sous l'autre. */
+.lv-lexique { display: flex; flex-direction: column; gap: 14px; margin: 14px 0; }
+.lv-ligne.lv-lex .lv-sym { flex: 0 0 300px; justify-content: flex-start; }
+.lv-ligne.lv-lex { padding: 8px 0; }
+.lv-apres { margin: 10px 0 0 !important; }
+.lv-sans-exemple { color: var(--gris); padding-left: 6px; }
 
 /* --- L'aide de jeu : une fiche en colonnes, pas un texte suivi. ---------- */
 
@@ -2483,10 +2488,7 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
    ce qui reste à graver dans le code. */
 .retouche { box-shadow: inset 3px 0 0 var(--orange); padding-left: 8px; }
 
-/* Les deux écritures d'un mot font DEUX cartouches — c'est ce qui est imprimé :
-   aucune carte ne porte « PLAN LARGE / PL » dans une seule étiquette. */
-.lv-paire-tag { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
-/* Les bandeaux, eux, sont longs à lire : une seule colonne, pleine largeur. */
+/* Les pouvoirs, eux, sont longs à lire : une seule colonne, pleine largeur. */
 .aj-bandeaux { display: flex; flex-direction: column; gap: 14px; }
 .aj-bloc {
   padding: 14px 16px; border-radius: var(--r-s); background: #fff;
@@ -2498,11 +2500,10 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
   padding-bottom: 7px; border-bottom: 2px solid var(--violet-pale);
 }
 .aj-bloc .aide { margin: -4px 0 10px; }
-/* Un pouvoir de règle s'écrit en toutes lettres : son bandeau est large, et
-   l'effet qu'on explique à côté l'est aussi. On leur donne chacun leur moitié. */
-.lv-ligne.lv-regle { align-items: flex-start; padding: 9px 0; }
-.lv-ligne.lv-regle .lv-sym { flex: 0 1 46%; min-width: 0; }
-.lv-ligne.lv-regle .lv-bandeau { min-width: 0; width: 100%; }
+/* Les étapes du tour, dans la fiche : la pastille, puis ce qu'on fait. */
+.lv-ligne.lv-pas { align-items: flex-start; }
+.lv-pas .lv-num { width: 26px; height: 26px; font-size: .86rem; }
+.lv-pas i { color: var(--gris); font-size: .88rem; }
 
 /* Une ligne de glossaire : le symbole calé à gauche, sa traduction à droite. */
 .lv-ligne {
@@ -2521,24 +2522,13 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
   color: var(--violet); line-height: 1;
 }
 .lv-n.zero { color: var(--gris); font-weight: 600; }
-/* La barre qui sépare les deux écritures d'un même mot — « PLAN MOYEN / PM ».
-   Plus légère que ce qu'elle sépare : c'est une alternative, pas un ajout. */
-.lv-ou { opacity: .5; font-weight: 500; padding: 0 .35em; }
-
-/* Un cartouche à deux écritures — « VALEUR DE CADRE / VAL. » — est large. Sans
-   borne, il mangeait la ligne et laissait au texte une colonne de trois mots.
-   On lui donne un plafond, et il se replie plutôt que d'écraser ce qu'il
-   explique. Les pastilles d'icônes, elles, restent à leur taille : elles sont
-   loin du plafond. */
+/* Dans la fiche, la colonne du symbole ne mange pas la ligne : passé son
+   plafond, c'est le texte qui garde la place. */
 .aj-fiche .lv-sym { max-width: 42%; }
-.aj-fiche .lv-sym .tag { white-space: normal; text-align: center; }
 
-/* Le bandeau d'un pouvoir, dessiné tel qu'il est imprimé sur la carte — mais
-   sur un fond CLAIR. Sur la carte, la bande est noire parce qu'elle tranche sur
-   l'illustration ; dans une fiche qu'on lit page après page, autant de pavés
-   noirs alourdissent tout et écrasent les pastilles. Le gris clair les pose
-   sans les enfermer, et les pièces du bandeau — pastilles sombres, cartouches
-   de couleur, icônes — s'y lisent mieux qu'elles ne le faisaient sur le noir. */
+/* Le pouvoir d'un plan RETOUCHÉ, redessiné par le site faute d'une image qui
+   dise ce qu'il vaut — sur un fond clair : dans une fiche qu'on lit page après
+   page, des pavés noirs alourdiraient tout. */
 .lv-bandeau {
   display: inline-flex; align-items: center; min-width: 168px; min-height: 40px;
   padding: 6px 13px; border-radius: 9px;
@@ -2562,365 +2552,10 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
 
 @media (max-width: 640px) {
   .lv-bandeau { min-width: 0; width: 100%; }
-  .lv-ligne { align-items: flex-start; flex-wrap: wrap; }
-  .aj-bandeaux .lv-sym { flex: 1 1 100%; }
-  .lv-ligne.lv-regle .lv-sym { flex: 1 1 100%; }
+  .lv-ligne.lv-lex { align-items: flex-start; flex-wrap: wrap; }
+  .lv-ligne.lv-lex .lv-sym { flex: 1 1 100%; max-width: none; }
+  .lv-ligne.lv-lex .lv-txt { flex: 1 1 60%; }
+  .lv-ana-carte { margin: 0 auto; }
+  .lv-ana-carte .lv-carte { height: 210px; }
+  .lv-encart-carte .lv-carte { height: 84px; }
 }
-
-/* --- La Carte Objectif commune --------------------------------------------- */
-/* Elle est commune à toute la table : elle se pose donc AU-DESSUS des bancs,
-   pas dans la colonne d'une joueuse. Dessinée comme une carte du jeu — un
-   jeton de points, un titre, ce qu'elle demande — et non comme une ligne de
-   réglage de plus : c'est un but, on doit le voir de loin. */
-.carte-objectif {
-  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-  border: 2px solid var(--violet-clair); border-radius: 14px;
-  background: linear-gradient(135deg, #fff 0%, var(--violet-pale) 100%);
-  padding: 12px 16px; margin-bottom: 12px;
-  box-shadow: 0 2px 10px rgba(124, 58, 237, .13);
-}
-.carte-objectif.tenu { border-color: #22c55e; background: linear-gradient(135deg, #fff 0%, #eafaf0 100%); }
-.carte-objectif .co-jeton {
-  flex: 0 0 auto; min-width: 46px; height: 46px; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--violet); color: #fff; font-weight: 800; font-size: 1.4rem;
-}
-.carte-objectif.tenu .co-jeton { background: #15803d; }
-.carte-objectif .co-texte { flex: 1 1 260px; min-width: 0; }
-.carte-objectif .co-titre {
-  font-size: .74rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--violet); margin-bottom: 2px;
-}
-.carte-objectif.tenu .co-titre { color: #15803d; }
-.carte-objectif .co-phrase { font-size: 1rem; color: var(--encre); }
-.carte-objectif .co-aide { font-size: .78rem; color: var(--encre-doux); margin-top: 3px; }
-.carte-objectif .co-etats { display: flex; gap: 10px; flex-wrap: wrap; }
-.carte-objectif .co-etat {
-  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
-  font-size: .8rem; font-weight: 600; padding: 4px 10px; border-radius: 999px;
-  background: rgba(255, 255, 255, .8); border: 1px solid var(--gris-clair);
-}
-.carte-objectif .co-etat.oui { border-color: #86efac; color: #15803d; }
-.carte-objectif .co-etat.non { color: var(--encre-doux); opacity: .75; }
-
-/* Le paquet, dans les Variables : une carte par ligne, sa valeur à côté. */
-.liste-objectifs { display: flex; flex-direction: column; gap: 9px; }
-.ligne-objectif { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.ligne-objectif .chip { flex: 0 0 auto; }
-.ligne-objectif .aide { flex: 1 1 180px; font-size: .78rem; }
-.ligne-objectif.hors { opacity: .45; }
-.champ-mini {
-  width: 58px; padding: 5px 8px; text-align: center; font-weight: 700;
-  border: 1px solid var(--gris-clair); border-radius: 8px; background: #fff;
-  color: var(--encre); font-size: .9rem;
-}
-
-/* --- Le TEMPLATE des Plans Larges ------------------------------------------
-   L'habillage imprimé, reconstruit en VECTEUR — pas une image : le fichier
-   source n'a pas voyagé jusqu'au dépôt, et un template en CSS ne pèse rien,
-   reste net à toute taille et laisse les icônes, les pouvoirs et le minutage
-   se poser dessus comme sur l'habillage ordinaire. La texture papier de la
-   bande est un bruit SVG de deux cents octets, peint une fois puis répété.
-
-   Mesures, sur le gabarit 1321 × 945 (une carte entière) : la boîte du minutage
-   fait 19,6 × 9,5 % de la moitié, en haut à gauche, coins arrondis, liseré gris.
-   Le blanc descend jusqu'à 82,7 % ; la bande verte en prend 12,65 ; le bandeau
-   noir du bas 4,65. L'ONGLET vert relevé, à gauche — 39,5 % de large, 14,3 % de
-   haut, bord droit déchiré — est la languette des icônes : il tombe exactement
-   là où elle se pose déjà.
-   Ne s'applique qu'à `.moitie.f-PL` : la classe est posée au rendu, par
-   `reglerGabarits`, et suit le HTML jusque dans le PDF. */
-.moitie.gabarit { background-color: #fff; }
-.moitie.gabarit .illus { flex: 0 0 82.7%; background: #fff; }
-.moitie.gabarit .bandeau {
-  flex: 0 0 12.65%;
-  background:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .2 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>"),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='120'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='.012 .09' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 .85 0 0 0 .16 0'/></filter><rect width='100%25' height='100%25' filter='url(%23p)'/></svg>"),
-    linear-gradient(180deg, #8bcb69 0%, #7fc35e 55%, #76b956 100%);
-  /* Un peu moins haute que la bande ordinaire : le corps recule d'un cran pour
-     que « × », cartouches et flèches y tiennent sans toucher les bords. */
-  font-size: calc(.86em * var(--ec, 1));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28);
-}
-.moitie.gabarit .libelle { flex: 0 0 4.65%; background: #0a0a0a; }
-.moitie.gabarit .libelle .marque-cadrage .tag-fmt {
-  background: none; box-shadow: none; padding: 0; border-radius: 0;
-  color: #8fe45c; font-style: italic; font-weight: 900; font-size: .52em;
-  letter-spacing: .03em;
-}
-/* La boîte du minutage : la même place, la même taille — les chiffres y sont
-   déjà centrés —, mais les quatre coins arrondis et le liseré gris du gabarit. */
-.moitie.gabarit .illus > .boite-tc {
-  border-radius: .5em; background: #070707;
-  border: 1px solid rgba(206, 208, 216, .55);
-}
-/* L'ONGLET. La languette des icônes devient la languette verte du gabarit :
-   une largeur fixe, un bord droit déchiré — un polygone, pas une image —, et
-   une ombre douce qui la décolle du dessin. `clip-path` s'applique après
-   `filter` : l'ombre se pose donc sur le parent, où elle épouse la découpe. */
-.moitie.gabarit .pastilles { bottom: 17.3%; height: 14.3%; }
-.moitie.gabarit .pastilles-fond {
-  flex: 0 0 39.5%; max-width: 39.5%; padding: 0 .4em 0 .55em;
-  justify-content: flex-start;
-  filter: drop-shadow(0 -.08em .12em rgba(0, 0, 0, .28));
-}
-.moitie.gabarit .pastilles-fond::before {
-  top: 0; height: 100%; transform: none; border-radius: 0;
-  background:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .2 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>"),
-    linear-gradient(180deg, #8bcb69 0%, #7fc35e 60%, #7abd5a 100%);
-  clip-path: polygon(0 0, 96.5% 0, 100% 11%, 98.2% 27%, 100% 40%, 96.8% 57%, 99.2% 71%, 97.4% 86%, 100% 100%, 0 100%);
-}
-.moitie.gabarit .pastilles .pastille { height: 78%; }
-/* Deux pouvoirs empilés : la bande grandit, le blanc cède, l'onglet remonte. */
-.moitie.gabarit.bande-deux .illus { flex: 0 0 75.35%; }
-.moitie.gabarit.bande-deux .bandeau { flex: 0 0 20%; }
-.moitie.gabarit.bande-deux .pastilles { bottom: 24.65%; }
-
-/* --- Cartes dessinées par un GABARIT (l'Atelier) ----------------------------
-   Une carte est alors un carton de 88 × 63 mm : `--ar` en donne la proportion
-   — fond perdu compris —, `--fr` la part d'une carte entière qu'elle occupe
-   (une demi-carte en vaut une demi). Chaque moitié est un conteneur : sa
-   largeur fait l'unité, et 1 em y vaut 1 mm (voir js/design.js). */
-.carte.design {
-  padding: 0; gap: 0; background: #000; overflow: hidden;
-  aspect-ratio: var(--ar, 88 / 63); width: calc(300px * var(--fr, 1)); height: auto;
-}
-.carte.small.design { width: calc(258px * var(--fr, 1)); }
-.carte.tiny.design { width: calc(150px * var(--fr, 1)); }
-.carte.design > .moitie.design {
-  flex: var(--flex) !important; width: auto !important; height: auto !important;
-  min-width: 0; border-radius: 0;
-}
-.moitie.design { container-type: inline-size; background: #000; overflow: hidden; }
-.g-carte {
-  position: absolute; inset: 0; overflow: hidden; line-height: 1;
-  font-size: calc(100cqw / var(--gw, 58.5));
-}
-.g-el { position: absolute; box-sizing: border-box; overflow: hidden; display: flex; }
-.g-fond { position: absolute; background-repeat: no-repeat; pointer-events: none; }
-.g-illus { position: absolute; inset: 0; background-size: cover; background-repeat: no-repeat; }
-.g-illus.vide { background: repeating-linear-gradient(135deg, #2a2a30 0 6px, #232328 6px 12px); }
-.g-img { position: absolute; inset: 0; background-repeat: no-repeat; background-position: center; }
-.g-texte { flex: 1 1 auto; display: flex; align-items: center; min-width: 0; line-height: 1; white-space: nowrap; }
-.g-texte.g-libre { white-space: pre-line; }
-/* Le minutage : les chiffres, et sous eux les segments éteints. */
-.g-tc { display: grid; align-items: center; }
-.g-tc > span { grid-area: 1 / 1; }
-.g-tc-fantome { opacity: .12; text-shadow: none !important; }
-.g-languette-boite { position: absolute; inset: 0; display: flex; align-items: stretch; }
-.g-languette {
-  display: flex; align-items: center; height: 100%; box-sizing: border-box;
-  flex: 0 1 auto; min-width: 0;
-}
-.g-languette .pastille {
-  height: var(--ti, 76%); width: auto; aspect-ratio: 1 / 1; flex: 0 1 auto; min-width: 0;
-  object-fit: contain; filter: drop-shadow(0 .06em .12em rgba(0, 0, 0, .45));
-}
-.g-dechire {
-  clip-path: polygon(0 0, 96.5% 0, 100% 11%, 98.2% 27%, 100% 40%, 96.8% 57%, 99.2% 71%, 97.4% 86%, 100% 100%, 0 100%);
-}
-.g-tex-papier {
-  background-image:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .2 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>"),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='120'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='.012 .09' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 .85 0 0 0 .16 0'/></filter><rect width='100%25' height='100%25' filter='url(%23p)'/></svg>");
-}
-.g-bande { position: absolute; inset: 0; display: flex; }
-.g-carte .bandeau { flex: 1 1 auto; height: 100%; width: 100%; background: none; }
-
-/* --- L'Atelier ---------------------------------------------------------------- */
-.atelier .at-tete h2 { margin: 0; }
-.at-versions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
-.at-versions select { max-width: 100%; }
-.at-etat { font-size: .85rem; margin-right: 6px; }
-.at-modifie { color: var(--orange); }
-.at-mises { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0; }
-.at-corps { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; }
-@media (max-width: 1100px) { .at-corps { grid-template-columns: minmax(0, 1fr); } }
-.at-outils { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
-.at-ech-nom { font-weight: 700; font-size: .88rem; min-width: 14em; }
-.at-espace { flex: 1 1 auto; }
-.at-case { display: inline-flex; align-items: center; gap: 4px; font-size: .82rem; }
-.at-scene {
-  display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; overflow: auto;
-  padding: 18px; background: #e9e6f2; border-radius: 12px; min-height: 200px;
-  touch-action: none;
-}
-.at-comparaison { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.at-legende { font-size: .78rem; font-weight: 700; color: var(--gris); min-height: 1em; }
-.at-feuille { position: relative; flex: 0 0 auto; box-shadow: 0 6px 22px rgba(30, 20, 60, .25); user-select: none; }
-.at-grille { position: absolute; inset: 0; pointer-events: none; }
-.at-sure { position: absolute; border: 1px dashed rgba(249, 115, 22, .7); pointer-events: none; }
-.at-cadres { position: absolute; inset: 0; }
-.at-cadre { position: absolute; cursor: move; outline: 1px dashed transparent; }
-.at-feuille.editable:hover .at-cadre { outline-color: rgba(124, 58, 237, .45); }
-.at-cadre:hover { outline: 1px solid rgba(124, 58, 237, .9) !important; }
-.at-cadre.sel { outline: 2px solid var(--violet) !important; z-index: 2; }
-.at-cadre-nom {
-  position: absolute; left: 0; top: -1.45em; font-size: 10px; font-weight: 700; white-space: nowrap;
-  background: var(--violet); color: #fff; padding: 1px 5px; border-radius: 4px; display: none;
-}
-.at-cadre.sel .at-cadre-nom, .at-cadre:hover .at-cadre-nom { display: block; }
-.at-poignee {
-  position: absolute; width: 10px; height: 10px; background: #fff; border: 2px solid var(--violet);
-  border-radius: 2px; margin: -5px 0 0 -5px;
-}
-.p-nw { left: 0; top: 0; cursor: nwse-resize; } .p-n { left: 50%; top: 0; cursor: ns-resize; }
-.p-ne { left: 100%; top: 0; cursor: nesw-resize; } .p-e { left: 100%; top: 50%; cursor: ew-resize; }
-.p-se { left: 100%; top: 100%; cursor: nwse-resize; } .p-s { left: 50%; top: 100%; cursor: ns-resize; }
-.p-sw { left: 0; top: 100%; cursor: nesw-resize; } .p-w { left: 0; top: 50%; cursor: ew-resize; }
-.at-guides { position: absolute; inset: 0; pointer-events: none; }
-.at-guide { position: absolute; background: #f43f5e; }
-.at-guide.v { top: 0; bottom: 0; width: 1px; }
-.at-guide.h { left: 0; right: 0; height: 1px; }
-.at-droite { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
-.at-droite h3 { margin: 0 0 6px; }
-.at-calques { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
-.at-calque {
-  display: flex; align-items: center; gap: 4px; padding: 3px 4px; border-radius: 7px; cursor: pointer;
-  font-size: .84rem;
-}
-.at-calque:hover { background: #f4f1fb; }
-.at-calque.sel { background: var(--violet-clair); }
-.at-calque.cache .at-calque-nom { opacity: .45; text-decoration: line-through; }
-.at-calque-nom { font-weight: 700; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.at-mini {
-  border: 0; background: transparent; cursor: pointer; padding: 2px 5px; border-radius: 5px;
-  color: var(--violet); font-size: .8rem; line-height: 1;
-}
-.at-mini:hover:not(:disabled) { background: #ece7f7; }
-.at-mini:disabled { opacity: .3; cursor: default; }
-.at-mini.suppr { color: #b3261e; }
-.at-ajouts { margin-bottom: 10px; }
-.at-titre-el { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
-.at-titre-el input { font-weight: 800; font-size: 1rem; flex: 1 1 auto; min-width: 0; }
-.at-groupe { border-top: 1px solid var(--gris-clair); padding: 8px 0 4px; }
-.at-groupe h4 { margin: 0 0 6px; font-size: .74rem; text-transform: uppercase; letter-spacing: .08em; color: var(--gris); }
-.at-champ { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); align-items: center; gap: 6px; margin: 4px 0; font-size: .84rem; }
-.at-champ.large { grid-template-columns: minmax(0, 1fr); }
-.at-saisie { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
-.at-saisie input[type=number] { width: 6em; }
-.at-saisie input[type=text], .at-saisie select, .at-saisie textarea { flex: 1 1 auto; min-width: 0; max-width: 100%; }
-.at-saisie input[type=color] { width: 40px; height: 26px; padding: 0; border: 1px solid var(--gris-clair); border-radius: 5px; }
-.at-unite { font-style: normal; color: var(--gris); font-size: .78rem; }
-.at-sans { font-size: .78rem; display: inline-flex; gap: 3px; align-items: center; }
-.at-filtres { display: flex; flex-wrap: wrap; gap: 4px; }
-.at-toutes { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
-.at-toutes .moitie { cursor: pointer; }
-.at-export-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px 16px; margin: 10px 0; }
-.at-export-grille label { display: flex; flex-direction: column; gap: 3px; font-size: .82rem; font-weight: 700; }
-.at-export-grille label.at-case { flex-direction: row; align-self: end; }
-
-/* --- L'impression vectorielle ------------------------------------------------ */
-body.mode-impression { background: #d9d6e2; }
-.imp-barre {
-  display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px; margin: 0 0 16px;
-  background: #fff; border-radius: 10px; box-shadow: var(--ombre);
-}
-.imp-pages { display: flex; flex-direction: column; align-items: center; gap: 16px; }
-.imp-page { position: relative; background: #fff; overflow: hidden; box-shadow: 0 4px 18px rgba(0, 0, 0, .2); }
-.imp-place { position: absolute; }
-.imp-carte { position: relative; overflow: hidden; }
-.imp-carte > .carte.design {
-  width: 100% !important; height: 100% !important; aspect-ratio: auto !important;
-  border-radius: 0 !important; box-shadow: none !important;
-}
-.imp-trait { position: absolute; background: #000; z-index: 3; }
-@media print {
-  body.mode-impression { background: #fff; margin: 0; }
-  body.mode-impression .imp-barre { display: none; }
-  body.mode-impression .imp-pages { display: block; gap: 0; }
-  body.mode-impression .imp-page { box-shadow: none; break-after: page; page-break-after: always; margin: 0; }
-  body.mode-impression * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-}
-
-/* --- Les jetons : icônes et mots alignés sur la ligne ------------------------- */
-.g-bande .x, .g-bande .si, .g-bande .mot { color: var(--g-encre, #fff); }
-.g-bande.g-deux { flex-direction: column; }
-.g-rang { flex: 1 1 0; min-height: 0; display: flex; }
-.g-rang > .bandeau { flex: 1 1 auto; height: 100%; }
-.g-phrase-bande { flex-wrap: wrap; column-gap: .26em; row-gap: 0; align-content: center; }
-.g-phrase-bande .mot-libre, .g-phrase .mot-libre {
-  font-weight: var(--g-graisse, 800); color: var(--g-encre, #fff); line-height: 1; white-space: nowrap;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, .5);
-}
-.g-phrase-bande .mot-libre { font-size: calc(1.1em * var(--ec, 1)); }
-.g-phrase .mot-libre { font-weight: inherit; color: inherit; text-shadow: inherit; }
-.g-br { flex-basis: 100%; height: 0; }
-.g-phrase { flex-wrap: wrap; column-gap: .28em; row-gap: .15em; align-content: center; }
-.g-phrase .pastille, .g-phrase .pastille-num, .g-phrase .g-ic {
-  height: var(--gi, 1.3em); width: auto; aspect-ratio: auto; flex: 0 0 auto; object-fit: contain;
-}
-.g-phrase .pastille-num { aspect-ratio: 1 / 1; }
-.g-phrase .tag {
-  font-size: .62em; font-weight: 800; padding: .25em .45em; border-radius: .3em;
-  text-transform: uppercase; line-height: 1.08; white-space: nowrap;
-}
-.g-phrase .barre { height: var(--gi, 1.3em); }
-.g-phrase .barre .croix-non { height: 56%; bottom: -4%; }
-.bandeau .g-ic { object-fit: contain; }
-.g-inconnu { color: #ff6b6b; font-weight: 800; outline: 1px dashed #ff6b6b; padding: 0 .1em; }
-
-/* --- Atelier : textes des pouvoirs, jetons, bibliothèque d'icônes ------------- */
-.at-pouvoir { display: grid; gap: 6px; padding: 8px; border-radius: 10px; background: var(--violet-pale); margin-bottom: 8px; }
-.at-pouvoir-tete { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-.at-pouvoir-texte { width: 100%; box-sizing: border-box; font: 600 13px/1.4 ui-monospace, Menlo, Consolas, monospace; resize: vertical; }
-.at-jetons { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
-.at-jeton {
-  font: 700 11px/1 ui-monospace, Menlo, Consolas, monospace; padding: 4px 6px; border-radius: 6px; cursor: pointer;
-  border: 1px solid #d8c8f5; background: #fff; color: #5b21b6; display: inline-flex; align-items: center; gap: 4px;
-}
-.at-jeton:hover { background: #f1e8ff; }
-.at-jeton.perso { border-color: #fdba74; color: #9a3412; }
-.at-jeton img { height: 14px; width: auto; }
-.at-icones { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 8px; }
-.at-icone {
-  display: grid; align-content: start; grid-template-columns: 1fr auto; gap: 4px 6px; align-items: center; padding: 8px; border-radius: 10px;
-  background: repeating-conic-gradient(#ece6f5 0 25%, #fff 0 50%) 0 0 / 12px 12px; border: 1px solid #e3d8f5;
-}
-.at-icone.remplace { border-color: #fb923c; }
-.at-icone img { grid-column: 1 / -1; height: 64px; width: 100%; object-fit: contain; }
-.at-icone input { min-width: 0; font: 700 12px ui-monospace, Menlo, Consolas, monospace; }
-.at-icone .aide { grid-column: 1; font-size: 11px; }
-.at-icone .suppr { grid-row: 2; grid-column: 2; }
-
-/* --- Les mots des pouvoirs : graisse et contour du gabarit -------------------- */
-/* L'épaisseur du cerne est une LONGUEUR déclarée : posée en em sur un bandeau,
-   elle s'y calcule une fois, et chaque mot, chaque icône en hérite telle quelle. */
-@property --g-t { syntax: '<length>'; inherits: true; initial-value: 0px; }
-.g-contour .pastille, .g-contour .pastille-num, .g-contour .g-ic { filter: var(--g-cerne); }
-.g-bande .x, .g-bande .si { font-weight: var(--g-graisse, 800); }
-.g-bande .mot, .g-bande .regle-mot { font-weight: var(--g-graisse, 700); }
-.g-bande.g-contour .x, .g-bande.g-contour .si, .g-bande.g-contour .mot, .g-bande.g-contour .mot-libre,
-.g-bande.g-contour .plus-seuil, .g-bande.g-contour .regle-mot { text-shadow: var(--g-ring); }
-.g-bande.g-contour .regle-mot .tag { text-shadow: none; }
-
-/* --- Atelier : les fonds de carte ------------------------------------------------ */
-.at-fonds { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; margin-top: 8px; }
-.at-fond {
-  display: grid; gap: 4px; padding: 8px; border-radius: 12px; align-content: start;
-  background: repeating-conic-gradient(#ece6f5 0 25%, #fff 0 50%) 0 0 / 12px 12px; border: 1px solid #e3d8f5;
-}
-.at-fond.pose { border-color: #fb923c; box-shadow: 0 0 0 2px #fed7aa; }
-.at-fond img { width: 100%; height: 120px; object-fit: contain; }
-.at-fond input { font-weight: 700; min-width: 0; }
-.at-fond .aide { font-size: 11px; }
-.at-intact { color: #15803d; }
-.at-alerte { color: #c2410c; font-weight: 600; }
-.at-bilan-fond { background: var(--violet-pale); padding: 6px 8px; border-radius: 8px; }
-
-/* --- Le Set 4.1 : les vraies cartes, en 120 × 80 ------------------------------- */
-body[data-set="4.1"] .carte:not(.design):not(.solo) { aspect-ratio: 3 / 2; }
-body[data-set="4.1"] .tuile-illus { aspect-ratio: 3 / 2; }
-/* Un Plan Large seul, dans une galerie ou sur le banc : même hauteur que les
-   autres cartes, et une largeur d'une fois et demie. Les moitiés PM / GP
-   recevront les leurs avec leurs cartes. */
-body[data-set="4.1"] .carte.solo .moitie.f-PL, body[data-set="4.1"] .carte.solo .moitie.f-DEP { width: 21.5em; }
-body[data-set="4.1"] .banc .moitie.f-PL, body[data-set="4.1"] .banc .moitie.f-DEP,
-body[data-set="4.1"] .apercu-pose .moitie.f-PL, body[data-set="4.1"] .apercu-pose .moitie.f-DEP { width: 273px; }
-/* En 4.1 la carte est coupée au centre : un Gros Plan fait 60 × 80 mm — la
-   moitié de la largeur d'un Plan Large, à la même hauteur. */
-body[data-set="4.1"] .carte.solo .moitie.f-GP, body[data-set="4.1"] .carte.solo .moitie.f-PM { width: 10.75em; }
-body[data-set="4.1"] .banc .moitie.f-GP, body[data-set="4.1"] .banc .moitie.f-PM,
-body[data-set="4.1"] .apercu-pose .moitie.f-GP, body[data-set="4.1"] .apercu-pose .moitie.f-PM { width: 136.5px; }

@@ -1,8 +1,8 @@
 # EDIT — consignes de travail
 
-Site statique du jeu de société **EDIT** (Big Budi Games) : JavaScript en modules, sans compilation,
-servi par GitHub Pages depuis la branche `claude/edit-game-platform-n3789u`. Tout est en français :
-interface, commentaires, commits.
+Site statique du jeu de société **EDIT** (Big Budi Games), **version 4.1** : JavaScript en modules, sans
+compilation, servi par GitHub Pages depuis la branche `claude/edit-game-platform-n3789u`. Tout est en
+français : interface, commentaires, commits.
 
 ## Aller vite — c'est la demande explicite du propriétaire
 
@@ -18,62 +18,50 @@ interface, commentaires, commits.
    se vérifie par une capture de l'écran touché, au besoin.
 3. Journal : 1 à 3 points courts, en HTML simple (`<b>`, `<code>`). Message final à l'utilisateur :
    quelques lignes — ce qui a changé, la version, rien de plus.
-4. Ne jamais lire `js/version.js` en entier (≈ 175 ko de journal) : `publier.mjs` l'écrit.
+4. Ne jamais lire `js/version.js` en entier : `publier.mjs` l'écrit.
 5. Chemins absolus dans les commandes (`/home/user/edit_online/...`), pas de `cd`.
+
+## Le jeu — 4.1, et rien d'autre
+
+Le site ne porte **que la 4.1** : aucune carte, règle, image ni mécanique des versions précédentes. Ne
+rien réintroduire d'ancien (Plans Moyens, cartes recto verso, deux pioches, Générique, « hors film »,
+Cartes Objectif, modes, sets, Atelier) sans demande de l'auteur.
+
+- **Les cartes sont les VRAIES cartes** de l'auteur, montrées telles quelles (`faces[cle].visuel` dans
+  `js/data.js`) — jamais un dessin refait. Il les livre en PNG 300 dpi ; `python3 outils/cartes.py
+  <dossier> assets/s41 [--illus]` en fait les copies d'écran. Les données du moteur (minutage, icônes —
+  la dominante en premier —, pouvoir) se LISENT sur l'image et se rangent dans `PLANS_41` / `GP_41`.
+- **Plans Larges** : L1 à L19, une image pleine carte (120 × 80 mm). Quatre sont les **Plans de départ**
+  (L5, L7, L12, L16) : leurs six couples font six **cartes de départ** recto verso — le seul recto verso
+  du jeu. Chaque joueuse en reçoit une et choisit sa face.
+- **Gros Plans** : 54 (`GP00`…`GP66`, `GP100` Raccord, `GP101` Ouverture 01', `GP102` Fin 70'), deux par
+  carte — 27 **cartes à deux Gros Plans**, moitié GAUCHE et moitié DROITE (`ASSEMBLAGE_41`, `[gauche,
+  droite]`). L'assemblage est **provisoire** : l'auteur le refera (Matériel › Assemblage, ou un schéma).
+- **Règles** (`js/engine.js`) : une pioche face cachée, une rivière de 4 cartes, le **Chutier** (défausse
+  face visible). À son tour : défausser une carte de la rivière (facultatif, une fois), puis en prendre
+  une et la monter. Un Plan Large ouvre une séquence (3 par banc, 4 avec le L12) ; une moitié gauche se
+  monte à gauche d'une séquence, une droite à droite ; 3 cartes au plus de chaque côté du centre. Après
+  un Raccord, un Plan Large peut entrer dans la séquence. Le L16 laisse prendre sur le Chutier, le L7
+  donne une carte après le dernier tour. Fin à 10 plans.
+- Points encore à confirmer par l'auteur : fin de partie, pioche vide (le Chutier est remélangé), ce qui
+  suit un Raccord (un Plan Large seulement), l'Entracte (L10), l'assemblage.
 
 ## Règles du projet
 
-- Version : `4.1.NN` depuis le passage du jeu en 4.1 — `4.1` est la version du jeu, `NN` le compteur qui
-  monte à **chaque** livraison (fait par `publier.mjs`, qui garde les zéros de tête : 4.1.01 → 4.1.02).
-- En 4.1, le jeu montre les **vraies cartes importées** (`faces[cle].visuel`), jamais un dessin refait.
-  L'Atelier est **fermé** : constante `ATELIER_OUVERT = false` dans `app.js` (onglet, écrans, dessin par
-  gabarit). Le code reste en place, dormant — ne pas le rouvrir sans demande.
-- **Set 4.1** (`TABLES['4.1']` dans `js/data.js`) : l'auteur livre ses cartes en PNG 300 dpi (120 × 80 mm) ;
-  `python3 outils/cartes.py <dossier> assets/s41 [--illus]` en fait les copies d'écran, et chaque carte
-  reçoit son `visuel`. Les données du moteur (minutage en minutes, icônes — la dominante en premier —,
-  pouvoir) se LISENT sur l'image. Icônes du set : `assets/icones/41` (`SETS[].icones`) ; proportion :
-  `SETS[].format` + règles CSS `body[data-set="4.1"]`. Plans Larges = L1 à L19, dont les Plans de départ
-  L5, L7, L12, L16 (`departSeul` : une carte, une face, une par joueuse).
-  **Plus de Plan Moyen en 4.1** : la carte est coupée au centre, chaque moitié est un Gros Plan de
-  60 × 80 mm (`format.gp: 60`, `partGP()`). Les 54 Gros Plans (`GP_41`, fichiers `GP00`…`GP66`, `GP100`
-  Raccord, `GP101` Ouverture 01', `GP102` Fin 70') sont chacun une demi-carte `[null, n]` à une seule face
-  (verso `absente`) ; les numéros se répètent d'un cadrage à l'autre (`numerosParCadrage`).
-  En attente de l'auteur : comment les Gros Plans se regroupent sur les cartes (paires, recto / verso,
-  exemplaires), les règles 4.1 (le « Chutier » du L16 est sans effet dans le moteur), le statut de
-  l'Entracte (L10). Tant que les cartes ne sont pas assemblées, le set n'est pas jouable.
-- Titre du site : le logo `assets/marque/edit.webp` (barre du haut et accueil).
+- Version : `4.1.NN` — `4.1` est la version du jeu, `NN` le compteur qui monte à **chaque** livraison
+  (fait par `publier.mjs`, qui garde les zéros de tête).
+- Titre du site : le logo `assets/marque/edit.webp` (barre du haut, accueil, dos des cartes).
 - Statistiques d'abord, tout réglable (Variables), design pastel violet / orange.
+- Vocabulaire à l'écran : Plan Large, Gros Plan, Plan de départ, carte de départ, carte à deux Gros
+  Plans, moitié gauche / droite, séquence, banc de montage, pioche, rivière, Chutier, Raccord,
+  Ouverture, Fin, minutage, icône (dominante), **pouvoir**.
 - Les imports entre modules s'écrivent **sans** `?v=` : la table d'imports d'`index.html` les versionne.
   Un nouveau module dans `js/` y entre tout seul.
-- Clés localStorage préfixées `edit.` (`edit.cfg`, `edit.joueurs`, `edit.regles.textes`, `edit.partage.recu`).
-- Matériel en trois couches : imprimé → publié (`materiel.json`) → local (`edit.cfg`).
+- Clés localStorage préfixées `edit.` (`edit.cfg`, `edit.joueurs`, `edit.partage.recu`). `migrerCfg`
+  (`js/config.js`) ne garde d'une configuration enregistrée que les variables qui existent encore.
+- Matériel en trois couches : la boîte (le code) → publié (`materiel.json`) → local (`edit.cfg`). Clé
+  d'un plan : `GP13` pour un Gros Plan, `5` pour un Plan Large ou un Plan de départ.
 - Mode partagé : Matériel, Laboratoire et Versions restent fermés (`ECRANS_FERMES` dans `app.js`).
-
-## L'Atelier — le dessin des cartes (fermé depuis la 4.1, code dormant)
-
-- Un **gabarit** (`js/gabarits.js`) dit où se posent les éléments d'une carte, en **millimètres** ; il porte
-  son **format** (`g.format` : `largeur`, `hauteur`, `gp` = largeur du Gros Plan) — 120 × 80 mm (v2, par
-  défaut), 88 × 63 pour l'ancien Set 3.1 (v1). Toujours `largeurMise(cle, g)` / `hauteurDe(g)`, jamais
-  88 ou 63 en dur. `js/design.js` le dessine (1 em = 1 mm), `js/atelier.js` est l'écran d'édition et la page
-  d'impression (`#/impression`).
-- **Fonds de carte** : `g.fonds` (`{nom, src}`), posés par mise dans `mise.carte.image` (+ `ajuste`,
-  `position`, `perduInclus`). Ils entrent BRUTS par `ajouterVisuelBrut` (`js/visuels.js`) : le fichier même,
-  empreinte SHA-256 vérifiée — ne jamais les faire passer par `ajouterVisuel`, qui redessine. L'export PDF
-  de l'Atelier est sans perte (Flate) par défaut.
-- Un essai de l'auteur arrive en JSON (« 📋 Copier le gabarit ») : l'ajouter **en tête** de
-  `VERSIONS_GABARIT` avec l'identifiant suivant (`v2`, `v3`…), puis publier.
-- Pouvoirs et icônes : le texte d'un pouvoir se range dans `g.textes[signaturePouvoir(o)]`, en mots et en
-  jetons (`[2] [x] [heroine] [>]`, liste `JETONS`) ; les logos de l'auteur dans `g.icones` (`{nom, src}`) — un
-  nom d'icône du jeu (`ICONES_JEU`) la remplace partout. Rendu : `phraseJetons` dans `js/design.js`. Le cerne
-  noir (`trait`, en mm) entoure d'une même épaisseur mots et icônes (`--g-t`, déclarée par `@property`).
-- La fenêtre de l'illustration est commune (gabarit) ; l'image, sa place et son zoom sont propres à chaque
-  carte : retouche `cadre` / `miroir` du Matériel (`C.poserCadre`), réglée dans l'Atelier au glisser et à la molette.
-- Illustrations seules : `python3 outils/illustrations.py <dossier>` (numéros comme noms de fichiers) →
-  `assets/s31/nu` (écran) et `assets/s31/hd` (impression), et `js/illus31.js`.
-- Export maître vectoriel : `node outils/exporter-cartes.mjs <fichier-de-partage.json> [--cartes] [--perdu 3]`
-  — le fichier de partage de l'auteur porte son matériel, son set et son gabarit.
-- Polices : uniquement des polices libres (OFL), servies depuis `assets/polices` (Google Fonts n'est pas
-  joignable depuis ce conteneur ; le registre npm l'est — paquets `@fontsource/…`).
 
 ## Sécurité — non négociable
 
@@ -88,7 +76,7 @@ interface, commentaires, commits.
 
 - Changer seulement le fragment (`#/…`) ne recharge pas les modules : recharger après avoir semé le
   localStorage.
-- Fin de partie : attendre `#rejouer`, pas le mot « décompte ».
-- La carte Objectif tirée se lit dans `st.cfg` de la partie, pas dans la configuration du site.
+- Fin de partie : attendre `#rejouer`.
+- Les images des cartes sont en `loading="lazy"` : hors de la fenêtre, elles ne sont pas chargées.
 - Playwright : module global (`npm root -g`), Chromium dans `/opt/pw-browsers` — `verifier.mjs` les
   trouve seul.

@@ -4,23 +4,19 @@
 
 import { VERSION, BUILD_DATE, CHANGELOG } from './version.js';
 import {
-  ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, DEPARTS_SIX, sceneDe, OBJ, objLabel,
-  buildCartesDoubles, buildPlansLarges, moitiesDe, plHalf, halfInfo, FACES,
-  appliquerMateriel, catalogue, moitiesDisponibles, cleplan, planDeCle, doublonsNumeros,
-  CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, faceJouee, PERSONNAGES, objsDe,
+  ELEMENTS, ELEMENT_IDS, FORMATS, SCENES, DEPARTS, sceneDe, OBJ, objLabel,
+  buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, halfInfo,
+  appliquerMateriel, catalogue, grosPlansDisponibles, cleplan, planDeCle, doublonsNumeros,
+  CADRAGES_VISABLES, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, PERSONNAGES, objsDe,
   ciblesSequence,
   CIBLES_COMPTE, CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque,
   porteeReglable, porteeFigee, CRITERES_DOUBLE,
   normaliserCadre, bornesCadre, transformeCadre, cadreTexte, cadreDepuisTexte, teinteTc,
-  SETS, SET_DEFAUT, setValide, contenuSet, setActif, formatSet,
+  contenuBoite, etiquettePlan, carteComplete, FORMAT_CARTE,
 } from './data.js';
-import { brancherGabarit, gabaritEnVigueur } from './design.js';
-import {
-  normaliserGabarit, versionPubliee as gabaritPublie, VERSION_DEFAUT, formatDe, mettreAuFormat, FORMAT_120,
-} from './gabarits.js';
-import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg, MODES, modeCourant } from './config.js';
+import { DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg } from './config.js';
 import { elIcon, numIcon } from './icons.js';
-import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle, reglerLectureNue, reglerGabarits } from './cards.js';
+import { renderCarte, renderPlan, renderDos, enPile, tc, objHTML, objContenu, cadrageIcon, estSi, estRegle } from './cards.js';
 import { chargerVisuels, ajouterVisuel, importerVisuel, retirerVisuel, visuelsApportes, urlVisuel,
   cleVisuel, idDeCle, estVisuelApporte, blobVisuel, poidsVisuels, COTE_MAX,
 } from './visuels.js';
@@ -29,17 +25,16 @@ import { chargerPublie, materielPublie, signaturePublie, materielVide, composerP
 import { composerPartage, sansImages, encoderPartage, decoderPartage, partageDeLURL,
   lienPartage, LIMITE_LIEN } from './partage.js';
 import {
-  creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
-  coupsPossibles, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
-  piochesMelees, appliquerPlan, limitePlans, limiteSequences,
-  faceVisible, retourner, resynchroniserBoite,
+  creerPartie, choixDepart, poserDepart, optionsDerushage, cartesOffertes, derusher,
+  defausser, peutDefausser, passer, peutPasser, sommetChutier, ecarterMain,
+  coupsPossibles, coupsSurBanc, poser, avancer, scores, classement, construirePaquet, nouvelleGraine, planPose,
+  appliquerPlan, limitePlans, limiteSequences, tailleRiviere, resynchroniserBoite,
   bilanPaquet,
 } from './engine.js';
-import { choisirCoup, choisirDerushage, choisirDepart } from './ai.js';
+import { choisirCoup, choisirDerushage, choisirDefausse, choisirDepart } from './ai.js';
 import {
   compter, SOURCES_LABEL, estRaccord, objsEffectifs, raccordBonifie, compteIcone,
-  compteCible, compteGroupes, bancVide, OBJECTIFS_COMMUNS, objectifCommunDe,
-  pointsObjectifCommun, objectifCommunTenu, avancementObjectifCommun,
+  compteCible, compteGroupes, bancVide, chutierOuvert,
 } from './scoring.js';
 import { releve, voler, stopperVols } from './anim.js';
 import { campagne } from './lab.js';
@@ -50,8 +45,8 @@ import { TransportLocal } from './net/local.js';
 import { TransportSupabase } from './net/supabase.js';
 import { enLigneDisponible } from './net/config.js';
 import { coupNu } from './net/protocole.js';
-import { REGLES_VERSION, REGLES_HISTORIQUE, corpsRegles, corpsVersion } from './regles.js';
-import { livret, aideDeJeu } from './livret.js';
+import { REGLES_VERSION, corpsRegles } from './regles.js';
+import { aideDeJeu } from './livret.js';
 
 const app = document.getElementById('app');
 
@@ -61,6 +56,23 @@ const LS = {
   get(k, d) { try { const v = localStorage.getItem('edit.' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem('edit.' + k, JSON.stringify(v)); } catch { /* quota */ } },
 };
+
+// Le site ne porte plus que la 4.1. Ce qu'un navigateur gardait des versions
+// précédentes — l'historique des parties, un partage reçu, les brouillons de
+// dessin de cartes — s'efface une fois, au premier passage. La configuration,
+// elle, est triée par `migrerCfg` : ne restent que les variables qui existent.
+(function purgerAvant41() {
+  try {
+    if (localStorage.getItem('edit.boite') === '4.1') return;
+    for (const k of Object.keys(localStorage)) {
+      if (k === 'edit.historique' || k === 'edit.partage.recu'
+        || k.startsWith('edit.atelier.') || k.startsWith('edit.planche.')) localStorage.removeItem(k);
+    }
+    localStorage.setItem('edit.boite', '4.1');
+    // Les images apportées à la main vivaient dans une réserve du navigateur.
+    if (globalThis.indexedDB) indexedDB.deleteDatabase('edit.visuels');
+  } catch { /* stockage indisponible : rien à purger */ }
+}());
 
 // --- Le mode PARTAGÉ --------------------------------------------------------
 // Qui reçoit un partage vient JOUER la version qu'on lui a envoyée, pas la
@@ -79,14 +91,12 @@ const enPartage = () => LS.get('partage.recu', null) !== null;
 const infoPartage = () => LS.get('partage.recu', null) || {};
 
 /** Les écrans que le mode partagé ferme. */
-const ECRANS_FERMES = ['#/materiel', '#/labo', '#/versions', '#/atelier', '#/impression'];
+const ECRANS_FERMES = ['#/materiel', '#/labo', '#/versions'];
 
-// L'ATELIER est fermé depuis la 4.1 : les cartes du jeu sont les VRAIES cartes,
-// importées telles quelles, et non plus un dessin refait par le site. L'onglet
-// disparaît, ses deux écrans ne s'ouvrent plus, et aucune carte ne prend le
-// dessin d'un gabarit. Rien n'est effacé — ni le code, ni le brouillon gardé
-// dans le navigateur : remettre `true` suffit à tout rouvrir.
-const ATELIER_OUVERT = false;
+// L'écran Matériel est en cours de passage à la 4.1 — l'assemblage des cartes à
+// deux Gros Plans, la lecture de chaque carte. Il rouvre à la livraison
+// suivante ; d'ici là, son onglet et ses liens ne se montrent pas.
+const MATERIEL_OUVERT = false;
 
 function entrerEnPartage(p) {
   LS.set('partage.recu', { version: p.version, date: p.date, signature: p.signature || '' });
@@ -105,7 +115,7 @@ const store = {
   cfg: Object.assign(cloneConfig(DEFAULTS), migrerCfg(LS.get('cfg', {}))),
   // L'établi : un banc que l'on monte à la main, son historique pour annuler,
   // et le plan qu'on tient. Il ne se sauvegarde pas — c'est un brouillon.
-  bac: { banc: { sequences: [], ouverture: false, fermeture: false },
+  bac: { banc: { sequences: [] },
     historique: [], refaits: [], choisi: null, famille: 'PL', filtre: '', dernierPose: null },
   joueurs: LS.get('joueurs', [
     { nom: 'Val', couleur: COULEURS_JOUEURS[0], type: 'HUMAIN' },
@@ -115,8 +125,8 @@ const store = {
   partie: null,
   labo: null,
   laboEnCours: false,
-  formatChoisi: null,   // 'GP' | 'PM' | 'PL' pendant la phase de montage
-  // La carte visée dans la rivière, et la moitié retenue : { o, format }. Le
+  moitieChoisie: null,  // 'G' | 'D' | 'PL' : la moitié qu'on s'apprête à monter
+  // La carte visée dans la rivière, et la moitié retenue : { o, moitie }. Le
   // tour se joue d'un bout à l'autre depuis le même écran — on choisit dans
   // la rivière, on pose dans le banc, sans étape intermédiaire.
   choixRiviere: null,
@@ -152,65 +162,9 @@ function normaliserMateriel() {
     if (!Array.isArray(m.ajouts[k])) m.ajouts[k] = [];
   }
   if (!Array.isArray(m.retires)) m.retires = [];
-  // Les réglages d'avant l'éditeur ne portaient que sur le minutage.
-  if (store.cfg.minutages && typeof store.cfg.minutages === 'object') {
-    for (const [num, tc] of Object.entries(store.cfg.minutages)) {
-      if (tc !== undefined && tc !== null && tc !== '') m.plans[num] = { ...(m.plans[num] || {}), tc: Number(tc) };
-    }
-    delete store.cfg.minutages;
-  }
-  // Le pouvoir « avant / après cette carte » était un type à part : c'est
-  // désormais la portée d'un pouvoir ordinaire.
-  for (const v of Object.values(m.plans)) {
-    if (v.obj && v.obj.kind === 'POSITION') {
-      const o = v.obj;
-      v.obj = o.quoi === 'FORMAT'
-        ? { kind: 'FORMAT', n: o.n, format: o.format, portee: o.sens === 'APRES' ? 'APRES' : 'AVANT' }
-        : { kind: 'ELEMENT', n: o.n, el: o.el, portee: o.sens === 'APRES' ? 'APRES' : 'AVANT' };
-    }
-  }
-  // Avant les faces, une moitié de carte double n'avait qu'une clé : son
-  // numéro. La retouche vaut désormais pour le recto et pour le verso.
-  for (const [k, v] of Object.entries(m.plans)) {
-    if (/^(2|3)\d\d$/.test(k)) {
-      for (const f of ['R', 'V']) if (!m.plans[k + f]) m.plans[k + f] = JSON.parse(JSON.stringify(v));
-      delete m.plans[k];
-    }
-  }
   store.cfg.materiel = m;
   if (!Array.isArray(store.cfg.cartesDesactivees)) store.cfg.cartesDesactivees = [];
   if (store.cfg.materielActif !== 'IMPRIME') store.cfg.materielActif = 'MODIFIE';
-  store.cfg.set = setValide(store.cfg.set);
-  if (!store.cfg.setsRanges || typeof store.cfg.setsRanges !== 'object') store.cfg.setsRanges = {};
-}
-
-/**
- * Passer d'un set de cartes à l'autre. Chaque set a ses propres retouches —
- * « 3.1 Modifiée » n'est pas « 2 Modifiée » : celles du set qu'on quitte sont
- * rangées de côté, celles du set qu'on rejoint reviennent telles qu'on les avait
- * laissées. Le reste du code ne voit jamais que le set en vigueur.
- */
-function changerDeSet(id) {
-  const ancien = store.cfg.set;
-  const neuf = setValide(id);
-  if (neuf === ancien) return;
-  const ranges = store.cfg.setsRanges;
-  ranges[ancien] = { materiel: store.cfg.materiel, cartesDesactivees: store.cfg.cartesDesactivees,
-    materielActif: store.cfg.materielActif };
-  const r = ranges[neuf] || {};
-  delete ranges[neuf];
-  store.cfg.materiel = r.materiel || {};
-  store.cfg.cartesDesactivees = r.cartesDesactivees || [];
-  store.cfg.materielActif = r.materielActif || 'MODIFIE';
-  store.cfg.set = neuf;
-  normaliserMateriel();
-  sauverCfg();
-}
-
-/** Les boutons des sets de cartes — sur l'accueil comme dans le Matériel. */
-function segmentSets(attr) {
-  return `<div class="segments large seg-sets">${SETS.map((x) => `<button class="${
-    x.id === store.cfg.set ? 'on' : ''}" ${attr}="${x.id}" title="${x.detail}">${x.label}</button>`).join('')}</div>`;
 }
 
 /**
@@ -225,10 +179,7 @@ function appliquerJeuActif() {
   const enl = store.enLigne && store.enLigne.salon && store.enLigne.salon.cfg;
   const src = enl || (store.partie && !store.partie.finie ? store.partie.cfg : store.cfg);
   const modifie = src.materielActif === 'MODIFIE';
-  appliquerMateriel(modifie ? src.materiel : null, src.cartesDesactivees, src.materiel, src.set);
-  // La feuille de style suit le set : les vraies cartes de la 4.1 sont en
-  // 120 × 80, et se montrent à cette proportion — pas étirées dans l'ancienne.
-  if (typeof document !== 'undefined' && document.body) document.body.dataset.set = setActif();
+  appliquerMateriel(modifie ? src.materiel : null, src.cartesDesactivees, src.materiel);
 }
 
 /**
@@ -245,9 +196,6 @@ function adopterPublie(force) {
   const p = materielPublie();
   if (!p) return false;
   if (!force && !materielVide(store.cfg.materiel)) return false;
-  // Un matériel publié retouche UN set : on ne le pose pas sur un autre.
-  if (!force && setValide(p.set) !== store.cfg.set) return false;
-  if (force) changerDeSet(p.set);
   store.cfg.materiel = JSON.parse(JSON.stringify(p.materiel));
   store.cfg.cartesDesactivees = (p.cartesDesactivees || []).slice();
   store.cfg.publieAdopte = p.signature || p.date || '1';
@@ -260,36 +208,15 @@ function adopterPublie(force) {
 /** Le site publie-t-il un matériel que cette machine n'a pas encore adopté ? */
 function publieEnAttente() {
   const p = materielPublie();
-  return !!p && setValide(p.set) === store.cfg.set && signaturePublie() !== (store.cfg.publieAdopte || '');
+  return !!p && signaturePublie() !== (store.cfg.publieAdopte || '');
 }
 
 normaliserMateriel();
 appliquerJeuActif();
 
-/**
- * Le dessin des cartes : celui du site, ou le gabarit de l'Atelier quand il
- * est branché. Le brouillon de l'Atelier vit dans la configuration — il voyage
- * donc avec un partage, et le testeur voit les cartes telles qu'on les dessine.
- */
-let gabaritMemo = { cle: null, g: null };
-function appliquerDesign() {
-  const d = store.cfg.design;
-  if (!ATELIER_OUVERT || !d || !d.actif) { brancherGabarit(null); return; }
-  const brut = d.gabarit || (gabaritPublie(d.base || VERSION_DEFAUT) || {}).gabarit;
-  const cle = JSON.stringify(brut || null);
-  if (gabaritMemo.cle !== cle) gabaritMemo = { cle, g: normaliserGabarit(brut) };
-  brancherGabarit(gabaritMemo.g, { set: store.cfg.set });
-}
-
 function sauverCfg() {
   LS.set('cfg', store.cfg);
   appliquerJeuActif();
-  appliquerDesign();
-  // Le rendu des cartes doit connaître la lecture demandée AVANT de dessiner :
-  // c'est de là que dépend le serrage des bandeaux, calculé au moment où l'on
-  // construit le HTML — bien avant que la classe n'atterrisse sur le document.
-  reglerLectureNue(!store.cfg.illustrations);
-  reglerGabarits(!!store.cfg.gabarits);
   // Une retouche faite dans la même fenêtre qu'une partie en cours : l'événement
   // `storage` ne se déclenche que dans les AUTRES fenêtres, il faut donc faire
   // ici ce qu'il y ferait. Une partie finie n'y touche pas — son décompte est
@@ -307,37 +234,17 @@ let profondeurModifie = 0;
 
 function surLeModifie(fn) {
   if (profondeurModifie++ === 0) {
-    appliquerMateriel(store.cfg.materiel, store.cfg.cartesDesactivees, store.cfg.materiel, store.cfg.set);
+    appliquerMateriel(store.cfg.materiel, store.cfg.cartesDesactivees, store.cfg.materiel);
   }
   try { return fn(); } finally { if (--profondeurModifie === 0) appliquerJeuActif(); }
 }
 function sauverJoueurs() { LS.set('joueurs', store.joueurs); }
-
-// Les cartes passent au 120 × 80 mm. Un brouillon de l'Atelier d'avant les
-// formats y est porté une fois — chaque calque à sa place, en proportion — et
-// l'ancien est gardé parmi les essais : rien n'est perdu.
-(function passerAu120() {
-  const d = store.cfg.design;
-  if (!d || !d.gabarit || d.gabarit.format || LS.get('atelier.format120', false)) return;
-  const n = new Date(); const p = (v) => String(v).padStart(2, '0');
-  LS.set('atelier.essais', [{ id: `e${Date.now().toString(36)}`, nom: `${d.gabarit.nom || 'Brouillon'} — 88 × 63, avant le 120 × 80`,
-    date: `${p(n.getDate())}/${p(n.getMonth() + 1)} ${p(n.getHours())}:${p(n.getMinutes())}`,
-    gabarit: JSON.parse(JSON.stringify(d.gabarit)) }, ...LS.get('atelier.essais', [])]);
-  d.gabarit = mettreAuFormat(normaliserGabarit(d.gabarit), FORMAT_120);
-  d.base = 'v2';
-  LS.set('atelier.format120', true);
-  LS.set('cfg', store.cfg);
-}());
-
-// Le dessin des cartes se règle avant le premier écran.
-appliquerDesign();
 
 // --- Chrome ----------------------------------------------------------------
 
 const ONGLETS = [
   ['#/banc', 'Banc de montage'],
   ['#/materiel', 'Matériel'],
-  ['#/atelier', 'Atelier'],
   ['#/regles', 'Règles'],
   ['#/variables', 'Variables'],
   ['#/labo', 'Laboratoire'],
@@ -348,7 +255,7 @@ const ONGLETS = [
 function topbar(actif) {
   const enPartie = store.partie && !store.partie.finie;
   const partage = enPartage();
-  const ouverts = ATELIER_OUVERT ? ONGLETS : ONGLETS.filter(([h]) => h !== '#/atelier');
+  const ouverts = MATERIEL_OUVERT ? ONGLETS : ONGLETS.filter(([h]) => h !== '#/materiel');
   const onglets = partage ? ouverts.filter(([h]) => !ECRANS_FERMES.includes(h)) : ouverts;
   const info = infoPartage();
   return `<div class="topbar">
@@ -371,11 +278,6 @@ const pied = () => `<div class="pied">Version ${VERSION} — compilée le ${BUIL
 
 function html(s, garderDefilement = false) {
   if (apercuEl) apercuEl.classList.remove('visible');
-  document.body.classList.toggle('sans-illus', !store.cfg.illustrations);
-  // Le dessin des cartes a déjà eu lieu : cette ligne prépare le SUIVANT.
-  // C'est `sauverCfg` qui met le rendu au courant à temps.
-  reglerLectureNue(!store.cfg.illustrations);
-  reglerGabarits(!!store.cfg.gabarits);
   document.body.classList.toggle('sans-points', store.cfg.pointsSurCartes === false);
   const y = window.scrollY;
   app.innerHTML = s;
@@ -394,12 +296,11 @@ function html(s, garderDefilement = false) {
 
 function vueAccueil() {
   const n = store.joueurs.length;
-  // Sur une version partagée, tout ce qui DÉFINIT le jeu est déjà réglé par
-  // celui qui l'a envoyée : le mode, les variantes, le matériel en jeu. On ne
-  // les montre pas — les changer ferait tester autre chose que ce qu'il a
-  // voulu. Restent les options de confort, qui ne touchent pas aux règles.
+  // Sur une version partagée, le matériel en jeu est celui de qui l'a envoyée :
+  // on ne propose pas d'en changer. Restent les options de confort.
   const partage = enPartage();
   const info = infoPartage();
+  const c = store.cfg;
 
   html(`${topbar('#/')}
   <div class="hero">
@@ -418,70 +319,47 @@ function vueAccueil() {
             <div class="segments" id="seg-n">
               ${[1, 2, 3, 4].map((i) => `<button class="${i === n ? 'on' : ''}" data-n="${i}">${i}</button>`).join('')}
             </div>
-            <span class="aide">${n} joueuse${n > 1 ? 's' : ''}${n === 1 ? ' — solo, hors règles officielles' : ''}</span>
+            <span class="aide">${n} joueuse${n > 1 ? 's' : ''}${n === 1 ? ' — en solo' : ''}</span>
           </div>
           <div id="liste-joueurs">${store.joueurs.map((j, i) => ligneJoueur(j, i)).join('')}</div>
         </div>
 
         ${partage ? `<div class="bandeau-materiel partage-recu">
           <span class="bm-titre">🔗 Version partagée${info.version ? ` — v${info.version}` : ''}</span>
-          <span class="aide">Set ${store.cfg.set} · ${info.date ? `reçue du ${info.date} · ` : ''}cartes, réglages et
-          variantes sont ceux de qui vous a envoyé le lien — rien à régler, jouez.</span>
-        </div>` : bandeauMateriel()}
-        ${bilanJeu().jouable ? '' : `<p class="aide set-incomplet">${messageSetIncomplet()}</p>`}
+          <span class="aide">${info.date ? `reçue du ${info.date} · ` : ''}cartes et réglages sont ceux de qui
+          vous a envoyé le lien — rien à régler, jouez.</span>
+        </div>` : (MATERIEL_OUVERT ? bandeauMateriel() : '')}
+        ${bilanJeu().jouable ? '' : `<p class="aide set-incomplet">${messagePaquetCourt()}</p>`}
         <button class="cta" id="go" ${bilanJeu().jouable ? '' : 'disabled'}>Commencer la partie</button>
         <button class="pill large" data-go="#/enligne">🌐 Jouer en ligne, chacun sur son appareil</button>
       </div>
 
       <div>
         <div class="panneau">
-          <h2>Options de partie</h2>
+          <h2>La partie en bref</h2>
+          <ul class="bref">
+            <li>Chacune ouvre son banc avec un <b>Plan de départ</b> : une carte recto verso, on choisit sa face.</li>
+            <li>Une <b>pioche</b> face cachée, une <b>rivière</b> de ${c.riviere} cartes visibles, et le
+              <b>Chutier</b> — la défausse.</li>
+            <li>À son tour : ${c.defausse !== false ? 'on <b>peut défausser</b> une carte de la rivière, puis ' : ''}on
+              en <b>prend une</b> et on la <b>monte</b>.</li>
+            <li>Un <b>Plan Large</b> ouvre une séquence — ${c.sequencesMax} par banc. Une carte à deux
+              <b>Gros Plans</b> se monte par une moitié : la gauche à gauche, la droite à droite,
+              ${c.plansParCote} cartes au plus de chaque côté.</li>
+            <li>La partie s’arrête quand un banc compte <b>${c.tours} plans</b>, au bout du tour de table.</li>
+          </ul>
+          <p class="aide"><span class="bm-lien" data-go="#/regles">Lire les règles ›</span>
+          ${partage ? '' : ' · <span class="bm-lien" data-go="#/variables">régler les variables ›</span>'}</p>
+        </div>
+
+        <div class="panneau">
+          <h2>Options d’affichage</h2>
           <div class="chips">
-            ${chip('illustrations', 'Illustrations')}
             ${chip('pointsSurCartes', 'Points visibles')}
             ${chip('animerCoups', 'Mouvement des cartes')}
             ${chip('apercuSurvol', 'Pop-up au survol')}
           </div>
         </div>
-
-        ${partage ? '' : panneauMode()}
-
-        ${partage ? '' : `<div class="panneau">
-          <h2>Variantes</h2>
-          <div class="chips">
-            ${chip('sixCartesDepart', '6 Cartes Départ')}
-            ${chip('sansPlanDepart', 'Pas de Plans de départ')}
-            ${chip('piochesMelangees', 'Pioches mélangées')}
-            ${chip('objectifCommun', 'Carte Objectif commune')}
-          </div>
-          <p class="aide"><b>Carte Objectif commune</b> — on en révèle <b>une</b> au début de la
-          partie. Elle reste visible de tous, et chacune la vise sur son propre montage : elle se
-          tient ou ne se tient pas, ses points tombent <b>entiers ou pas du tout</b>. Le paquet en
-          porte ${OBJECTIFS_COMMUNS.length} ;
-          ${(() => {
-    const n = OBJECTIFS_COMMUNS.filter((o) => store.cfg.objectifsCommunsActifs[o.id] !== false).length;
-    return n === OBJECTIFS_COMMUNS.length ? 'toutes sont en jeu'
-      : `<b>${n} en jeu</b>`;
-  })()}, et l’on compose le paquet dans <b>Variables › Objectifs</b>.</p>
-          <p class="aide"><b>6 Cartes Départ</b> — les quatre plans de départ s’apparient de
-          <b>six</b> façons — 1-2, 2-3, 3-4, 4-1, 2-4, 1-3 — et la boîte les contient toutes. Chaque
-          joueuse en <b>pioche une seule</b> : deux faces au choix au lieu de quatre, et deux
-          joueuses n’ouvrent jamais sur le même couple.${store.cfg.sansPlanDepart
-    ? ' <b>Sans effet</b> tant que « pas de Plans de départ » est coché : il n’y a plus rien à distribuer.'
-    : ''}</p>
-          <p class="aide"><b>Pas de Plans de départ</b> — les quatre faces de départ rejoignent la
-          pioche des Plans Larges, dont elles prennent la couleur : ce sont des Plans Larges comme
-          les autres. Plus de choix de départ — chacune ouvre son banc en dérushant un Plan Large,
-          seule carte qui puisse s’y poser en premier.</p>
-          <p class="aide"><b>Pioches mélangées</b> — une seule pioche, face cachée, où les Plans
-          Larges sont mêlés aux cartes Plan Moyen / Gros Plan, et une seule rivière de six cartes
-          devant elle. On ne choisit plus sa famille : on prend ce qui vient. Les deux variantes
-          <b>ne vont pas ensemble</b> — la première a besoin d’une rivière de Plans Larges à part,
-          que la seconde supprime : cocher l’une décoche l’autre.</p>
-          ${store.cfg.planUnique && store.cfg.planUnique !== 'AUCUNE'
-    ? `<p class="aide"><b>Pas deux fois le même plan</b> — ${LIBELLE_UNIQUE[store.cfg.planUnique]}.
-            Réglé dans <b>Variables › Pose</b>.</p>` : ''}
-        </div>`}
       </div>
     </div>
 
@@ -489,7 +367,7 @@ function vueAccueil() {
       <button class="pill" data-go="#/banc">Banc de montage</button>
       ${partage ? '' : '<button class="pill" data-go="#/labo">Laboratoire d’équilibrage</button>'}
       <button class="pill" data-go="#/regles">Règles du jeu</button>
-      ${partage ? '' : '<button class="pill" data-go="#/materiel">Matériel</button>'}
+      ${partage || !MATERIEL_OUVERT ? '' : '<button class="pill" data-go="#/materiel">Matériel</button>'}
     </div>
   </div>
   ${pied()}`);
@@ -506,36 +384,9 @@ function vueAccueil() {
 
   brancherJoueurs();
   brancherJeuAccueil(vueAccueil);
-  brancherMode(vueAccueil);
   brancherChips(vueAccueil);
   brancherChamps(vueAccueil);
   app.querySelector('#go').addEventListener('click', lancerPartie);
-}
-
-/**
- * Le mode de jeu : une manière de monter le film, pas un réglage de plus. Il se
- * choisit ici, sur l'accueil, et pose d'un coup les variables qui le
- * définissent — celles-ci restent lisibles une à une dans Variables.
- */
-function panneauMode() {
-  const actuel = modeCourant(store.cfg);
-  return `<div class="panneau" id="panneau-mode">
-    <h2>Mode de jeu</h2>
-    <div class="segments large" id="seg-mode">
-      ${MODES.map((m) => `<button class="${m.id === actuel.id ? 'on' : ''}" data-mode="${m.id}">${m.label}</button>`).join('')}
-    </div>
-    <p class="aide" id="mode-aide">${actuel.aide}</p>
-  </div>`;
-}
-
-function brancherMode(apres) {
-  app.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => {
-    const m = MODES.find((x) => x.id === b.dataset.mode);
-    if (!m) return;
-    Object.assign(store.cfg, m.cfg);
-    sauverCfg();
-    if (apres) apres();
-  }));
 }
 
 function ligneJoueur(j, i) {
@@ -553,10 +404,6 @@ function ligneJoueur(j, i) {
 }
 
 function brancherJeuAccueil(apres) {
-  app.querySelectorAll('[data-set-accueil]').forEach((b) => b.addEventListener('click', () => {
-    changerDeSet(b.dataset.setAccueil);
-    if (apres) apres();
-  }));
   app.querySelectorAll('[data-jeu-accueil]').forEach((b) => b.addEventListener('click', () => {
     store.cfg.materielActif = b.dataset.jeuAccueil;
     sauverCfg();
@@ -585,81 +432,11 @@ function chip(k, label) {
   return `<label class="chip ${on ? 'on' : ''}"><input type="checkbox" data-chip="${k}" ${on ? 'checked' : ''}>${label}</label>`;
 }
 
-/** Ce que dit la variante des plans uniques, en une ligne. */
-const LIBELLE_UNIQUE = {
-  MONTAGE: 'un plan ne paraît jamais deux fois dans un banc',
-  SEQUENCE: 'un plan ne paraît jamais deux fois dans une même séquence',
-  VOISIN: 'deux fois le même plan ne se posent jamais côte à côte',
-};
-
-/**
- * Les options qui ne peuvent pas tenir ensemble : cocher l'une décoche
- * l'autre. « Pas de Plans de départ » a besoin d'une rivière de Plans Larges à
- * part pour n'offrir qu'eux tant qu'un banc est vide ; « pioches mélangées »
- * la supprime.
- */
-const EXCLUSIFS = [['sansPlanDepart', 'piochesMelangees']];
-
-/**
- * Le bouton qui montre ou masque les illustrations. Le réglage est **le même
- * partout** — accueil, table de jeu, écran Matériel : le basculer ici le
- * bascule pour tout le monde, il n'y a qu'une seule option. Il n'y a donc plus
- * à repasser par l'accueil pour regarder le matériel en lecture nue.
- */
-function boutonIllus(id = '') {
-  return `<button class="pill mini" ${id ? `id="${id}"` : ''} data-bascule-illus="1"
-    title="Afficher ou masquer les illustrations — le même réglage partout">
-    ${store.cfg.illustrations ? 'Images visibles' : 'Images masquées'}
-  </button>`;
-}
-
-/**
- * Le TEMPLATE des Plans Larges : l'habillage imprimé — et lui seul — posé sur
- * les cartes. Un interrupteur du Matériel, comme les images : le réglage vaut
- * partout, table, éditeur, banc et PDF.
- */
-function boutonGabarits() {
-  const on = !!store.cfg.gabarits;
-  return `<button class="pill mini ${on ? '' : 'eteint'}" data-bascule-gabarits="1"
-    title="Habiller les Plans Larges du template imprimé : cadre, boîte de minutage, bande verte à bord déchiré, bandeau « PLAN LARGE ». Les icônes, les images, les pouvoirs et le minutage restent ceux de l’application. Décoché, les cartes gardent leur habillage propre">
-    ${on ? '▣ Template Plan Large' : '▢ Template Plan Large'}
-  </button>`;
-}
-
-function brancherBasculeGabarits(apres) {
-  app.querySelectorAll('[data-bascule-gabarits]').forEach((b) => b.addEventListener('click', () => {
-    store.cfg.gabarits = !store.cfg.gabarits;
-    sauverCfg();
-    if (apres) apres();
-  }));
-}
-
-function brancherBasculeIllus(apres) {
-  app.querySelectorAll('[data-bascule-illus]').forEach((b) => b.addEventListener('click', () => {
-    store.cfg.illustrations = !store.cfg.illustrations;
-    sauverCfg();
-    if (apres) apres();
-  }));
-}
-
 function brancherChips(apres) {
   app.querySelectorAll('[data-chip]').forEach((el) => el.addEventListener('change', () => {
-    const k = el.dataset.chip;
-    store.cfg[k] = el.checked;
-    // Deux variantes qui ne vont pas ensemble : cocher l'une décoche l'autre,
-    // plutôt que de laisser une partie se lancer sur un réglage impossible.
-    let exclue = false;
-    if (el.checked) {
-      for (const paire of EXCLUSIFS) {
-        if (!paire.includes(k)) continue;
-        for (const autre of paire) if (autre !== k && store.cfg[autre]) { store.cfg[autre] = false; exclue = true; }
-      }
-    }
+    store.cfg[el.dataset.chip] = el.checked;
     sauverCfg();
     el.closest('.chip').classList.toggle('on', el.checked);
-    // Une case décochée dans notre dos doit se voir : `apres` repeint l'écran,
-    // et l'autre case s'y montre décochée.
-    if (exclue && !apres) return;
     if (apres) apres();
   }));
 }
@@ -675,33 +452,33 @@ function brancherChamps(apres) {
   }));
 }
 
+/** Ce que porte le paquet qui part en partie. */
 function resumePaquet() {
-  const { doubles, larges, departs } = construirePaquet(store.cfg);
-  const faces = new Set(); departs.forEach((d) => d.faces.forEach((f) => faces.add(f.num)));
+  const { doubles, larges, departs } = construirePaquet();
   return `<table class="tbl">
-    <tr><td>Cartes Plan Moyen / Gros Plan</td><td class="num">${doubles.length}</td></tr>
-    <tr><td>Cartes Plan Large</td><td class="num">${larges.length}</td></tr>
-    <tr><td>Faces de Plan de départ</td><td class="num">${faces.size}</td></tr>
+    <tr><td>Cartes à deux Gros Plans</td><td class="num">${doubles.length}</td></tr>
+    <tr><td>Plans Larges</td><td class="num">${larges.length}</td></tr>
+    <tr><td>Cartes de départ</td><td class="num">${departs.length}</td></tr>
   </table>`;
 }
 
 /**
- * Quel jeu de matériel part en partie. Il n'y a pas de retour en arrière
- * destructeur : les deux coexistent, ce sélecteur dit lequel se lance.
+ * Quel jeu de matériel part en partie : les cartes de la boîte, telles que
+ * livrées, ou la boîte MODIFIÉE — celle qui porte les retouches du Matériel.
+ * Les deux coexistent : ce sélecteur dit lequel se lance.
  */
 function bandeauMateriel() {
   const modifie = store.cfg.materielActif === 'MODIFIE';
   const n = Object.keys(store.cfg.materiel.plans).length + Object.keys(store.cfg.materiel.paires).length;
   const off = store.cfg.cartesDesactivees.length;
   return `<div class="bandeau-materiel ${modifie ? 'modifie' : ''}">
-    ${segmentSets('data-set-accueil')}
     <div class="segments large" id="seg-materiel">
-      <button class="${modifie ? '' : 'on'}" data-jeu-accueil="IMPRIME">${store.cfg.set} Origine</button>
-      <button class="${modifie ? 'on' : ''}" data-jeu-accueil="MODIFIE">${store.cfg.set} Modifiée</button>
+      <button class="${modifie ? '' : 'on'}" data-jeu-accueil="IMPRIME">Boîte 4.1</button>
+      <button class="${modifie ? 'on' : ''}" data-jeu-accueil="MODIFIE">Boîte modifiée</button>
     </div>
     <span class="aide">${modifie
       ? (n ? `${n} retouche${n > 1 ? 's' : ''} en jeu` : 'aucune retouche pour l’instant')
-      : `les cartes du set, sans retouche${store.cfg.set === SET_DEFAUT ? '' : ' ni assemblage du Matériel'}`}${off ? ` · ${off} carte${off > 1 ? 's' : ''} écartée${off > 1 ? 's' : ''}` : ''}</span>
+      : 'les cartes telles que livrées, sans retouche'}${off ? ` · ${off} carte${off > 1 ? 's' : ''} écartée${off > 1 ? 's' : ''}` : ''}</span>
     <span class="bm-lien" data-go="#/materiel">éditer ›</span>
   </div>`;
 }
@@ -723,49 +500,38 @@ function allerA(hash) {
 }
 
 /**
- * Le paquet du set choisi suffit-il pour `n` joueuses ? On le demande au
- * matériel de la CONFIGURATION — celui qui partira en partie —, même si une
- * partie en cours joue un autre jeu.
+ * Le paquet suffit-il pour `n` joueuses ? On le demande au matériel de la
+ * CONFIGURATION — celui qui partira en partie —, même si une partie en cours
+ * joue un autre jeu.
  */
 function bilanJeu(n = store.joueurs.length, jeu = store.cfg.materielActif) {
   appliquerMateriel(jeu === 'MODIFIE' ? store.cfg.materiel : null,
-    store.cfg.cartesDesactivees, store.cfg.materiel, store.cfg.set);
+    store.cfg.cartesDesactivees, store.cfg.materiel);
   try { return bilanPaquet(store.cfg, n); } finally { appliquerJeuActif(); }
 }
 
-/**
- * Ce qu'on dit quand le set choisi n'a pas de quoi faire une partie — et ce
- * qu'il faut faire. Le cas le plus trompeur passe en premier : l'assemblage
- * fait dans le Matériel est une retouche, il vit dans le jeu « Modifié » ;
- * lancer l'« Origine », c'est jouer sans lui.
- */
-function messageSetIncomplet(n = store.joueurs.length) {
-  const set = store.cfg.set;
+/** Ce qu'on dit quand le paquet n'a pas de quoi faire une partie — et quoi faire. */
+function messagePaquetCourt(n = store.joueurs.length) {
   const s = (k) => (k > 1 ? 's' : '');
-  if (store.cfg.materielActif !== 'MODIFIE' && bilanJeu(n, 'MODIFIE').jouable) {
-    return `Vous lancez <b>« ${set} Origine »</b>, qui n'a pas encore d'assemblage : les cartes que vous
-      avez assemblées dans le Matériel sont dans <b>« ${set} Modifiée »</b>.
-      <button class="pill mini" data-jeu-accueil="MODIFIE">Jouer « ${set} Modifiée »</button>`;
-  }
   const b = bilanJeu(n);
   const morceaux = [];
   if (b.manque > 0) {
-    morceaux.push(`il faut <b>${b.besoin} cartes</b> pour ${n} joueuse${s(n)}, il y en a <b>${b.total}</b>
-      de jouables — ${b.doubles} carte${s(b.doubles)} PM / GP complète${s(b.doubles)} et ${b.larges}
-      Plan${s(b.larges)} Large${s(b.larges)} : <b>il en manque ${b.manque}</b>${b.pmgpManquantes
-    ? `, dont ${b.pmgpManquantes} carte${s(b.pmgpManquantes)} PM / GP au moins` : ''}`);
+    morceaux.push(`il faut <b>${b.besoin} cartes</b> pour ${n} joueuse${s(n)} — ${Math.max(0, store.cfg.tours - 1)}
+      à prendre chacune, plus la rivière —, le paquet en compte <b>${b.total}</b> : ${b.doubles}
+      carte${s(b.doubles)} à deux Gros Plans et ${b.larges} Plan${s(b.larges)} Large${s(b.larges)}`);
   }
   if (b.departsManquants) {
     morceaux.push(`il manque ${b.departsManquants} carte${s(b.departsManquants)} de départ`);
   }
   if (b.incompletes) {
     const liste = b.aCompleter.slice(0, 8).join(', ') + (b.incompletes > 8 ? '…' : '');
-    morceaux.push(`<b>${b.incompletes} carte${s(b.incompletes)} n'${b.incompletes > 1 ? 'ont' : 'a'} qu'une
+    morceaux.push(`<b>${b.incompletes} carte${s(b.incompletes)} n’${b.incompletes > 1 ? 'ont' : 'a'} qu’une
       moitié</b> (${liste}) et reste${b.incompletes > 1 ? 'nt' : ''} hors du paquet — à compléter dans
-      Matériel → Assemblage`);
+      Matériel › Assemblage`);
   }
-  return `Le Set ${set} ne se joue pas encore${store.cfg.materielActif === 'MODIFIE' ? ` (« ${set} Modifiée »)`
-    : ` (« ${set} Origine »)`} : ${morceaux.join(' ; ')}. Choisissez le Set ${SET_DEFAUT} pour jouer.`;
+  const boite = store.cfg.materielActif === 'MODIFIE' && bilanJeu(n, 'IMPRIME').jouable
+    ? ' <button class="pill mini" data-jeu-accueil="IMPRIME">Jouer la boîte 4.1</button>' : '';
+  return `Ce paquet ne suffit pas pour jouer : ${morceaux.join(' ; ')}.${boite}`;
 }
 
 function lancerPartie() {
@@ -776,21 +542,12 @@ function lancerPartie() {
   store.partie = creerPartie(store.joueurs.map((j) => ({ ...j })), cloneConfig(store.cfg), store.cfg.graine || nouvelleGraine());
   // La partie fige son matériel : à partir d'ici c'est le sien qui vaut.
   appliquerJeuActif();
-  store.formatChoisi = null;
+  store.moitieChoisie = null;
   store.choixRiviere = null;
   store.undo = null;
   store.joueurVu = null;
   allerA('#/partie');
 }
-
-// Les deux temps du tour restent ceux des règles — on dérushe, puis on monte —
-// mais l'écran ne les sépare plus : on prend dans la rivière et l'on pose dans
-// son banc sans changer de fenêtre. Le bandeau n'a donc plus de phase à nommer.
-const PHASES = {
-  DEPART: 'Mise en place — choix du Plan de départ',
-  DERUSHAGE: 'Dérushage et montage',
-  MONTAGE: 'Montage',
-};
 
 /**
  * Les colonnes de lecture d'un banc. On peut les braquer sur une autre
@@ -806,7 +563,7 @@ function colonnesJoueur(st, sc, vu) {
       ${suit ? '' : '<button class="pill mini" id="suivre-tour">↩ suivre qui joue</button>'}
       ${blocRecensement(sc[vu])}
     </div>
-    <div class="panneau"><h2>Score de ${nom}</h2>${listeObjectifs(sc[vu])}</div>`;
+    <div class="panneau"><h2>Score de ${nom}</h2>${listePouvoirs(sc[vu])}</div>`;
 }
 
 /**
@@ -834,23 +591,18 @@ function vuePartie(enchainer = true) {
   const vu = store.joueurVu !== null && st.joueurs[store.joueurVu] ? store.joueurVu : p;
 
   // Le banc affiché. Un clic d'onglet l'épingle. Sinon : celui de qui joue
-  // quand c'est une humaine — c'est là qu'elle doit poser, et à deux humaines
-  // sur le même écran chacune doit retrouver le sien à son tour —, et celui de
-  // la première humaine pendant qu'une IA joue : son coup ne vient pas imposer
-  // son banc à l'écran, on voit la carte partir, la vue ne bouge pas.
+  // quand c'est une humaine — c'est là qu'elle doit poser —, et celui de la
+  // première humaine pendant qu'une IA joue : on voit la carte partir, la vue
+  // ne bouge pas.
   const humains = st.joueurs.map((jj, i) => (jj.type === 'HUMAIN' ? i : -1)).filter((i) => i >= 0);
   const parDefaut = humaine ? p : (humains.length ? humains[0] : p);
   const vuB = store.bancVu !== null && st.bancs[store.bancVu] ? store.bancVu : parDefaut;
 
-  // La zone garde toujours la même forme, quel que soit celui qui joue : seuls
-  // les clics sont réservés à la joueuse humaine.
+  // Pendant la mise en place, on montre TOUJOURS la carte de départ de la
+  // joueuse qui regarde — jamais celle de l'IA qui joue.
   let zone;
-  // Pendant la mise en place, on montre TOUJOURS le choix de la joueuse qui
-  // regarde — jamais celui de l'IA qui joue. Sans quoi les Plans de départ des
-  // autres défilent sous ses yeux, comme une distribution qu'on lui ferait
-  // regarder : elle ne peut rien en faire, et ne voit pas les siens.
   if (st.phase === 'DEPART') zone = zoneDepart(st, parDefaut, humaine);
-  else if (st.phase === 'DERUSHAGE') zone = zoneDerushage(st, humaine);
+  else if (st.phase === 'DERUSHAGE') zone = zoneTable(st, humaine);
   else zone = zoneMontage(st, p, humaine);
 
   html(`${topbar('#/partie')}
@@ -858,19 +610,12 @@ function vuePartie(enchainer = true) {
     ${enl ? bandeauEnLigne(enl, st) : ''}
     <div class="table-jeu">
       <div class="zone-gauche">
-        ${/* Le bandeau du tour a disparu : la phase et le nom de qui joue se
-              lisent déjà dans la colonne de droite — « À son tour », en couleur,
-              à côté du nom. Ne subsiste que ce qu'aucune autre place ne dit :
-              le compte à rebours du dernier tour. */
-          st.finDeclenchee == null ? '' : `<div class="bandeau-tour">
+        ${st.finDeclenchee == null ? '' : `<div class="bandeau-tour">
             <span class="jeton-dernier">dernier tour</span>
           </div>`}
 
-        ${carteObjectifHTML(st, vuB)}
         <div class="panneau zone-phase">${zone}</div>
-        ${/* Un seul banc à l'écran, les autres en onglets. Par défaut on suit
-              qui joue — le coup d'une IA se regarde sur SON banc — et l'onglet
-              épingle jusqu'au tour suivant. */''}
+        ${/* Un seul banc à l'écran, les autres en onglets. */''}
         <div class="panneau">
           <h2 class="onglets-bancs">
             ${st.joueurs.map((jj, i) => `<button class="onglet-banc ${i === vuB ? 'on' : ''}"
@@ -904,18 +649,17 @@ function vuePartie(enchainer = true) {
         </div>
 
         <div class="reglages-partie">
-          ${boutonIllus('bascule-illus')}
           <button class="pill mini" id="bascule-points"
             title="Afficher ou masquer ce que chaque plan rapporte, au coin des cartes">
             ${store.cfg.pointsSurCartes === false ? 'Points masqués' : 'Points visibles'}
           </button>
           <button class="pill mini ${store.cfg.apercuSurvol ? '' : 'eteint'}" id="bascule-apercu"
-            title="Ouvrir la fiche d’une carte quand on la survole">
+            title="Voir une carte en grand quand on la survole">
             Pop-up au survol
           </button>
           <span class="jeton-materiel ${st.cfg.materielActif === 'MODIFIE' ? 'modifie' : ''}"
             title="Le jeu de matériel avec lequel cette partie a été lancée">
-            Set ${st.cfg.set || SET_DEFAUT} · ${st.cfg.materielActif === 'MODIFIE' ? 'modifié' : 'origine'}</span>
+            Boîte 4.1${st.cfg.materielActif === 'MODIFIE' ? ' · modifiée' : ''}</span>
         </div>
       </div>
     </div>
@@ -926,9 +670,7 @@ function vuePartie(enchainer = true) {
   // La table dit qui joue : pendant un tour d'IA, la zone reste en place mais
   // ne se laisse pas manipuler.
   document.body.classList.toggle('ia-joue', !humaine);
-  // Le verrou se pose dès le rendu, pas au premier battement du vol : sans
-  // cela, la main revient à l'humaine le temps d'une image, sous une carte
-  // encore en l'air.
+  // Le verrou se pose dès le rendu, pas au premier battement du vol.
   if (store.vols.length) document.body.classList.add('coup-en-vol');
   // Le fil des coups d'IA n'a pas cours en ligne : chaque siège est un appareil.
   if (enchainer && !enl) derouler(st).catch(() => { document.body.classList.remove('ia-joue', 'coup-en-vol'); });
@@ -937,48 +679,42 @@ function vuePartie(enchainer = true) {
 // --- Le banc ---------------------------------------------------------------
 
 // La largeur d'un plan dans un banc, en accord avec la feuille de style : elle
-// sert à faire la place à l'aperçu de pose.
-const LARGEUR_BANC = { GP: 85, PM: 169, PL: 254, DEP: 254 };
-// L'écart entre deux plans d'une même séquence, lui aussi en accord avec la
-// feuille de style (`.banc .sequence { gap }`).
+// sert à aligner les séquences et à faire la place à l'aperçu de pose. Une
+// carte fait 120 × 80 mm : un Plan Large la prend entière, un Gros Plan la
+// moitié.
+const LARGEUR_BANC = { GP: 135, PL: 270, DEP: 270 };
+// L'écart entre deux plans d'une même séquence (`.banc .sequence { gap }`).
 const ECART_PLANS = 2;
 
 /** La largeur d'une séquence dans le banc, rembourrage compris. */
 function largeurSeq(seq) {
   if (!seq.length) return 8;
-  const plans = seq.reduce((s, p) => s + (LARGEUR_BANC[p.format] || 169), 0);
+  const plans = seq.reduce((s, p) => s + (LARGEUR_BANC[p.format] || LARGEUR_BANC.GP), 0);
   return 8 + plans + (seq.length - 1) * ECART_PLANS;
 }
 
 /**
  * La distance du bord gauche d'une séquence au **centre de son ancre** — le
- * plan qui a ouvert la ligne, marqué à la pose. Une ligne peut porter plusieurs
+ * plan qui l'a ouverte, marqué à la pose. Une séquence peut porter plusieurs
  * Plans Larges, un Raccord faisant charnière entre eux : c'est celui qui l'a
- * ouverte qui la tient, et il ne cède la place à aucun autre — sans quoi un
- * Plan Large posé à gauche ferait sauter l'ancre et glisser toute la ligne.
- * À défaut de marque — un banc d'avant la v0.14.1 —, le premier Plan Large ou
- * Plan de départ ; à défaut de l'un et de l'autre, le milieu de la ligne.
+ * ouverte qui la tient. À défaut de marque, le premier Plan Large ou Plan de
+ * départ ; à défaut encore, le milieu.
  */
 function ancreDe(seq) {
   let k = seq.findIndex((p) => p.ancre);
   if (k < 0) k = seq.findIndex((p) => p.format === 'PL' || p.format === 'DEP');
   if (k < 0) return largeurSeq(seq) / 2;
   const avant = seq.slice(0, k)
-    .reduce((s, p) => s + (LARGEUR_BANC[p.format] || 169) + ECART_PLANS, 0);
-  return 4 + avant + (LARGEUR_BANC[seq[k].format] || 169) / 2;
+    .reduce((s, p) => s + (LARGEUR_BANC[p.format] || LARGEUR_BANC.GP) + ECART_PLANS, 0);
+  return 4 + avant + (LARGEUR_BANC[seq[k].format] || LARGEUR_BANC.GP) / 2;
 }
 
 /**
- * La **colonne d'ancrage** d'un banc en lignes : toutes les lignes alignent le
- * centre de leur Plan Large — ou de leur Plan de départ — sur la même verticale.
- * La ligne qui a le plus de plans à gauche de son ancre fixe la colonne ; les
- * autres comblent l'écart d'un retrait.
- *
- * C'est un **calage dans le flux**, pas un décalage : la piste a donc la largeur
- * de ce qu'elle contient, et le banc défile de gauche à droite dès que cela
- * déborde — sans jamais rompre l'alignement. Un décalage en marges, lui, cessait
- * de tenir dès que le banc manquait de place : le plan central se mettait à
- * dériver par rapport à ceux des autres lignes.
+ * La **colonne d'ancrage** d'un banc : toutes les séquences alignent le centre
+ * de leur Plan Large — ou de leur Plan de départ — sur la même verticale. Celle
+ * qui a le plus de plans à gauche de son ancre fixe la colonne ; les autres
+ * comblent l'écart d'un retrait. C'est un calage dans le flux : le banc défile
+ * de gauche à droite dès que cela déborde, sans rompre l'alignement.
  */
 function colonneAncrage(sequences) {
   if (!sequences.length) return { avant: 0, apres: 0 };
@@ -987,51 +723,14 @@ function colonneAncrage(sequences) {
   return { avant, apres };
 }
 
-/**
- * La CARTE OBJECTIF de la partie, posée au-dessus de la table.
- *
- * Elle est commune : une seule carte pour tout le monde, révélée au début et
- * visible jusqu'au bout. Elle se dessine donc comme une carte du jeu — un titre,
- * ce qu'elle rapporte, ce qu'elle demande — et non comme une ligne de réglage.
- *
- * Le témoin de droite dit si le banc **qu'on regarde** la tient. C'est la seule
- * chose qui change d'une joueuse à l'autre : le but est le même, le montage non.
- */
-function carteObjectifHTML(st, vuB) {
-  const o = objectifCommunDe(st.cfg);
-  if (!o) return '';
-  const pts = pointsObjectifCommun(o, st.cfg);
-  const tenus = st.bancs.map((b) => objectifCommunTenu(b, st.cfg));
-  const tenu = tenus[vuB];
-  return `<div class="carte-objectif ${tenu ? 'tenu' : ''}">
-    <div class="co-jeton">${pts}</div>
-    <div class="co-texte">
-      <div class="co-titre">Carte Objectif — ${o.titre}</div>
-      <div class="co-phrase"><b>${pts} points</b> ${o.phrase}</div>
-      <div class="co-aide">${o.aide}</div>
-    </div>
-    <div class="co-etats">
-      ${st.joueurs.map((jj, i) => {
-    const ou = avancementObjectifCommun(st.bancs[i], st.cfg);
-    return `<span class="co-etat ${tenus[i] ? 'oui' : 'non'}"
-        title="${jj.nom} ${tenus[i] ? 'tient l’objectif' : `ne le tient pas encore${ou ? ` — ${ou}` : ''}`}">
-        <span class="point-couleur" style="background:${jj.couleur}"></span>${jj.nom}
-        <b>${tenus[i] ? '✓' : (ou || '—')}</b></span>`;
-  }).join('')}
-    </div>
-  </div>`;
-}
-
 function bancBloc(st, i, titre, interactif) {
   const banc = st.bancs[i];
-  // Ce que chaque carte rapporte ici et maintenant, pour l'aperçu au survol.
-  // Un plan qui porte deux pouvoirs produit deux lignes : on garde le détail
-  // — l'infobulle montre alors d'où vient chaque point — et leur somme.
+  // Ce que chaque carte rapporte ici et maintenant. Un plan qui porte deux
+  // pouvoirs produit deux lignes : on garde le détail et leur somme.
   const points = new Map();
   const detail = new Map();
-  // Ce que chaque séquence rapporte, à part : en lignes, c'est le compte de sa
-  // ligne, affiché à son bout. Les points sont portés par la carte qui les fait
-  // marquer, quelle que soit la ligne où elle est allée les chercher.
+  // Ce que chaque séquence rapporte, affiché à son bout. Les points sont
+  // portés par la carte qui les fait marquer.
   const ptsLigne = banc.sequences.map(() => 0);
   const score = compter(banc, st.cfg);
   for (const l of score.lignes) {
@@ -1039,76 +738,35 @@ function bancBloc(st, i, titre, interactif) {
     const a = detail.get(l.plan) || []; a.push(l.pts); detail.set(l.plan, a);
     if (ptsLigne[l.sequence] !== undefined) ptsLigne[l.sequence] += l.pts;
   }
-  // Une carte montée hors du film porte son malus à SON coin : le décompte
-  // s'explique là où on le lit. Le rang de sa ligne se retrouve par le plan
-  // lui-même — le malus tient à sa place, pas à son bandeau.
-  const horsFilm = new Set(score.horsFilm || []);
-  if (horsFilm.size && score.horsFilmMalus) {
-    banc.sequences.forEach((seq, si) => seq.forEach((p) => {
-      if (!horsFilm.has(p)) return;
-      points.set(p, (points.get(p) || 0) + score.horsFilmMalus);
-      const a = detail.get(p) || []; a.push(score.horsFilmMalus); detail.set(p, a);
-      ptsLigne[si] += score.horsFilmMalus;
-    }));
-  }
 
   // Le plan qui vient d'être posé : c'est là que la carte en vol atterrit.
   const neuf = st.dernierPose && st.dernierPose.p === i ? st.dernierPose : null;
-  // Deux façons de viser un emplacement : depuis la rivière, avant même
-  // d'avoir pris la carte — c'est le tour ordinaire —, ou depuis la carte en
-  // main, quand l'ordre imprimé sépare le dérushage du montage.
   // `interactif` vaut true à la table — la visée se lit alors dans le store —,
   // ou porte directement une visée : c'est ainsi que le Banc de montage pose un
   // plan qu'il a choisi lui-même, sans carte et sans tour de jeu.
   const vise = interactif === true ? viseeCourante(st, i)
     : (interactif && typeof interactif === 'object' ? interactif : null);
   const coups = !vise ? []
-    : vise.coups || coupsPossibles(st, i, vise.carte).filter((c) => c.format === vise.format);
-  // Variante « banc en lignes » : une séquence par ligne, empilées de haut en
-  // bas. On ne pose donc plus une séquence *entre* deux autres — on l'ajoute
-  // au-dessus ou en dessous —, et les emplacements changent d'axe : ceux des
-  // séquences restent à gauche et à droite de leur ligne, ceux des nouvelles
-  // séquences deviennent deux bandes, l'une au-dessus du banc, l'autre en
-  // dessous.
-  const lignes = !!st.cfg.bancEnLignes;
+    : vise.coups || coupsPossibles(st, i, vise.carte).filter((c) => c.moitie === vise.moitie);
 
   // Au survol d'un emplacement, le plan s'y montre en transparence, tel qu'il
-  // s'y poserait : la bonne moitié, et la face que le côté de pose lui donne.
+  // s'y poserait.
   const carteEnMain = vise ? vise.carte : null;
-  // Un emplacement occupe une bande verticale, pas un pavé : c'est ce qui
-  // permet au banc de garder la même largeur qu'il aura une fois la carte
-  // posée. Les emplacements ne doivent pas décider de la mise en page — sinon
-  // le banc se réorganise pendant qu'on vise, puis se réorganise encore une
-  // fois la carte posée, et l'on s'y perd.
   // De quel côté de l'emplacement la carte va tomber : c'est là que l'aperçu
-  // se montre, en recouvrant la flèche et en s'étendant vers la place qu'elle
-  // prendra — jamais par-dessus la carte voisine.
-  const versOu = (c) => {
-    if (c.cote) return c.cote;
-    if (c.action === 'GENERIQUE') return c.role === 'OUVERTURE' ? 'gauche' : 'droite';
-    if (c.action === 'NOUVELLE_SEQUENCE') {
-      if (lignes) return c.pos === 0 ? 'haut' : 'bas';
-      return c.pos === 0 ? 'gauche' : 'droite';
-    }
-    return 'droite';
-  };
+  // se montre, en s'étendant vers la place qu'elle prendra.
+  const versOu = (c) => (c.cote ? c.cote : (c.pos === 0 ? 'haut' : 'bas'));
   // `couche` : l'emplacement est dans une bande horizontale, où l'étiquette se
-  // lit normalement. Ailleurs, une étiquette longue se met debout pour ne pas
-  // élargir le banc.
+  // lit normalement.
   const fenteChoix = (c, couche) => {
     const coup = encodeURIComponent(JSON.stringify(sansCarte(c)));
-    const lg = etiquetteCoup(c, lignes);
+    const lg = etiquetteCoup(c);
     const debout = !couche && lg.length > 3;
     const bouton = `<button class="fente-btn ${debout ? 'debout' : ''}" data-coup="${coup}">${lg}</button>`;
     if (!carteEnMain && !(vise && vise.plan)) return `<span class="fente-choix">${bouton}</span>`;
-    // Le Banc de montage désigne le plan lui-même. Il peut le désigner par une
-    // FONCTION du coup : la carte se retourne selon le côté où on l'accroche,
-    // et l'aperçu doit montrer la face qu'on obtiendra vraiment.
-    const plan = (typeof vise?.plan === 'function' ? vise.plan(c) : vise && vise.plan)
-      || planPose(carteEnMain, c.format, c.role, faceJouee(c.format, c.cote, st.cfg));
+    const plan = (vise && vise.plan) || planPose(carteEnMain, c.moitie);
     // L'aperçu porte lui aussi le coup : c'est toute la carte en pointillés qui
     // se clique, pas seulement son étiquette.
-    return `<span class="fente-choix vers-${versOu(c)}" style="--ap:${LARGEUR_BANC[plan.format] || 169}px">
+    return `<span class="fente-choix vers-${versOu(c)}" style="--ap:${LARGEUR_BANC[plan.format] || LARGEUR_BANC.GP}px">
       ${bouton}<span class="apercu-pose" data-coup="${coup}">${renderPlan(plan, { muet: true })}</span>
     </span>`;
   };
@@ -1118,14 +776,12 @@ function bancBloc(st, i, titre, interactif) {
     return `<div class="ecart actif">${liste.map((c) => fenteChoix(c)).join('')}</div>`;
   };
   // Une bande court sur toute la largeur du banc, au-dessus ou en dessous des
-  // lignes : vide, elle ne prend aucune place — le banc ne doit pas se
-  // décaler selon qu'on vise ou non.
+  // séquences : vide, elle ne prend aucune place.
   const bande = (liste) => (liste.length
     ? `<div class="ecart actif bande">${liste.map((c) => fenteChoix(c, true)).join('')}</div>`
     : '');
 
-  // Les bandeaux effectifs, quand ils diffèrent de l'imprimé — sinon rien, et
-  // le rendu reprend ceux de la carte.
+  // Les pouvoirs effectifs, quand ils diffèrent de l'imprimé — sinon rien.
   const objsRemplaces = (plan) => {
     const eff = objsEffectifs(plan, banc, st.cfg);
     const imp = objsDe(plan);
@@ -1134,19 +790,10 @@ function bancBloc(st, i, titre, interactif) {
 
   const carte = (plan, si, k) => renderPlan(plan, {
     // Un compteur ne s'affiche que si le plan a de quoi marquer. Sans pouvoir,
-    // ou avec un pouvoir qui n'ouvre qu'un droit — piocher, monter une séquence
-    // de plus —, il n'y a rien à compter : un « 0 » y ferait croire à un
-    // pouvoir qui a échoué. Une Carte Raccord en a toujours un : elle vaut
-    // quelque chose par elle-même, en plus ou en moins.
-    // Une carte hors du film en porte un dans tous les cas : elle coûte, et
-    // c'est justement ce qu'il faut voir.
-    points: planMarque(objsEffectifs(plan, banc, st.cfg)) || horsFilm.has(plan)
-      ? (points.get(plan) || 0) : undefined,
-    horsFilm: horsFilm.has(plan),
-    // Un Raccord dont le bandeau a été bonifié se dessine avec le NOUVEAU :
-    // on doit lire sur la carte ce qu'elle rapporte ici, pas ce qu'elle
-    // rapporterait ailleurs. L'aperçu au survol garde l'imprimé à côté, et le
-    // jeton de points passe au vert.
+    // ou avec un pouvoir qui n'ouvre qu'un droit, il n'y a rien à compter : un
+    // « 0 » y ferait croire à un pouvoir qui a échoué.
+    points: planMarque(objsEffectifs(plan, banc, st.cfg)) ? (points.get(plan) || 0) : undefined,
+    // Un Raccord dont le pouvoir a été bonifié : le jeton de points passe au vert.
     objs: objsRemplaces(plan),
     bonifie: raccordBonifie(plan, banc, st.cfg),
     detail: detail.get(plan) || [],
@@ -1157,65 +804,37 @@ function bancBloc(st, i, titre, interactif) {
   const n = banc.sequences.length;
   if (!n) morceaux.push('<div class="vide" style="color:#8a8496">Banc vide</div>');
 
-  if (lignes) {
-    // Toutes les lignes alignent leur ancre sur la même verticale : celle qui a
-    // le plus de plans à sa gauche fixe la colonne, les autres comblent l'écart
-    // d'un retrait. Chaque ligne ainsi complétée fait la même largeur :
-    // centrées dans le banc, elles y amènent la colonne au milieu — et défilent
-    // d'un bloc quand cela déborde, sans jamais rompre l'alignement.
-    const col = colonneAncrage(banc.sequences);
-    // Au-dessus de tout : ouvrir une séquence en tête du film.
-    morceaux.push(bande(coups.filter((c) => c.action === 'NOUVELLE_SEQUENCE' && c.pos === 0)));
-    banc.sequences.forEach((seq, si) => {
-      const gauche = Math.round(col.avant - ancreDe(seq));
-      const droite = Math.round(col.apres - (largeurSeq(seq) - ancreDe(seq)));
-      // Les deux bords se posent **hors du flux**, contre les flancs de la
-      // séquence : ils ne prennent donc aucune largeur, et ouvrir un
-      // emplacement d'un côté ne déplace ni la ligne ni son ancre.
-      // Le calage de centrage se pose AVANT la pastille : elle reste ainsi au
-      // départ du contenu, et non orpheline au bout d'un vide.
-      morceaux.push('<div class="ligne">');
-      morceaux.push(`<span class="ligne-pts ${(ptsLigne[si] || 0) < 0 ? 'negatif' : ((ptsLigne[si] || 0) ? '' : 'nul')}"
-        title="Ce que cette ligne rapporte">${ptsLigne[si] || 0}</span>`);
-      morceaux.push(`<div class="ligne-fil" style="padding-left:${gauche}px;padding-right:${droite}px">`);
-      morceaux.push('<div class="ligne-corps">');
-      // Le générique d'ouverture est en tête du film, donc au bout gauche de
-      // la première ligne ; les crédits, au bout droit de la dernière.
-      morceaux.push(`<div class="bord gauche">${fente(coups.filter((c) => (c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche')
-        || (c.action === 'GENERIQUE' && c.role === 'OUVERTURE' && si === 0)))}</div>`);
-      morceaux.push('<div class="sequence">');
-      seq.forEach((plan, k) => morceaux.push(carte(plan, si, k)));
-      morceaux.push('</div>');
-      morceaux.push(`<div class="bord droite">${fente(coups.filter((c) => (c.action === 'ETENDRE' && c.seq === si && c.cote === 'droite')
-        || (c.action === 'GENERIQUE' && c.role === 'CREDITS' && si === n - 1)))}</div>`);
-      morceaux.push('</div></div></div>');
-    });
-    // En dessous de tout : ouvrir une séquence en fin de film. Sur un banc
-    // vide, les deux bandes désigneraient le même coup : une seule suffit.
-    if (n) morceaux.push(bande(coups.filter((c) => c.action === 'NOUVELLE_SEQUENCE' && c.pos === n)));
-  } else {
-    banc.sequences.forEach((seq, si) => {
-      // Écart avant cette séquence : nouvelle séquence, soudure, générique.
-      morceaux.push(fente(coups.filter((c) => (c.action === 'NOUVELLE_SEQUENCE' && c.pos === si)
-        || (c.action === 'SOUDER' && c.pos === si - 1)
-        || (c.action === 'GENERIQUE' && c.role === 'OUVERTURE' && si === 0))));
-      morceaux.push('<div class="sequence">');
-      morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche')));
-      seq.forEach((plan, k) => morceaux.push(carte(plan, si, k)));
-      morceaux.push(fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'droite')));
-      morceaux.push('</div>');
-    });
-    morceaux.push(fente(coups.filter((c) => (c.action === 'NOUVELLE_SEQUENCE' && c.pos === n)
-      || (c.action === 'GENERIQUE' && c.role === 'CREDITS'))));
-  }
+  // Toutes les séquences alignent leur ancre sur la même verticale.
+  const col = colonneAncrage(banc.sequences);
+  // Au-dessus de tout : ouvrir une séquence en tête du film.
+  morceaux.push(bande(coups.filter((c) => c.action === 'NOUVELLE_SEQUENCE' && c.pos === 0)));
+  banc.sequences.forEach((seq, si) => {
+    const gauche = Math.round(col.avant - ancreDe(seq));
+    const droite = Math.round(col.apres - (largeurSeq(seq) - ancreDe(seq)));
+    // Les deux bords se posent **hors du flux**, contre les flancs de la
+    // séquence : ouvrir un emplacement d'un côté ne déplace ni la ligne ni
+    // son ancre.
+    morceaux.push('<div class="ligne">');
+    morceaux.push(`<span class="ligne-pts ${(ptsLigne[si] || 0) < 0 ? 'negatif' : ((ptsLigne[si] || 0) ? '' : 'nul')}"
+      title="Ce que cette séquence rapporte">${ptsLigne[si] || 0}</span>`);
+    morceaux.push(`<div class="ligne-fil" style="padding-left:${gauche}px;padding-right:${droite}px">`);
+    morceaux.push('<div class="ligne-corps">');
+    morceaux.push(`<div class="bord gauche">${fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'gauche'))}</div>`);
+    morceaux.push('<div class="sequence">');
+    seq.forEach((plan, k) => morceaux.push(carte(plan, si, k)));
+    morceaux.push('</div>');
+    morceaux.push(`<div class="bord droite">${fente(coups.filter((c) => c.action === 'ETENDRE' && c.seq === si && c.cote === 'droite'))}</div>`);
+    morceaux.push('</div></div></div>');
+  });
+  // En dessous de tout : ouvrir une séquence en fin de film. Sur un banc vide,
+  // les deux bandes désigneraient le même coup : une seule suffit.
+  if (n) morceaux.push(bande(coups.filter((c) => c.action === 'NOUVELLE_SEQUENCE' && c.pos === n)));
 
-  const banche = `<div class="banc ${coups.length ? 'vise' : ''}" data-banc="${i}"><div class="banc-piste ${lignes ? 'lignes' : ''}">${morceaux.join('')}</div></div>`;
+  const banche = `<div class="banc ${coups.length ? 'vise' : ''}" data-banc="${i}"><div class="banc-piste lignes">${morceaux.join('')}</div></div>`;
   // Sans titre, on ne veut que le banc : c'est ce que demande le compte rendu
   // de fin de partie, qui donne le nom de la joueuse à sa façon.
   if (titre === null) return banche;
 
-  // Le compte de plans se lit au-dessus du banc qu'il décrit, plutôt que dans
-  // un bandeau commun où il fallait se souvenir de qui il parlait.
   const max = limitePlans(st.cfg);
   const faits = Math.min(compter(banc, st.cfg).plans, max);
   return `<div class="panneau">
@@ -1225,90 +844,78 @@ function bancBloc(st, i, titre, interactif) {
 }
 
 /**
- * Choisir la moitié à laisser visible ne touche pas à la partie : on repeint
- * la carte et le banc concernés plutôt que toute la table, pour que rien ne
- * clignote entre le clic sur la moitié et le clic sur l'emplacement.
- */
-/**
  * Viser une moitié dans la rivière. Rien n'est joué : on désigne seulement ce
- * que l'on veut poser, et le banc montre aussitôt où. Re-cliquer la même
+ * que l'on veut monter, et le banc montre aussitôt où. Re-cliquer la même
  * moitié annule la visée.
  */
-function viser(st, o, format) {
+function viser(st, o, moitie) {
   const c = store.choixRiviere;
-  store.choixRiviere = (c && memeOption(c.o, o) && c.format === format) ? null : { o, format };
+  store.choixRiviere = (c && memeOption(c.o, o) && c.moitie === moitie) ? null : { o, moitie };
   // Viser, c'est préparer une pose : si un onglet montrait un autre banc, on
   // revient sur celui de qui joue — c'est là que les emplacements vont s'ouvrir.
-  if (store.bancVu !== null && store.bancVu !== st.courant) store.bancVu = st.courant;
+  if (store.bancVu !== null && store.bancVu !== st.courant) { store.bancVu = st.courant; return vuePartie(false); }
   rafraichirVisee(st);
 }
 
 /**
- * Repeint ce que la visée change — les cartes de la rivière et le banc de qui
- * joue —, pas toute la table : une visée n'est pas un coup, et rien d'autre
- * ne doit bouger sous le curseur.
+ * Repeint ce que la visée change — les cartes offertes et le banc de qui joue —,
+ * pas toute la table : une visée n'est pas un coup, et rien d'autre ne doit
+ * bouger sous le curseur.
  */
 function rafraichirVisee(st) {
   const p = st.courant;
   const vise = store.choixRiviere;
   app.querySelectorAll('[data-derush]').forEach((el) => {
     const o = JSON.parse(decodeURIComponent(el.dataset.derush));
-    const f = vise && memeOption(vise.o, o) ? vise.format : null;
-    const boite = el.closest('.carte-retournable');
-    if (boite) boite.classList.toggle('visee', !!f);
-    el.querySelectorAll('.moitie[data-format]').forEach((m) => {
-      m.classList.toggle('choisi', m.dataset.format === f);
+    const m = vise && memeOption(vise.o, o) ? vise.moitie : null;
+    const boite = el.closest('.riviere-case');
+    if (boite) boite.classList.toggle('visee', !!m);
+    el.querySelectorAll('.moitie[data-moitie]').forEach((x) => {
+      x.classList.toggle('choisi', x.dataset.moitie === m);
     });
   });
 
-  const aide = app.querySelector('#aide-derushage');
-  if (aide) aide.innerHTML = aidePose(st);
+  const aide = app.querySelector('#aide-table');
+  if (aide) aide.innerHTML = aideTable(st, true);
 
   const banc = app.querySelector(`.banc[data-banc="${p}"]`);
   const piste = banc && banc.querySelector('.banc-piste');
-  if (!piste) return vuePartie();
+  if (!piste) return vuePartie(false);
   const bloc = document.createElement('div');
   bloc.innerHTML = bancBloc(st, p, '', true);
   piste.innerHTML = bloc.querySelector('.banc-piste').innerHTML;
-  piste.classList.toggle('lignes', !!st.cfg.bancEnLignes);
   banc.classList.toggle('vise', !!bloc.querySelector('.banc').classList.contains('vise'));
   brancherFentes(st, piste);
   brancherApercu(piste);
 }
 
-function choisirMoitie(st, format) {
-  store.formatChoisi = store.formatChoisi === format ? null : format;
+/** La moitié de la carte en main que l'on garde — quand la prise et la pose sont séparées. */
+function choisirMoitie(st, moitie) {
+  store.moitieChoisie = store.moitieChoisie === moitie ? null : moitie;
 
   const zone = app.querySelector('#choix-carte');
-  if (!zone) return vuePartie();
-  zone.querySelectorAll('.moitie[data-format]').forEach((el) => {
-    el.classList.toggle('choisi', el.dataset.format === store.formatChoisi);
+  if (!zone) return vuePartie(false);
+  zone.querySelectorAll('.moitie[data-moitie]').forEach((el) => {
+    el.classList.toggle('choisi', el.dataset.moitie === store.moitieChoisie);
   });
 
   const aide = app.querySelector('#aide-montage');
-  if (aide) aide.innerHTML = aideMontage(st, store.formatChoisi);
+  if (aide) aide.innerHTML = aideMontage(st, store.moitieChoisie);
 
   const piste = app.querySelector(`.banc[data-banc="${st.courant}"] .banc-piste`);
   if (piste) {
     const bloc = document.createElement('div');
     bloc.innerHTML = bancBloc(st, st.courant, '', true);
     piste.innerHTML = bloc.querySelector('.banc-piste').innerHTML;
-    piste.classList.toggle('lignes', !!st.cfg.bancEnLignes);
     brancherFentes(st, piste);
     brancherApercu(piste);
   }
 }
 
 /**
- * L'aperçu se range dans la bande du bas, aligné sous l'emplacement visé :
- * c'est le survol qui lui donne son abscisse, en coordonnées du banc, bornée
- * pour qu'il ne sorte jamais du cadre.
- */
-/**
  * Le banc retient quel emplacement est ouvert plutôt que de s'en remettre au
  * seul `:hover` : l'aperçu déborde de son emplacement, et le curseur qui le
- * longe passerait par des zones qui n'appartiennent ni à l'un ni à l'autre —
- * l'aperçu clignoterait sous la main qui le vise.
+ * longe passerait par des zones qui n'appartiennent ni à l'un ni à l'autre.
  */
 function suivreFente(el) {
   const banc = el.closest('.banc');
@@ -1335,14 +942,13 @@ function brancherFentes(st, racine = app) {
     if (store.enLigne && store.enLigne.partie) {
       const v = store.choixRiviere;
       if (st.phase === 'DERUSHAGE' && v) store.enLigne.jouer({ k: 'derush', o: { source: v.o.source, index: v.o.index } });
-      store.choixRiviere = null; store.formatChoisi = null;
+      store.choixRiviere = null; store.moitieChoisie = null;
       store.enLigne.jouer({ k: 'poser', c: partiel });
       return;
     }
     store.undo = JSON.stringify(st);
-    // Depuis la rivière, le tour se joue d'un seul geste : la carte quitte le
-    // chutier et se pose dans le banc. Depuis la main — ordre imprimé —, elle
-    // n'a plus qu'à se poser.
+    // Le tour se joue d'un seul geste : la carte quitte la rivière et se pose
+    // dans le banc.
     if (st.phase === 'DERUSHAGE' && store.choixRiviere) {
       apresCoup(st, await jouerTour(st, st.courant, store.choixRiviere.o, partiel));
       return;
@@ -1358,295 +964,199 @@ function sansCarte(c) {
   return reste;
 }
 
-function etiquetteCoup(c, lignes) {
-  switch (c.action) {
-    case 'NOUVELLE_SEQUENCE':
-      // En lignes, une nouvelle séquence ne s'insère pas : elle s'empile.
-      // L'étiquette dit donc de quel côté de la pile elle ira.
-      if (lignes) return c.pos === 0 ? '▲ nouvelle ligne' : '▼ nouvelle ligne';
-      return '＋ séquence';
-    case 'SOUDER': return '⛓ raccorder';
-    case 'GENERIQUE': return c.role === 'OUVERTURE' ? '▶ ouverture' : '■ fin';
-    // Un Plan Large qui s'étend sur une ligne existante passe par le Raccord
-    // qui en fait charnière : l'emplacement le dit, on ne le confond pas avec
-    // l'accroche ordinaire d'un Plan Moyen ou d'un Gros Plan.
-    default: return c.format === 'PL'
-      ? (c.cote === 'gauche' ? '⛓ ◀' : '⛓ ▶')
-      : (c.cote === 'gauche' ? '◀' : '▶');
-  }
+function etiquetteCoup(c) {
+  // Une nouvelle séquence ne s'insère pas : elle s'empile. L'étiquette dit de
+  // quel côté de la pile elle ira.
+  if (c.action === 'NOUVELLE_SEQUENCE') return c.pos === 0 ? '▲ nouvelle séquence' : '▼ nouvelle séquence';
+  // Un Plan Large qui entre dans une séquence passe par le Raccord qui en fait
+  // charnière : l'emplacement le dit.
+  return c.moitie === 'PL'
+    ? (c.cote === 'gauche' ? '⛓ ◀' : '⛓ ▶')
+    : (c.cote === 'gauche' ? '◀' : '▶');
 }
 
-// --- Phase de mise en place -----------------------------------------------
+// --- Mise en place : la carte de départ --------------------------------------
 
 function zoneDepart(st, p, humaine = true) {
   const options = choixDepart(st, p);
-  // La rivière est déjà là pendant qu'on choisit son Plan de départ : on voit
-  // ce qui attend au premier dérushage, et l'on choisit en connaissance de
-  // cause. Elle ne se prend pas encore — seule la rotation y répond.
-  //
-  // Plus rien à choisir : on a posé, et l'on attend les autres. Une zone vide
-  // se lirait comme un écran qui n'a pas fini de charger.
+  // La table est déjà là pendant qu'on choisit son Plan de départ : on voit ce
+  // qui attend au premier tour, et l'on choisit en connaissance de cause.
   const corps = options.length
-    ? `<div class="main-cartes">
+    ? `<p class="aide depart-consigne">Votre <b>carte de départ</b> porte un plan sur chaque face :
+        choisissez celui qui ouvre votre banc.</p>
+      <div class="main-cartes depart-faces">
         ${options.map((o, k) => `<div class="item">
           <div class="carte solo ${humaine ? 'clickable' : ''}" data-depart="${k}">${renderPlan(o.plan)}</div>
+          <div class="depart-face">${o.face === 0 ? 'une face' : 'l’autre face'}</div>
         </div>`).join('')}
       </div>`
     : `<div class="depart-attente aide">Votre Plan de départ est posé.
         On attend les autres joueuses.</div>`;
   return `${corps}
-  <div class="riviere-apercu">${zoneDerushage(st, humaine, true)}</div>`;
+  <div class="riviere-apercu">${zoneTable(st, humaine, true)}</div>`;
 }
 
 /**
  * Ce que la joueuse vise en ce moment : la carte et la moitié retenue, qu'elle
- * vienne de la rivière — le tour ordinaire, où l'on prend et l'on pose du même
- * geste — ou de sa main, quand l'ordre imprimé sépare les deux temps.
+ * vienne de la rivière — le tour ordinaire, où l'on prend et l'on monte du même
+ * geste — ou de sa main.
  */
 function viseeCourante(st, p) {
   if (st.phase === 'DERUSHAGE' && store.choixRiviere) {
     const carte = carteOption(st, store.choixRiviere.o);
-    return carte ? { carte, format: store.choixRiviere.format, o: store.choixRiviere.o } : null;
+    return carte ? { carte, moitie: store.choixRiviere.moitie, o: store.choixRiviere.o } : null;
   }
-  if (st.phase === 'MONTAGE' && store.formatChoisi) {
+  if (st.phase === 'MONTAGE' && store.moitieChoisie) {
     const carte = st.mains[p][0];
-    return carte ? { carte, format: store.formatChoisi, o: null } : null;
+    return carte ? { carte, moitie: store.moitieChoisie, o: null } : null;
   }
   return null;
 }
 
-/**
- * Le bouton qui retourne une carte double sur son autre face — dans le chutier
- * avant de la prendre, et en main pendant qu'on choisit sa moitié. Retourner ne
- * joue rien : c'est un geste de lecture.
- */
-function boutonRotation(st, carte) {
-  if (!carte || carte.type !== 'DOUBLE') return '';
-  const verso = faceVisible(st, carte) === 'V';
-  return `<button class="pill rotation" data-retourner="${carte.id}"
-    title="Retourner la carte sur son autre face — touche F au survol">⟲ rotation<span class="face">${verso ? 'verso' : 'recto'}</span></button>`;
+// --- La table : la pioche, la rivière, le Chutier ------------------------------
+
+const enc = (o) => encodeURIComponent(JSON.stringify(o.source === 'CHUTIER'
+  ? { source: 'CHUTIER' } : { source: o.source, index: o.index }));
+
+/** Deux options désignent-elles la même carte de la table ? */
+const memeOption = (a, b) => !!a && !!b && a.source === b.source
+  && (a.source === 'CHUTIER' || a.index === b.index);
+
+/** La carte que désigne une option, telle qu'elle est. */
+function carteOption(st, o) {
+  if (!o) return null;
+  if (o.source === 'CHUTIER') return sommetChutier(st);
+  return st.riviere[o.index] || null;
 }
 
-// La carte sous le curseur : la touche F la retourne, sans viser son bouton.
-let carteSurvolee = null;
-
-function brancherRotationClavier(racine = app) {
-  racine.querySelectorAll('.carte-retournable').forEach((el) => {
-    el.addEventListener('mouseenter', () => { carteSurvolee = el; });
-    el.addEventListener('mouseleave', () => { if (carteSurvolee === el) carteSurvolee = null; });
-  });
-}
-
-// --- Phase A ---------------------------------------------------------------
-
 /**
- * La rivière : les deux pioches et leurs chutiers. `apercu` la montre sans
- * qu'on puisse y puiser — pendant le choix du Plan de départ, elle est déjà là
- * pour être lue, pas encore pour être prise.
+ * La pioche, la rivière et le Chutier. `apercu` les montre sans qu'on puisse y
+ * toucher — pendant le choix du Plan de départ, la table est déjà là pour être
+ * lue, pas encore pour être jouée.
  */
-function zoneDerushage(st, humaine = true, apercu = false) {
-  // `true` : on demande aussi ce que la joueuse voit sans pouvoir le prendre.
-  // Une rivière escamotée le temps d'un tour se lirait comme une rivière vide.
-  const options = optionsDerushage(st, true);
-  // Chaque famille dit **sa** raison : un Plan Moyen qui n'a pas de séquence où
-  // s'accrocher et un Plan Large qui n'a plus de ligne à ouvrir ne sont pas
-  // écartés pour le même motif, et ne sont pas sur la même rangée.
-  const raisonDe = (...sources) => (options.find(
-    (o) => sources.includes(o.source) && o.raison) || {}).raison || '';
-  const nom = st.joueurs[st.courant].nom;
-  // Les cartes du chutier portent leur rang : c'est l'ancre de la carte que la
-  // pioche y renvoie quand une place se libère.
-  const ancre = (o) => (o.source.startsWith('CHUTIER')
-    ? ` data-chutier="${o.source === 'CHUTIER_PL' ? 'PL' : 'PMGP'}" data-i="${o.index}"` : '');
-  // Une carte double ne tombe pas toujours du côté de son recto : elle se
-  // présente sur la face que le hasard lui a donnée, et un bouton la retourne
-  // avant qu'on la choisisse.
-  const prise = (o) => (apercu || o.bloquee ? '' : ` data-derush="${enc(o)}"`);
-  // On vise depuis la rivière : cliquer une moitié la retient, et le banc
-  // montre aussitôt où elle peut se poser. La carte visée se soulève, sa
-  // moitié retenue s'encadre.
-  const vise = (o) => (!apercu && humaine && store.choixRiviere
-    && memeOption(store.choixRiviere.o, o) ? store.choixRiviere.format : null);
-  const carte = (o) => {
-    const f = vise(o);
-    const off = !!o.bloquee;
-    return `<div class="carte-retournable ${f ? 'visee' : ''} ${off ? 'bloquee' : ''}">
-      <div${prise(o)}${ancre(o)}>${renderCarte(o.carte, faceVisible(st, o.carte) === 'V',
-        { small: true, clickable: !apercu && !off, moitiesChoisissables: !apercu && humaine && !off, formatChoisi: f })}</div>
-      ${off ? '' : boutonRotation(st, o.carte)}
+function zoneTable(st, humaine = true, apercu = false) {
+  const p = st.courant;
+  // Tout ce que la joueuse voit, y compris ce qu'elle ne peut pas monter : une
+  // carte sans emplacement reste là, éteinte, avec sa raison.
+  const offertes = apercu ? st.riviere.map((c, i) => ({ source: 'RIVIERE', index: i, carte: c }))
+    : cartesOffertes(st, p);
+  const actif = !apercu && humaine;
+  const defausse = actif && peutDefausser(st, p);
+  const viseDe = (o) => (actif && store.choixRiviere && memeOption(store.choixRiviere.o, o)
+    ? store.choixRiviere.moitie : null);
+
+  const uneCarte = (o) => {
+    const m = viseDe(o);
+    const off = !apercu && !!o.bloquee;
+    const prise = apercu || off ? '' : ` data-derush="${enc(o)}"`;
+    return `<div class="riviere-carte ${off ? 'bloquee' : ''}"${prise}${off ? ` title="${o.raison}"` : ''}>
+      ${renderCarte(o.carte, { clickable: actif && !off, moitiesChoisissables: actif && !off, moitieChoisie: m })}
     </div>`;
   };
 
-  // Une ligne par famille : sa pioche d'abord, puis son chutier. Le compte de
-  // la pioche se lit **à côté du titre**, sur la même ligne : sous la pioche il
-  // s'ouvrait une rangée à lui seul, et la table y perdait une trentaine de
-  // pixels de hauteur pour une donnée de six mots.
-  const ligne = (titre, fam, pioche, reste, chutier, note) => `
-    <div class="derushage-ligne" data-famille="${fam}">
-      <h3>${titre}<span class="pioche-reste ${reste ? '' : 'pioche-vide'}">${reste
-        ? `${reste} carte${reste > 1 ? 's' : ''} en pioche` : 'pioche épuisée'}</span>${
-        note ? `<span class="raison">${note}</span>` : ''}</h3>
-      <div class="derushage-cartes">
-        <div class="pioche-colonne">
-          <div class="pioche-place" id="pioche-${fam}">${pioche}</div>
-        </div>
-        ${chutier || '<div class="aide" style="align-self:center">Chutier épuisé</div>'}
+  const cases = offertes.filter((o) => o.source === 'RIVIERE').map((o) => `
+    <div class="riviere-case ${viseDe(o) ? 'visee' : ''}" data-riviere="${o.index}">
+      ${uneCarte(o)}
+      ${defausse ? `<button class="pill mini defausser" data-defausser="${o.index}"
+        title="Défausser cette carte au Chutier — une fois par tour, avant de choisir. La rivière se recomplète.">✕ au Chutier</button>` : ''}
+    </div>`).join('');
+
+  // Le Chutier montre sa carte du dessus. Elle ne se prend que si le banc de
+  // la joueuse porte le pouvoir qui l'y autorise.
+  const dessus = sommetChutier(st);
+  const oChutier = offertes.find((o) => o.source === 'CHUTIER');
+  const chutier = !dessus
+    ? '<div class="carte-vide chutier-vide"><span>vide</span></div>'
+    : oChutier
+      ? `<div class="riviere-case ${viseDe(oChutier) ? 'visee' : ''}">${uneCarte(oChutier)}</div>`
+      : `<div class="riviere-carte">${renderCarte(dessus, {})}</div>`;
+
+  const nb = (n) => `${n} carte${n > 1 ? 's' : ''}`;
+  return `<div class="table-cartes ${apercu ? 'apercu' : ''}">
+    <div class="tc-colonne">
+      <div class="tc-bloc">
+        <h3>Pioche<span class="pioche-reste ${st.pioche.length ? '' : 'pioche-vide'}">${st.pioche.length ? nb(st.pioche.length) : 'vide'}</span></h3>
+        <div class="pioche-place" id="pioche">${st.pioche.length
+    ? enPile(renderDos('La pioche — face cachée'), st.pioche.length)
+    : '<div class="carte-vide"><span>vide</span></div>'}</div>
       </div>
-    </div>`;
-
-  // La pioche des Plans Larges reste face cachée : ces cartes ont un vrai dos.
-  const sommetPL = options.find((o) => o.source === 'PIOCHE_PL');
-  const dosPL = st.piochePL.length
-    ? enPile(sommetPL && !apercu
-      ? `<div data-derush="${enc(sommetPL)}">${renderDos('Plans Larges', st.piochePL.length, { small: true, clickable: true })}</div>`
-      : `<div class="pioche-fermee" title="Cette pioche n’est pas accessible : on ne pioche que dans son chutier.">${renderDos('Plans Larges', st.piochePL.length, { small: true })}</div>`,
-      st.piochePL.length)
-    : '';
-
-  // Celle des Plans Moyens / Gros Plans montre sa face du dessus : ces cartes
-  // étant recto-verso, une pioche ne peut pas les cacher.
-  //
-  // Pioches mêlées, il en va autrement : la pile porte les deux familles, donc
-  // elle porte des Plans Larges, qui ont un vrai dos. Elle redevient **aveugle**
-  // — on ne montre plus sa face du dessus, et le dos est celui d'un Plan Large.
-  const melees = piochesMelees(st.cfg);
-  const sommetPMGP = options.find((o) => o.source === 'PIOCHE_PMGP');
-  const piochePMGP = melees
-    ? (st.piochePMGP.length
-      ? enPile(sommetPMGP && !apercu
-        ? `<div data-derush="${enc(sommetPMGP)}">${renderDos('Pioche mélangée', st.piochePMGP.length, { small: true, clickable: true })}</div>`
-        : `<div class="pioche-fermee" title="Cette pioche n’est pas accessible : on ne pioche que dans la rivière.">${renderDos('Pioche mélangée', st.piochePMGP.length, { small: true })}</div>`,
-      st.piochePMGP.length)
-      : '')
-    : (sommetPMGP && !apercu
-      ? enPile(carte(sommetPMGP), st.piochePMGP.length)
-      : (st.piochePMGP.length
-        ? enPile(`<div class="pioche-fermee">${renderCarte(st.piochePMGP[0], faceVisible(st, st.piochePMGP[0]) === 'V', { small: true })}</div>`, st.piochePMGP.length)
-        : ''));
-
-  const consigne = apercu ? '' : (humaine ? aidePose(st) : '');
-  // Mêlées, il n'y a plus qu'une rangée : la pioche des Plans Larges est vide,
-  // et sa rangée n'annoncerait qu'un vide qui n'existe pas.
-  return `<div class="derushage-lignes">
-    ${consigne ? `<p class="aide" id="aide-derushage">${consigne}</p>` : ''}
-    ${melees ? '' : ligne('Plans Larges', 'PL', dosPL, st.piochePL.length,
-      options.filter((o) => o.source === 'CHUTIER_PL').map(carte).join(''),
-      // Le banc porte déjà toutes ses lignes : ces cartes se voient, mais il
-      // n'y a plus de séquence à ouvrir pour elles.
-      apercu ? '' : raisonDe('CHUTIER_PL', 'PIOCHE_PL'))}
-    ${ligne(melees ? 'Pioche mélangée — Plans Larges, Plans Moyens et Gros Plans'
-      : 'Plans Moyens / Gros Plans', 'PMGP', piochePMGP, st.piochePMGP.length,
-    options.filter((o) => o.source === 'CHUTIER_PMGP').map(carte).join(''),
-    // Variante « pas de Plans de départ » : ces cartes se voient mais ne se
-    // prennent pas tant que le banc n'a pas de séquence où les accrocher.
-    apercu ? '' : raisonDe('CHUTIER_PMGP', 'PIOCHE_PMGP'))}
+      <div class="tc-bloc ${oChutier ? 'ouvert' : ''}">
+        <h3>Chutier${st.chutier.length ? `<span class="pioche-reste">${nb(st.chutier.length)}</span>` : ''}</h3>
+        <div class="chutier-place" id="chutier">${chutier}</div>
+        ${oChutier && !oChutier.bloquee && actif ? '<span class="chutier-droit">votre pouvoir : vous pouvez la prendre</span>' : ''}
+      </div>
+    </div>
+    <div class="tc-riviere">
+      <h3>Rivière${apercu ? '' : `<span class="raison">${
+    st.cfg.defausse === false ? '' : st.defausseFaite ? 'défausse faite ce tour-ci' : 'une défausse possible avant de choisir'}</span>`}</h3>
+      <div class="riviere-cartes" style="--n:${Math.max(1, st.riviere.length, tailleRiviere(st.cfg))}">
+        ${cases || '<div class="aide" style="align-self:center">La rivière est vide.</div>'}
+      </div>
+      ${apercu ? '' : `<p class="aide" id="aide-table">${aideTable(st, humaine)}</p>`}
+    </div>
   </div>`;
 }
 
-const enc = (o) => encodeURIComponent(JSON.stringify({ source: o.source, index: o.index }));
-
-/** Deux options de dérushage désignent-elles la même carte de la rivière ? */
-const memeOption = (a, b) => !!a && !!b && a.source === b.source && a.index === b.index;
-
-/** La carte de la rivière que désigne une option, telle qu'elle est. */
-function carteOption(st, o) {
-  if (!o) return null;
-  if (o.source === 'CHUTIER_PL') return st.chutierPL[o.index];
-  if (o.source === 'CHUTIER_PMGP') return st.chutierPMGP[o.index];
-  if (o.source === 'PIOCHE_PL') return st.piochePL[0];
-  if (o.source === 'PIOCHE_PMGP') return st.piochePMGP[0];
-  return null;
-}
-
-// --- Phase B ---------------------------------------------------------------
-
-/** Le texte sous la carte en cours de pose, seul élément qui suit le choix. */
-function aideMontage(st, choisi, humaine = true, carteVisee) {
-  const carte = carteVisee || st.mains[st.courant][0];
-  if (!carte) return '';
-  // Pendant le tour d'une IA, la consigne n'a pas de destinataire : on dit ce
-  // qu'elle est en train de faire.
-  if (!humaine) {
-    const nom = st.joueurs[st.courant].nom;
-    if (carte.type !== 'DOUBLE') return `<b>${nom}</b> a dérushé un Plan Large n°${carte.num}, et le monte dans son banc.`;
-    return `<b>${nom}</b> a dérushé une carte, en choisit une moitié et la monte dans son banc.`;
-  }
-  if (carte.type !== 'DOUBLE') {
-    return 'Un Plan Large ouvre une nouvelle séquence, détachée du reste du montage. Clique sur un emplacement de ton banc.';
-  }
-  if (!choisi) return 'La carte se glisse sous les précédentes : clique sur la moitié que tu veux laisser visible.';
-  const plan = moitiesDe(carte)[choisi];
-  // Ouverture, Générique, Raccord : tous des Raccords. On les nomme par leur
-  // type, comme la carte elle-même.
-  const quoi = plan.transition
-    ? `${FORMATS.TR.label.toLowerCase()} n°${plan.num}`
-    : `${FORMATS[choisi].label} n°${plan.num}${objsDe(plan).length
-      ? ` — ${objsDe(plan).map((o) => objLabel(o)).join(' et ')}` : ' — sans bandeau'}`;
-  // Une moitié peut n'avoir aucun emplacement — un Raccord entre deux
-  // Génériques, par exemple. Mieux vaut le dire que de laisser un banc sans
-  // bouton.
-  const possibles = coupsPossibles(st, st.courant, carteVisee).filter((c) => c.format === choisi);
-  if (!possibles.length) {
-    return `Le <b>${quoi}</b> n’a aucun emplacement possible dans ton banc — garde plutôt l’autre moitié.`;
-  }
-  if (plan.transition === 'RACCORD' && possibles.some((c) => c.action === 'SOUDER')) {
-    return `Tu gardes le <b>${quoi}</b>. Entre deux séquences il les <b>raccorde</b> ; aux deux bouts
-    du montage, il se pose comme un plan.`;
-  }
-  return `Tu gardes le <b>${quoi}</b>. Clique maintenant sur un emplacement de ton banc.`;
-}
-
 /**
- * La consigne du tour, telle qu'on la lit au-dessus de la rivière. Tant qu'on
- * n'a rien visé, elle dit quoi faire ; une fois une moitié retenue, elle dit
- * ce qu'on tient et où le poser.
+ * La ligne sous la rivière. La table se lit d'elle-même : on ne dit que ce
+ * qu'elle ne montre pas — ce que vient de faire la joueuse précédente, la
+ * moitié visée qui n'a pas de place, l'impasse.
  */
-/**
- * La table se lit d'elle-même : les cartes de la rivière s'offrent, le banc
- * ouvre ses emplacements, l'aperçu montre la place. On ne dit donc rien —
- * sauf dans l'impasse, où il faut bien avertir que cette moitié-là ne se pose
- * nulle part, et proposer de prendre la carte tout de même : dérusher n'est
- * pas facultatif.
- */
-function aidePose(st) {
+function aideTable(st, humaine) {
+  const p = st.courant;
+  const nom = st.joueurs[p].nom;
+  if (!humaine) return `<b>${nom}</b> joue…${dernierFait(st)}`;
+  if (!optionsDerushage(st).length) {
+    return `Aucune de ces cartes ne peut se monter dans votre banc.
+      ${peutDefausser(st, p) ? 'Défaussez-en une pour en faire venir une autre, ou passez. ' : ''}
+      <button class="pill mini" data-passer="1">Passer mon tour</button>`;
+  }
   const v = store.choixRiviere;
-  if (!v) return '';
-  const carte = carteOption(st, v.o);
+  if (v) {
+    const carte = carteOption(st, v.o);
+    if (carte && !coupsPossibles(st, p, carte).some((c) => c.moitie === v.moitie)) {
+      return carte.type === 'DOUBLE'
+        ? `La moitié <b>${v.moitie === 'G' ? 'gauche' : 'droite'}</b> ne se monte qu’au bout
+          <b>${v.moitie === 'G' ? 'gauche' : 'droit'}</b> d’une séquence, et aucune n’y a de place — gardez plutôt l’autre moitié.`
+        : 'Ce Plan Large n’a pas d’emplacement dans votre banc.';
+    }
+    return 'Cliquez un emplacement de votre banc.';
+  }
+  return `À vous — cliquez la <b>moitié</b> que vous voulez monter, puis son emplacement.${dernierFait(st)}`;
+}
+
+/** Ce que la table vient de voir, en une ligne : le dernier fait du journal. */
+function dernierFait(st) {
+  const j = st.journal[st.journal.length - 1];
+  return j && j.joueur !== null && j.joueur !== st.courant
+    ? ` <span class="dernier-fait">${j.texte}.</span>` : '';
+}
+
+// --- La carte en main ---------------------------------------------------------
+
+/** Le texte sous la carte en main, seul élément qui suit le choix de la moitié. */
+function aideMontage(st, choisie, humaine = true) {
+  const carte = st.mains[st.courant][0];
   if (!carte) return '';
-  const tous = coupsPossibles(st, st.courant, carte);
-  if (tous.some((c) => c.format === v.format)) return '';
-  const texte = aideMontage(st, v.format, true, carte);
-  return tous.length ? texte
-    : `${texte} <button class="pill mini" data-prendre="1">Prendre la carte quand même</button>`;
+  if (!humaine) return `<b>${st.joueurs[st.courant].nom}</b> monte sa carte.`;
+  if (carte.type !== 'DOUBLE') return 'Cliquez un emplacement de votre banc.';
+  if (!choisie) return 'Cliquez la moitié que vous voulez monter : la gauche va à gauche d’une séquence, la droite à droite.';
+  if (!coupsPossibles(st, st.courant).some((c) => c.moitie === choisie)) {
+    return 'Cette moitié n’a pas d’emplacement dans votre banc — gardez plutôt l’autre.';
+  }
+  return 'Cliquez un emplacement de votre banc.';
 }
 
 function zoneMontage(st, p, humaine = true) {
   const carte = st.mains[p][0];
-  if (!carte) return '<div class="zone-montage"><p class="aide">Aucune carte dérushée.</p></div>';
-
-  // La carte se regarde sur la face où elle a été prise : on ne la retourne
-  // pas dans son dos.
-  const verso = faceVisible(st, carte) === 'V';
-
+  if (!carte) return '<div class="zone-montage"><p class="aide">Aucune carte en main.</p></div>';
   // Un Plan Large n'a pas de moitié à choisir.
-  if (carte.type !== 'DOUBLE') {
-    store.formatChoisi = 'PL';
-    return `<div class="zone-montage">
-      <div id="choix-carte">${renderCarte(carte, verso, {})}</div>
-      <p class="aide" id="aide-montage">${aideMontage(st, 'PL', humaine)}</p>
-    </div>`;
-  }
-
-  // La carte se retourne aussi en main : on regarde son autre face pendant
-  // qu'on choisit sa moitié. L'aperçu de pose dit, lui, la face qu'elle aura
-  // vraiment à l'emplacement visé.
-  const choisi = store.formatChoisi === 'GP' || store.formatChoisi === 'PM' ? store.formatChoisi : null;
+  if (carte.type !== 'DOUBLE') store.moitieChoisie = 'PL';
+  const choisie = carte.type !== 'DOUBLE' ? 'PL'
+    : (store.moitieChoisie === 'G' || store.moitieChoisie === 'D' ? store.moitieChoisie : null);
   return `<div class="zone-montage">
-    <div class="carte-retournable">
-      <div id="choix-carte">${renderCarte(carte, verso, { moitiesChoisissables: humaine, formatChoisi: choisi })}</div>
-      ${humaine ? boutonRotation(st, carte) : ''}
-    </div>
-    <p class="aide" id="aide-montage">${aideMontage(st, choisi, humaine)}</p>
+    <div id="choix-carte">${renderCarte(carte, { moitiesChoisissables: humaine && carte.type === 'DOUBLE', moitieChoisie: choisie })}</div>
+    <p class="aide" id="aide-montage">${aideMontage(st, choisie, humaine)}</p>
   </div>`;
 }
 
@@ -1662,18 +1172,11 @@ function tableauScore(s) {
 }
 
 /**
- * Le score du banc, bandeau par bandeau : chacun avec ses icônes et ce qu'il
- * rapporte, puis les points qui ne viennent d'aucun bandeau — pose, jonctions,
- * chronologie — et le total. La colonne dit d'où vient chaque point.
+ * Les pouvoirs identiques d'un même banc, réunis en une ligne : autant les
+ * compter une fois, avec leur nombre et leur somme. Deux pouvoirs sont
+ * identiques quand ils ont la même forme **et** la même valeur.
  */
-/**
- * Les bandeaux identiques d'un même banc, réunis en une ligne. Un montage qui
- * porte six fois « 3 × Mort » produit six lignes strictement semblables :
- * autant les compter une fois, avec leur nombre et leur somme. Deux bandeaux
- * sont identiques quand ils ont la même forme **et** la même valeur — ce que
- * l'œil lit comme un même bandeau.
- */
-function grouperBandeaux(lignes) {
+function grouperPouvoirs(lignes) {
   const par = new Map();
   for (const l of lignes) {
     const cle = `${signatureObj(l.obj)}|${l.obj.n}`;
@@ -1684,19 +1187,23 @@ function grouperBandeaux(lignes) {
   return [...par.values()];
 }
 
-/** « ×6 » quand un bandeau est posé plusieurs fois. */
+/** « ×6 » quand un pouvoir est posé plusieurs fois. */
 const jetonNombre = (n) => (n > 1 ? `<span class="grp-n" title="${n} fois sur le banc">×${n}</span>` : '');
 
-function listeObjectifs(s) {
-  const hors = ['OBJECTIF', 'POSE', 'JONCTION', 'CHRONOLOGIE', 'HORS_FILM'].filter((k) => s.detail[k]);
+/**
+ * Le score du banc, pouvoir par pouvoir : chacun avec ses icônes et ce qu'il
+ * rapporte, puis le total. La colonne dit d'où vient chaque point.
+ */
+function listePouvoirs(s) {
+  const hors = ['POSE'].filter((k) => s.detail[k]);
   if (!s.lignes.length && !hors.length) {
     return `<table class="tableau-score">
-      <tr><td class="aide">Aucun bandeau visible sur le banc</td><td>0</td></tr>
+      <tr><td class="aide">Aucun pouvoir sur le banc</td><td>0</td></tr>
       <tr class="total"><td>Total</td><td>${s.total}</td></tr>
     </table>`;
   }
   // Du plus gros au plus petit : on veut voir d'abord ce qui rapporte.
-  const rangs = grouperBandeaux(s.lignes).slice().sort((a, b) => b.pts - a.pts);
+  const rangs = grouperPouvoirs(s.lignes).slice().sort((a, b) => b.pts - a.pts);
   return `<table class="tableau-score">
     ${rangs.map((g) => `<tr>
       <td>${objHTML(g.obj)}${jetonNombre(g.n)}</td>
@@ -1718,12 +1225,11 @@ function blocRecensement(s) {
   const rangee = (html, premiere) => (html.replace(/\s+/g, '')
     ? `<div class="recensement"${premiere ? '' : ' style="margin-top:8px"'}>${html}</div>` : '');
   const tout = rangee(ELEMENT_IDS.map((e) => compte(elIcon(e, 22), r.elements[e], ELEMENTS[e].label)).join(''), true)
-    + rangee(['PL', 'PM', 'GP', 'DEP'].map((f) => compte(cadrageIcon(f), r.cadrages[f], FORMATS[f].label)).join('')
-      + compte(cadrageIcon('TR'), r.raccords, 'Cartes Raccord'))
+    + rangee(['PL', 'GP', 'DEP'].map((f) => compte(cadrageIcon(f), r.cadrages[f], FORMATS[f].label)).join('')
+      + compte(cadrageIcon('TR'), r.raccords, 'Raccords, Ouverture et Fin'))
     + rangee(compte(elIcon('MORT', 22), r.morts, 'Plans de mort')
-      // Les plans sans aucun personnage restent une statistique utile — c'est le
-      // POUVOIR qui les comptait qui a disparu, pas le fait lui-même. Faute de
-      // symbole, le compte s'écrit en toutes lettres.
+      // Les plans sans aucun personnage : faute de symbole, le compte s'écrit
+      // en toutes lettres.
       + compte('<span class="compte-mot">sans perso.</span>', r.sansPersonnage,
         'Plans sans aucun personnage'));
   return tout || '<p class="aide">Rien encore sur le banc</p>';
@@ -1733,13 +1239,14 @@ function blocRecensement(s) {
 
 function brancherPartie(st, humaine) {
   const q = (s) => app.querySelector(s);
+  const enLigne = () => !!(store.enLigne && store.enLigne.partie);
 
-  // Les onglets de banc : un clic épingle le banc choisi jusqu'au tour suivant.
   const partir = app.querySelector('#ligne-partir');
   if (partir) partir.addEventListener('click', () => {
     if (store.enLigne) store.enLigne.quitter();
     location.hash = '#/enligne';
   });
+  // Les onglets de banc : un clic épingle le banc choisi.
   app.querySelectorAll('[data-onglet-banc]').forEach((b) => b.addEventListener('click', () => {
     store.bancVu = +b.dataset.ongletBanc;
     vuePartie(false);
@@ -1750,96 +1257,48 @@ function brancherPartie(st, humaine) {
   if (humaine) {
     app.querySelectorAll('[data-depart]').forEach((el) => el.addEventListener('click', () => {
       const k = +el.dataset.depart;
-      if (store.enLigne && store.enLigne.partie) { store.enLigne.jouer({ k: 'depart', i: k }); return; }
+      if (enLigne()) { store.enLigne.jouer({ k: 'depart', i: k }); return; }
       store.undo = JSON.stringify(st);
       poserDepartAVue(st, st.courant, k, choixDepart(st, st.courant)[k]);
       apresCoup(st, avancer(st));
     }));
 
-    // Viser une moitié de la rivière ne joue rien : cela désigne ce que l'on
-    // veut poser, et le banc montre aussitôt où. C'est le clic sur
-    // l'emplacement qui joue le tour, d'un seul geste.
-    app.querySelectorAll('[data-derush] .moitie[data-format]').forEach((el) => {
+    // Viser une moitié ne joue rien : cela désigne ce que l'on veut monter, et
+    // le banc montre aussitôt où. C'est le clic sur l'emplacement qui joue le
+    // tour, d'un seul geste. Un Plan Large se vise d'un clic sur la carte.
+    app.querySelectorAll('[data-derush] .moitie[data-moitie]').forEach((el) => {
       el.addEventListener('click', (ev) => {
         ev.stopPropagation();
         const hote = el.closest('[data-derush]');
-        viser(st, JSON.parse(decodeURIComponent(hote.dataset.derush)), el.dataset.format);
+        viser(st, JSON.parse(decodeURIComponent(hote.dataset.derush)), el.dataset.moitie);
       });
     });
 
-    // Une pioche face cachée n'a pas de moitié à viser : on la prend, et le
-    // montage se joue ensuite comme dans l'ordre imprimé.
-    app.querySelectorAll('[data-derush]').forEach((el) => el.addEventListener('click', async () => {
-      if (el.querySelector('.moitie[data-format]')) return;
-      const choix = JSON.parse(decodeURIComponent(el.dataset.derush));
-      if (store.enLigne && store.enLigne.partie) {
-        store.enLigne.jouer({ k: 'derush', o: { source: choix.source, index: choix.index } });
-        return;
-      }
-      store.undo = JSON.stringify(st);
-      apresCoup(st, await jouerDerushage(st, st.courant, choix));
-    }));
-
-    // La carte qui ne se pose nulle part se prend quand même : dérusher n'est
-    // pas facultatif.
-    const prendre = app.querySelector('[data-prendre]');
-    if (prendre) prendre.addEventListener('click', async () => {
-      const v = store.choixRiviere;
-      if (!v) return;
-      if (store.enLigne && store.enLigne.partie) {
-        store.choixRiviere = null;
-        store.enLigne.jouer({ k: 'derush', o: { source: v.o.source, index: v.o.index } });
-        return;
-      }
-      store.undo = JSON.stringify(st);
-      apresCoup(st, await jouerDerushage(st, st.courant, v.o));
-    });
-
-    // Retourner une carte ne joue pas le tour : on repeint la seule carte
-    // concernée — dans le chutier avant de la prendre, en main pendant qu'on
-    // choisit sa moitié.
-    app.querySelectorAll('[data-retourner]').forEach((el) => el.addEventListener('click', (ev) => {
+    // Défausser une carte de la rivière au Chutier : une fois, avant de choisir.
+    app.querySelectorAll('[data-defausser]').forEach((el) => el.addEventListener('click', async (ev) => {
       ev.stopPropagation();
-      const carte = [...st.chutierPL, ...st.chutierPMGP, st.piochePMGP[0], ...st.mains[st.courant]]
-        .find((c) => c && c.id === el.dataset.retourner);
-      if (!carte) return;
-      if (store.enLigne && store.enLigne.partie) { store.enLigne.jouer({ k: 'retourner', id: carte.id }); return; }
-      retourner(st, carte);
-      const boite = el.closest('.carte-retournable');
-      const enveloppe = boite && boite.querySelector('[data-derush], #choix-carte');
-      if (!enveloppe) return vuePartie();
-      const verso = faceVisible(st, carte) === 'V';
-      const enMain = enveloppe.id === 'choix-carte';
-      // Dans la rivière, la carte reste visable après avoir tourné : on la
-      // redessine avec ses moitiés cliquables et la visée qu'elle portait.
-      const o = enMain ? null : JSON.parse(decodeURIComponent(enveloppe.dataset.derush));
-      const visee = o && store.choixRiviere && memeOption(store.choixRiviere.o, o)
-        ? store.choixRiviere.format : null;
-      enveloppe.innerHTML = enMain
-        ? renderCarte(carte, verso, { moitiesChoisissables: true, formatChoisi: store.formatChoisi })
-        : renderCarte(carte, verso, { small: true, clickable: true, moitiesChoisissables: true, formatChoisi: visee });
-      el.querySelector('.face').textContent = verso ? 'verso' : 'recto';
-      boite.classList.add('tourne');
-      setTimeout(() => boite.classList.remove('tourne'), 320);
-      enveloppe.querySelectorAll('.carte.choix-moitie .moitie[data-format]').forEach((m) => {
-        m.addEventListener('click', (e2) => {
-          e2.stopPropagation();
-          if (enMain) choisirMoitie(st, m.dataset.format);
-          else viser(st, o, m.dataset.format);
-        });
-      });
-      // La face a changé : ce que l'emplacement montrerait aussi. Le banc se
-      // recalcule sur la carte telle qu'elle est maintenant.
-      if (!enMain && visee) rafraichirVisee(st);
-      brancherApercu(boite);
+      const i = +el.dataset.defausser;
+      store.choixRiviere = null;
+      if (enLigne()) { store.enLigne.jouer({ k: 'defausse', i }); return; }
+      store.undo = JSON.stringify(st);
+      defausserAVue(st, st.courant, i);
+      vuePartie(false);
+      await jouerVols();
     }));
 
-    // Le choix de la moitié ne touche pas à la partie : on repeint la seule
-    // carte concernée plutôt que toute la table. Un Plan Large n'a pas de
-    // moitié à choisir : cliquer dessus ne doit pas défaire sa sélection, ce
-    // qui escamoterait les emplacements de pose.
-    app.querySelectorAll('#choix-carte .carte.choix-moitie .moitie[data-format]').forEach((el) => {
-      el.addEventListener('click', () => choisirMoitie(st, el.dataset.format));
+    // Rien ne peut être monté : on passe.
+    const bPasser = q('[data-passer]');
+    if (bPasser) bPasser.addEventListener('click', () => {
+      store.choixRiviere = null;
+      if (enLigne()) { store.enLigne.jouer({ k: 'passe' }); return; }
+      store.undo = JSON.stringify(st);
+      passer(st, st.courant);
+      apresCoup(st, st.finie);
+    });
+
+    // Le choix de la moitié de la carte en main.
+    app.querySelectorAll('#choix-carte .carte.choix-moitie .moitie[data-moitie]').forEach((el) => {
+      el.addEventListener('click', () => choisirMoitie(st, el.dataset.moitie));
     });
 
     brancherFentes(st);
@@ -1848,7 +1307,7 @@ function brancherPartie(st, humaine) {
   // Épingler un banc ne touche pas à la partie : on repeint la seule colonne.
   const majColonnes = () => {
     const c = q('#colonnes-joueur');
-    if (!c) return vuePartie();
+    if (!c) return vuePartie(false);
     const sc = scores(st);
     const vu = store.joueurVu !== null && st.joueurs[store.joueurVu] ? store.joueurVu : st.courant;
     c.innerHTML = colonnesJoueur(st, sc, vu);
@@ -1867,17 +1326,16 @@ function brancherPartie(st, humaine) {
   const bSuivre = q('#suivre-tour');
   if (bSuivre) bSuivre.addEventListener('click', () => { store.joueurVu = null; majColonnes(); });
 
-  brancherBasculeIllus(vuePartie);
   const bp = q('#bascule-points');
   if (bp) bp.addEventListener('click', () => {
     store.cfg.pointsSurCartes = store.cfg.pointsSurCartes === false;
-    sauverCfg(); vuePartie();
+    sauverCfg(); vuePartie(false);
   });
   const ba = q('#bascule-apercu');
   if (ba) ba.addEventListener('click', () => {
     store.cfg.apercuSurvol = !store.cfg.apercuSurvol;
     boiteApercu().classList.remove('visible');
-    sauverCfg(); vuePartie();
+    sauverCfg(); vuePartie(false);
   });
   brancherApercu();
 
@@ -1887,7 +1345,7 @@ function brancherPartie(st, humaine) {
     if (!store.undo) return;
     store.filIA++; store.vols = []; stopperVols();
     store.partie = JSON.parse(store.undo); store.undo = null;
-    store.formatChoisi = null; store.choixRiviere = null;
+    store.moitieChoisie = null; store.choixRiviere = null;
     vuePartie();
   });
   if (q('#quitter')) q('#quitter').addEventListener('click', () => {
@@ -1896,20 +1354,13 @@ function brancherPartie(st, humaine) {
     store.partie = null; location.hash = '#/';
   });
 
-  brancherRotationClavier();
-
+  // Échap annule la visée.
   document.onkeydown = humaine ? (e) => {
-    // F retourne la carte sous le curseur : on lit son autre face sans viser
-    // le petit bouton.
-    if ((e.key === 'f' || e.key === 'F') && carteSurvolee && carteSurvolee.isConnected) {
-      const b = carteSurvolee.querySelector('[data-retourner]');
-      if (b) { e.preventDefault(); b.click(); return; }
-    }
-    // Échap annule le choix de la moitié — sauf sur un Plan Large, qui n'en a
-    // pas et perdrait alors ses emplacements de pose.
+    if (e.key !== 'Escape') return;
+    if (st.phase === 'DERUSHAGE' && store.choixRiviere) { store.choixRiviere = null; rafraichirVisee(st); }
     const carte = st.mains[st.courant] && st.mains[st.courant][0];
-    if (e.key === 'Escape' && store.formatChoisi && carte && carte.type === 'DOUBLE') {
-      choisirMoitie(st, store.formatChoisi);
+    if (st.phase === 'MONTAGE' && store.moitieChoisie && carte && carte.type === 'DOUBLE') {
+      choisirMoitie(st, store.moitieChoisie);
     }
   } : null;
 }
@@ -1917,9 +1368,9 @@ function brancherPartie(st, humaine) {
 // ---------------------------------------------------------------------------
 // Aperçu au survol
 // ---------------------------------------------------------------------------
-// Sur une carte de jeu, minutage, pastilles et bandeau restent petits. Le
-// survol en donne une lecture en grand, dans un panneau flottant unique
-// suivant le curseur — hors du banc, donc jamais rogné par son défilement.
+// Sur la table, une carte est petite. Le survol la montre en grand — la vraie
+// carte, telle que livrée — dans un panneau flottant unique qui suit le
+// curseur, et dit dessous ce qu'elle rapporte là où elle est montée.
 
 let apercuEl = null;
 
@@ -1933,10 +1384,9 @@ function boiteApercu() {
 }
 
 /**
- * Le calcul d'un bandeau, en clair : ce qu'il a trouvé, et ce que cela lui
- * rapporte. Sans cela, une carte à deux pouvoirs affiche un total que rien
- * n'explique — « pourquoi 10 et pas 12 ? ». Ce qu'un bandeau compte dépend de
- * sa portée : les flèches la disent, le libellé la dit en toutes lettres.
+ * Le calcul d'un pouvoir, en clair : ce qu'il a trouvé, et ce que cela lui
+ * rapporte. Ce qu'un pouvoir compte dépend de sa portée : les flèches la
+ * disent, le libellé la dit en toutes lettres.
  */
 function compteObj(o, pts) {
   if (pts === undefined || pts === null) return '';
@@ -1961,6 +1411,22 @@ function compteObj(o, pts) {
 
 function contenuApercu(d) {
   const cadrage = d.transition ? 'Raccord' : (FORMATS[d.format]?.label || d.format);
+  // La vraie carte, en grand ; dessous, ce que ses pouvoirs rapportent ici.
+  if (d.visuel) {
+    const montee = d.points !== null && d.points !== undefined;
+    return `<img class="ap-carte ${d.format === 'GP' ? 'ap-gp' : 'ap-pl'}" src="${d.visuel}" alt="${cadrage} ${d.num}">
+    ${montee && (d.objs || []).length ? `<div class="ap-obj">
+      ${d.objs.map((o, i) => `<div class="ap-obj-visuel">
+        ${objHTML(o, 36, store.cfg)}${compteObj(o, (d.objsPts || [])[i])}
+      </div>`).join('')}
+    </div>` : ''}
+    ${(d.objsImprimes || []).length ? `<div class="ap-remplace">
+      Son pouvoir imprimé est <b>bonifié</b> : une carte de votre montage dit ce que les Raccords rapportent.
+    </div>` : ''}
+    ${montee ? `<div class="ap-points">
+      Cette carte rapporte <b>${d.points}</b> point${Math.abs(d.points) > 1 ? 's' : ''} dans ce montage
+    </div>` : ''}`;
+  }
   return `
     <div class="ap-tete">
       <span class="ap-tc ${teinteTc(d.tc)}">${tc(d.tc)}</span>
@@ -1976,10 +1442,10 @@ function contenuApercu(d) {
       ${d.objs.map((o, i) => `<div class="ap-obj-visuel">
         ${objHTML(o, 44, store.cfg)}${compteObj(o, (d.objsPts || [])[i])}
       </div>`).join('')}
-    </div>` : '<div class="ap-vide">Aucun bandeau</div>'}
+    </div>` : '<div class="ap-vide">Aucun pouvoir</div>'}
     ${(d.objsImprimes || []).length ? `<div class="ap-remplace">
-      Son bandeau imprimé — ${d.objsImprimes.map((o) => objLabel(o, store.cfg)).join(' et ')} —
-      est <b>remplacé</b> : une carte de votre montage dit ce que les Raccords rapportent.
+      Son pouvoir imprimé — ${d.objsImprimes.map((o) => objLabel(o, store.cfg)).join(' et ')} —
+      est <b>bonifié</b> : une carte de votre montage dit ce que les Raccords rapportent.
     </div>` : ''}
     ${d.points === null || d.points === undefined ? '' : `<div class="ap-points">
       Cette carte rapporte <b>${d.points}</b> point${Math.abs(d.points) > 1 ? 's' : ''} dans ce montage
@@ -1999,9 +1465,8 @@ function placerApercu(e) {
 }
 
 function brancherApercu(racine = app) {
-  // L'infobulle ne s'ouvre que si on l'a demandée : elle se déclenchait sur
-  // toutes les cartes de la table, pioches comprises, où elle ne disait rien
-  // que la carte ne montrait déjà. Le bouton « Pop-up au survol » la rallume.
+  // L'infobulle ne s'ouvre que si on l'a demandée : le bouton « Pop-up au
+  // survol » l'allume.
   if (!store.cfg.apercuSurvol) return;
   racine.querySelectorAll('[data-apercu]').forEach((el) => {
     el.addEventListener('mouseenter', (e) => {
@@ -2021,7 +1486,7 @@ function brancherApercu(racine = app) {
 // Le fil de la partie
 // ---------------------------------------------------------------------------
 // Les joueuses jouent l'une après l'autre, et cela se voit : un coup, un rendu,
-// la carte qui vole de sa pioche jusqu'au banc, une pause, la suivante. La
+// la carte qui vole de la rivière jusqu'au banc, une pause, la suivante. La
 // table ne change pas de forme entre deux coups — seules les cartes bougent.
 //
 // Le fil est un jeton : `store.filIA` est incrémenté à chaque nouveau départ,
@@ -2055,7 +1520,7 @@ function volDepuis(source, arrivee, opts) {
 
 /**
  * Fait voler les cartes relevées avant le rendu. Elles partent ensemble : la
- * carte prise quitte le chutier pendant que la pioche l'y remplace, ce qui se
+ * carte prise quitte la rivière pendant que la pioche l'y remplace, ce qui se
  * lit comme un seul mouvement. Le temps du vol, la table ne se laisse pas
  * cliquer — un clic la repeindrait sous la carte.
  */
@@ -2074,7 +1539,7 @@ async function jouerVols() {
   document.body.classList.remove('coup-en-vol');
 }
 
-// --- Les trois coups, joués à vue ------------------------------------------
+// --- Les coups, joués à vue ---------------------------------------------------
 
 /** Le Plan de départ quitte la main et ouvre le banc. */
 function poserDepartAVue(st, p, k, choix) {
@@ -2082,135 +1547,73 @@ function poserDepartAVue(st, p, k, choix) {
   poserDepart(st, p, choix);
 }
 
+/** Une carte de la rivière part au Chutier, la pioche la remplace. */
+function defausserAVue(st, p, i) {
+  const carte = preleve(`[data-riviere="${i}"] .carte`);
+  const pioche = st.pioche.length ? preleve('#pioche .carte') : null;
+  defausser(st, p, i);
+  programmerVol(carte, '#chutier');
+  programmerVol(pioche, `[data-riviere="${i}"] .carte`);
+}
+
 /** Où la carte va être prise, et où la pioche la remplacera. */
-function ancresDerushage(st, o) {
-  const fam = o.source.endsWith('_PL') ? 'PL' : 'PMGP';
-  const pile = fam === 'PL' ? st.piochePL : st.piochePMGP;
-  const chutier = fam === 'PL' ? st.chutierPL : st.chutierPMGP;
-  const duChutier = o.source.startsWith('CHUTIER');
+function ancresPrise(st, o) {
   const sel = `[data-derush="${enc(o)}"]`;
   // Chaque moitié est relevée à part : c'est celle que l'on garde qui vole
-  // jusqu'au banc. Faire partir la carte entière la faisait se comprimer en
-  // vol jusqu'à la largeur d'une moitié — une déformation que rien ne
-  // justifie, puisque c'est bien une moitié que l'on pose.
+  // jusqu'au banc.
   const moities = {};
-  for (const f of ['GP', 'PM', 'PL', 'DEP']) moities[f] = preleve(`${sel} .moitie[data-format="${f}"]`);
+  for (const m of ['G', 'D', 'PL']) moities[m] = preleve(`${sel} .moitie[data-moitie="${m}"]`);
+  const deLaRiviere = o.source !== 'CHUTIER';
   return {
-    carte: preleve(sel),
+    carte: preleve(`${sel} .carte`),
     moities,
-    pioche: duChutier && pile.length ? preleve(`#pioche-${fam}`) : null,
-    // La remplaçante se pose là où était la carte prise : c'est ce trou-là que
-    // la pioche vient combler, pas le bout de la rivière.
-    place: `[data-chutier="${fam}"][data-i="${duChutier ? o.index : chutier.length}"]`,
+    pioche: deLaRiviere && st.pioche.length ? preleve('#pioche .carte') : null,
+    // La remplaçante se pose là où était la carte prise.
+    place: deLaRiviere ? `[data-riviere="${o.index}"] .carte` : null,
   };
 }
 
 /**
- * Le dérushage d'une joueuse humaine se joue en deux temps, et le premier reste
- * dans le chutier : la carte prise en sort et gagne le centre de la table —
- * elle passe en main — pendant que la pioche renvoie une carte à la place
- * laissée vide. Ce n'est qu'ensuite que la zone passe au montage : sans cette
- * étape, le chutier aurait déjà disparu et l'on ne verrait jamais la pioche le
- * recharger.
- *
- * Rend true si la partie s'achève.
+ * Un tour, d'un seul geste : la carte visée quitte la rivière — ou le Chutier —
+ * et se pose dans le banc, la pioche recharge la place laissée vide. Rend true
+ * si la partie s'achève.
  */
-async function jouerDerushage(st, p, o) {
-  const a = ancresDerushage(st, o);
-  programmerVol(a.carte, '.zone-phase', { taille: false });
-  programmerVol(a.pioche, a.place);
-  derusher(st, p, o);
-  store.formatChoisi = null;
-  store.choixRiviere = null;
-
-  // Premier temps : le chutier tel qu'il est maintenant, carte en vol au-dessus.
-  vuePartie(false);
-  await jouerVols();
-  return avancer(st);
-}
-
-/**
- * Le tour d'une joueuse humaine, d'un seul geste : la carte visée quitte la
- * rivière et se pose dans le banc, la pioche recharge la place laissée vide.
- * Les deux temps des règles — dérusher, puis monter — sont bien tous les deux
- * joués ; c'est l'écran qui ne les sépare plus.
- *
- * Dans l'ordre imprimé (`tourComplet: false`), la main passe entre les deux :
- * la carte reste alors en main et le montage se joue à son tour, comme avant.
- *
- * Rend true si la partie s'achève.
- */
-async function jouerTour(st, p, o, partiel) {
-  const a = ancresDerushage(st, o);
+function jouerPrise(st, p, o, choisir) {
+  const a = ancresPrise(st, o);
   derusher(st, p, o);
   store.choixRiviere = null;
-  store.formatChoisi = null;
+  store.moitieChoisie = null;
   let fini = avancer(st);
 
-  let pose = false;
+  let moitie = null;
   if (!fini && st.phase === 'MONTAGE' && st.courant === p) {
-    const carte = st.mains[p][0];
     const coups = coupsPossibles(st, p);
-    // L'emplacement a été calculé sur la carte de la rivière : c'est la même,
-    // mais on la retrouve dans la liste plutôt que de la supposer valide.
-    const coup = coups.find((c) => c.format === partiel.format && c.action === partiel.action
-      && c.pos === partiel.pos && c.seq === partiel.seq && c.cote === partiel.cote && c.role === partiel.role);
-    if (coup) { poser(st, p, coup); pose = true; }
-    else if (coups.length) { poser(st, p, coups[0]); pose = true; }
-    else st.mains[p] = [];
+    const coup = coups.length ? (choisir(coups) || coups[0]) : null;
+    if (coup) { poser(st, p, coup); moitie = coup.moitie; } else ecarterMain(st, p);
     fini = avancer(st);
   }
 
-  programmerVol(pose ? (a.moities[partiel.format] || a.carte) : a.carte,
-    pose ? `[data-banc="${p}"] .moitie.neuf` : `[data-banc="${p}"]`,
-    pose ? {} : { taille: false, fondu: true });
-  programmerVol(a.pioche, a.place);
-  vuePartie(false);
-  await jouerVols();
+  programmerVol(moitie ? (a.moities[moitie] || a.carte) : a.carte,
+    moitie ? `[data-banc="${p}"] .moitie.neuf` : '#chutier',
+    moitie ? {} : { taille: false, fondu: true });
+  if (a.place) programmerVol(a.pioche, a.place);
   return fini;
 }
 
-/**
- * Le tour d'une IA tient en un seul geste : sa carte quitte le chutier et se
- * pose dans son banc, la pioche recharge la place laissée vide, et la table
- * passe à la joueuse suivante. On ne montre pas l'étape où la carte est en
- * main — il n'y a rien à y décider, et cela ferait un écran de plus.
- *
- * Rend true si la partie s'achève.
- */
-function tourIA(st, p, o) {
-  const a = ancresDerushage(st, o);
-  derusher(st, p, o);
-  store.formatChoisi = null;
-  store.choixRiviere = null;
-  let fini = avancer(st);
-
-  // Le montage de la même joueuse, dans la foulée — sauf en ordre imprimé, où
-  // la main est déjà passée.
-  let pose = false;
-  let format = null;
-  if (!fini && st.phase === 'MONTAGE' && st.courant === p) {
-    const coups = coupsPossibles(st, p);
-    if (coups.length) {
-      const coup = choisirCoup(st, p) || coups[0];
-      poser(st, p, coup); pose = true; format = coup.format;
-    } else st.mains[p] = [];
-    store.formatChoisi = null;
-    fini = avancer(st);
-  }
-
-  programmerVol(pose ? (a.moities[format] || a.carte) : a.carte,
-    pose ? `[data-banc="${p}"] .moitie.neuf` : `[data-banc="${p}"]`,
-    pose ? {} : { taille: false, fondu: true });
-  programmerVol(a.pioche, a.place);
+/** Le tour d'une joueuse humaine : la carte visée, à l'emplacement cliqué. */
+async function jouerTour(st, p, o, partiel) {
+  const fini = jouerPrise(st, p, o, (coups) => coups.find((c) => c.moitie === partiel.moitie
+    && c.action === partiel.action && c.pos === partiel.pos && c.seq === partiel.seq && c.cote === partiel.cote));
+  vuePartie(false);
+  await jouerVols();
   return fini;
 }
 
 /** La carte en main se pose dans le banc, à l'emplacement choisi. */
 function poserAVue(st, p, coup) {
-  volDepuis(`#choix-carte .moitie[data-format="${coup.format}"]`, `[data-banc="${p}"] .moitie.neuf`);
+  volDepuis(`#choix-carte .moitie[data-moitie="${coup.moitie}"]`, `[data-banc="${p}"] .moitie.neuf`);
   poser(st, p, coup);
-  store.formatChoisi = null;
+  store.moitieChoisie = null;
 }
 
 /** Joue le coup de l'IA courante. Renvoie true si la partie s'achève. */
@@ -2220,21 +1623,31 @@ async function coupIA(st) {
 
   if (st.phase === 'DEPART') {
     const d = choisirDepart(st, p) || choixDepart(st, p)[0];
-    // Pas de vol : la carte de l'IA n'est plus à l'écran — c'est le choix de la
-    // joueuse qui REGARDE qu'on y montre. Une carte qui partirait de la sienne
-    // lui ferait croire qu'on lui prend la sienne.
+    // Pas de vol : la carte de l'IA n'est pas à l'écran — c'est celle de la
+    // joueuse qui REGARDE qu'on y montre.
     if (d) poserDepart(st, p, d);
     return avancer(st);
   }
 
   if (st.phase === 'DERUSHAGE') {
-    const o = choisirDerushage(st, p) || optionsDerushage(st)[0];
-    return o ? tourIA(st, p, o) : avancer(st);
+    // La défausse se voit : la carte part au Chutier, la rivière se
+    // recomplète, puis l'IA choisit.
+    const d = choisirDefausse(st, p);
+    if (d !== null) {
+      defausserAVue(st, p, d);
+      vuePartie(false);
+      await jouerVols();
+      await pause(anime() ? store.cfg.vitesseIA : 0);
+      if (store.partie !== st) return false;
+    }
+    const o = choisirDerushage(st, p);
+    if (!o) { passer(st, p); return st.finie; }
+    return jouerPrise(st, p, o, () => choisirCoup(st, p));
   }
 
   const coups = coupsPossibles(st, p);
   if (coups.length) poserAVue(st, p, choisirCoup(st, p) || coups[0]);
-  else st.mains[p] = [];
+  else ecarterMain(st, p);
   return avancer(st);
 }
 
@@ -2334,9 +1747,8 @@ function courbeScores(st, cl) {
 /** Ce que la partie a produit, au-delà du classement. */
 function statsPartie(st, cl) {
   const tous = cl.flatMap((c) => c.lignes);
-  // Le palmarès regroupe les bandeaux identiques d'une même joueuse : six fois
-  // « 3 × Mort » chez Justine tenaient six lignes pour une seule information.
-  const groupes = cl.flatMap((c) => grouperBandeaux(c.lignes).map((g) => ({ ...g, nom: c.joueur.nom })));
+  // Le palmarès regroupe les pouvoirs identiques d'une même joueuse.
+  const groupes = cl.flatMap((c) => grouperPouvoirs(c.lignes).map((g) => ({ ...g, nom: c.joueur.nom })));
   const parKind = {};
   for (const c of cl) for (const [k, v] of Object.entries(c.detail)) parKind[k] = (parKind[k] || 0) + v;
   const sources = Object.entries(parKind).filter(([, v]) => v).sort((a, b) => b[1] - a[1]);
@@ -2354,7 +1766,8 @@ function statsPartie(st, cl) {
       ${cartouche(totalPts, 'points marqués en tout')}
       ${cartouche(cartes ? (totalPts / cartes).toFixed(2) : '0', 'points par carte posée')}
       ${cartouche(ecart, cl.length > 1 ? 'points d’écart, première à dernière' : 'points d’écart')}
-      ${cartouche(cl.reduce((s, c) => s + c.cartesRaccord, 0), 'Cartes Raccord posées')}
+      ${cartouche(cl.reduce((s, c) => s + c.cartesRaccord, 0), 'Raccords, Ouvertures et Fins montés')}
+      ${cartouche(st.defausses || 0, 'cartes défaussées au Chutier')}
       ${cartouche(cl.reduce((s, c) => s + c.sequences, 0), 'séquences au total')}
       ${duree ? cartouche(`${Math.floor(duree / 60)}′${String(duree % 60).padStart(2, '0')}`, 'de partie') : ''}
     </div>
@@ -2371,15 +1784,15 @@ function statsPartie(st, cl) {
         </table>
       </div>
       <div>
-        <h3>Les bandeaux qui ont le plus rapporté</h3>
+        <h3>Les pouvoirs qui ont le plus rapporté</h3>
         <table class="tbl tbl-pouvoirs">
-          <thead><tr><th>Bandeau</th><th>Chez</th><th class="num">Points</th></tr></thead>
+          <thead><tr><th>Pouvoir</th><th>Chez</th><th class="num">Points</th></tr></thead>
           <tbody>${groupes.slice().sort((a, b) => b.pts - a.pts).slice(0, 8).map((g) => `<tr>
               <td class="pv-visuel">${objHTML(g.obj, 24, st.cfg)}${jetonNombre(g.n)}</td>
               <td>${g.nom}</td><td class="num"><b>${g.pts}</b></td>
-            </tr>`).join('') || '<tr><td colspan="3" class="aide">Aucun bandeau posé.</td></tr>'}</tbody>
+            </tr>`).join('') || '<tr><td colspan="3" class="aide">Aucun pouvoir monté.</td></tr>'}</tbody>
         </table>
-        ${meilleur ? `<p class="aide">Le meilleur bandeau de la partie rapporte
+        ${meilleur ? `<p class="aide">Le meilleur pouvoir de la partie rapporte
           <b>${meilleur.pts} point${Math.abs(meilleur.pts) > 1 ? 's' : ''}</b> à lui seul.</p>` : ''}
       </div>
     </div>
@@ -2394,12 +1807,18 @@ function vueFin() {
   html(`${topbar('#/partie')}
   <div class="wrap large">
     <div class="hero"><h1 style="font-size:2.1rem;letter-spacing:.12em">FIN DU MONTAGE</h1>
-      <div class="credits">${cl[0].joueur.nom} l’emporte avec <b>${cl[0].total} points</b>.</div>
+      <div class="credits">${(() => {
+    // À égalité de points, la victoire est partagée.
+    const tete = cl.filter((c) => c.total === cl[0].total).map((c) => c.joueur.nom);
+    return tete.length > 1
+      ? `Égalité : ${tete.slice(0, -1).join(', ')} et ${tete[tete.length - 1]} partagent la victoire, à <b>${cl[0].total} points</b>.`
+      : `${tete[0]} l’emporte avec <b>${cl[0].total} points</b>.`;
+  })()}</div>
     </div>
     <div class="panneau">
       <h2>Classement</h2>
       <table class="tbl">
-        <tr><th>#</th><th>Joueuse</th><th>Profil</th><th class="num">Plans</th><th class="num">Séquences</th><th class="num">Raccords</th><th class="num">Score</th></tr>
+        <tr><th>#</th><th>Joueuse</th><th>Profil</th><th class="num">Plans</th><th class="num">Séquences</th><th class="num" title="Raccord, Ouverture, Fin : les cartes montées qui ne sont pas des plans">Hors plans</th><th class="num">Score</th></tr>
         ${cl.map((c, i) => `<tr>
           <td>${i + 1}</td>
           <td><span class="point-couleur" style="background:${c.joueur.couleur};display:inline-block;margin-right:6px"></span>${c.joueur.nom}</td>
@@ -2412,14 +1831,12 @@ function vueFin() {
     ${courbeScores(st, cl)}
     ${statsPartie(st, cl)}
     <div class="grid2">
-      ${cl.map((c) => `<div class="panneau"><h2>Détail — ${c.joueur.nom}</h2>${listeObjectifs(c)}</div>`).join('')}
+      ${cl.map((c) => `<div class="panneau"><h2>Détail — ${c.joueur.nom}</h2>${listePouvoirs(c)}</div>`).join('')}
     </div>
     <div class="panneau">
       <h2>Les bancs de montage</h2>
-      ${/* Le même banc qu'en jeu, rendu par la même fonction : en mode Banc en
-            lignes, le compte rendu se lit donc ligne sur ligne, chaque séquence
-            sur la sienne et les ancres alignées. Les points de chaque plan y
-            sont aussi, au coin des cartes — c'est le moment de les lire. */
+      ${/* Le même banc qu'en jeu, rendu par la même fonction : les points de
+            chaque plan y sont, au coin des cartes — c'est le moment de les lire. */
         st.joueurs.map((j, i) => `<h3>${j.nom}</h3>
         <div class="banc-fin">${bancBloc(st, i, null, false)}</div>`).join('')}
     </div>
@@ -6576,15 +5993,12 @@ function telecharger(blob, nom) {
 // RÈGLES
 // ===========================================================================
 
-// Quatre lectures d'une même règle, de la plus lisible à la plus précise : le
-// LIVRET, qu'on lit avant de jouer ; l'AIDE de jeu, qu'on pose à côté du banc ;
-// le TEXTE de référence, qui tranche ; et les VERSIONS, qui disent ce qui a
-// changé. Le livret ouvre la page — c'est par lui qu'on arrive au jeu.
-let reglesOnglet = 'livret';
-let regleDepliee = null;   // version dont on affiche le texte intégral
+// Deux lectures des mêmes règles : les RÈGLES, qu'on lit avant de jouer, et
+// l'AIDE de jeu, qu'on garde à côté du banc. Les règles ouvrent la page.
+let reglesOnglet = 'regles';
 
-// --- Retoucher les textes du livret et de l'aide ---------------------------
-// Le livret et l'aide sont écrits ici, dans le code. L'auteur, lui, les relit à
+// --- Retoucher les textes des règles et de l'aide --------------------------
+// Les règles et l'aide sont écrites dans le code. L'auteur, lui, les relit à
 // la table et veut les corriger AU MOMENT où la formule le gêne — pas noter la
 // correction pour plus tard. Un bouton ouvre donc la page à la retouche, et un
 // autre recopie ce qui a changé, pour qu'on vienne le graver dans le code.
@@ -6592,7 +6006,7 @@ let regleDepliee = null;   // version dont on affiche le texte intégral
 // Ce que l'on retient n'est PAS la page : c'est un couple **texte d'origine →
 // texte retouché**, rangé sous l'empreinte de l'original. Trois conséquences,
 // toutes voulues :
-//   — un livret dont les chiffres viennent du modèle continue de les suivre :
+//   — un texte dont les chiffres viennent du modèle continue de les suivre :
 //     seuls les passages effectivement retouchés sont remplacés ;
 //   — une retouche survit à un déplacement de section, puisqu'elle ne dépend
 //     pas de la place ;
@@ -6602,9 +6016,9 @@ let regleDepliee = null;   // version dont on affiche le texte intégral
 
 /** Les éléments dont le texte se retouche. Les plus fins d'abord. */
 const SEL_RETOUCHE = [
-  '.livret .lv-hero-titre', '.livret .lv-accroche', '.livret .lv-sous',
+  '.livret .lv-accroche', '.livret .lv-sous',
   '.livret .lv-titre span', '.livret h3', '.livret h4',
-  '.livret p', '.livret li', '.livret .lv-mat span',
+  '.livret p', '.livret li', '.livret figcaption', '.livret .lv-mat span', '.livret .lv-txt',
   '.aide-jeu .aj-hero h2', '.aide-jeu .aj-note', '.aide-jeu .aj-hero p',
   '.aide-jeu h3', '.aide-jeu .aide', '.aide-jeu .lv-txt',
 ].join(',');
@@ -6618,6 +6032,16 @@ function empreinte(texte) {
 }
 
 let retoucheOuverte = false;
+
+// Une retouche est rangée sous l'empreinte du texte qu'elle corrige. Celles
+// faites sur les règles d'une version précédente ne retrouveraient plus leur
+// passage : elles resteraient comptées sans pouvoir être montrées. On repart
+// donc d'une table vide à chaque nouvelle version des règles.
+(function perimerRetouches() {
+  if (LS.get('regles.textes.v', '') === REGLES_VERSION) return;
+  LS.set('regles.textes', {});
+  LS.set('regles.textes.v', REGLES_VERSION);
+}());
 
 const retouches = () => LS.get('regles.textes', {});
 
@@ -6655,7 +6079,7 @@ function appliquerRetouches() {
 }
 
 /**
- * La barre de retouche, au-dessus du livret ou de l'aide. Son contenu dépend de
+ * La barre de retouche, au-dessus des règles ou de l'aide. Son contenu dépend de
  * ce qu'on a déjà retouché : elle se redessine donc à chaque frappe — sans quoi
  * « Copier mes retouches » n'apparaîtrait qu'au rechargement suivant, ce qui est
  * précisément le moment où l'on n'y pense plus.
@@ -6772,13 +6196,7 @@ function brancherRetouche() {
 
 function vueRegles() {
   const c = store.cfg;
-  const corps = reglesOnglet === 'livret' ? livret(c)
-    : reglesOnglet === 'aide' ? aideDeJeu(c)
-      : reglesOnglet === 'texte' ? `<div class="regles">${corpsRegles(c)}</div>`
-        : versionsRegles();
-  // Seuls le livret et l'aide se retouchent : le texte de référence et
-  // l'historique sont des ARCHIVES — leur mot à mot est ce qui fait leur usage.
-  const retouchable = reglesOnglet === 'livret' || reglesOnglet === 'aide';
+  const aide = reglesOnglet === 'aide';
 
   html(`${topbar('#/regles')}
   <div class="wrap">
@@ -6788,51 +6206,24 @@ function vueRegles() {
         <span class="version-pill">v${REGLES_VERSION}</span>
       </div>
       <div class="filtre-barre" style="margin-bottom:20px">
-        ${[['livret', 'Livret'], ['aide', 'Aide de jeu'], ['texte', 'Texte de référence'],
-    ['versions', `Versions (${REGLES_HISTORIQUE.length})`]]
+        ${[['regles', 'Les règles'], ['aide', 'Aide de jeu']]
     .map(([k, l]) => `<button class="pill" data-onglet="${k}"
             style="${reglesOnglet === k ? 'background:var(--violet);color:#fff;border-color:var(--violet)' : ''}">${l}</button>`).join('')}
       </div>
-      ${retouchable ? barreRetouche(reglesOnglet === 'livret'
-    ? 'Livret de règles' : 'Aide de jeu') : ''}
-      ${corps}
+      ${barreRetouche(aide ? 'Aide de jeu' : 'Règles du jeu')}
+      ${aide ? aideDeJeu(c) : corpsRegles(c)}
     </div>
   </div>
   ${pied()}`);
 
   // Les retouches se posent AVANT toute autre lecture de la page : le reste du
   // branchement doit voir le texte tel que l'auteur l'a écrit.
-  if (retouchable) { appliquerRetouches(); brancherRetouche(); }
+  appliquerRetouches();
+  brancherRetouche();
 
   app.querySelectorAll('[data-onglet]').forEach((b) => b.addEventListener('click', () => {
     reglesOnglet = b.dataset.onglet; vueRegles();
   }));
-  app.querySelectorAll('[data-deplie]').forEach((b) => b.addEventListener('click', () => {
-    regleDepliee = regleDepliee === b.dataset.deplie ? null : b.dataset.deplie;
-    vueRegles();
-  }));
-}
-
-function versionsRegles() {
-  return `<p class="aide" style="margin-bottom:20px">
-    La version des règles est indépendante de celle du site. Elle part de la <b>v${REGLES_HISTORIQUE[REGLES_HISTORIQUE.length - 1].v}</b>
-    fournie par l’auteur ; chaque modification demandée l’incrémente. Dans l’onglet <b>Les règles</b>,
-    les passages modifiés s’affichent <span class="regle-maj" data-v="ainsi">en violet</span>, avec le
-    numéro de version qui les a introduits.
-  </p>
-  ${REGLES_HISTORIQUE.map((v, i) => `
-    <div class="version-bloc regle ${i === 0 ? 'actuelle' : ''}">
-      <span class="num">v${v.v}</span><span class="date">${v.date}</span>
-      ${i === 0 ? '<span class="etiquette">version en vigueur</span>' : ''}
-      <div class="aide" style="margin-top:6px">${v.origine}</div>
-      <ul>${v.items.map((x) => `<li>${x}</li>`).join('')}</ul>
-      <button class="pill" data-deplie="${v.v}">
-        ${regleDepliee === v.v ? '▾ Masquer le texte' : '▸ Lire le texte de la v' + v.v}
-      </button>
-      ${regleDepliee === v.v
-        ? `<div class="regles texte-archive">${corpsVersion(v.v, store.cfg)}</div>`
-        : ''}
-    </div>`).join('')}`;
 }
 
 // ===========================================================================
@@ -6857,28 +6248,8 @@ function vueVariables() {
       ${SCHEMA.map((g) => `<div class="panneau"><h2>${g.groupe}</h2>${g.champs.map(champ).join('')}</div>`).join('')}
 
       <div class="panneau">
-        <h2>Le paquet des Cartes Objectif</h2>
-        <p class="aide" style="margin-bottom:12px">Une seule est révélée au début de la partie, et
-        elle vaut pour tout le monde. Décocher une carte la sort du paquet ; le nombre à côté est ce
-        qu’elle rapporte à qui la tient.${store.cfg.objectifCommun ? ''
-    : ' <b>La variante est éteinte</b> — elle se coche sur l’accueil, ou plus haut dans <b>Déroulé</b>.'}</p>
-        <div class="liste-objectifs">
-          ${OBJECTIFS_COMMUNS.map((o) => {
-    const on = store.cfg.objectifsCommunsActifs[o.id] !== false;
-    const pts = pointsObjectifCommun(o, store.cfg);
-    return `<div class="ligne-objectif ${on ? '' : 'hors'}">
-            <label class="chip ${on ? 'on' : ''}"><input type="checkbox" data-oc="${o.id}"
-              ${on ? 'checked' : ''}>${o.titre}</label>
-            <input type="number" class="champ-mini" data-oc-pts="${o.id}" value="${pts}" min="0" max="40">
-            <span class="aide">${o.phrase}</span>
-          </div>`;
-  }).join('')}
-        </div>
-      </div>
-
-      <div class="panneau">
-        <h2>Bandeaux pris en compte</h2>
-        <p class="aide" style="margin-bottom:12px">Décocher un type de bandeau le neutralise : pratique pour
+        <h2>Pouvoirs pris en compte</h2>
+        <p class="aide" style="margin-bottom:12px">Décocher un type de pouvoir le neutralise : pratique pour
         mesurer sa contribution réelle au score.</p>
         <div class="chips">
           ${Object.keys(store.cfg.objectifsActifs).map((k) => {
@@ -6889,15 +6260,9 @@ function vueVariables() {
       </div>
 
       <div class="panneau">
-        <h2>Familles de scènes</h2>
-        <div class="chips">
-          ${Object.keys(store.cfg.filtreFamilles).map((k) => {
-            const on = store.cfg.filtreFamilles[k];
-            const n = surLeModifie(() => SCENES().filter((s) => s.famille === k).length);
-            return `<label class="chip ${on ? 'on' : ''}"><input type="checkbox" data-fam="${k}" ${on ? 'checked' : ''}>${k} <b style="opacity:.6">${n}</b></label>`;
-          }).join('')}
-        </div>
-        <h3>Répartition obtenue</h3>
+        <h2>Le paquet</h2>
+        <p class="aide" style="margin-bottom:12px">Ce qui part en partie${MATERIEL_OUVERT
+    ? ' avec le matériel choisi sur l’accueil. Les cartes se règlent, s’assemblent et s’écartent dans <b>Matériel</b>' : ''}.</p>
         ${resumePaquet()}
         ${repartitionElements()}
       </div>
@@ -6910,27 +6275,14 @@ function vueVariables() {
     store.cfg.objectifsActifs[el.dataset.obj] = el.checked; sauverCfg();
     el.closest('.chip').classList.toggle('on', el.checked);
   }));
-  app.querySelectorAll('[data-oc]').forEach((el) => el.addEventListener('change', () => {
-    store.cfg.objectifsCommunsActifs[el.dataset.oc] = el.checked; sauverCfg();
-    el.closest('.chip').classList.toggle('on', el.checked);
-    el.closest('.ligne-objectif').classList.toggle('hors', !el.checked);
-  }));
-  app.querySelectorAll('[data-oc-pts]').forEach((el) => el.addEventListener('change', () => {
-    const n = Math.max(0, Math.min(40, Math.round(+el.value || 0)));
-    el.value = n;
-    store.cfg.objectifCommunPoints[el.dataset.ocPts] = n; sauverCfg();
-  }));
-  app.querySelectorAll('[data-fam]').forEach((el) => el.addEventListener('change', () => {
-    store.cfg.filtreFamilles[el.dataset.fam] = el.checked; sauverCfg(); vueVariables();
-  }));
   app.querySelector('#reset').addEventListener('click', () => {
     // Les retouches de cartes survivent : elles ne sont pas des variables de
     // partie, et elles ont leur propre bouton dans Matériel.
     const materiel = store.cfg.materiel;
+    const ecartees = store.cfg.cartesDesactivees;
     store.cfg = cloneConfig(DEFAULTS);
-    reglerLectureNue(!store.cfg.illustrations);
-    reglerGabarits(!!store.cfg.gabarits);
     store.cfg.materiel = materiel;
+    store.cfg.cartesDesactivees = ecartees;
     sauverCfg(); vueVariables();
   });
   app.querySelector('#export').addEventListener('click', () => {
@@ -6948,13 +6300,9 @@ function vueVariables() {
           const lu = JSON.parse(t);
           const materiel = store.cfg.materiel;
           store.cfg = Object.assign(cloneConfig(DEFAULTS), migrerCfg(lu));
-  reglerLectureNue(!store.cfg.illustrations);
-  reglerGabarits(!!store.cfg.gabarits);
-          reglerLectureNue(!store.cfg.illustrations);
-          reglerGabarits(!!store.cfg.gabarits);
-          // Un fichier antérieur à l'éditeur ne porte pas de matériel : on
-          // garde alors les retouches en place plutôt que de les effacer.
-          if (!lu.materiel) store.cfg.materiel = materiel;
+          // Un fichier sans matériel — ou d'une boîte précédente — ne touche
+          // pas aux retouches en place.
+          if (!store.cfg.materiel || !lu.materiel || lu.boite !== DEFAULTS.boite) store.cfg.materiel = materiel;
           normaliserMateriel();
           sauverCfg(); vueVariables();
         } catch { alert('Fichier illisible.'); }
@@ -6975,7 +6323,7 @@ function champ(f) {
 }
 
 function repartitionElements() {
-  const { doubles, larges } = construirePaquet(store.cfg);
+  const { doubles, larges } = construirePaquet();
   const compte = Object.fromEntries(ELEMENT_IDS.map((e) => [e, 0]));
   let plans = 0;
   for (const c of doubles) {
@@ -6983,7 +6331,7 @@ function repartitionElements() {
   }
   for (const c of larges) { plans++; for (const e of c.el) compte[e]++; }
   const max = Math.max(...Object.values(compte)) || 1;
-  return `<h3>Éléments dans le paquet <span class="aide">(${plans} plans)</span></h3>
+  return `<h3>Icônes dans le paquet <span class="aide">(${plans} plans)</span></h3>
   <div class="barres">
     ${ELEMENT_IDS.map((e) => `<div class="barre-l">
       <span style="display:flex;align-items:center;gap:8px">${elIcon(e, 22)} ${ELEMENTS[e].label}</span>
@@ -6998,7 +6346,7 @@ function repartitionElements() {
 // Un établi, pas une partie. On y a **tous les plans du jeu** sous la main,
 // rangés par cadrage, et l'on monte ce qu'on veut — avec exactement les mêmes
 // contraintes de pose qu'en partie, et le même décompte. C'est là qu'on essaie
-// une combinaison, qu'on vérifie ce que rapporte un bandeau, qu'on cherche le
+// une combinaison, qu'on vérifie ce que rapporte un pouvoir, qu'on cherche le
 // meilleur montage possible avec un matériel donné.
 //
 // Trois libertés qu'une partie n'a pas : on choisit son plan au lieu de le
@@ -7007,72 +6355,61 @@ function repartitionElements() {
 // est le moteur de la partie, sans un chiffre de différence.
 
 const FAMILLES_BAC = [
-  ['PL', 'Plans Larges'], ['PM', 'Plans Moyens'], ['GP', 'Gros Plans'], ['DEP', 'Plans de départ'],
+  ['PL', 'Plans Larges'], ['GP', 'Gros Plans'], ['DEP', 'Plans de départ'],
 ];
 
 /** Tous les plans d'un cadrage, tels qu'ils se poseraient. */
 function plansDuBac(famille) {
   return surLeModifie(() => {
     const liste = () => {
-      if (famille === 'PL') {
-        return buildPlansLarges(false).map((c) => plHalf(c));
+      if (famille === 'PL') return buildPlansLarges().map((c) => plHalf(c));
+      if (famille === 'DEP') return DEPARTS().map((f) => plHalf({ ...f, depart: true }));
+      // Un Gros Plan est la moitié GAUCHE ou la moitié DROITE d'une carte :
+      // c'est l'assemblage qui le dit, et c'est ce qui décide du côté où il se
+      // monte. La réserve le montre donc tel que sa carte le porte.
+      const out = [];
+      for (const c of buildCartesDoubles()) {
+        const m = moitiesDe(c);
+        if (m.G) out.push(m.G);
+        if (m.D) out.push(m.D);
       }
-      if (famille === 'DEP') {
-        return DEPARTS().flatMap((d) => d.faces.map((f) => plHalf({ ...f, depart: true })));
-      }
-      // Une moitié Plan Moyen / Gros Plan a deux faces — mais on n'en propose
-      // qu'UNE dans la réserve : à la table, on ne choisit pas sa face, c'est
-      // le CÔTÉ où l'on accroche la carte qui la décide. La réserve montre donc
-      // la carte, et la face se règle à la pose, comme en partie.
-      return SCENES().map((s) => halfInfo(s.idx, famille, { face: 'R' })).filter(Boolean);
+      return out;
     };
-    // Rangés comme la galerie du Matériel : par numéro imprimé. On cherche un
-    // plan par son numéro, pas par sa place dans la table des scènes.
+    // Rangés comme la galerie du Matériel : par numéro.
     return liste().sort((a, b) => a.num - b.num);
   });
 }
 
-/**
- * L'identité d'une carte de la réserve : son cadrage et son numéro imprimé —
- * pas sa face. Un plan repris du banc peut être sur son verso ; c'est bien la
- * même carte, et c'est elle que la réserve doit montrer comme choisie.
- */
+/** L'identité d'un plan de la réserve : son cadrage et son numéro. */
 const identiteBac = (p) => (p ? `${p.format}:${p.numOrigine ?? p.num}` : '');
 
-/**
- * Le nom d'une carte sous sa vignette : le cadrage et le numéro imprimé. La
- * face ne s'y écrit pas — la réserve ne propose qu'une carte, et c'est le côté
- * où on l'accroche qui décide de celle qu'on verra.
- */
+/** Le nom d'un plan sous sa vignette — et, pour un Gros Plan, sa moitié. */
 function libelleDuBac(p) {
-  const F = FORMATS[p.transition ? 'TR' : p.format] || FORMATS.PM;
-  return `${F.label} ${p.num}`;
+  const quoi = p.transition ? (p.titre || 'Raccord') : (FORMATS[p.format] || FORMATS.GP).label;
+  const cote = p.moitie === 'G' ? ' · moitié gauche' : p.moitie === 'D' ? ' · moitié droite' : '';
+  return `${quoi} ${etiquettePlan(p)}${cote}`;
 }
 
 /**
  * Une carte fictive, le temps de demander au moteur où ce plan peut se poser.
- * `coupsPossibles` raisonne sur des cartes ; ici on n'en a pas — on désigne un
- * plan. La carte n'existe que pour cette question, et rien n'en sort : c'est le
- * plan choisi qui se pose, avec sa face à lui.
+ * Le moteur raisonne sur des cartes ; ici on n'en a pas — on désigne un plan.
+ * Un Gros Plan devient une carte qui ne porterait que cette moitié-là.
  */
 function carteFictive(plan) {
   if (plan.format === 'PL' || plan.format === 'DEP') {
     return { id: 'bac', type: 'PL', num: plan.numOrigine, tc: plan.tc, el: plan.el,
       obj: plan.obj, obj2: plan.obj2, depart: plan.format === 'DEP' };
   }
-  const s = surLeModifie(() => sceneDe(plan.scene));
-  return { id: 'bac', type: 'DOUBLE', pmScene: plan.scene, gpScene: plan.scene,
-    pmNum: s ? s.pmNum : plan.numOrigine, gpNum: s ? s.gpNum : plan.numOrigine };
+  return { id: 'bac', type: 'DOUBLE',
+    gScene: plan.moitie === 'G' ? plan.scene : undefined,
+    dScene: plan.moitie === 'D' ? plan.scene : undefined };
 }
 
 /** Les poses légales du plan en main, dans le banc de l'établi. */
 function coupsDuBac() {
   const b = store.bac;
   if (!b.choisi) return [];
-  const plan = b.choisi.plan;
-  const st = { cfg: store.cfg, bancs: [b.banc], mains: [[]], joueurs: [{}] };
-  const fmt = plan.format === 'DEP' ? 'PL' : plan.format;
-  return surLeModifie(() => coupsPossibles(st, 0, carteFictive(plan)).filter((c) => c.format === fmt));
+  return surLeModifie(() => coupsSurBanc(b.banc, carteFictive(b.choisi.plan), store.cfg));
 }
 
 /** Une copie du banc, pour l'historique — et pour ne jamais partager un plan. */
@@ -7086,17 +6423,15 @@ function memoriserBac() {
 }
 
 /**
- * Retire un plan du banc et le rend. La ligne qui se vide disparaît ; celle qui
- * perd son ancre en désigne une autre — sans quoi la ligne n'aurait plus de
- * centre et sauterait de place. Un Générique retiré rouvre le bout du montage.
+ * Retire un plan du banc et le rend. La séquence qui se vide disparaît ; celle
+ * qui perd son ancre en désigne une autre — sans quoi elle n'aurait plus de
+ * centre et sauterait de place.
  */
 function retirerPlanDuBanc(banc, si, k) {
   const seq = banc.sequences[si];
   if (!seq || !seq[k]) return null;
   const plan = seq[k];
   seq.splice(k, 1);
-  if (plan.transition === 'OUVERTURE') banc.ouverture = false;
-  if (plan.transition === 'CREDITS') banc.fermeture = false;
   if (!seq.length) banc.sequences.splice(si, 1);
   else if (plan.ancre && !seq.some((p) => p.ancre)) {
     (seq.find((p) => p.format === 'PL' || p.format === 'DEP') || seq[0]).ancre = true;
@@ -7106,30 +6441,14 @@ function retirerPlanDuBanc(banc, si, k) {
 
 let numeroBac = 0;
 
-/**
- * La face qu'un plan montre selon le côté où on l'accroche. À la table, une
- * carte Plan Moyen / Gros Plan se retourne quand on la pose de l'autre côté du
- * plan central : le Gros Plan à gauche montre son verso, à droite son recto —
- * et le Plan Moyen l'inverse. La réserve ne propose donc qu'une carte, et
- * c'est la pose qui décide de ce qu'on en voit, minutage compris.
- *
- * Un Plan Large et un Plan de départ n'ont qu'une face : ils ne bougent pas.
- */
-function planSelonCote(plan, cote) {
-  if (plan.scene === null || plan.scene === undefined) return plan;
-  const face = faceJouee(plan.format, cote, store.cfg);
-  if (face === plan.face) return plan;
-  return surLeModifie(() => halfInfo(plan.scene, plan.format, { face })) || plan;
-}
-
 function poserDansBac(coup) {
   const b = store.bac;
   if (!b.choisi) return;
   memoriserBac();
   // Chaque plan posé est une copie à lui : le décompte reconnaît les plans à
   // leur identité, et deux exemplaires du même plan doivent rester deux.
-  const tourne = planSelonCote(b.choisi.plan, coup.cote);
-  const plan = { ...tourne, el: tourne.el.slice(), ancre: false,
+  const choisi = b.choisi.plan;
+  const plan = { ...choisi, el: choisi.el.slice(), ancre: false,
     carteId: `bac-${numeroBac++}` };
   appliquerPlan(b.banc, coup, plan);
   b.dernierPose = positionDansBanc(b.banc, plan);
@@ -7153,9 +6472,7 @@ function vueBanc() {
   const coups = coupsDuBac();
   const st = { cfg, bancs: [b.banc], joueurs: [{ nom: 'Établi' }], mains: [[]],
     phase: 'MONTAGE', courant: 0, dernierPose: b.dernierPose };
-  // La face suit le côté : l'aperçu de chaque emplacement montre donc la carte
-  // telle qu'elle s'y poserait, pas telle qu'elle est dans la réserve.
-  const vise = b.choisi ? { plan: (c) => planSelonCote(b.choisi.plan, c.cote), coups } : null;
+  const vise = b.choisi ? { plan: b.choisi.plan, coups } : null;
 
   const plans = plansDuBac(b.famille);
   const filtre = b.filtre.trim().toLowerCase();
@@ -7163,27 +6480,21 @@ function vueBanc() {
     ? plans.filter((p) => `${p.num} ${p.famille || ''} ${p.transition || ''}`.toLowerCase().includes(filtre))
     : plans;
 
-  const mode = modeCourant(cfg);
   html(`${topbar('#/banc')}
   <div class="wrap large">
     <div class="panneau">
       <h2>Banc de montage</h2>
-      <p class="aide">Toutes les cartes du jeu sous la main, et les <b>règles de pose de la
-      partie</b> — mode <b>${mode.label}</b>, ${cfg.tours} plans,
-      ${cfg.sequencesMax || '∞'} séquences au plus. Rien n’est tiré au sort : on choisit, on pose,
-      on reprend, on annule. Le décompte est celui de la partie, au point près.
-      ${cfg.faceSelonPose === false ? ''
-    : 'Comme à la table, une carte Plan Moyen / Gros Plan <b>se retourne selon le côté</b> où on '
-      + 'l’accroche : la réserve en montre une seule, et c’est la pose qui décide de la face — '
-      + 'donc du minutage et du pouvoir. L’aperçu de chaque emplacement montre déjà celle qu’on aura. '}
-      Les règles se changent dans <b>Variables</b> ⚙.</p>
+      <p class="aide">Tous les plans du jeu sous la main, et les <b>règles de pose de la partie</b> —
+      ${cfg.sequencesMax} séquences, ${cfg.plansParCote} cartes de chaque côté du centre. Rien n’est tiré
+      au sort : on choisit, on pose, on reprend, on annule. Le décompte est celui de la partie, au point
+      près. Un Gros Plan se monte du côté de la <b>moitié</b> qu’il occupe sur sa carte : la gauche à
+      gauche d’une séquence, la droite à droite. Les règles se changent dans <b>Variables</b>.</p>
       <div class="barre-outils" style="margin-top:12px">
         <button class="pill" id="bac-annuler" ${b.historique.length ? '' : 'disabled'}>↶ Annuler</button>
         <button class="pill" id="bac-retablir" ${b.refaits.length ? '' : 'disabled'}>↷ Rétablir</button>
         <button class="pill" id="bac-vider" ${b.banc.sequences.length ? '' : 'disabled'}>✕ Vider le banc</button>
-        ${boutonIllus()}
         <span class="aide">${b.choisi
-    ? `<b>${b.choisi.plan.num}</b> en main — cliquez un emplacement${coups.length ? '' : ' … mais il n’y en a aucun'}`
+    ? `<b>${libelleDuBac(b.choisi.plan)}</b> en main — cliquez un emplacement${coups.length ? '' : ' … mais il n’y en a aucun'}`
     : 'Cliquez une carte ci-dessous, ou un plan déjà posé pour le reprendre.'}</span>
       </div>
     </div>
@@ -7197,7 +6508,7 @@ function vueBanc() {
       </div>
       <div class="panneau">
         <h2>Décompte</h2>
-        ${listeObjectifs(s)}
+        ${listePouvoirs(s)}
         ${blocRecensement(s)}
       </div>
     </div>
@@ -7284,7 +6595,6 @@ function brancherBanc() {
     vueBanc();
   });
 
-  brancherBasculeIllus(vueBanc);
   brancherApercu();
 }
 
@@ -7325,7 +6635,7 @@ function vueLabo() {
 async function lancerLabo() {
   const joueurs = store.joueurs.map((j) => ({ ...j, type: j.type === 'HUMAIN' ? 'EQUILIBRE' : j.type }));
   if (!bilanJeu(joueurs.length).jouable) {
-    alert(messageSetIncomplet(joueurs.length).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ')); return;
+    alert(messagePaquetCourt(joueurs.length).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ')); return;
   }
   store.laboEnCours = true;
   vueLabo();
@@ -7347,7 +6657,9 @@ function resultatsLabo(r) {
       ${tuile('Score médian', r.global.med, `de ${r.global.min} à ${r.global.max}`, 'orange')}
       ${tuile('Plans visibles', t(r.plans.moy), 'par banc', 'vert')}
       ${tuile('Séquences', t(r.sequences.moy), `plus longue : ${t(r.plusLongue.moy)} plans`)}
-      ${tuile('Cartes Raccord', t(r.raccords.moy), 'par banc', 'orange')}
+      ${tuile('Raccords, Ouverture, Fin', t(r.raccords.moy), 'par banc', 'orange')}
+      ${tuile('Défausses au Chutier', t(r.defausses.moy), `par partie · ${t(r.prisesChutier.moy)} reprise${r.prisesChutier.moy >= 2 ? 's' : ''} sur le Chutier`)}
+      ${tuile('Tours passés', t(r.passes.moy), 'par partie — faute de carte à monter', 'vert')}
       ${tuile('Parties serrées', `${Math.round(r.tauxSerre * 100)} %`, '3 points ou moins d’écart', 'vert')}
       ${tuile('Égalités', `${Math.round(r.tauxEgalite * 100)} %`, 'en tête')}
       ${tuile('Écart 1re / dernière', t(r.ecartVainqueur.moy), `max ${r.ecartVainqueur.max}`, 'orange')}
@@ -7591,7 +6903,6 @@ function vueSalon(s) {
   const moi = sal.membres.find((m) => m.id === s.moi.id);
   const prises = new Set(sal.membres.filter((m) => m.id !== s.moi.id && m.couleur).map((m) => m.couleur));
   const assis = sal.membres.filter((m) => m.present && m.couleur).length;
-  const mode = sal.cfg ? modeCourant(sal.cfg) : null;
 
   return `<div class="grid2">
     <div>
@@ -7628,10 +6939,9 @@ function vueSalon(s) {
         <p class="aide">${hote ? 'Ce sont vos réglages et votre matériel qui partent en partie — comme la boîte appartient à qui l’apporte. Réglez-les avant de lancer, dans Variables et Matériel.'
           : 'Les réglages et le matériel sont ceux de l’hôte.'}</p>
         ${sal.cfg ? `<div class="chips">
-          <span class="chip on">${mode ? mode.label : ''}</span>
-          ${sal.cfg.sansPlanDepart ? '<span class="chip on">Pas de Plans de départ</span>' : ''}
           <span class="chip on">${sal.cfg.tours} plans</span>
-          <span class="chip on">Set ${sal.cfg.set || SET_DEFAUT} · ${sal.cfg.materielActif === 'MODIFIE' ? 'modifié' : 'origine'}</span>
+          <span class="chip on">rivière de ${sal.cfg.riviere}</span>
+          <span class="chip on">Boîte 4.1${sal.cfg.materielActif === 'MODIFIE' ? ' · modifiée' : ''}</span>
         </div>` : '<p class="aide">En attente de l’hôte…</p>'}
       </div>
     </div>
@@ -7655,7 +6965,7 @@ function brancherSalon(s) {
     lancer.addEventListener('click', () => {
       const n = (s.salon && s.salon.membres && s.salon.membres.length) || store.joueurs.length;
       if (!bilanJeu(n).jouable) {
-        alert(messageSetIncomplet(n).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ')); return;
+        alert(messagePaquetCourt(n).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ')); return;
       }
       s.lancer();
     });
@@ -7677,26 +6987,7 @@ const ROUTES = {
   '#/labo': vueLabo,
   '#/historique': vueHistorique,
   '#/versions': vueVersions,
-  '#/atelier': () => ouvrirAtelier('vueAtelier'),
-  '#/impression': () => ouvrirAtelier('vueImpression'),
 };
-
-/**
- * L'Atelier ne se charge que si on l'ouvre. Il emprunte à l'application de
- * quoi dessiner l'écran et lire le Matériel — rien de plus.
- */
-async function ouvrirAtelier(vue) {
-  const m = await import('./atelier.js');
-  m[vue]({
-    app, html, topbar, pied, store, sauverCfg, surLeModifie, LS, telecharger, VERSION,
-    appliquerDesign, departsAImprimer, estDesactivee, retournements: RETOURNEMENTS,
-    choisirIllustration: ouvrirChoixImage, poserCadre,
-    poserMiroir: (cles, m) => {
-      surLeModifie(() => { for (const k of cles) retoucher(k, 'miroir', m || undefined); });
-      sauverCfg();
-    },
-  });
-}
 
 function route() {
   document.onkeydown = null;
@@ -7705,7 +6996,7 @@ function route() {
   // Un écran fermé par le mode partagé ne s'ouvre pas non plus à la main, dans
   // la barre d'adresse : masquer l'onglet sans fermer la route ne fermerait
   // rien du tout.
-  if ((enPartage() && ECRANS_FERMES.includes(hash)) || (!ATELIER_OUVERT && ['#/atelier', '#/impression'].includes(hash))) {
+  if ((enPartage() && ECRANS_FERMES.includes(hash)) || (!MATERIEL_OUVERT && hash === '#/materiel')) {
     history.replaceState(null, '', `${location.pathname}#/`);
     vueAccueil();
     window.scrollTo(0, 0);
@@ -7778,22 +7069,18 @@ Promise.all([chargerVisuels(), chargerPublie(VERSION)])
  * une **copie** faite au moment de la pose : il ne suivrait pas une retouche.
  * On rejoue donc sur lui les seuls champs que l'éditeur règle — minutage,
  * icônes, pouvoirs, mort, numéro — en gardant ce que la pose lui a donné : son
- * cadrage, son rôle de transition, sa face, sa carte d'origine.
+ * cadrage, sa moitié, sa carte d'origine.
  *
- * Les cartes encore en pioche, en rivière ou en main n'ont besoin de rien :
- * leurs moitiés se relisent à chaque rendu. Seul leur **appariement** est figé
- * à la construction du paquet — on le refait, par rang de carte.
- *
- * La **composition de la boîte**, elle, tient au paquet lui-même : activer ou
- * écarter une carte doit la faire entrer ou sortir des pioches et des rivières.
- * C'est `resynchroniserBoite()` qui s'en charge, dans le moteur.
+ * Les cartes encore en pioche, en rivière ou en main se relisent à chaque
+ * rendu. Leur **assemblage** — quels Gros Plans vont ensemble — et la
+ * **composition de la boîte** tiennent au paquet lui-même : c'est
+ * `resynchroniserBoite()` qui les remet d'accord, dans le moteur. Il ne touche
+ * pas à la carte en main ; on refait donc ici son assemblage, par rang.
  */
 function resynchroniserMateriel(st, cfg) {
   // Une partie finie ne bouge plus : son décompte est arrêté, et l'écran de fin
   // doit dire ce qui s'est joué, pas ce que le matériel est devenu depuis.
   if (!st || st.finie) return;
-  // Changer de set dans l'éditeur ne change pas les cartes d'une partie lancée.
-  if (setValide(st.cfg.set) !== setValide(cfg.set)) return;
   // La partie joue son propre instantané de configuration : c'est lui qu'il
   // faut mettre à jour, `appliquerJeuActif()` s'en sert pendant une partie.
   st.cfg.materiel = JSON.parse(JSON.stringify(cfg.materiel));
@@ -7802,10 +7089,10 @@ function resynchroniserMateriel(st, cfg) {
   appliquerJeuActif();
 
   const parRang = new Map(buildCartesDoubles().map((c) => [c.rang, c]));
-  for (const pile of [st.piochePMGP, st.chutierPMGP, ...st.mains]) {
-    for (const c of pile || []) {
+  for (const main of st.mains) {
+    for (const c of main || []) {
       const n = c && c.type === 'DOUBLE' ? parRang.get(c.rang) : null;
-      if (n) Object.assign(c, { pmScene: n.pmScene, gpScene: n.gpScene, pmNum: n.pmNum, gpNum: n.gpNum });
+      if (n) Object.assign(c, { gScene: n.gScene, dScene: n.dScene, gNum: n.gNum, dNum: n.dNum });
     }
   }
 
@@ -7819,7 +7106,7 @@ function resynchroniserMateriel(st, cfg) {
     }
   }
 
-  // Enfin la boîte : les cartes écartées quittent les pioches et les rivières,
+  // Enfin la boîte : les cartes écartées quittent la pioche et la rivière,
   // celles qu'on réactive y reviennent.
   resynchroniserBoite(st);
 }
@@ -7956,10 +7243,6 @@ export function calerMinutage() {
     r.setProperty('--tc-bas', `${Math.max(0, ecart * 2).toFixed(4)}em`);
   } catch { /* pas de canevas : on garde le centrage par défaut */ }
 }
-
-// Le rendu part avec la lecture qui a été enregistrée, pas avec le défaut.
-reglerLectureNue(!store.cfg.illustrations);
-reglerGabarits(!!store.cfg.gabarits);
 
 calerMinutage();
 // Les fontes du système sont là tout de suite, mais on remesure quand le

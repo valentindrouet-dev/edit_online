@@ -34,12 +34,17 @@ const lab = await import(pathToFileURL(join(racine, 'js/lab.js')).href);
 const { DEFAULTS, cloneConfig } = await import(pathToFileURL(join(racine, 'js/config.js')).href);
 const joueurs = [{ nom: 'A', type: 'NOVICE' }, { nom: 'B', type: 'EQUILIBRE' }, { nom: 'C', type: 'STRATEGE' }];
 let parties = 0; let fautes = 0;
-for (const variante of [{}, { objectifCommun: true }, { sixCartesDepart: true, piochesMelangees: true }]) {
+// Les règles telles quelles, puis deux réglages qui les éprouvent : sans défausse
+// ni recyclage du Chutier — la pioche peut alors se vider —, et une rivière
+// réduite.
+for (const variante of [{}, { defausse: false, recyclerChutier: false }, { riviere: 2, tours: 12 }]) {
   for (let i = 0; i < 4; i++) {
     try {
       const r = lab.simulerPartie(joueurs, { ...cloneConfig(DEFAULTS), ...variante }, `verif-${i}`);
       parties++;
       if (!r.totaux.every(Number.isFinite)) fautes++;
+      // Personne ne dépasse le compte de plans qui arrête la partie, à une carte près.
+      if (r.plans.some((n) => n > (variante.tours || DEFAULTS.tours) + 1)) fautes++;
     } catch (e) { fautes++; console.log(`     ${e.message}`); }
   }
 }
@@ -91,7 +96,7 @@ const { version } = JSON.parse(await readFile(join(racine, 'version.json'), 'utf
 await page.goto(`${base}/`, { waitUntil: 'networkidle' });
 await page.evaluate(() => {
   localStorage.clear();
-  localStorage.setItem('edit.cfg', JSON.stringify({ publieAdopte: 'origine', animerCoups: false, objectifCommun: true }));
+  localStorage.setItem('edit.cfg', JSON.stringify({ boite: '4.1', publieAdopte: 'origine-4.1', animerCoups: false }));
   localStorage.setItem('edit.joueurs', JSON.stringify([
     { nom: 'A', couleur: '#fdba74', type: 'EQUILIBRE' }, { nom: 'B', couleur: '#93c5fd', type: 'STRATEGE' }]));
 });
@@ -105,10 +110,16 @@ dit(new Set(chemins).size === chemins.length, 'aucun module chargé deux fois');
 
 // --- 3. Les écrans ----------------------------------------------------------
 await page.click('#go');
-const objectif = await page.waitForSelector('.carte-objectif', { timeout: 4000 }).then(() => true, () => false);
-const fini = await page.waitForSelector('#rejouer', { timeout: 30000 }).then(() => true, () => false);
+const table = await page.waitForSelector('.table-cartes .riviere-cartes', { timeout: 4000 }).then(() => true, () => false);
+const fini = await page.waitForSelector('#rejouer', { timeout: 40000 }).then(() => true, () => false);
+dit(table, 'la table montre la pioche, la rivière et le Chutier');
 dit(fini, 'une partie se joue jusqu’au décompte dans le navigateur');
-dit(objectif, 'la Carte Objectif commune se pose sur la table');
+// Les bancs de fin de partie portent les vraies cartes — et leurs images existent.
+const visuels = await page.evaluate(() => [...document.querySelectorAll('.banc img.carte-visuel')].map((i) => i.getAttribute('src')));
+let absentes = 0;
+for (const src of [...new Set(visuels)]) if (!existsSync(join(racine, src))) absentes++;
+dit(visuels.length >= 10 && absentes === 0, 'les bancs montrent les vraies cartes',
+  `${visuels.length} cartes, ${absentes} image(s) introuvable(s)`);
 
 const ECRANS = ['#/', '#/partie', '#/materiel', '#/regles', '#/variables', '#/labo', '#/banc',
   '#/historique', '#/versions', '#/enligne'];

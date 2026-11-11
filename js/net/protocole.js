@@ -16,8 +16,8 @@
 //   — deux appareils ne peuvent pas diverger tant que le moteur est déterministe ;
 //   — personne n'écrit d'état, donc il n'y a aucun conflit d'écriture.
 
-import { creerPartie, choixDepart, poserDepart, optionsDerushage, derusher,
-  coupsPossibles, poser, avancer, retourner } from '../engine.js';
+import { creerPartie, choixDepart, poserDepart, optionsDerushage, derusher, defausser, passer,
+  ecarterMain, coupsPossibles, poser, avancer } from '../engine.js';
 
 /** Combien de temps un salon sans activité reste dans la liste. */
 export const PEREMPTION_MS = 10 * 60 * 1000;
@@ -112,11 +112,11 @@ export function configDuSalon(salon) {
 // --- Actions ----------------------------------------------------------------
 // Une action est l'unité de synchronisation : quelques dizaines d'octets.
 //
-//   { k: 'depart',    i }        la i-ème face proposée — choixDepart est trié
-//   { k: 'derush',    o }        { source, index } — la carte prise dans la rivière
-//   { k: 'poser',     c }        le coup, sans sa carte : on le retrouve dans la liste
-//   { k: 'passe' }               aucun emplacement possible : la carte est écartée
-//   { k: 'retourner', id }       une carte double montrée sur son autre face
+//   { k: 'depart',   i }        la i-ème face proposée — choixDepart est trié
+//   { k: 'defausse', i }        la i-ème carte de la rivière part au Chutier
+//   { k: 'derush',   o }        { source, index } — la carte prise, rivière ou Chutier
+//   { k: 'poser',    c }        le coup, sans sa carte : on le retrouve dans la liste
+//   { k: 'passe' }              rien ne peut être monté : la main passe
 //
 // `derush` et `poser` désignent leur cible par une **description**, pas par un
 // rang dans une liste : un rang serait juste, mais illisible dans un journal et
@@ -128,8 +128,8 @@ export function coupNu(coup) {
   return reste;
 }
 
-const memeCoup = (a, b) => a.action === b.action && a.format === b.format
-  && a.pos === b.pos && a.seq === b.seq && a.cote === b.cote && a.role === b.role;
+const memeCoup = (a, b) => a.action === b.action && a.moitie === b.moitie
+  && a.pos === b.pos && a.seq === b.seq && a.cote === b.cote;
 
 /**
  * Applique une action à un état. C'est la seule porte : le journal se rejoue
@@ -145,9 +145,14 @@ export function appliquerAction(st, a) {
       poserDepart(st, p, options[a.i] || options[0]);
       break;
     }
+    case 'defausse':
+      // Défausser ne joue pas le tour : on ne passe pas la main.
+      defausser(st, p, a.i);
+      return st.finie;
     case 'derush': {
       const options = optionsDerushage(st);
-      const o = options.find((x) => x.source === a.o.source && x.index === a.o.index) || options[0];
+      const o = options.find((x) => x.source === a.o.source
+        && (x.source === 'CHUTIER' || x.index === a.o.index)) || options[0];
       if (!o) return st.finie;
       derusher(st, p, o);
       break;
@@ -155,18 +160,13 @@ export function appliquerAction(st, a) {
     case 'poser': {
       const coups = coupsPossibles(st, p);
       const c = coups.find((x) => memeCoup(x, a.c)) || coups[0];
-      if (c) poser(st, p, c); else st.mains[p] = [];
+      if (c) poser(st, p, c); else ecarterMain(st, p);
       break;
     }
     case 'passe':
-      st.mains[p] = [];
-      break;
-    case 'retourner': {
-      // Retourner ne joue pas le tour : on ne passe pas la main.
-      const carte = [...st.chutierPL, ...st.chutierPMGP, ...st.mains.flat()].find((c) => c && c.id === a.id);
-      if (carte) retourner(st, carte);
+      // `passer` donne lui-même la main à la joueuse suivante.
+      passer(st, p);
       return st.finie;
-    }
     default:
       return st.finie;
   }

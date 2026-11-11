@@ -1,44 +1,40 @@
 // ---------------------------------------------------------------------------
 // EDIT — décompte
 // ---------------------------------------------------------------------------
-// Le banc de montage est une suite de SÉQUENCES. Chaque séquence est une suite
-// de plans visibles, de gauche à droite. Une carte posée ne laisse voir qu'un
-// seul de ses plans : l'autre moitié passe sous les cartes voisines.
+// Le banc de montage est une suite de SÉQUENCES, une par ligne. Chaque séquence
+// est une suite de plans, de gauche à droite : le Plan Large — ou le Plan de
+// départ — qui l'a ouverte, et les Gros Plans accrochés de part et d'autre.
+// Une carte à deux Gros Plans ne laisse voir que la moitié qu'on a choisie.
 //
-// Les bandeaux se lisent dans leur propre séquence — c'est tout l'intérêt des
-// Cartes Raccord, qui soudent deux séquences et démultiplient donc les points.
-// Seul le Générique compte sur le montage entier.
+// Chaque plan porte un pouvoir, qui se lit dans sa portée : sa séquence, le
+// montage entier, ce qui le précède ou ce qui le suit.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE, TC_PREMIER, TC_DERNIER, TC_VIDE } from './data.js';
+import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE, TC_VIDE } from './data.js';
 
 export function bancVide() {
-  return { sequences: [], ouverture: false, fermeture: false };
+  return { sequences: [] };
 }
 
 export function tousLesPlans(banc) {
   return banc.sequences.flat();
 }
 
+/**
+ * Ce qui n'est pas un PLAN : le Raccord, l'Ouverture et la Fin. Ils relient ou
+ * encadrent le film, ils ne le racontent pas. Quand une carte nomme le
+ * « RACCORD », en revanche, elle parle de lui seul — voir `estRaccordSimple`.
+ */
 export function estRaccord(p) {
   return !!p.transition;
 }
 
 /**
- * Les plans qui comptent dans le total du banc. Un Raccord, une Ouverture, un
- * Générique ne sont pas des plans : ils relient ou encadrent le film, ils ne
- * le racontent pas. Ils ne comptent donc pas dans les dix plans qui arrêtent
- * la partie.
+ * Les plans qui comptent dans le total du banc. Un Raccord, l'Ouverture, la Fin
+ * ne sont pas des plans : ils relient ou encadrent le film, ils ne le racontent
+ * pas. Ils ne comptent donc pas dans les dix plans qui arrêtent la partie.
  */
 export function plansComptes(banc) {
   return tousLesPlans(banc).filter((p) => !estRaccord(p)).length;
-}
-
-/** Deux plans voisins partagent-ils assez d'éléments ? (variante hors règles) */
-export function raccordeParElement(a, b, cfg) {
-  if (!a || !b) return false;
-  let n = 0;
-  for (const e of a.el) if (b.el.includes(e)) n++;
-  return n >= (cfg.raccordMin || 1);
 }
 
 /**
@@ -75,20 +71,20 @@ export function compteGroupes(plans, els) {
  *
  * Deux cibles ne comptent pas des cartes mais ce qu'elles portent — `ICONE`,
  * toutes les icônes confondues, et `VALEUR`, la **Valeur de Plan** : on
- * compte les cadrages DIFFÉRENTS, une ligne qui alterne Plan Large, Plan Moyen
- * et Gros Plan en montrant trois. Une dernière ne regarde pas la portée du
+ * compte les cadrages DIFFÉRENTS, une ligne qui alterne Plan Large et Gros
+ * Plan en montrant deux. Une dernière ne regarde pas la portée du
  * tout : `SEQUENCE` compte les séquences du banc.
  */
 export function compteCible(plans, cible, banc) {
   switch (cible) {
     case 'CARTE':    return plans.length;
     case 'PLAN':     return plans.filter((p) => !estRaccord(p)).length;
-    case 'RACCORD':  return plans.filter(estRaccord).length;
+    case 'RACCORD':  return plans.filter(estRaccordSimple).length;
     case 'MORT':     return plans.filter((p) => p.mort).length;
     case 'ICONE':    return plans.reduce((s, p) => s + p.el.length, 0);
     // La **Valeur de Plan** — le mot de cinéma pour le cadrage : Plan Large,
-    // Plan Moyen, Gros Plan. On compte celles qui sont DIFFÉRENTES : une ligne
-    // qui alterne les trois en montre trois, quel que soit le nombre de cartes.
+    // Gros Plan. On compte celles qui sont DIFFÉRENTES, quel que soit le nombre
+    // de cartes.
     // Un Raccord n'est pas un plan : il n'a pas de Valeur de Plan.
     case 'VALEUR':   return new Set(plans.filter((p) => !estRaccord(p)).map((p) => p.format)).size;
     case 'SEQUENCE': return banc ? banc.sequences.length : 0;
@@ -115,10 +111,10 @@ export function compteCible(plans, cible, banc) {
 }
 
 /**
- * Ce plan porte-t-il ce cadrage ? Une Carte Raccord occupe bien la place d'un
- * Plan Moyen ou d'un Gros Plan sur le banc — c'est par là qu'on l'accroche —,
- * mais elle n'en est pas un : elle relie, elle ne raconte rien. Aucun bandeau
- * qui compte des Gros Plans ou des Plans Moyens ne doit donc la trouver.
+ * Ce plan porte-t-il ce cadrage ? Un Raccord occupe bien la place d'un Gros
+ * Plan sur le banc — c'est par là qu'on l'accroche —, mais il n'en est pas un :
+ * il relie, il ne raconte rien. Aucun pouvoir qui compte des Gros Plans ne
+ * doit donc le trouver.
  */
 function aCeCadrage(p, cadrage) {
   return !estRaccord(p) && p.format === cadrage;
@@ -287,12 +283,7 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
 
   switch (obj.kind) {
     case 'RACCORD':
-      // Variante — un Raccord resté OUVERT ne rapporte plus, il coûte. Poser
-      // des Raccords partout sans jamais les fermer était devenu la stratégie
-      // la plus payante du jeu : chacun comptait tous les autres, et rien
-      // n'obligeait à leur donner la suite qu'ils promettent.
-      if (raccordOuvert(porteur, banc, cfg)) return cfg.raccordOuvertMalus;
-      return n * portee.filter(estRaccord).length;
+      return n * portee.filter(estRaccordSimple).length;
     case 'PLAN':
       return n * portee.length;
     case 'FORMAT':
@@ -339,7 +330,7 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
       return n * portee.filter((p) => (obj.sens === 'EGAL' ? p.tc === obj.seuil
         : obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
     case 'CHRONO':
-      return chronologique(portee, cfg) ? n : 0;
+      return chronologique(portee) ? n : 0;
     // Le bout de ligne. La portée est déjà ce qu'il y a au-delà du porteur, de
     // son côté : il reste à vérifier qu'aucun PLAN ne s'y trouve. Un Raccord
     // n'y change rien — le bandeau écrit « Plan », et un Raccord n'en est pas
@@ -347,8 +338,8 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
     case 'BOUT':
       return portee.some((p) => !estRaccord(p)) ? 0 : n;
     case 'SANS_TC': {
-      // La portée doit être vierge du minutage visé — dont le 00:00 bleu des
-      // Raccords et Génériques.
+      // La portée doit être vierge du minutage visé — dont le « -- » bleu des
+      // plans sans minutage.
       const vise = obj.sens === 'AVANT' ? (p) => p.tc < obj.seuil
         : obj.sens === 'APRES' ? (p) => p.tc > obj.seuil
           : (p) => p.tc === obj.seuil;
@@ -466,7 +457,7 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
 }
 
 /** La taille d'un cadrage, pour « la plus grosse carte » : le Gros Plan est le plus petit. */
-const TAILLE_CADRAGE = { GP: 1, PM: 2, PL: 3, DEP: 3 };
+const TAILLE_CADRAGE = { GP: 1, PL: 2, DEP: 2 };
 
 /** Ce qu'un plan rapporte à lui seul, tous ses bandeaux réunis. */
 function valeurPlan(plan, banc, cfg, profond) {
@@ -486,86 +477,14 @@ function plansDe(seq) {
 
 /**
  * Une suite de plans se lit-elle dans l'ordre ? Chaque minutage doit être
- * supérieur ou égal à celui de son voisin de gauche.
- *
- * Les Raccords et les Génériques sont à 00:00 : ils ne racontent rien, ils
- * relient. On les **retire de la lecture** — `chronoIgnoreZero` — au lieu de
- * sauter les comparaisons qui les touchent. La nuance décide de tout : sauter
- * la comparaison laissait un Raccord glissé entre 75:00 et 65:00 masquer le
- * désordre, et un montage à contresens marquait quand même ses points.
+ * supérieur ou égal à celui de son voisin de gauche. Les plans sans minutage
+ * (« -- ») — le Raccord en est un — sont retirés de la lecture : ils ne rompent
+ * pas l'ordre, où qu'on les pose.
  */
-export function chronologique(plans, cfg) {
-  const suite = cfg.chronoIgnoreZero ? plans.filter((p) => p.tc !== 0) : plans;
+export function chronologique(plans) {
+  const suite = plans.filter((p) => p.tc !== TC_VIDE);
   for (let i = 0; i < suite.length - 1; i++) if (suite[i + 1].tc < suite[i].tc) return false;
   return true;
-}
-
-/**
- * Les suites de plans que l'on lit dans l'ordre. Le film se lit d'ordinaire
- * **séquence par séquence** : deux séquences ne se touchent pas, et rien ne
- * relie la fin de l'une au début de la suivante.
- *
- * En **banc en lignes**, au contraire, le montage se lit **d'un seul tenant** —
- * du premier plan en haut à gauche de la première ligne jusqu'au dernier plan
- * en bas à droite de la dernière —, les lignes s'enchaînant comme les lignes
- * d'un texte. Il n'y a donc qu'une suite à lire : le film entier.
- */
-function suitesDeLecture(banc, cfg) {
-  return cfg.bancEnLignes ? [tousLesPlans(banc)] : banc.sequences;
-}
-
-function chrono(banc, cfg) {
-  if (!cfg.chronoBonus && !cfg.chronoMalus) return { pts: 0, ordre: 0, contre: 0 };
-  let ordre = 0, contre = 0;
-  for (const seq of suitesDeLecture(banc, cfg)) {
-    for (let i = 0; i < seq.length - 1; i++) {
-      const a = seq[i], b = seq[i + 1];
-      if (cfg.chronoIgnoreZero && (a.tc === 0 || b.tc === 0)) continue;
-      if (b.tc > a.tc) ordre++;
-      else if (b.tc < a.tc) contre++;
-    }
-  }
-  return { pts: ordre * cfg.chronoBonus - contre * cfg.chronoMalus, ordre, contre };
-}
-
-/**
- * Les cartes montées HORS DU FILM.
- *
- * Le plan à **01:00** est le premier plan du film, celui à **99:00** le
- * dernier. On peut monter avant l'un ou après l'autre — la règle ne l'interdit
- * plus, et c'est ce qui évite les impasses : un montage fermé à ses deux bouts
- * n'avait plus où se poser. Mais ces cartes-là ne sont plus **dans** le film :
- * chacune coûte, en plus de ce que son bandeau rapporte.
- *
- * Le montage se lit d'un seul tenant — première ligne en haut, dernière en
- * bas —, donc « avant » et « après » se lisent sur le RANG dans cette lecture,
- * pas dans la ligne. Une ligne entière ouverte sous celle qui porte le 99:00
- * est après la fin du film, tout entière.
- *
- * Les deux bornes elles-mêmes ne sont pas hors du film : elles le délimitent.
- * Un montage à l'envers — le 99:00 avant le 01:00 — compte chaque carte une
- * seule fois, d'où l'ensemble plutôt qu'une somme.
- */
-export function plansHorsFilm(banc) {
-  const tous = tousLesPlans(banc);
-  const debut = tous.findIndex((p) => p.tc === TC_PREMIER);
-  let fin = -1;
-  for (let i = tous.length - 1; i >= 0; i--) if (tous[i].tc === TC_DERNIER) { fin = i; break; }
-  const hors = new Set();
-  tous.forEach((p, i) => {
-    if (debut >= 0 && i < debut) hors.add(p);
-    if (fin >= 0 && i > fin) hors.add(p);
-  });
-  return [...hors];
-}
-
-function jonctionsRaccordees(banc, cfg) {
-  if (!cfg.raccordElement) return 0;
-  let n = 0;
-  for (const seq of suitesDeLecture(banc, cfg)) {
-    for (let i = 0; i < seq.length - 1; i++) if (raccordeParElement(seq[i], seq[i + 1], cfg)) n++;
-  }
-  return n;
 }
 
 // --- Ce que les pouvoirs de RÈGLE changent ---------------------------------
@@ -587,47 +506,15 @@ export function bonusRegle(banc, cfg, kind) {
   return bandeauxDe(banc).reduce((s, o) => (o && o.kind === kind ? s + o.n : s), 0);
 }
 
-/** Le banc donne-t-il le droit de piocher au sommet de cette pile-là ? */
-export function piocheOuverte(banc, cfg, cible) {
+/** Le banc donne-t-il le droit de prendre la carte du dessus du Chutier ? */
+export function chutierOuvert(banc, cfg) {
   if (!banc || !regleActive('PIOCHER', cfg)) return false;
-  return bandeauxDe(banc).some((o) => o && o.kind === 'PIOCHER' && o.cible === cible);
+  return bandeauxDe(banc).some((o) => o && o.kind === 'PIOCHER');
 }
 
-/**
- * Le Raccord proprement dit — celui qui relie deux plans au milieu d'une ligne.
- * Ni l'Ouverture ni le Générique de fin, qui encadrent le film et gardent leur
- * « 2 × Raccord » imprimé quoi qu'il arrive.
- */
+/** Le Raccord proprement dit — celui qui relie. Ni l'Ouverture ni la Fin. */
 export function estRaccordSimple(p) {
   return !!p && p.transition === 'RACCORD';
-}
-
-/** Ce qui tient une ligne : un Plan Large, ou le Plan de départ qui en fait office. */
-const estAncre = (p) => !!p && !p.transition && (p.format === 'PL' || !!p.depart);
-
-/**
- * Variante — cette Carte Raccord est-elle restée **ouverte** ?
- *
- * Un Raccord promet une suite : posé au bout d'une ligne il y fait charnière, et
- * un **Plan Large** vient de l'autre côté ouvrir un second versant. Tant que ce
- * Plan Large n'est pas venu, le Raccord ne raccorde rien — il pend.
- *
- * Il est donc **fermé** quand ses deux bords portent une carte et qu'un Plan
- * Large — ou un Plan de départ, qui en tient lieu — se trouve de l'un des deux
- * côtés. Sinon il est ouvert, et son « x × Raccord » devient un coût.
- *
- * Sans cette variante — `raccordOuvertMalus` à zéro —, aucun Raccord n'est
- * jamais ouvert : la question ne se pose pas.
- */
-export function raccordOuvert(plan, banc, cfg) {
-  if (!cfg || !cfg.raccordOuvertMalus) return false;
-  if (!estRaccordSimple(plan) || !banc) return false;
-  const seq = ligneDe(banc, plan);
-  if (!seq) return false;
-  const i = seq.indexOf(plan);
-  const g = seq[i - 1]; const d = seq[i + 1];
-  if (!g || !d) return true;                   // un bord dans le vide
-  return !estAncre(g) && !estAncre(d);         // ou personne à qui mener
 }
 
 /**
@@ -675,10 +562,6 @@ function estCompteDeRaccord(o) {
 export function objsEffectifs(plan, banc, cfg) {
   const objs = objsDe(plan);
   if (!estRaccordSimple(plan) || !objs.some(estCompteDeRaccord)) return objs;
-  // Un Raccord resté ouvert ne rapporte rien à bonifier : son bandeau vaut le
-  // malus, quel que soit son nombre. Le bonifier afficherait un chiffre qui ne
-  // se compte nulle part.
-  if (raccordOuvert(plan, banc, cfg)) return objs;
   const bonus = bonusRaccord(banc, cfg);
   if (!bonus) return objs;
   return objs.map((o) => (estCompteDeRaccord(o) ? { ...o, n: o.n + bonus } : o));
@@ -691,7 +574,6 @@ export function objsEffectifs(plan, banc, cfg) {
  */
 export function raccordBonifie(plan, banc, cfg) {
   return estRaccordSimple(plan) && objsDe(plan).some(estCompteDeRaccord)
-    && !raccordOuvert(plan, banc, cfg)
     && bonusRaccord(banc, cfg) !== 0;
 }
 
@@ -710,7 +592,7 @@ export function compter(banc, cfg) {
     // posé. Trois ouvrent un droit, que le moteur lit ; le quatrième dit ce que
     // valent les Cartes Raccord, et ce sont ELLES qui portent alors les points.
     PIOCHER: 0, SEQ_PLUS: 0, PLAN_PLUS: 0, RACCORD_VAUT: 0,
-    CHRONOLOGIE: 0, POSE: 0, JONCTION: 0, HORS_FILM: 0, OBJECTIF: 0,
+    POSE: 0,
   };
   const lignes = [];
 
@@ -728,22 +610,6 @@ export function compter(banc, cfg) {
   });
 
   detail.POSE = montage.length * (cfg.pointsParPlan || 0);
-  // Ce que les Cartes Raccord du montage valent — un coût par les règles, un
-  // gain pour qui porte le pouvoir qui le retourne. Et quand c'est une carte
-  // qui le dit, la ligne lui revient : elle se compte sur elle, comme tout
-  // pouvoir se compte sur la carte qui le porte.
-  const jr = jonctionsRaccordees(banc, cfg);
-  detail.JONCTION = jr * (cfg.raccordElementPoints || 0);
-  const ch = chrono(banc, cfg);
-  detail.CHRONOLOGIE = ch.pts;
-  // Les cartes montées hors du film. Elles gardent ce que leur bandeau
-  // rapporte — le malus s'ajoute, il ne remplace pas.
-  const hf = cfg.horsFilmMalus ? plansHorsFilm(banc) : [];
-  detail.HORS_FILM = hf.length * (cfg.horsFilmMalus || 0);
-  // La Carte Objectif commune : tout, ou rien.
-  const oc = objectifCommunDe(cfg);
-  const ocTenu = objectifCommunTenu(banc, cfg);
-  detail.OBJECTIF = ocTenu ? pointsObjectifCommun(oc, cfg) : 0;
 
   const total = Object.values(detail).reduce((a, b) => a + b, 0);
 
@@ -759,16 +625,6 @@ export function compter(banc, cfg) {
     sequences: banc.sequences.length,
     cartesRaccord: montage.filter(estRaccord).length,
     plusLongue: banc.sequences.reduce((m, s) => Math.max(m, s.length), 0),
-    jonctions: jr,
-    chronoOrdre: ch.ordre,
-    chronoContre: ch.contre,
-    // Les cartes hors film, pour que la table les marque à leur coin : le
-    // malus se lit sur la carte qui le porte, comme tout le reste du décompte.
-    horsFilm: hf,
-    horsFilmMalus: cfg.horsFilmMalus || 0,
-    // La Carte Objectif de la partie, et si ce montage-ci la tient.
-    objectif: oc,
-    objectifTenu: ocTenu,
   };
 }
 
@@ -779,13 +635,13 @@ export function compter(banc, cfg) {
 export function recenser(banc) {
   const plans = tousLesPlans(banc);
   const elements = Object.fromEntries(ELEMENT_IDS.map((e) => [e, 0]));
-  const cadrages = { PL: 0, PM: 0, GP: 0, DEP: 0 };
+  const cadrages = { PL: 0, GP: 0, DEP: 0 };
   let morts = 0, sansPersonnage = 0, raccords = 0;
 
   for (const p of plans) {
     for (const e of p.el) if (elements[e] !== undefined) elements[e]++;
-    // Le recensement compte ce que la table montre, et une Carte Raccord n'y
-    // est ni un Gros Plan ni un Plan Moyen : elle a sa propre ligne.
+    // Le recensement compte ce que la table montre, et un Raccord n'y est pas
+    // un Gros Plan : il a sa propre ligne.
     if (!estRaccord(p) && cadrages[p.format] !== undefined) cadrages[p.format]++;
     if (p.mort) morts++;
     if (!p.el.some((e) => PERSONNAGES.includes(e))) sansPersonnage++;
@@ -807,272 +663,34 @@ export function recenser(banc) {
 }
 
 export const SOURCES_LABEL = {
-  RACCORD: 'Génériques (par Carte Raccord)',
-  PLAN: 'Raccords (par carte de la séquence)',
-  FORMAT: 'Objectifs de cadrage',
-  ELEMENT: 'Objectifs d’élément',
-  PAIRE: 'Objectifs de groupe d’icônes',
-  MORT: 'Objectifs Mort',
-  ABSENT: 'Objectifs d’absence',
-  MINUTAGE: 'Objectifs de minutage',
-  SANS_TC: 'Objectifs de minutage absent',
-  CHRONO: 'Objectifs de montage dans l’ordre',
-  BOUT: 'Objectifs de bout de séquence',
-  SEQ_TAILLE: 'Objectifs de séquence longue',
-  SEQ_VOISINES: 'Objectifs de séquences voisines',
-  SEQ_LONGUE: 'Objectifs de plus longue séquence',
-  SEQ_AVEC: 'Objectifs de séquence avec / sans',
-  SEQ_TOUTES: 'Objectifs de séquences toutes égales',
-  AILLEURS: 'Objectifs des autres séquences',
-  CENTRE: 'Objectifs d’un côté du centre',
-  LOT: 'Objectifs par lot',
-  SEUIL: 'Objectifs à seuil',
-  ABSENTES: 'Objectifs d’icônes absentes',
-  DOMINE: 'Objectifs de cible dominante',
-  EXTREME: 'Objectifs d’icône la plus / la moins présente',
-  PLAN_ICONES: 'Objectifs de plan chargé',
-  DOUBLE: 'Objectifs de carte doublée',
-  PIOCHER: 'Droit de piocher au sommet',
+  RACCORD: 'Pouvoirs qui comptent les Raccords',
+  PLAN: 'Pouvoirs qui comptent les plans',
+  FORMAT: 'Pouvoirs de cadrage',
+  ELEMENT: 'Pouvoirs d’icône',
+  PAIRE: 'Pouvoirs de groupe d’icônes',
+  MORT: 'Pouvoirs de Mort',
+  ABSENT: 'Pouvoirs d’absence',
+  MINUTAGE: 'Pouvoirs de minutage',
+  SANS_TC: 'Pouvoirs de minutage absent',
+  CHRONO: 'Pouvoirs de montage dans l’ordre',
+  BOUT: 'Pouvoirs de bout de séquence',
+  SEQ_TAILLE: 'Pouvoirs de séquence longue',
+  SEQ_VOISINES: 'Pouvoirs de séquences voisines',
+  SEQ_LONGUE: 'Pouvoirs de plus longue séquence',
+  SEQ_AVEC: 'Pouvoirs de séquence avec / sans',
+  SEQ_TOUTES: 'Pouvoirs de séquences toutes égales',
+  AILLEURS: 'Pouvoirs des autres séquences',
+  CENTRE: 'Pouvoirs d’un côté du centre',
+  LOT: 'Pouvoirs par lot',
+  SEUIL: 'Pouvoirs à seuil',
+  ABSENTES: 'Pouvoirs d’icônes absentes',
+  DOMINE: 'Pouvoirs de cible dominante',
+  EXTREME: 'Pouvoirs d’icône la plus / la moins présente',
+  PLAN_ICONES: 'Pouvoirs de plan chargé',
+  DOUBLE: 'Pouvoirs de carte doublée',
+  PIOCHER: 'Droit de prendre sur le Chutier',
   SEQ_PLUS: 'Séquences supplémentaires',
-  PLAN_PLUS: 'Plans supplémentaires',
+  PLAN_PLUS: 'Cartes supplémentaires',
   RACCORD_VAUT: 'Le bonus de vos Raccords',
-  CHRONOLOGIE: 'Variante — chronologie',
   POSE: 'Points de pose',
-  JONCTION: 'Jonctions raccordées',
-  HORS_FILM: 'Cartes montées hors du film',
-  OBJECTIF: 'Carte Objectif commune',
 };
-
-// ===========================================================================
-// LES CARTES OBJECTIF — la variante des objectifs COMMUNS
-// ===========================================================================
-// Tous les autres bandeaux du jeu sont écrits sur une carte : chacune apporte
-// les siens, et deux joueuses ne poursuivent jamais tout à fait le même but.
-// Une Carte Objectif fait l'inverse — elle est **commune** : on en révèle UNE
-// au début de la partie, elle reste visible de tous, et chacune la vise sur son
-// propre montage. C'est le seul but que la table partage.
-//
-// Elle se tient ou ne se tient pas : ses points tombent entiers ou pas du tout.
-// C'est ce qui en fait un but et non un compteur de plus — on ne grappille pas
-// « dans l'ordre », on l'est ou on ne l'est pas.
-//
-// Le tirage se fait à la **graine** de la partie, par un tirage à part : les
-// deux joueuses en ligne ouvrent ainsi la même carte sans avoir à se la dire,
-// et rejouer un journal de coups redonne la même. Le tirage à part garantit
-// aussi que les paquets et le premier joueur ne bougent pas d'un pouce quand la
-// variante est éteinte.
-
-/** Ce qui identifie un plan : son numéro imprimé. Le recto et le verso d'une
- *  même moitié sont un seul et même plan — c'est la même image. */
-const identiteDuPlan = (p) => (p.numOrigine === undefined ? p.num : p.numOrigine);
-
-const cadrageDe = (p, f) => !estRaccord(p) && p.format === f;
-
-/**
- * Où en est un montage sur le chemin d'un objectif qui se CONSTRUIT — de 0 à 1.
- *
- * La part faite ne dit pas la chance d'arriver : deux Plans Larges sur cinq ne
- * donnent pas deux chances sur cinq de finir, il faut encore en trouver trois.
- * L'avancement est donc **convexe** — le début ne compte presque pas, la fin
- * compte double. Mesuré : la part linéaire poussait l'IA à s'engager trop tôt
- * et lui coûtait 1,7 point de score pour huit points de taux de réussite.
- */
-const avancement = (fait, but) => (but <= 0 ? 0 : Math.min(1, (fait / but) ** 2));
-
-/**
- * Les six Cartes Objectif. Chacune porte ce qu'elle rapporte, ce qu'elle
- * demande, et le moyen de savoir si le montage la tient.
- *
- * `points` est la valeur imprimée ; la partie lit celle des variables, qui la
- * reprend par défaut et se règle une à une.
- */
-export const OBJECTIFS_COMMUNS = [
-  {
-    id: 'ORDRE',
-    points: 8,
-    titre: 'Dans l’ordre',
-    phrase: 'si votre montage respecte l’ORDRE',
-    aide: 'chaque minutage supérieur ou égal à celui de son voisin de gauche, le montage lu '
-      + 'd’un seul tenant. Les plans sans minutage sont retirés de la lecture.',
-    tenu: (banc, cfg) => chronologique(tousLesPlans(banc), cfg),
-  },
-  {
-    id: 'SANS_JUMEAU',
-    points: 6,
-    titre: 'Jamais deux fois de suite',
-    phrase: 'si aucun PLAN identique n’en touche un autre',
-    aide: 'deux plans sont identiques quand ils portent le même numéro — 201 et 201. Le recto '
-      + 'et le verso d’une même moitié en font partie : c’est la même image. Une Carte Raccord '
-      + 'glissée entre deux ne les sépare pas seulement pour la forme : ils ne se touchent plus.',
-    tenu: (banc) => banc.sequences.every((seq) => {
-      for (let i = 0; i < seq.length - 1; i++) {
-        const a = seq[i]; const b = seq[i + 1];
-        if (estRaccord(a) || estRaccord(b)) continue;
-        if (identiteDuPlan(a) === identiteDuPlan(b)) return false;
-      }
-      return true;
-    }),
-  },
-  {
-    id: 'PLANS_LARGES',
-    points: 6,
-    titre: 'Le grand jeu',
-    phrase: 'si votre montage porte 5 PLANS LARGES ou plus',
-    aide: 'le seuil se règle dans les Variables. Le Plan de départ n’en est pas un : il tient '
-      + 'lieu de climax à sa ligne, mais son cadrage est le sien.',
-    seuil: (cfg) => (cfg.objectifPlansLarges || 5),
-    tenu: (banc, cfg) => tousLesPlans(banc).filter((p) => cadrageDe(p, 'PL')).length
-      >= (cfg.objectifPlansLarges || 5),
-    // Il ne paie qu'au cinquième Plan Large : les quatre premiers ne rapportent
-    // rien, et une IA qui ne lit que le score ne les poserait jamais. `espoir`
-    // dit où en est le montage — c'est cette pente-là qu'elle gravit.
-    espoir: (banc, cfg, reste) => {
-      const seuil = cfg.objectifPlansLarges || 5;
-      const n = tousLesPlans(banc).filter((p) => cadrageDe(p, 'PL')).length;
-      return n + reste >= seuil ? avancement(n, seuil) : 0;
-    },
-  },
-  {
-    id: 'SANS_PM',
-    points: 6,
-    titre: 'Aucun Plan Moyen',
-    phrase: 'si votre montage ne porte aucun PLAN MOYEN',
-    aide: 'une Carte Raccord occupe la place d’un Plan Moyen sur le banc, mais n’en est pas un : '
-      + 'elle ne rompt pas l’objectif.',
-    tenu: (banc) => !tousLesPlans(banc).some((p) => cadrageDe(p, 'PM')),
-  },
-  {
-    id: 'SANS_GP',
-    points: 6,
-    titre: 'Aucun Gros Plan',
-    phrase: 'si votre montage ne porte aucun GROS PLAN',
-    aide: 'une Carte Raccord occupe la place d’un Gros Plan sur le banc, mais n’en est pas un : '
-      + 'elle ne rompt pas l’objectif.',
-    tenu: (banc) => !tousLesPlans(banc).some((p) => cadrageDe(p, 'GP')),
-  },
-  {
-    id: 'GENERIQUES',
-    points: 8,
-    titre: 'Du générique au générique',
-    phrase: 'si votre montage commence ET finit par un GÉNÉRIQUE',
-    aide: 'l’Ouverture au tout début du montage — le bout gauche de la première ligne — et le '
-      + 'Générique de fin à sa toute fin. Les deux, pas l’un ou l’autre.',
-    tenu: (banc) => {
-      const seqs = banc.sequences;
-      if (!seqs.length) return false;
-      const premiere = seqs[0];
-      const derniere = seqs[seqs.length - 1];
-      if (!premiere.length || !derniere.length) return false;
-      return premiere[0].transition === 'OUVERTURE'
-        && derniere[derniere.length - 1].transition === 'CREDITS';
-    },
-    // Deux bouts à tenir, et rien tant que les deux n'y sont pas. Un seul
-    // Générique posé ne rapporte rien : sans cette pente, aucune IA n'irait
-    // chercher le second.
-    espoir: (banc, cfg, reste) => {
-      const seqs = banc.sequences;
-      if (!seqs.length) return 0;
-      const premiere = seqs[0];
-      const derniere = seqs[seqs.length - 1];
-      const ouvert = premiere.length && premiere[0].transition === 'OUVERTURE' ? 1 : 0;
-      const clos = derniere.length && derniere[derniere.length - 1].transition === 'CREDITS' ? 1 : 0;
-      return reste >= 2 - ouvert - clos ? avancement(ouvert + clos, 2) : 0;
-    },
-  },
-];
-
-const PAR_ID = new Map(OBJECTIFS_COMMUNS.map((o) => [o.id, o]));
-
-/** La Carte Objectif de cette partie-ci, s'il y en a une. */
-export function objectifCommunDe(cfg) {
-  if (!cfg || !cfg.objectifCommun) return null;
-  return PAR_ID.get(cfg.objectifCommunTire) || null;
-}
-
-/** Ce qu'elle vaut, telle que les variables la règlent. */
-export function pointsObjectifCommun(o, cfg) {
-  if (!o) return 0;
-  const table = (cfg && cfg.objectifCommunPoints) || {};
-  const n = table[o.id];
-  return Number.isFinite(n) ? n : o.points;
-}
-
-/**
- * Quelle carte on révèle. Le paquet est celui que les variables cochent ; une
- * carte imposée court-circuite le tirage — c'est ainsi qu'on rejoue une
- * situation, et que le Laboratoire compare les objectifs entre eux.
- */
-export function tirerObjectifCommun(cfg, rand) {
-  if (!cfg || !cfg.objectifCommun) return null;
-  if (cfg.objectifCommunImpose && PAR_ID.has(cfg.objectifCommunImpose)) return cfg.objectifCommunImpose;
-  const actifs = cfg.objectifsCommunsActifs || {};
-  const paquet = OBJECTIFS_COMMUNS.filter((o) => actifs[o.id] !== false);
-  if (!paquet.length) return null;
-  return paquet[Math.floor(rand() * paquet.length) % paquet.length].id;
-}
-
-/**
- * Ce montage-ci tient-il la Carte Objectif de la partie ?
- *
- * Un montage VIDE ne tient rien. Quatre des six objectifs sont des absences —
- * « aucun Gros Plan », « rien deux fois de suite », « dans l'ordre » —, et un
- * banc sans carte les vérifierait tous par le vide : on ouvrirait la partie
- * avec ses huit points déjà en poche. Il faut un film pour le juger.
- */
-export function objectifCommunTenu(banc, cfg) {
-  const o = objectifCommunDe(cfg);
-  if (!o || !banc || !tousLesPlans(banc).length) return false;
-  return o.tenu(banc, cfg);
-}
-
-/**
- * À quel point le montage est EN CHEMIN vers la Carte Objectif — de 0 à 1.
- *
- * Deux des six cartes se construisent au lieu de se préserver : « 5 Plans
- * Larges », « du générique au générique ». Celles-là ne rapportent rien tant
- * qu'elles ne sont pas achevées, et une IA qui ne lit que le score ne pose
- * jamais le premier jalon — mesuré : 13 % et 3 % de réussite. Les quatre autres
- * sont des absences : elles sont tenues DÈS LE DÉPART et se perdent en cours de
- * route, donc le décompte les suit déjà tout seul et elles n'ont pas d'espoir à
- * déclarer.
- *
- * `reste` est le nombre de cartes qu'il reste à monter : un objectif hors de
- * portée ne vaut plus l'effort, et l'espoir tombe à zéro.
- */
-export function espoirObjectifCommun(banc, cfg, reste) {
-  const o = objectifCommunDe(cfg);
-  if (!o || !o.espoir || !banc || objectifCommunTenu(banc, cfg)) return 0;
-  return pointsObjectifCommun(o, cfg) * o.espoir(banc, cfg, Math.max(0, reste || 0));
-}
-
-/**
- * Où en est ce montage-ci, en toutes lettres — « 2 / 5 Plans Larges ». Rien à
- * dire pour les objectifs d'absence : ils sont tenus, ou perdus, et le témoin
- * de la carte le dit déjà.
- */
-export function avancementObjectifCommun(banc, cfg) {
-  const o = objectifCommunDe(cfg);
-  if (!o || !banc || !o.espoir) return '';
-  if (o.id === 'PLANS_LARGES') {
-    const seuil = cfg.objectifPlansLarges || 5;
-    return `${tousLesPlans(banc).filter((p) => cadrageDe(p, 'PL')).length} / ${seuil} Plans Larges`;
-  }
-  if (o.id === 'GENERIQUES') {
-    const seqs = banc.sequences;
-    if (!seqs.length) return 'aucun bout tenu';
-    const d = seqs[0]; const f = seqs[seqs.length - 1];
-    const ouvert = d.length && d[0].transition === 'OUVERTURE';
-    const clos = f.length && f[f.length - 1].transition === 'CREDITS';
-    if (ouvert && clos) return 'les deux bouts';
-    if (ouvert) return 'l’Ouverture est là, pas la fin';
-    if (clos) return 'la fin est là, pas l’Ouverture';
-    return 'aucun bout tenu';
-  }
-  return '';
-}
-
-/** Ce qu'elle rapporte à ce montage : tout, ou rien. */
-export function valeurObjectifCommun(banc, cfg) {
-  const o = objectifCommunDe(cfg);
-  return objectifCommunTenu(banc, cfg) ? pointsObjectifCommun(o, cfg) : 0;
-}
