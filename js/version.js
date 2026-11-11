@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.04';
-export const BUILD_DATE = '2026-11-11 17:17';
+export const VERSION = '4.1.05';
+export const BUILD_DATE = '2026-11-11 17:20';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.05',
+    date: '11/11/2026',
+    items: [
+      "<b>Le Matériel rouvre, en 4.1.</b> Chaque vraie carte y est montrée à côté de ce que le moteur en lit — minutage, icônes dans l'ordre, pouvoir — pour vérifier la lecture et la corriger.",
+      "<b>Assemblage des cartes à deux Gros Plans.</b> Les 27 cartes en images : on glisse une moitié sur une autre, on tape un numéro, on échange gauche et droite ; les Gros Plans non placés ou placés deux fois sont signalés, et l'on revient à l'assemblage de la boîte d'un clic.",
+    ],
+  },
   {
     v: '4.1.04',
     date: '11/11/2026',

@@ -4,14 +4,13 @@
 // Tout ce qu'on règle dans l'éditeur vit dans le navigateur : c'est ce qui
 // permet de bricoler sans rien casser, et c'est aussi pourquoi personne
 // d'autre ne le voit. Le site publié, lui, ne porte que ce qui est dans le
-// dépôt — d'où des cartes différentes d'une machine à l'autre, et des
-// illustrations qui manquent.
+// dépôt — d'où des cartes lues ou assemblées différemment d'une machine à
+// l'autre.
 //
 // Ce fichier ouvre le troisième lieu : `materiel.json`, à la racine du dépôt.
 // Il est LU PAR TOUT LE MONDE au démarrage, et c'est lui qui fait foi pour qui
-// n'a rien réglé. Le maître compose son matériel dans l'éditeur, l'exporte, le
-// pose dans le dépôt, publie — et le lien qu'il partage montre alors le même
-// jeu à tous.
+// n'a rien réglé. Le maître règle son matériel dans l'éditeur, l'exporte, le
+// pose dans le dépôt, publie — et le site montre alors le même jeu à tous.
 //
 // Trois couches, de la plus faible à la plus forte :
 //
@@ -26,7 +25,7 @@
 
 const FICHIER = 'materiel.json';
 
-let publie = null;      // { version, date, materiel, cartesDesactivees, images }
+let publie = null;      // { version, boite, date, signature, materiel, cartesDesactivees }
 let chargement = null;
 
 /**
@@ -64,24 +63,19 @@ export function materielVide(m) {
     && !(a.departs || []).length && !(a.paires || []).length;
 }
 
-/**
- * Le fichier à poser dans le dépôt. `images` dit, pour chaque visuel apporté,
- * le nom du fichier qui l'accompagne dans l'archive : le matériel publié ne
- * peut pas désigner une réserve de navigateur, il désigne un chemin.
- */
-export function composerPublie(cfg, images, version) {
+/** Le fichier à poser dans le dépôt : `materiel.json`, à sa racine. */
+export function composerPublie(cfg, version) {
   const quand = new Date();
   return {
     version,
-    date: quand.toISOString().slice(0, 19).replace('T', ' '),
-    // Une empreinte courte, pour que l'éditeur sache dire « le site publie un
-    // matériel plus récent que le vôtre » sans comparer deux gros objets.
-    signature: empreinte(JSON.stringify([cfg.materiel, cfg.cartesDesactivees, images])),
     // La boîte que ces retouches retouchent.
     boite: cfg.boite,
+    date: quand.toISOString().slice(0, 19).replace('T', ' '),
+    // Une empreinte courte, pour que l'éditeur sache dire « le site publie un
+    // matériel différent du vôtre » sans comparer deux gros objets.
+    signature: empreinte(JSON.stringify([cfg.materiel, cfg.cartesDesactivees])),
     materiel: cfg.materiel,
     cartesDesactivees: cfg.cartesDesactivees || [],
-    images: images || [],
   };
 }
 

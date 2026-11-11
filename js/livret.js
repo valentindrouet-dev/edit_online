@@ -15,8 +15,8 @@
 // dise ce qu'il vaut ; son pouvoir est alors redessiné par le site.
 
 import {
-  ELEMENTS, ELEMENT_IDS, objsDe, objPortee, cartesDeLaBoite, recenserBoite, tcTexte,
-  TC_VIDE, TC_PREMIER, TC_DERNIER,
+  ELEMENTS, ELEMENT_IDS, objsDe, objPortee, cartesDeLaBoite, recenserBoite, tcTexte, TC_VIDE, TC_PREMIER,
+  TC_DERNIER,
 } from './data.js';
 import { elIcon } from './icons.js';
 import { objHTML } from './cards.js';

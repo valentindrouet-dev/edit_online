@@ -1,6 +1,6 @@
 {
-  "version": "4.1.04",
-  "date": "2026-11-11 17:17",
+  "version": "4.1.05",
+  "date": "2026-11-11 17:20",
   "modules": [
     "js/ai.js",
     "js/anim.js",
@@ -9,7 +9,6 @@
     "js/config.js",
     "js/data.js",
     "js/engine.js",
-    "js/export-pdf.js",
     "js/icons.js",
     "js/lab.js",
     "js/livret.js",

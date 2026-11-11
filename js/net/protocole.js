@@ -16,8 +16,10 @@
 //   — deux appareils ne peuvent pas diverger tant que le moteur est déterministe ;
 //   — personne n'écrit d'état, donc il n'y a aucun conflit d'écriture.
 
-import { creerPartie, choixDepart, poserDepart, optionsDerushage, derusher, defausser, passer,
-  ecarterMain, coupsPossibles, poser, avancer } from '../engine.js';
+import {
+  creerPartie, choixDepart, poserDepart, optionsDerushage, derusher, defausser, passer, ecarterMain,
+  coupsPossibles, poser, avancer,
+} from '../engine.js';
 
 /** Combien de temps un salon sans activité reste dans la liste. */
 export const PEREMPTION_MS = 10 * 60 * 1000;

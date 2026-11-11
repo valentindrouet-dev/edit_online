@@ -59,6 +59,11 @@ js/cards.js             rendu d'un plan et d'une carte
 js/icons.js             les icônes
 js/anim.js              le vol d'une carte d'un endroit de la table à un autre
 js/regles.js            le texte des règles
+js/livret.js            l'aide de jeu, tirée du matériel
+js/melange.js           l'assemblage des cartes à deux Gros Plans : contraintes et mélange
+js/publie.js            le matériel publié (materiel.json)
+js/partage.js           le partage d'un matériel et de ses réglages, par lien ou par fichier
+js/visuels.js           l'adresse d'une illustration
 js/net/                 le jeu en ligne : protocole par actions, salon, transports
 js/app.js               routage et écrans
 ```

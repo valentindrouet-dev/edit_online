@@ -3,33 +3,29 @@
 // ---------------------------------------------------------------------------
 // « Publier » pose le matériel dans le dépôt : c'est la voie officielle, celle
 // qui fait qu'un lien nu montre le bon jeu à tout le monde. Elle demande le
-// dépôt sous la main, une archive à défaire et une publication.
+// dépôt sous la main et une publication.
 //
-// Il manquait la voie courte : donner à un testeur, tout de suite, LE JEU TEL
-// QU'IL EST — cartes retouchées, cartes créées ou écartées, variantes,
-// illustrations apportées — sans rien publier. C'est ce que fait ce fichier.
+// La voie courte : donner à un testeur, tout de suite, LE JEU TEL QU'IL EST —
+// lecture des cartes corrigée, assemblage refait, cartes créées ou écartées,
+// réglages — sans rien publier. C'est ce que fait ce fichier.
 //
-// Un partage emporte quatre choses, et il faut savoir lesquelles :
+// Un partage emporte trois choses :
 //
-//   1. les RÉGLAGES — toutes les variables de partie, du nombre de séquences
-//      aux variantes en cours. C'est ce qui fait qu'on teste la même règle.
-//   2. le MATÉRIEL   — retouches, cartes créées, cartes écartées.
-//   3. les TEXTES    — les retouches portées à même le livret et l'aide de jeu.
-//   4. les IMAGES apportées, en clair dans le fichier.
+//   1. les RÉGLAGES — toutes les variables de partie. C'est ce qui fait qu'on
+//      teste la même règle.
+//   2. le MATÉRIEL   — retouches, assemblage, cartes créées, cartes écartées.
+//   3. les TEXTES    — les retouches portées à même les règles.
 //
-// Ce qu'il n'emporte pas : la VERSION DU CODE. Elle vient du site — c'est le
-// lien qui la donne, et les deux joueuses la partagent forcément puisqu'elles
-// ouvrent la même adresse. Le partage retient tout de même le numéro de version
-// où il a été fait, pour qu'on puisse dire « ce partage vient d'une v2.19 »
-// plutôt que de laisser deviner.
+// Ce qu'il n'emporte pas : les IMAGES des cartes et la VERSION DU CODE. Elles
+// viennent du site — c'est le lien qui les donne, et les deux joueuses les
+// partagent forcément puisqu'elles ouvrent la même adresse. Le partage retient
+// tout de même le numéro de version où il a été fait, pour qu'on puisse le
+// dire plutôt que de le laisser deviner.
 //
 // Deux formes, une seule charge :
 //
-//   LE LIEN    léger, se colle dans un message. Il ne peut pas porter les
-//              images apportées — une image pèse cent fois ce qu'une adresse
-//              accepte — et le dit franchement plutôt que de les perdre en
-//              silence.
-//   LE FICHIER tout, images comprises. C'est la forme complète.
+//   LE LIEN    se colle dans un message.
+//   LE FICHIER pour un matériel trop retouché pour tenir dans une adresse.
 //
 // La charge voyage dans le FRAGMENT de l'adresse — après le `#`. Un fragment
 // n'est jamais envoyé au serveur : le partage reste entre celui qui l'envoie et
@@ -37,8 +33,12 @@
 
 import { empreinte } from './publie.js';
 
-/** La forme du partage. Un lecteur qui ne la connaît pas refuse plutôt que de deviner. */
-export const FORMAT = 1;
+/**
+ * La forme du partage. Un lecteur qui ne la connaît pas refuse plutôt que de
+ * deviner : un partage d'une boîte précédente désigne des cartes qui n'existent
+ * plus, et ne se charge pas.
+ */
+export const FORMAT = 2;
 
 /** Le mot qui ouvre un fragment de partage. */
 export const MARQUE = '#/partage=';
@@ -51,11 +51,8 @@ export const MARQUE = '#/partage=';
  */
 export const LIMITE_LIEN = 30000;
 
-/**
- * Ce qu'on partage. `images` porte les visuels apportés en clair — le fichier
- * les emporte, le lien s'en passe.
- */
-export function composerPartage(cfg, images, version, textes) {
+/** Ce qu'on partage. */
+export function composerPartage(cfg, version, textes) {
   const quand = new Date();
   const propre = JSON.parse(JSON.stringify(cfg));
   // Ce qui ne regarde que la machine d'où vient le partage : le nom qu'on s'est
@@ -66,15 +63,11 @@ export function composerPartage(cfg, images, version, textes) {
     format: FORMAT,
     version,
     date: quand.toISOString().slice(0, 19).replace('T', ' '),
-    signature: empreinte(JSON.stringify([propre.materiel, propre.cartesDesactivees, images || []])),
+    signature: empreinte(JSON.stringify([propre.materiel, propre.cartesDesactivees])),
     cfg: propre,
     textes: textes || {},
-    images: images || [],
   };
 }
-
-/** Le partage sans ses images : ce qu'un lien peut porter. */
-export const sansImages = (p) => ({ ...p, images: [] });
 
 // --- Encoder, décoder -------------------------------------------------------
 // Le JSON est comprimé avant d'être encodé : un matériel bien retouché tient

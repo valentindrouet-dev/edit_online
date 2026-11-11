@@ -9,7 +9,10 @@
 // Chaque plan porte un pouvoir, qui se lit dans sa portée : sa séquence, le
 // montage entier, ce qui le précède ou ce qui le suit.
 
-import { PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible, FAMILLE_CIBLE, TC_VIDE } from './data.js';
+import {
+  PERSONNAGES, ELEMENT_IDS, CADRAGES_POUVOIR, objPortee, objsDe, estRegleKind, cibleDe, familleDeCible,
+  FAMILLE_CIBLE, TC_VIDE,
+} from './data.js';
 
 export function bancVide() {
   return { sequences: [] };

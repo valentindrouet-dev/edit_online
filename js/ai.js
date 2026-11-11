@@ -7,8 +7,8 @@
 //             défausse ce qui servirait trop bien la joueuse suivante.
 
 import {
-  coupsSurBanc, coupsPossibles, appliquer, optionsDerushage, cartesOffertes, choixDepart,
-  limiteSequences, limitePlans, placeDuCote, plansDuCote, peutDefausser,
+  coupsSurBanc, coupsPossibles, appliquer, optionsDerushage, cartesOffertes, choixDepart, limiteSequences,
+  limitePlans, placeDuCote, plansDuCote, peutDefausser,
 } from './engine.js';
 import {
   compter, bonusRegle, chutierOuvert, plansComptes, bonusRaccord, estRaccordSimple, tousLesPlans,

@@ -777,32 +777,7 @@ body.sans-illus .bandeau .seq-bloc .pastille-num { height: 1.5em; }
    gauche : rien ne dit où serait la marge. */
 .seq-bloc.centre { align-items: center; }
 
-/* --- Les visuels apportés -------------------------------------------------- */
-/* Une image ajoutée depuis l'éditeur porte deux boutons de service : la
-   retélécharger — pour la poser dans `assets/` et la publier vraiment — et la
-   retirer de la réserve. Ils ne paraissent qu'au survol : ce sont des gestes
-   rares, et une vignette n'est pas une barre d'outils. */
-/* La tuile enveloppe le bouton : c'est ELLE qui est la case de la grille, et
-   le bouton doit la remplir. Sans cette largeur, la vignette n'a rien à quoi se
-   mesurer — son `aspect-ratio` la ramène alors à un point, et l'image apportée
-   semble ne jamais être arrivée. */
-.tuile-apportee { position: relative; display: block; min-width: 0; }
-.tuile-apportee .tuile-illus { display: block; width: 100%; }
-.tuile-apportee .tuile-outil {
-  position: absolute; top: 3px; width: 20px; height: 20px; padding: 0;
-  display: flex; align-items: center; justify-content: center;
-  border: 0; border-radius: 5px; cursor: pointer; font-size: 12px; line-height: 1;
-  background: rgba(20, 20, 26, .78); color: #fff;
-  opacity: 0; transition: opacity .12s;
-}
-.tuile-apportee .tuile-outil[data-visuel-telecharger] { right: 27px; }
-.tuile-apportee .tuile-outil[data-visuel-retirer] { right: 3px; }
-.tuile-apportee .tuile-outil.danger:hover { background: #c62828; }
-.tuile-apportee:hover .tuile-outil, .tuile-apportee .tuile-outil:focus-visible { opacity: 1; }
-/* Le titre de la section porte son bouton d'ajout et son compte : on ajoute
-   là où l'on regarde, pas au bas d'une liste qu'il faut dérouler. */
-.modale-images h3 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-
+/* --- Publier et partager le matériel ---------------------------------------- */
 /* Publier le matériel : le seul geste qui le rende visible par tous. Il se
    distingue des autres exports, qui ne produisent que des documents. */
 .pill.publier { background: var(--violet); color: #fff; border-color: var(--violet); }
@@ -1341,6 +1316,21 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .galerie .item { text-align: center; }
 .galerie .item .lg { font-size: .74rem; color: var(--gris); margin-top: 6px; }
 
+/* Les cartes de départ, sous leurs plans : la seule carte recto verso du jeu,
+   montrée par ses deux faces. Elle ne se règle pas — ses plans se règlent —,
+   elle s'écarte seulement de la boîte. */
+.cartes-depart { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; }
+.carte-depart {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 10px; border-radius: 12px; background: #fff; border: 1px solid var(--gris-clair);
+}
+.carte-depart .cd-faces { display: flex; align-items: center; gap: 6px; }
+.carte-depart .cd-verso { color: var(--gris); font-size: 1.1rem; }
+.carte-depart .carte.solo.tiny { font-size: 6.4px; width: fit-content; }
+.carte-depart .lg { font-size: .78rem; font-weight: 700; color: var(--encre-doux); }
+.carte-depart.hors-boite .cd-faces { opacity: .45; filter: grayscale(.85); }
+.carte-depart .et-hors { color: #b4453a; }
+
 .filtre-barre { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
 
 /* --- Versions ------------------------------------------------------------- */
@@ -1402,32 +1392,17 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .pill.danger:hover { background: #fdecec; }
 .compo-retouchee { display: inline-flex; align-items: center; gap: 8px; font-size: .74rem; color: var(--violet); }
 
-/* Le sens de retournement des planches, à côté de son bouton d'export. */
-.retournement { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; color: var(--gris);
-  max-width: 100%; min-width: 0; }
-.retournement select { font-size: .74rem; padding: 3px 6px; min-width: 0; max-width: 100%; }
 
-/* --- Le choix d'une illustration ------------------------------------------ */
-
-.modale-images { max-width: 980px; }
-.modale-images h3 { margin: 18px 0 8px; font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: var(--gris); }
-
-.grille-illus { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
-.tuile-illus {
-  position: relative; aspect-ratio: 317 / 227; border: 2px solid transparent; border-radius: 6px;
-  background: #eee center/cover no-repeat; cursor: pointer; padding: 0; overflow: hidden;
+/* --- L'assemblage des cartes à deux Gros Plans -------------------------------- */
+/* Une carte est coupée en deux au centre : cet écran montre quels Gros Plans
+   vont ensemble, et de quel côté — les vraies moitiés, côte à côte —, et laisse
+   les échanger à la main. */
+.repere-assemblage { margin-top: 10px; font-size: .86rem; }
+.bilan-assemblage {
+  margin-top: 10px; padding: 9px 12px; border-radius: 10px; background: #fff; font-size: .86rem;
+  border: 1px solid var(--gris-clair); border-left: 4px solid var(--vert, #3f8f3f);
 }
-.tuile-illus:hover { border-color: var(--orange); }
-.tuile-illus.on { border-color: var(--violet); box-shadow: 0 0 0 2px var(--violet-pale); }
-.tuile-illus span {
-  position: absolute; left: 0; right: 0; bottom: 0; font-size: .62rem; padding: 2px 0;
-  background: rgba(0,0,0,.55); color: #fff; letter-spacing: .04em;
-}
-
-/* La vignette du formulaire : l'image actuelle, cliquable. */
-/* --- L'assemblage des cartes Plan Moyen / Gros Plan ------------------------- */
-/* Une carte est une feuille à deux moitiés : cet écran montre qui va avec qui,
-   et laisse les échanger à la main. */
+.bilan-assemblage.a-revoir { border-left-color: #d8604e; }
 .assemblage-outils {
   margin-top: 14px; padding: 14px; border-radius: 12px;
   background: var(--violet-pale); border: 1px solid var(--violet-clair);
@@ -1445,22 +1420,24 @@ table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .rapport-melange li.ko { color: #a8541a; }
 
 .grille-assemblage {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-  gap: 8px; margin-top: 10px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 12px; margin-top: 10px;
 }
 .carte-assemblage {
-  position: relative; padding: 6px; border-radius: 10px; background: #fff;
-  border: 1px solid var(--bord, #e0dcea); display: flex; flex-direction: column; gap: 4px;
+  position: relative; padding: 7px; border-radius: 12px; background: #fff;
+  border: 1px solid var(--bord, #e0dcea); display: flex; flex-direction: column; gap: 6px;
 }
 .carte-assemblage.fautive { border-color: #e2a04a; background: #fffaf2; }
 .carte-assemblage.retouche { box-shadow: inset 0 0 0 2px var(--violet-clair); }
-/* La moitié qu'on tient depuis le relevé : les emplacements où la poser se
-   signalent au survol. */
+.carte-assemblage.ecartee { opacity: .55; }
+/* Le Gros Plan qu'on tient depuis le relevé. */
 .pose-en-cours { color: var(--orange); }
 body .demi { transition: box-shadow .12s; }
-.ca-tete { font-size: .68rem; font-weight: 700; color: var(--gris); letter-spacing: .04em;
-  display: flex; align-items: center; gap: 4px; }
-/* Dupliquer, supprimer : discrets, ils se donnent au survol de la carte. */
+.ca-tete { font-size: .7rem; font-weight: 700; color: var(--gris); letter-spacing: .04em;
+  display: flex; align-items: center; gap: 5px; min-height: 20px; }
+.ca-tete .et-mod { color: var(--violet); }
+.ca-tete .et-hors { color: #b4453a; font-weight: 700; }
+/* Retourner, dupliquer, supprimer : discrets, ils se donnent au survol de la carte. */
 .ca-actions { margin-left: auto; display: flex; gap: 2px; opacity: .35; transition: opacity .12s; }
 .carte-assemblage:hover .ca-actions, .ca-actions:focus-within { opacity: 1; }
 .ca-bouton {
@@ -1475,49 +1452,75 @@ body .demi { transition: box-shadow .12s; }
 .annonce-assemblage { display: flex; align-items: center; gap: 10px; }
 /* Une carte créée, encore vide. */
 .carte.carte-vide {
-  height: 14.33em; width: 6.72em; display: flex; align-items: center; justify-content: center;
+  aspect-ratio: 3 / 2; display: flex; align-items: center; justify-content: center;
   background: repeating-linear-gradient(135deg, #f4f1fb 0 8px, #ece7f7 8px 16px);
   outline: 2px dashed #b9a8e6; outline-offset: -6px; color: #6d5aa8; font-weight: 700;
 }
-.ca-faute {
-  position: absolute; top: 4px; right: 52px; font-size: .68rem; font-weight: 800; color: #a8541a;
-}
-/* Une moitié : on la prend, on la lâche sur celle d'en face. Le curseur le dit
-   avant même qu'on essaie. */
+.ca-faute { font-size: .68rem; font-weight: 800; color: #a8541a; }
+/* Les deux moitiés, comme sur la carte : la gauche à gauche, la droite à droite. */
+.ca-moities { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+/* Une moitié : on la prend, on la lâche sur une autre. Le curseur le dit avant
+   même qu'on essaie. */
 .demi {
-  display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 7px;
-  cursor: grab; user-select: none; border: 1px solid transparent;
+  display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 3px; border-radius: 8px;
+  cursor: grab; user-select: none; border: 1px solid transparent; background: #f4f1fb;
 }
-.demi.pm { background: #fdeec4; }
-.demi.gp { background: #fbdac9; }
-.demi.vide { background: #f2f2f4; color: var(--gris); justify-content: center; cursor: default;
-  border: 1px dashed #c9c3d9; }
+.demi-img {
+  display: block; width: 100%; aspect-ratio: 3 / 4; border-radius: 5px; object-fit: cover;
+  background: #e9e5f3; pointer-events: none;
+}
+/* Un Gros Plan retouché ou créé n'a plus d'image qui dise ce qu'il vaut : on
+   montre ce que le site en sait. */
+.demi-img.compose {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  background: repeating-linear-gradient(135deg, #faf7ff 0 8px, #f1ebfd 8px 16px); color: var(--violet);
+}
+.demi-img.compose i { font-size: .62rem; font-style: normal; font-weight: 700; }
+.demi-img.manque {
+  display: flex; align-items: center; justify-content: center; color: #9b93b3;
+  font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+  background: repeating-linear-gradient(135deg, #f4f4f6 0 8px, #ececf0 8px 16px);
+}
+.demi-pied { display: flex; align-items: center; gap: 3px; min-height: 22px; }
+.demi-tc {
+  font-size: .62rem; font-weight: 700; padding: 1px 4px; border-radius: 4px; white-space: nowrap;
+  background: #0d0d10; color: #ff3b30; font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
+}
+.demi-tc.bleu { color: #38bdf8; }
+.demi-tc.borne { color: #ff9f0a; }
+.demi-repere { color: #c2571a; font-weight: 800; font-size: .78rem; }
+.demi.hors-repere { background: #fff1e4; border-color: #f0b98a; }
+.demi-vider {
+  margin-left: auto; border: 0; background: transparent; cursor: pointer; color: #b3261e;
+  font-size: .7rem; line-height: 1; padding: 2px 3px; border-radius: 4px; opacity: 0; transition: opacity .12s;
+}
+.demi:hover .demi-vider, .demi-vider:focus-visible { opacity: 1; }
+.demi-vider:hover { background: #fde2df; }
+.demi.vide { cursor: pointer; border: 1px dashed #c9c3d9; background: #f7f7f9; }
+.demi.vide .demi-pied { justify-content: center; }
 .demi.vide .demi-num { text-align: center; width: 4.2em; }
-/* Le numéro ne prend la souris qu'une fois ouvert d'un clic : fermé, il
-   laisse la pastille se glisser, d'où qu'on l'attrape. */
+.demi.vide .demi-num::placeholder { color: #9b93b3; font-weight: 700; }
+/* Le numéro ne prend la souris qu'une fois ouvert d'un clic : fermé, il laisse
+   la moitié se glisser, d'où qu'on l'attrape. */
 .demi .demi-num { pointer-events: none; }
 .demi.edition .demi-num { pointer-events: auto; }
-.demi:not(.vide) { cursor: grab; }
-.demi.vide { cursor: pointer; }
-.demi.vide .demi-num::placeholder { color: #9b93b3; font-weight: 700; }
-.demi:active { cursor: grabbing; }
+.demi:not(.vide):active { cursor: grabbing; }
 .demi.prise { opacity: .45; }
 .demi.cible { border-color: var(--violet); box-shadow: 0 0 0 2px var(--violet-clair); }
 .demi.vise { border-color: var(--orange); box-shadow: 0 0 0 2px var(--orange-clair); }
 /* Le numéro est un champ, mais il ne doit pas en avoir l'air tant qu'on n'y
-   touche pas : une grille de cinquante cartes bordée de cinquante boîtes de
-   saisie serait illisible. Il se donne au survol et se cerne à la saisie. */
+   touche pas : une grille bordée de cinquante boîtes de saisie serait
+   illisible. Il se donne au survol et se cerne à la saisie. */
 .demi-num {
-  font-weight: 800; font-size: .78rem; font-variant-numeric: tabular-nums;
-  width: 3.3em; padding: 1px 3px; color: inherit; font-family: inherit;
+  font-weight: 800; font-size: .76rem; font-variant-numeric: tabular-nums;
+  width: 2.9em; padding: 1px 3px; color: inherit; font-family: inherit;
   background: transparent; border: 1px solid transparent; border-radius: 5px;
-  /* La pastille interdit la sélection — c'est ce qui rend le glissé net. Le
+  /* La moitié interdit la sélection — c'est ce qui rend le glissé net. Le
      champ, lui, doit se laisser sélectionner, sinon on ne peut pas l'écrire. */
   cursor: text; user-select: text; -webkit-user-select: text;
 }
 /* La liste de complétion vaut pour ce qu'elle propose en tapant, pas pour son
-   chevron : dans une case de trois chiffres, il prenait la place d'un chiffre
-   et le numéro s'y trouvait tronqué. */
+   chevron : dans une case de trois chiffres, il prenait la place d'un chiffre. */
 .demi-num::-webkit-calendar-picker-indicator { display: none !important; }
 .demi-num:hover { border-color: rgba(0, 0, 0, .18); background: rgba(255, 255, 255, .55); }
 .demi-num:focus {
@@ -1525,10 +1528,10 @@ body .demi { transition: box-shadow .12s; }
   box-shadow: 0 0 0 2px var(--violet-clair);
 }
 /* Le motif d'un refus, au-dessus de la grille : un numéro qui n'existe pas ne
-   se corrige pas en silence — la carte disparaîtrait, faute de scène. */
+   se corrige pas en silence. */
 .refus-numero { margin: 10px 0 0; }
-.demi-icones { display: flex; gap: 1px; align-items: center; margin-left: auto; }
-.demi-icones .pastille { width: 15px; height: 15px; }
+.demi-icones { display: flex; gap: 1px; align-items: center; }
+.demi-icones .pastille { width: 16px; height: 16px; }
 
 /* Le rang des ordres de lecture, sous un titre de section. Il ne change que
    l'affichage : rien de ce qu'il montre n'est réordonné dans le jeu. */
@@ -1537,19 +1540,18 @@ body .demi { transition: box-shadow .12s; }
 }
 .tri-assemblage > .aide { margin-right: 2px; }
 
-/* Le relevé : une case par moitié, son numéro et le nombre de cartes qui la
-   portent. Le rouge dit « dessinée mais injouable », l'orange « en plusieurs
-   exemplaires ». */
+/* Le relevé : une case par Gros Plan, son numéro, son minutage et le nombre de
+   cartes qui le portent. Le rouge dit « sur aucune carte », l'orange « sur
+   plusieurs ». */
 .repartition { margin-top: 12px; }
-.repartition h4 { margin: 0 0 6px; font-size: .84rem; }
-.repartition h4 .aide { font-weight: 400; margin-left: 8px; }
 .grille-moities { display: flex; flex-wrap: wrap; gap: 5px; }
 .case-moitie {
-  display: flex; flex-direction: column; align-items: center; min-width: 42px;
+  display: flex; flex-direction: column; align-items: center; min-width: 50px;
   padding: 3px 5px; border-radius: 7px; cursor: pointer;
   border: 1px solid var(--bord, #e0dcea); background: #fff; font-size: .72rem;
 }
 .case-moitie b { font-variant-numeric: tabular-nums; }
+.case-moitie i { font-size: .6rem; font-style: normal; color: var(--gris); }
 .case-moitie span { font-size: .66rem; color: var(--gris); }
 .case-moitie.absente { border-color: #d8604e; background: #fff3f1; color: #8f3226; }
 .case-moitie.absente span { color: #b4453a; font-weight: 800; }
@@ -1558,55 +1560,6 @@ body .demi { transition: box-shadow .12s; }
 .case-moitie.vise { box-shadow: 0 0 0 2px var(--orange); }
 .lg-absente { color: #b4453a; }
 .lg-repetee { color: #a8541a; }
-
-/* --- Le recadrage d'une illustration --------------------------------------- */
-/* La carte en grand à gauche, ses réglages à droite. On tire l'image dans la
-   carte elle-même : c'est le geste d'un recadrage, et l'on voit le résultat
-   dans la fenêtre où il comptera — pas dans un carré de démonstration. */
-.recadrage {
-  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: start;
-  padding: 14px; margin: 12px 0 4px; border-radius: 12px;
-  background: var(--violet-pale); border: 1px solid var(--violet-clair);
-}
-@media (max-width: 720px) { .recadrage { grid-template-columns: minmax(0, 1fr); } }
-.recadrage-vue { display: flex; flex-direction: column; gap: 8px; align-items: center; }
-.recadrage-vue .carte.solo { font-size: 22px; user-select: none; }
-.recadrage-vue .illus { cursor: grab; touch-action: none; }
-.recadrage-vue .illus:active { cursor: grabbing; }
-.recadrage-vue .aide { font-size: .72rem; text-align: center; max-width: 260px; }
-.recadrage-reglages { display: flex; flex-direction: column; gap: 10px; }
-.recadrage-reglages input[type="range"] { flex: 1 1 auto; min-width: 120px; accent-color: var(--violet); }
-.cadre-val { min-width: 54px; text-align: right; font-variant-numeric: tabular-nums; }
-/* Les quatre flèches en croix : le déplacement au clavier de la souris, pour
-   régler au point près ce que le glissé approche. */
-.croix-cadre { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.croix-cadre > div { display: flex; gap: 10px; align-items: center; }
-/* Où l'on en est dans le dessin : 0 % montre son bord gauche, 100 % le droit.
-   Sans ce chiffre, une flèche éteinte au bord passerait pour une panne. */
-.cadre-pos { font-size: .72rem; color: var(--gris); font-variant-numeric: tabular-nums;
-  min-width: 34px; text-align: center; }
-.croix-cadre .pill.mini { min-width: 34px; }
-
-.vignette-illus {
-  width: 62px; height: 44px; border-radius: 5px; border: 1px solid var(--gris-clair);
-  background: #f2f0f6 center/cover no-repeat; cursor: pointer; padding: 0;
-  display: grid; place-items: center; color: var(--gris); font-weight: 700;
-}
-.vignette-illus:hover { border-color: var(--orange); }
-/* Sélection panachée : la vignette montre la première image du lot et porte un
-   jeton qui dit combien il y en a de différentes. Elle restait grise et vide —
-   on ne voyait plus de bouton, et il fallait remettre tout le lot à son
-   imprimé pour en retrouver un. */
-.vignette-illus.melangee { border-color: var(--violet); border-style: dashed; }
-.vign-compte {
-  font-size: .68rem; font-weight: 800; line-height: 1; padding: 2px 5px;
-  border-radius: 999px; background: var(--violet); color: #fff;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, .85);
-}
-
-/* Sur l'aperçu d'une carte, l'illustration se donne pour cliquable. */
-.illus-cliquable { cursor: pointer; }
-.illus-cliquable:hover { outline: 2px solid var(--orange); outline-offset: -2px; }
 
 .vide { text-align: center; color: var(--gris); padding: 40px 20px; }
 
@@ -1726,17 +1679,56 @@ body .demi { transition: box-shadow .12s; }
 .bp-tete { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 .bp-tete b { font-size: .92rem; }
 
-/* Une ligne de formulaire passe à la ligne plutôt que de s'écraser. Le panneau
-   fait 294 px quoi qu'il arrive, et la ligne « Illustration » peut porter
-   jusqu'à cinq pièces : la vignette, « n remplacées », le miroir, « recadré »
-   et le retour à l'imprimé. Sans `wrap`, tout le monde se comprimait — et la
-   vignette, seule pièce sans texte pour la tenir ouverte, cédait la première :
-   elle tombait à DEUX pixels, un simple trait, et l'on ne voyait plus de
-   bouton du tout. */
+/* La VRAIE carte d'un plan, à côté de ce que le moteur en lit : c'est ici que
+   l'auteur vérifie la lecture de sa carte. */
+.lecture-carte {
+  display: flex; gap: 12px; align-items: flex-start; margin: 4px 0 12px; padding: 10px;
+  border-radius: 10px; background: #f6f4fb; border: 1px solid var(--gris-clair);
+}
+.lc-image { flex: 0 0 auto; display: block; border-radius: 6px; overflow: hidden; line-height: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
+.lc-image img { display: block; height: 150px; width: auto; }
+.lc-image.pl img { height: auto; width: 168px; }
+.lc-image.sans-carte {
+  width: 104px; height: 138px; display: flex; align-items: center; justify-content: center;
+  text-align: center; line-height: 1.3; font-size: .68rem; color: var(--gris); box-shadow: none;
+  background: repeating-linear-gradient(135deg, #f4f1fb 0 8px, #ece7f7 8px 16px);
+}
+.lc-lu { flex: 1 1 0; min-width: 0; }
+.lc-titre { font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--gris);
+  font-weight: 700; margin-bottom: 6px; }
+.lc-lu dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; }
+.lc-lu dt { font-size: .76rem; color: var(--encre-doux); }
+.lc-lu dd { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.lc-icone { line-height: 0; }
+.lc-icone.dominante { padding: 2px; border-radius: 50%; box-shadow: 0 0 0 2px var(--violet); }
+/* Le pouvoir prend toute la largeur, sous son titre : son dessin peut être
+   long, et la phrase qui le dit se replie. */
+.lc-lu dt.lc-large, .lc-lu dd.lc-large { grid-column: 1 / -1; }
+.lc-lu dd.lc-large { flex-direction: column; align-items: flex-start; gap: 6px; }
+.lc-pouvoir { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; max-width: 100%; }
+.lc-pouvoir .obj-html { flex-wrap: wrap; row-gap: 2px; max-width: 100%; zoom: .78; }
+.lc-pouvoir .lit { font-size: .78rem; font-weight: 600; color: var(--encre); }
+.lc-pouvoir .obj-html .pastille, .lc-pouvoir .obj-html .pastille-num { width: 20px; height: 20px; }
+/* Sur un panneau étroit, la carte passe au-dessus de sa lecture. */
+@media (max-width: 1180px) { .lecture-carte { flex-direction: column; } }
+
+/* L'ordre des icônes d'un plan : la première est la dominante, un clic sur une
+   autre la fait passer devant. */
+.ordre-icones { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 8px; }
+.ordre-icones .aide { flex: 0 0 100%; font-size: .74rem; }
+.ic-ordre {
+  border: 1px solid var(--gris-clair); background: #fff; border-radius: 50%; padding: 3px;
+  cursor: pointer; line-height: 0;
+}
+.ic-ordre:hover { border-color: var(--violet-clair); }
+.ic-ordre.dominante { border-color: var(--violet); box-shadow: 0 0 0 2px var(--violet); cursor: default; }
+
+/* Une ligne de formulaire passe à la ligne plutôt que de s'écraser. */
 .champ-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 8px 0; }
 /* Ce qui a une taille propre la garde : un bouton se déplace, il ne rétrécit
    pas. Le texte, lui, peut se replier. */
-.champ-ligne .pill, .champ-ligne .vignette-illus { flex: 0 0 auto; white-space: nowrap; }
+.champ-ligne .pill { flex: 0 0 auto; white-space: nowrap; }
 .champ-ligne > span:first-child { flex: 0 0 90px; font-size: .86rem; color: var(--encre-doux); }
 .champ-ligne input[type=number] { width: 68px; padding: 6px 8px; border-radius: 8px;
   border: 1px solid var(--gris-clair); font-size: .9rem; color: var(--encre); }
@@ -1779,8 +1771,8 @@ body .demi { transition: box-shadow .12s; }
 
 /* Sur une fenêtre moyenne, l'éditeur RESTE à droite — mince, mais collant :
    on clique une carte, on la règle, sans quitter la galerie des yeux. Empilé
-   sous cinquante cartes, il tombait 3 500 px plus bas, et chaque retouche
-   demandait d'aller le chercher.
+   sous la galerie, il tombait des milliers de pixels plus bas, et chaque
+   retouche demandait d'aller le chercher.
    Ces règles se lisent sur trois classes, comme la règle de base : sur une
    seule, elles ne s'appliquaient JAMAIS — l'éditeur gardait ses 370 px à toutes
    les largeurs, écrasait la galerie à deux cartes de front, et sortait de
@@ -1804,15 +1796,15 @@ body .demi { transition: box-shadow .12s; }
 .materiel-2col .galerie .carte.small:not(.solo) { width: 226px; font-size: 11.3px; }
 .materiel-2col .galerie .carte.solo { font-size: 11.3px; }
 .materiel-2col .galerie { gap: 14px; }
-/* La galerie des cartes doubles REMPLIT sa largeur, quelle que soit la fenêtre :
+/* La galerie des cartes à deux Gros Plans REMPLIT sa largeur, quelle que soit la fenêtre :
    autant de colonnes qu'il en tient — une carte n'y descend jamais sous 210 px —,
    et chaque carte prend exactement la largeur de la sienne. Avec des cartes de
    taille fixe, il manquait huit pixels pour en loger une deuxième à côté de
    l'éditeur dans une demi-fenêtre : on en voyait UNE par ligne, et un grand vide.
    La carte est entièrement en em — 20 em de large : sa police se règle donc sur
    son conteneur, un vingtième de sa largeur (`5cqw`), et tout suit d'un bloc.
-   Les vues d'une seule moitié gardent leurs tuiles : un Gros Plan seul est trois
-   fois plus étroit qu'un Plan Large, une grille égale y laisserait des trous. */
+   Les vues plan par plan gardent leurs tuiles : un Gros Plan seul est deux fois
+   plus étroit qu'un Plan Large, une grille égale y laisserait des trous. */
 .materiel-2col .galerie:has(.carte.small:not(.solo)) {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(226px, 1fr));
 }

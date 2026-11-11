@@ -7,7 +7,10 @@
 // ou créé de toutes pièces : il pose l'illustration, le minutage, les icônes et
 // le pouvoir à partir des données.
 
-import { FORMATS, ELEMENTS, moitiesDe, plHalf, objLabel, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee, PORTEES, objsDe, teinteObj, transformeCadre, etiquettePlan } from './data.js';
+import {
+  FORMATS, ELEMENTS, moitiesDe, plHalf, tcTexte, teinteTc, seuilTexte, estRegleKind, cibleDe, objPortee,
+  PORTEES, objsDe, teinteObj, transformeCadre, etiquettePlan,
+} from './data.js';
 import { elIcon, numIcon, cadrageIcon } from './icons.js';
 import { urlVisuel } from './visuels.js';
 

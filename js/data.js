@@ -1404,6 +1404,16 @@ export function imageImprimee(dossier, origine) {
   return T().images[`${dossier}${origine}`] || '';
 }
 
+/**
+ * La VRAIE carte d'un plan de la boîte — l'image livrée par l'auteur —, que le
+ * plan ait été retouché ou non. C'est elle que le Matériel met à côté de ce que
+ * le moteur en lit, pour vérifier la lecture. Un plan créé n'en a pas.
+ */
+export function visuelImprime(cle) {
+  const f = T().faces && T().faces[cle];
+  return (f && f.visuel) || '';
+}
+
 export function carteActive(id) {
   return !SURCHARGES.desactives.has(id);
 }
