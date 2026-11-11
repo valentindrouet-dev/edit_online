@@ -104,8 +104,8 @@ function mots(cible) {
     case 'RACCORD': return { un: 'Raccord', des: 'Raccords', aucun: 'aucun Raccord', une: 'un Raccord' };
     case 'PLAN': return { un: 'plan', des: 'plans', aucun: 'aucun plan', une: 'un plan' };
     case 'CARTE': return { un: 'carte', des: 'cartes', aucun: 'aucune carte', une: 'une carte' };
-    case 'TC_VIDE': return { un: 'carte sans minutage', des: 'cartes sans minutage',
-      aucun: `aucune carte sans minutage (${afficheur(TC_VIDE)})`, une: 'une carte sans minutage' };
+    case 'TC_VIDE': return { un: 'carte sans chrono', des: 'cartes sans chrono',
+      aucun: `aucune carte sans chrono (${afficheur(TC_VIDE)})`, une: 'une carte sans chrono' };
     case 'ICONE': return { un: 'icône', des: 'icônes', aucun: 'aucune icône', une: 'une icône' };
     default: return { un: String(cible), des: String(cible), aucun: `aucun ${cible}`, une: String(cible) };
   }
@@ -136,7 +136,7 @@ const OU = {
 const ou = (pt) => OU[pt] || OU.MONTAGE;
 
 const cibleDe = (o) => o.cible || o.el;
-const DANS_L_ORDRE = 'de gauche à droite, ils ne reculent jamais. Les cartes sans minutage n’y changent rien';
+const DANS_L_ORDRE = 'de gauche à droite, ils ne reculent jamais. Les cartes sans chrono n’y changent rien';
 
 // --- Le lexique des pouvoirs ------------------------------------------------
 // Une entrée par FAÇON de compter présente sur les cartes. `si` reconnaît le
@@ -157,7 +157,7 @@ const COMPTENT = [
     dit: (o, pt) => `<b>${pts(o.n)} par plan de mort</b> ${ou(pt)} — un plan qui porte le crâne
       ${elIcon('MORT', 20)}.` },
   { si: (o) => o.kind === 'MINUTAGE' && o.sens === 'EGAL' && o.seuil === TC_VIDE,
-    dit: (o, pt) => `<b>${pts(o.n)} par carte sans minutage</b> (${afficheur(TC_VIDE)}) ${ou(pt)}.
+    dit: (o, pt) => `<b>${pts(o.n)} par carte sans chrono</b> (${afficheur(TC_VIDE)}) ${ou(pt)}.
       Le Raccord en est une.` },
   { si: (o) => o.kind === 'MINUTAGE' && !(o.sens === 'EGAL' && o.seuil === TC_VIDE),
     dit: (o, pt) => `<b>${pts(o.n)} par plan ${o.sens === 'EGAL' ? 'à' : o.sens === 'APRES' ? 'après' : 'avant'}
@@ -185,14 +185,14 @@ const COMPTENT = [
     dit: (o) => `<b>${pts(o.n)} par séquence d’au moins ${o.seuil || 1} plans</b>. Le Raccord,
       l’Ouverture et la Fin ne sont pas des plans.` },
   { si: (o) => o.kind === 'SEQ_AVEC' && o.sens !== 'SANS' && o.cible === 'ORDRE',
-    dit: (o) => `<b>${pts(o.n)} par séquence dont les minutages sont dans l’ordre</b> :
+    dit: (o) => `<b>${pts(o.n)} par séquence dont les chronos sont dans l’ordre</b> :
       ${DANS_L_ORDRE}.` },
   { si: (o) => o.kind === 'SEQ_AVEC' && o.sens === 'SANS' && !!ELEMENTS[o.cible],
     dit: (o) => `<b>${pts(o.n)} par séquence sans ${icone(o.cible)}</b>${(o.seuil || 1) > 1
       ? ` — qui en montre moins de ${o.seuil}` : ''}.` },
   { si: (o) => o.kind === 'SEQ_AVEC' && o.sens === 'SANS' && o.cible === 'TC_VIDE',
     dit: (o) => `<b>${pts(o.n)} par séquence sans ${afficheur(TC_VIDE)}</b> : toutes ses cartes ont
-      un minutage. Un Raccord n’en a pas.` },
+      un chrono. Un Raccord n’en a pas.` },
   { si: (o) => o.kind === 'SEQ_AVEC' && o.sens === 'SANS' && !ELEMENTS[o.cible] && o.cible !== 'TC_VIDE',
     dit: (o) => `<b>${pts(o.n)} par séquence sans ${mots(o.cible).un}</b>.` },
   { si: (o) => o.kind === 'SEQ_VOISINES' && o.sens === 'APRES',
@@ -215,7 +215,7 @@ const SE_DECLENCHENT = [
     dit: (o, pt) => `<b>${pts(o.n)} si l’on compte au moins ${o.seuil} ${mots(o.cible).des}</b>
       ${ou(pt)}.` },
   { si: (o) => o.kind === 'SEUIL' && o.cible === 'ORDRE',
-    dit: (o, pt) => `<b>${pts(o.n)} si les minutages sont dans l’ordre</b> ${ou(pt)} :
+    dit: (o, pt) => `<b>${pts(o.n)} si les chronos sont dans l’ordre</b> ${ou(pt)} :
       ${DANS_L_ORDRE}.` },
   { si: (o) => o.kind === 'DOMINE',
     dit: (o, pt) => `<b>${pts(o.n)} si ${icone(cibleDe(o))} est l’icône la ${o.sens === 'MOINS' ? 'moins' : 'plus'}
@@ -226,7 +226,7 @@ const SE_DECLENCHENT = [
       qui porte ce pouvoir ne se regarde pas lui-même.` },
   { si: (o) => o.kind === 'ABSENT' && cibleDe(o) === 'TC_VIDE',
     dit: (o, pt) => `<b>${pts(o.n)} s’il n’y a ${mots('TC_VIDE').aucun}</b> ${ou(pt)} : toutes les
-      cartes y ont un minutage. Un Raccord n’en a pas.` },
+      cartes y ont un chrono. Un Raccord n’en a pas.` },
   { si: (o) => o.kind === 'ABSENT' && cibleDe(o) === 'RACCORD',
     dit: (o, pt) => `<b>${pts(o.n)} s’il n’y a aucun Raccord</b> ${ou(pt)}. L’Ouverture et la Fin
       n’en sont pas.` },
@@ -422,10 +422,10 @@ export function aideDeJeu(cfg) {
     </div>
 
     <div class="aj-bloc">
-      <h3>Le minutage</h3>
+      <h3>Le chrono</h3>
       ${ENTETE_CARTES}
       ${ligne(`${afficheur(10)} … ${afficheur(60)}`, 'Le moment du plan dans le film', '', B.tc.ORDINAIRE || 0)}
-      ${ligne(afficheur(TC_VIDE), 'Sans minutage : ne rompt jamais l’ordre', '', B.tc.VIDE || 0)}
+      ${ligne(afficheur(TC_VIDE), 'Sans chrono : ne rompt jamais l’ordre', '', B.tc.VIDE || 0)}
       ${ligne(afficheur(TC_PREMIER), 'L’Ouverture', '', B.tc.PREMIER || 0)}
       ${ligne(afficheur(TC_DERNIER), 'La Fin', '', B.tc.DERNIER || 0)}
     </div>

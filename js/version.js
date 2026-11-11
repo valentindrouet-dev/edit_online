@@ -1,8 +1,17 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.12';
-export const BUILD_DATE = '2026-11-11 18:28';
+export const VERSION = '4.1.13';
+export const BUILD_DATE = '2026-11-11 18:41';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.13',
+    date: '11/11/2026',
+    items: [
+      "<b>La table s’élargit.</b> Rivière, pioche et Chutier sur toute la largeur ; dessous, tous les bancs l’un au-dessus de l’autre — le vôtre en tête, ceux des autres se replient d’un clic sur leur nom — et la colonne des joueuses à côté.",
+      "<b>Chrono</b> remplace « minutage » partout à l’écran.",
+      "La feuille de score se décrit comme l’auteur la lit : une ligne par séquence, sept cases, les totaux.",
+    ],
+  },
   {
     v: '4.1.12',
     date: '11/11/2026',

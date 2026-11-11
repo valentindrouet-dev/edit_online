@@ -66,7 +66,7 @@ Cartes Objectif, modes, sets, Atelier) sans demande de l'auteur.
 - Statistiques d'abord, tout réglable (Variables), design pastel violet / orange.
 - Vocabulaire à l'écran : Plan Large, Gros Plan, Plan de départ, carte de départ, carte à deux Gros
   Plans, moitié gauche / droite, séquence, banc de montage, pioche, rivière, Chutier, Raccord,
-  Ouverture, Fin, minutage, icône (dominante), **pouvoir**.
+  Ouverture, Fin, **chrono** (et non plus « minutage »), icône (dominante), **pouvoir**.
 - Les imports entre modules s'écrivent **sans** `?v=` : la table d'imports d'`index.html` les versionne.
   Un nouveau module dans `js/` y entre tout seul.
 - Clés localStorage préfixées `edit.` (`edit.cfg`, `edit.joueurs`, `edit.partage.recu`). `migrerCfg`

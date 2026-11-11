@@ -33,7 +33,7 @@ export function coteConvenu(m) {
  * quand tout ne peut pas être satisfait à la fois.
  */
 export const CONTRAINTES = [
-  { id: 'CONVENTION', dur: true, label: 'Chaque minutage de son côté',
+  { id: 'CONVENTION', dur: true, label: 'Chaque chrono de son côté',
     aide: 'la convention de l’auteur : 01’, 10’, 20’, 30’ à gauche de la carte ; 40’, 50’, 60’, 70’ à droite ; '
       + 'les « -- » et le Raccord où il reste de la place' },
   { id: 'RACCORD', label: 'Jamais deux Raccords sur la même carte',
@@ -47,7 +47,7 @@ export const CONTRAINTES = [
   { id: 'MORT', label: 'Jamais deux plans de mort ensemble',
     aide: 'les plans de mort se répartissent sur autant de cartes' },
   { id: 'SANS_MINUTAGE', label: 'Jamais deux « -- » ensemble',
-    aide: 'un plan sans minutage se range partout : en mettre deux sur une carte en gâche un' },
+    aide: 'un plan sans chrono se range partout : en mettre deux sur une carte en gâche un' },
   { id: 'EXEMPLAIRES', label: 'Pas plus d’exemplaires que la boîte',
     aide: 'la boîte imprime certains Gros Plans plusieurs fois — le Raccord, l’Ouverture, la Fin et '
       + 'la plupart des « -- » ; un Gros Plan posé plus souvent est en trop — le mélange ne peut pas le '

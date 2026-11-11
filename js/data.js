@@ -474,8 +474,8 @@ export const CIBLES_COMPTE = [
   { id: 'SEQUENCE', label: 'Séquence du banc',          court: 'séquence', pl: 'séquences', f: true },
   // Les deux cibles des cartes 4.1 : le plan SANS MINUTAGE — l'afficheur bleu
   // « -- » —, et l'ORDRE — une séquence dont les minutages se suivent.
-  { id: 'TC_VIDE',  label: 'Plan sans minutage (« -- »)', court: 'plan sans minutage', pl: 'plans sans minutage' },
-  { id: 'ORDRE',    label: 'Minutages dans l’ordre',      court: 'minutages dans l’ordre', pl: 'minutages dans l’ordre' },
+  { id: 'TC_VIDE',  label: 'Plan sans chrono (« -- »)', court: 'plan sans chrono', pl: 'plans sans chrono' },
+  { id: 'ORDRE',    label: 'Chronos dans l’ordre',      court: 'chronos dans l’ordre', pl: 'chronos dans l’ordre' },
 ];
 
 export const CIBLE_IDS = CIBLES_COMPTE.map((c) => c.id);
@@ -630,8 +630,8 @@ function objQuoi(o) {
       }
       // Deux cibles ne se disent pas « avec X » : la séquence DANS L'ORDRE, et
       // celle qui ne porte aucun plan sans minutage.
-      if (o.cible === 'ORDRE') return `séquence ${o.sens === 'SANS' ? 'dans le désordre' : 'dans l’ordre des minutages'}`;
-      if (o.cible === 'TC_VIDE') return `séquence ${o.sens === 'SANS' ? 'sans' : 'avec'} plan sans minutage (« -- »)`;
+      if (o.cible === 'ORDRE') return `séquence ${o.sens === 'SANS' ? 'dans le désordre' : 'dans l’ordre des chronos'}`;
+      if (o.cible === 'TC_VIDE') return `séquence ${o.sens === 'SANS' ? 'sans' : 'avec'} plan sans chrono (« -- »)`;
       return `séquence ${o.sens === 'SANS' ? 'sans' : 'avec'} ${libelleCible(o.cible)}`;
     }
     // --- Les pouvoirs du vocabulaire commun --------------------------------
@@ -724,7 +724,7 @@ export function objLabel(o, cfg, opts = {}) {
       // l'esprit, et celle qu'on écrirait sur la carte.
       const ou2 = o.cible === 'SEQUENCE' ? ' dans le banc' : ou;
       // « 4 si ◀ 00' ↗ ▶ » : l'ordre se tient, ou il ne se tient pas.
-      if (o.cible === 'ORDRE') return `${si} les minutages ${o.sens === 'MAX' ? 'ne sont pas' : 'sont'} dans l’ordre${ou2}`;
+      if (o.cible === 'ORDRE') return `${si} les chronos ${o.sens === 'MAX' ? 'ne sont pas' : 'sont'} dans l’ordre${ou2}`;
       if (o.sens === 'MAX' && o.seuil === 0) return `${si} ${aucunCible(o.cible)}${ou2}`;
       return `${si} ${o.sens === 'MAX' ? 'au plus' : 'au moins'} ${
         cibleNombre(o.cible, o.seuil)}${ou2}`;

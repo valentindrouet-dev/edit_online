@@ -918,10 +918,20 @@ body.sans-illus .barre .tc-seuil + .croix-non { height: .8em; bottom: 30%; }
 
 /* La table de jeu : zone d'action à gauche, colonne d'infos à droite, et les
    bancs de montage en dessous, sur toute la largeur de la page. */
-.table-jeu { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 18px; align-items: start; }
-.zone-gauche { min-width: 0; }
+/* La table : en haut, sur toute la largeur, le bandeau de la rivière, de la
+   pioche et du Chutier ; dessous, les bancs empilés, et à leur droite la
+   colonne des joueuses et des icônes. */
+.table-jeu {
+  display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 18px; align-items: start;
+  grid-template-areas: "haut haut" "bancs info";
+}
+.zone-haut { grid-area: haut; min-width: 0; }
+.zone-bancs { grid-area: bancs; min-width: 0; }
+.table-jeu > .colonne-info { grid-area: info; }
 .table-jeu > * { min-width: 0; }
-@media (max-width: 1000px) { .table-jeu { grid-template-columns: 1fr; } }
+@media (max-width: 1000px) {
+  .table-jeu { grid-template-columns: 1fr; grid-template-areas: "haut" "bancs" "info"; }
+}
 
 /* La table des cartes : à gauche la pioche et, dessous, le Chutier ; à droite
    la rivière — ses quatre cartes côte à côte, aussi grandes que la place le
@@ -1227,37 +1237,11 @@ body.sans-illus .barre .tc-seuil + .croix-non { height: .8em; bottom: 30%; }
 .bandeau-tour b { color: var(--encre); }
 
 /* Le compte de plans, au-dessus du banc dont il parle. */
-/* Les bancs des autres joueuses en onglets, sur le panneau du banc : un seul
-   banc à l'écran, on bascule d'un clic. L'onglet actif porte la couleur de sa
-   joueuse. */
-.panneau h2.onglets-bancs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.onglet-banc {
-  border: 1px solid var(--gris-clair); background: transparent; color: var(--gris);
-  font: inherit; font-size: .74rem; font-weight: 800; letter-spacing: .06em;
-  text-transform: uppercase; padding: 4px 12px; border-radius: 999px; cursor: pointer;
-  transition: .12s;
-}
-.onglet-banc:hover { color: var(--encre); border-color: var(--gris); }
-.onglet-banc.on {
-  color: var(--enc, var(--encre)); border-color: currentColor;
-  background: #fff; box-shadow: 0 1px 4px rgba(60, 40, 100, .12);
-}
-/* L'onglet dit le nom et le score : « Val 24 ». Le score est la seule chose
-   qui bouge d'un tour à l'autre, il se détache donc du nom. */
-.onglet-banc .onglet-pts {
-  margin-left: .5em; font-weight: 900; font-size: .92em; letter-spacing: 0;
-  color: var(--encre);
-}
-.onglet-banc.on .onglet-pts { color: var(--enc, var(--encre)); }
 
 .panneau h2 .banc-compte {
   float: right; font-size: .8rem; font-weight: 600; color: var(--encre-doux);
   letter-spacing: 0; text-transform: none;
 }
-/* Dans un en-tête à onglets, le float ne s'applique pas — les enfants d'un
-   conteneur flex l'ignorent. « Plan 4 / 10 » se pousse donc à l'extrême
-   droite du bandeau par sa marge. */
-.panneau h2.onglets-bancs .banc-compte { float: none; margin-left: auto; }
 .panneau h2 .banc-compte b { color: var(--encre); font-weight: 800; }
 
 /* Les réglages d'affichage, au pied de la colonne de droite. */
@@ -2566,3 +2550,26 @@ body.sans-illus .bandeau .tag.tag-seq { font-size: .74em; }
   box-shadow: 0 3px 10px rgba(60, 40, 90, .12); transition: transform .15s ease; }
 .accueil-aides:hover img { transform: translateY(-2px); }
 @media print { .aj-aides { break-inside: avoid; } }
+
+/* Les bancs de toutes les joueuses, l'un au-dessus de l'autre. Le sien est
+   ouvert ; un clic sur le nom d'un autre banc le replie ou le rouvre. */
+.banc-joueur { border-left: 4px solid var(--enc, var(--violet-clair)); }
+.banc-joueur.actif { box-shadow: 0 0 0 2px var(--orange-pale), var(--ombre, 0 4px 14px rgba(60, 40, 90, .08)); }
+.banc-joueur.replie { padding-top: 12px; padding-bottom: 12px; }
+.banc-joueur.replie .titre-banc { margin: 0; }
+.panneau h2.titre-banc { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.nom-banc {
+  display: inline-flex; align-items: center; gap: 8px; font: inherit; color: var(--encre);
+  text-transform: none; letter-spacing: 0; font-size: 1rem; font-weight: 800;
+  background: transparent; border: 0; padding: 2px 4px; border-radius: 8px;
+}
+.nom-banc.repliable { cursor: pointer; }
+.nom-banc.repliable:hover { background: var(--violet-pale); }
+.nom-banc .chevron { color: var(--gris); font-size: .9em; width: 1em; }
+.nom-banc .badge-tour { margin-top: 0; }
+.badge-mien {
+  font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--violet); background: var(--violet-pale); padding: 3px 9px; border-radius: 999px;
+}
+.titre-banc .banc-pts { margin-left: auto; font-size: 1.05rem; font-weight: 900; color: var(--enc, var(--encre)); letter-spacing: 0; }
+.panneau h2.titre-banc .banc-compte { float: none; }

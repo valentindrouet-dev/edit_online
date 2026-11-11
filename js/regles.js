@@ -108,7 +108,7 @@ export function corpsRegles(cfg) {
     <b>une carte</b> dans la rivière et vous la <b>montez</b> aussitôt : un <b>Plan Large</b> ouvre
     une séquence, un <b>Gros Plan</b> s’accroche au bout d’une séquence.</p>
     <p>Chaque plan porte un <b>pouvoir</b> : il rapporte des points selon ce que montre votre
-    montage — ses icônes, ses minutages, la forme de ses séquences.</p>
+    montage — ses icônes, ses chronos, la forme de ses séquences.</p>
     <p>Quand une joueuse a monté son <b>${eme(tours)} plan</b>, on termine le tour de table, puis on
     compte. <b>Le montage qui marque le plus l’emporte.</b></p>
   `, 'lv-resume')}
@@ -145,12 +145,12 @@ export function corpsRegles(cfg) {
     ${encart('Gauche ou droite ?', `Les Gros Plans à ${afficheur(10)}, ${afficheur(20)} et
       ${afficheur(30)} sont imprimés sur une moitié <b>gauche</b>, avec l’Ouverture ; ceux à
       ${afficheur(40)}, ${afficheur(50)} et ${afficheur(60)} sur une moitié <b>droite</b>, avec la
-      Fin. Les Gros Plans sans minutage (${afficheur(TC_VIDE)}) et le Raccord se trouvent des deux
+      Fin. Les Gros Plans sans chrono (${afficheur(TC_VIDE)}) et le Raccord se trouvent des deux
       côtés.`)}
     ${encart('Plusieurs exemplaires', `Certains Gros Plans sont imprimés plus d’une fois : le
       <b>Raccord</b> ${fois(combien('RACCORD'))}, l’<b>Ouverture</b> ${fois(combien('OUVERTURE'))}, la
       <b>Fin</b> ${fois(combien('CREDITS'))}${sansMinutageDoubles ? `, et ${sansMinutageDoubles} des Gros Plans
-      sans minutage deux fois — une fois en moitié gauche, une fois en moitié droite` : ''}. D’où
+      sans chrono deux fois — une fois en moitié gauche, une fois en moitié droite` : ''}. D’où
       ${nbMoities} moitiés pour ${nbGP} Gros Plans différents.`)}
   `)}
 
@@ -161,10 +161,10 @@ export function corpsRegles(cfg) {
         <span class="lv-rep r1">1</span><span class="lv-rep r2">2</span><span class="lv-rep r3">3</span>
       </div>
       <ol class="lv-callouts">
-        <li><b>Le minutage</b>, sur l’afficheur en haut à gauche : le moment du plan dans le film, de
-          ${afficheur(10)} à ${afficheur(60)}. ${afficheur(TC_VIDE)} se lit « sans minutage ».
+        <li><b>Le chrono</b>, sur l’afficheur en haut à gauche : le moment du plan dans le film, de
+          ${afficheur(10)} à ${afficheur(60)}. ${afficheur(TC_VIDE)} se lit « sans chrono ».
           L’Ouverture est à ${afficheur(TC_PREMIER)}, la Fin à ${afficheur(TC_DERNIER)}.</li>
-        <li><b>Les icônes</b>, en colonne sous le minutage : ce que le plan montre. La première, la
+        <li><b>Les icônes</b>, en colonne sous le chrono : ce que le plan montre. La première, la
           plus grande, est la <b>dominante</b> — elle donne sa couleur à la carte. Un plan peut
           porter deux fois la même icône.</li>
         <li><b>Le pouvoir</b>, sur la bande du bas : ce que ce plan vous rapporte à la fin de la
@@ -176,8 +176,8 @@ export function corpsRegles(cfg) {
       <span>${elIcon('MORT', 34)}Le crâne : un plan de mort</span></div>`)}
     ${figure('<img class="lv-aide" src="assets/aides/ICONES.webp" alt="Aide de jeu : les icônes" loading="lazy" decoding="async" draggable="false">',
     'L’aide de jeu <b>Icônes</b> de la boîte : les icônes, et les mots que les pouvoirs emploient.', 'lv-figure-aide')}
-    <p>Le minutage <b>ne contraint pas la pose</b> : vous montez vos plans dans l’ordre que vous
-    voulez. Certains pouvoirs, en revanche, paient un montage dont les minutages se suivent.</p>
+    <p>Le chrono <b>ne contraint pas la pose</b> : vous montez vos plans dans l’ordre que vous
+    voulez. Certains pouvoirs, en revanche, paient un montage dont les chronos se suivent.</p>
   `)}
 
   ${section('Mise en place', `
@@ -307,7 +307,10 @@ export function corpsRegles(cfg) {
     <p class="lv-fin">Pendant la partie, les points se lisent au <b>coin de chaque plan</b> de votre
     montage : c’est ce que ce plan-là vous rapporte, ici et maintenant.</p>
     ${figure('<img class="lv-aide" src="assets/aides/SCORE.webp" alt="La feuille de score" loading="lazy" decoding="async" draggable="false">',
-    'La <b>feuille de score</b> de la boîte : une colonne par joueuse, de 1 à 4, et son <b>total</b>.', 'lv-figure-aide')}
+    'La <b>feuille de score</b>, à lire en portrait : un bloc par joueuse, <b>une ligne par séquence</b> — '
+    + 'la quatrième, grisée, pour la séquence bonus du Plan de départ —, <b>sept cases</b> : trois plans à '
+    + 'gauche, le Plan Large au centre, trois plans à droite. Le total de chaque séquence au bout de sa '
+    + 'ligne, et en bas le <b>total</b> de la joueuse.', 'lv-figure-aide')}
   `)}
 
   ${section('Points à confirmer avec l’auteur', `

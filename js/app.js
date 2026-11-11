@@ -127,7 +127,8 @@ const store = {
   filIA: 0,             // jeton du fil des coups d'IA : incrémenté, il l'annule
   // Le banc affiché : un seul à la fois, les autres en onglets. null = le
   // sien. Seul un clic d'onglet en change — jamais le tour d'un adversaire.
-  bancVu: null,
+  // Les bancs des AUTRES joueuses que l'on a repliés ; le sien ne se replie pas.
+  bancsReplies: new Set(),
   // Le salon en ligne, quand il y en a un. Sa partie remplace alors
   // `store.partie` : elle n'est pas jouée, elle est **rejouée** depuis le
   // journal des actions.
@@ -540,6 +541,7 @@ function lancerPartie() {
   store.choixRiviere = null;
   store.undo = null;
   store.joueurVu = null;
+  store.bancsReplies = new Set();
   allerA('#/partie');
 }
 
@@ -584,13 +586,16 @@ function vuePartie(enchainer = true) {
   // Le banc lu dans les colonnes : celui qui joue, ou celui qu'on a épinglé.
   const vu = store.joueurVu !== null && st.joueurs[store.joueurVu] ? store.joueurVu : p;
 
-  // Le banc affiché. Un clic d'onglet l'épingle. Sinon : celui de qui joue
-  // quand c'est une humaine — c'est là qu'elle doit poser —, et celui de la
-  // première humaine pendant qu'une IA joue : on voit la carte partir, la vue
-  // ne bouge pas.
+  // Le banc de qui regarde : celui de qui joue quand c'est une humaine — c'est
+  // là qu'elle doit poser —, celui de la première humaine pendant qu'une IA
+  // joue, et en ligne celui de son siège. Il est en tête et ne se replie pas.
   const humains = st.joueurs.map((jj, i) => (jj.type === 'HUMAIN' ? i : -1)).filter((i) => i >= 0);
   const parDefaut = humaine ? p : (humains.length ? humains[0] : p);
-  const vuB = store.bancVu !== null && st.bancs[store.bancVu] ? store.bancVu : parDefaut;
+  const mien = enl && enl.monSiege >= 0 ? enl.monSiege : parDefaut;
+  // Tous les bancs, l'un au-dessus de l'autre : le sien, puis les suivants dans
+  // l'ordre du tour.
+  const n = st.joueurs.length;
+  const ordre = Array.from({ length: n }, (_, k) => (mien + k) % n);
 
   // Pendant la mise en place, on montre TOUJOURS la carte de départ de la
   // joueuse qui regarde — jamais celle de l'IA qui joue.
@@ -603,23 +608,19 @@ function vuePartie(enchainer = true) {
   <div class="wrap large">
     ${enl ? bandeauEnLigne(enl, st) : ''}
     <div class="table-jeu">
-      <div class="zone-gauche">
+      <div class="zone-haut">
         ${st.finDeclenchee == null ? '' : `<div class="bandeau-tour">
             <span class="jeton-dernier">dernier tour</span>
           </div>`}
-
         <div class="panneau zone-phase">${zone}</div>
-        ${/* Un seul banc à l'écran, les autres en onglets. */''}
-        <div class="panneau">
-          <h2 class="onglets-bancs">
-            ${st.joueurs.map((jj, i) => `<button class="onglet-banc ${i === vuB ? 'on' : ''}"
-              data-onglet-banc="${i}" style="--enc:${encreDe(jj.couleur)}">${jj.nom}
-              <b class="onglet-pts">${sc[i].total}</b></button>`).join('')}
-            <span class="banc-compte">Plan <b>${Math.min(compter(st.bancs[vuB], st.cfg).plans,
-    limitePlans(st.cfg))} / ${limitePlans(st.cfg)}</b></span>
-          </h2>
-          ${bancBloc(st, vuB, null, vuB === p && humaine && (st.phase === 'MONTAGE' || st.phase === 'DERUSHAGE'))}
-        </div>
+      </div>
+
+      <div class="zone-bancs">
+        ${ordre.map((i) => panneauBanc(st, sc, i, {
+    mien: i === mien,
+    actif: i === p,
+    interactif: i === p && humaine && (st.phase === 'MONTAGE' || st.phase === 'DERUSHAGE'),
+  })).join('')}
       </div>
 
       <div class="colonne-info">
@@ -668,6 +669,33 @@ function vuePartie(enchainer = true) {
   if (store.vols.length) document.body.classList.add('coup-en-vol');
   // Le fil des coups d'IA n'a pas cours en ligne : chaque siège est un appareil.
   if (enchainer && !enl) derouler(st).catch(() => { document.body.classList.remove('ia-joue', 'coup-en-vol'); });
+}
+
+/**
+ * Le panneau d'un banc à la table. Celui de qui regarde est toujours ouvert ;
+ * ceux des autres se replient et se rouvrent d'un clic sur leur nom.
+ */
+function panneauBanc(st, sc, i, { mien, actif, interactif }) {
+  const j = st.joueurs[i];
+  const replie = !mien && !interactif && store.bancsReplies.has(i);
+  const lim = limitePlans(st.cfg);
+  const plans = Math.min(compter(st.bancs[i], st.cfg).plans, lim);
+  const nom = `<span class="point-couleur" style="background:${j.couleur}"></span>
+    <span class="nom-banc-texte">${j.nom}</span>
+    ${mien ? '<span class="badge-mien">votre banc</span>' : ''}
+    ${actif ? '<span class="badge-tour">À son tour</span>' : ''}`;
+  return `<div class="panneau banc-joueur ${replie ? 'replie' : ''} ${actif ? 'actif' : ''}"
+    data-banc-joueur="${i}" style="--enc:${encreDe(j.couleur)}">
+    <h2 class="titre-banc">
+      ${mien ? `<span class="nom-banc">${nom}</span>`
+    : `<button class="nom-banc repliable" data-replier="${i}" aria-expanded="${!replie}"
+          title="${replie ? 'Afficher' : 'Replier'} le banc de ${j.nom}">
+          <span class="chevron" aria-hidden="true">${replie ? '▸' : '▾'}</span>${nom}</button>`}
+      <b class="banc-pts">${sc[i].total} pts</b>
+      <span class="banc-compte">Plan <b>${plans} / ${lim}</b></span>
+    </h2>
+    ${replie ? '' : bancBloc(st, i, null, interactif)}
+  </div>`;
 }
 
 // --- Le banc ---------------------------------------------------------------
@@ -845,9 +873,6 @@ function bancBloc(st, i, titre, interactif) {
 function viser(st, o, moitie) {
   const c = store.choixRiviere;
   store.choixRiviere = (c && memeOption(c.o, o) && c.moitie === moitie) ? null : { o, moitie };
-  // Viser, c'est préparer une pose : si un onglet montrait un autre banc, on
-  // revient sur celui de qui joue — c'est là que les emplacements vont s'ouvrir.
-  if (store.bancVu !== null && store.bancVu !== st.courant) { store.bancVu = st.courant; return vuePartie(false); }
   rafraichirVisee(st);
 }
 
@@ -1274,9 +1299,10 @@ function brancherPartie(st, humaine) {
     if (store.enLigne) store.enLigne.quitter();
     location.hash = '#/enligne';
   });
-  // Les onglets de banc : un clic épingle le banc choisi.
-  app.querySelectorAll('[data-onglet-banc]').forEach((b) => b.addEventListener('click', () => {
-    store.bancVu = +b.dataset.ongletBanc;
+  // Le nom d'un autre banc le replie, ou le rouvre.
+  app.querySelectorAll('[data-replier]').forEach((b) => b.addEventListener('click', () => {
+    const i = +b.dataset.replier;
+    if (store.bancsReplies.has(i)) store.bancsReplies.delete(i); else store.bancsReplies.add(i);
     vuePartie(false);
   }));
 
@@ -2217,7 +2243,7 @@ function tuilesDe(vue) {
  */
 const TRIS = [
   ['num', 'Numéro croissant'], ['num-desc', 'Numéro décroissant'],
-  ['tc', 'Minutage croissant'], ['tc-desc', 'Minutage décroissant'],
+  ['tc', 'Chrono croissant'], ['tc-desc', 'Chrono décroissant'],
   ['famille', 'Famille'],
 ];
 
@@ -2403,7 +2429,7 @@ const A_CREER = {
     'Une carte vide, à remplir de deux Gros Plans — elle s’ouvre dans l’Assemblage']],
   GP: [
     ['GP', '+ Nouveau Gros Plan', 'Un Gros Plan vierge, à régler ; l’Assemblage le posera sur une carte'],
-    ['RACCORD', '+ Nouveau Raccord', 'Un Raccord de plus : ni icône ni minutage, et le pouvoir qui compte les Raccords'],
+    ['RACCORD', '+ Nouveau Raccord', 'Un Raccord de plus : ni icône ni chrono, et le pouvoir qui compte les Raccords'],
   ],
   PL: [['PL', '+ Nouveau Plan Large', 'Une carte Plan Large vierge, à régler']],
   DEPART: [['DEPART', '+ Nouveau Plan de départ',
@@ -2475,9 +2501,9 @@ function galerieMateriel() {
         ${opt('SANS', 'sans pouvoir', f.pouvoir === 'SANS')}
         ${KINDS.filter(([k]) => k).map(([k, l]) => opt(k, l, f.pouvoir === k)).join('')}
       </select></label>
-    <label>Minutage
+    <label>Chrono
       <input type="number" min="0" max="99" placeholder="min" value="${f.tcMin}" data-filtre="tcMin"
-        title="En minutes — 0 pour les plans sans minutage, « -- »">
+        title="En minutes — 0 pour les plans sans chrono, « -- »">
       <input type="number" min="0" max="99" placeholder="max" value="${f.tcMax}" data-filtre="tcMax"></label>
     <label>Famille
       <select data-filtre="famille">${opt('', 'toutes', !f.famille)}
@@ -2570,7 +2596,7 @@ function panneauEditeurBrut() {
   if (!plans.length) {
     return `<h2>Éditeur</h2>
       <p class="aide">Choisis une carte ou un plan dans la galerie : sa <b>vraie carte</b> s’affiche à
-      côté de ce que le moteur en a lu — <b>minutage</b>, <b>icônes</b>, <b>pouvoir</b> —, pour
+      côté de ce que le moteur en a lu — <b>chrono</b>, <b>icônes</b>, <b>pouvoir</b> —, pour
       vérifier la lecture et la corriger. Sélectionnes-en plusieurs pour les régler d’un coup.</p>
       <p class="aide">L’éditeur écrit toujours dans le jeu <b>Modifié</b>, même quand c’est la boîte
       qui se joue — passer de l’un à l’autre ne détruit rien. Un plan retouché ne correspond plus à
@@ -2648,7 +2674,7 @@ function lectureCarte(h) {
     <div class="lc-lu">
       <div class="lc-titre">Ce que le moteur en lit</div>
       <dl>
-        <dt>Minutage</dt>
+        <dt>Chrono</dt>
         <dd><span class="tc-apercu ${teinteTc(h.tc)}">${tc(h.tc)}</span></dd>
         <dt>Icônes</dt>
         <dd>${icones || '<span class="aide">aucune</span>'}${h.mort ? `<span class="lc-icone" title="Plan de mort">${elIcon('MORT', 20)}</span>` : ''}</dd>
@@ -2691,9 +2717,9 @@ function blocPlan(h) {
     </label>
 
     <label class="champ-ligne">
-      <span>Minutage</span>
+      <span>Chrono</span>
       <input type="number" min="0" max="99" step="1" value="${h.tc}" data-champ-tc="${h.cle}"
-        title="En minutes. 0 : pas de minutage, « -- »">
+        title="En minutes. 0 : pas de chrono, « -- »">
       <span class="tc-apercu ${teinteTc(h.tc)}">${tc(h.tc)}</span>
       ${h.tc !== imp.tc ? `<span class="imp-rappel">boîte : ${tc(imp.tc)}</span>` : ''}
     </label>
@@ -2751,9 +2777,9 @@ function blocLot(plans) {
     <p class="aide">Tout ce qui est réglé ici part aussitôt sur les ${plans.length} plans.</p>
 
     <label class="champ-ligne">
-      <span>Minutage</span>
+      <span>Chrono</span>
       <input type="number" min="0" max="99" step="1" value="${tcCommun}" data-lot-tc="1" placeholder="—">
-      ${tcCommun === '' ? '<span class="aide">minutages différents</span>' : `<span class="tc-apercu ${teinteTc(tcCommun)}">${tc(tcCommun)}</span>`}
+      ${tcCommun === '' ? '<span class="aide">chronos différents</span>' : `<span class="tc-apercu ${teinteTc(tcCommun)}">${tc(tcCommun)}</span>`}
     </label>
 
     <div class="champ-bloc">
@@ -3438,7 +3464,7 @@ function vueAssemblage() {
   gauche à gauche d’une séquence, la droite à droite. Quels Gros Plans vont ensemble, et de quel
   côté : c’est l’<b>assemblage</b>, et il se règle ici.</p>
   <p class="encart repere-assemblage"><b>La convention de l’auteur</b> — un repère, pas un interdit :
-  les minutages <b>01’, 10’, 20’, 30’</b> à gauche de la carte ; <b>40’, 50’, 60’, 70’</b> à droite ;
+  les chronos <b>01’, 10’, 20’, 30’</b> à gauche de la carte ; <b>40’, 50’, 60’, 70’</b> à droite ;
   les <b>« -- »</b> et le <b>Raccord</b> d’un côté comme de l’autre. Une moitié rangée du côté opposé
   porte un <b class="demi-repere">⚠</b>.</p>
 
@@ -3527,7 +3553,7 @@ function tableauMateriel() {
 
 function tableauPlans(cat) {
   return `<table class="tbl tbl-materiel">
-    <thead><tr><th>Plan</th><th>Cadrage</th><th>Famille</th><th class="num">Minutage</th>
+    <thead><tr><th>Plan</th><th>Cadrage</th><th>Famille</th><th class="num">Chrono</th>
       <th>Icônes — la dominante en premier</th><th>Pouvoir</th><th>État</th></tr></thead>
     <tbody>${cat.map((p) => `<tr class="${p.modifie ? 'ligne-retouchee' : ''}">
       <td class="num"><b>${etiquettePlan(p)}</b>${p.num !== p.numOrigine
@@ -3730,7 +3756,7 @@ function vueStats() {
     ligne('Plans sans pouvoir', imp.sansPouvoir, mod.sansPouvoir),
   ].join(''))}
 
-  ${tableau('Les minutages', [
+  ${tableau('Les chronos', [
     ligne('Le plus tôt', imp.tcMin, mod.tcMin),
     ligne('Le plus tard', imp.tcMax, mod.tcMax),
     ligne('Moyenne, hors « -- »', imp.tcMoyen, mod.tcMoyen),
@@ -3738,7 +3764,7 @@ function vueStats() {
       .sort((a, b) => a - b)
       .map((t) => ligne(`Plans à <span class="tc-apercu ${teinteTc(t)}">${tc(t)}</span>`,
         imp.minutages[t] || 0, mod.minutages[t] || 0)),
-  ].join(''), 'En minutes de film. « -- » : le plan n’a pas de minutage, il se range partout.')}`;
+  ].join(''), 'En minutes de film. « -- » : le plan n’a pas de chrono, il se range partout.')}`;
 }
 
 // --- Les statistiques des pouvoirs ------------------------------------------
