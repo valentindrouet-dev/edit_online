@@ -58,6 +58,8 @@ export function corpsRegles(cfg) {
   const cartesDepart = buildDeparts();
   const doubles = buildCartesDoubles().filter((x) => x.actif && carteComplete(x));
   const nbGP = SCENES().length;
+  // Les moitiés imprimées : un Gros Plan « -- » l'est deux fois.
+  const nbMoities = doubles.length * 2;
   const nbPL = larges.length + plansDepart.length;
   const pioche = larges.length + doubles.length;
   const nomsDepart = plansDepart.map((p) => `L${p.num}`);
@@ -108,7 +110,7 @@ export function corpsRegles(cfg) {
       <div class="lv-mat"><b>${nbPL}</b><span><b>Plans Larges</b>
         <i>dont ${pluriel(plansDepart.length, 'Plan')} de départ</i></span></div>
       <div class="lv-mat"><b>${doubles.length}</b><span>cartes à <b>deux Gros Plans</b>
-        <i>${nbGP} Gros Plans en tout</i></span></div>
+        <i>${nbGP} Gros Plans différents</i></span></div>
       <div class="lv-mat"><b>${cartesDepart.length}</b><span><b>cartes de départ</b>
         <i>recto verso</i></span></div>
     </div>
@@ -132,8 +134,9 @@ export function corpsRegles(cfg) {
     ${encart('Gauche ou droite ?', `Le plus souvent, les Gros Plans à ${afficheur(10)},
       ${afficheur(20)} et ${afficheur(30)} sont imprimés sur une moitié <b>gauche</b>, avec
       l’Ouverture ; ceux à ${afficheur(40)}, ${afficheur(50)} et ${afficheur(60)} sur une moitié
-      <b>droite</b>, avec la Fin. Les Gros Plans sans minutage (${afficheur(TC_VIDE)}) et le Raccord
-      se trouvent d’un côté ou de l’autre.`)}
+      <b>droite</b>, avec la Fin. Chaque Gros Plan sans minutage (${afficheur(TC_VIDE)}) est imprimé
+      <b>deux fois</b> : une fois en moitié gauche, une fois en moitié droite — d’où ${nbMoities}
+      moitiés pour ${nbGP} Gros Plans.`)}
   `)}
 
   ${section('Lire un plan', `
@@ -299,8 +302,9 @@ export function corpsRegles(cfg) {
         ni des plans, ni des Raccords.</li>
       <li>L’<b>Entracte</b> (L10, ${afficheur(35)}, sans icône) est joué comme un Plan Large ordinaire.</li>
       <li>Qui ne peut rien monter <b>passe</b> ; à égalité de points, la victoire est partagée.</li>
-      <li>L’<b>assemblage</b> des ${pluriel(doubles.length, 'carte')} à deux Gros Plans — quels Gros
-        Plans vont ensemble — est provisoire.</li>
+      <li>L’<b>assemblage</b> des ${pluriel(doubles.length, 'carte')} à deux Gros Plans : les 20
+        premières sont celles de l’auteur, les ${doubles.length - 20} autres complètent la boîte selon
+        sa règle.</li>
     </ul>`, 'attention')}
     <p class="lv-fin">Chaque nombre de ces règles suit l’onglet <b>Variables</b> : ce que vous lisez
     ici est la règle de <b>votre</b> partie.</p>

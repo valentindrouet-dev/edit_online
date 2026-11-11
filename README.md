@@ -11,7 +11,8 @@ dossier (`python3 -m http.server`).
 
 - **19 Plans Larges** (une image pleine carte, 120 × 80 mm), dont **4 Plans de départ** : leurs six
   couples font six cartes de départ recto verso.
-- **54 Gros Plans**, deux par carte : 27 cartes à deux Gros Plans, moitié gauche et moitié droite.
+- **54 Gros Plans**, deux par carte : 32 cartes à deux Gros Plans, moitié gauche et moitié droite. Les
+  dix Gros Plans sans minutage (« -- ») sont imprimés deux fois, une fois de chaque côté.
 - Une pioche face cachée, une rivière de 4 cartes visibles, et le **Chutier**, la défausse face visible.
 - À son tour : on peut défausser une carte de la rivière, puis on en prend une et on la monte. Un Plan
   Large ouvre une séquence (3 par banc) ; une moitié gauche se monte à gauche d'une séquence, une

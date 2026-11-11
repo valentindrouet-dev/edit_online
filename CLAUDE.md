@@ -35,8 +35,11 @@ Cartes Objectif, modes, sets, Atelier) sans demande de l'auteur.
   (L5, L7, L12, L16) : leurs six couples font six **cartes de départ** recto verso — le seul recto verso
   du jeu. Chaque joueuse en reçoit une et choisit sa face.
 - **Gros Plans** : 54 (`GP00`…`GP66`, `GP100` Raccord, `GP101` Ouverture 01', `GP102` Fin 70'), deux par
-  carte — 27 **cartes à deux Gros Plans**, moitié GAUCHE et moitié DROITE (`ASSEMBLAGE_41`, `[gauche,
-  droite]`). L'assemblage est **provisoire** : l'auteur le refera (Matériel › Assemblage, ou un schéma).
+  carte — 32 **cartes à deux Gros Plans**, moitié GAUCHE et moitié DROITE (`ASSEMBLAGE_41`, `[gauche,
+  droite]`). Les 20 premières viennent des planches de l'auteur, les 12 autres suivent sa règle : 10' à
+  30' et Ouverture à gauche, 40' à 60' et Fin à droite, chaque « -- » imprimé DEUX FOIS (une fois de
+  chaque côté), deux dominantes différentes par carte. `exemplairesBoite()` dit combien de fois la boîte
+  imprime chaque Gros Plan.
 - **Règles** (`js/engine.js`) : une pioche face cachée, une rivière de 4 cartes, le **Chutier** (défausse
   face visible). À son tour : défausser une carte de la rivière (facultatif, une fois), puis en prendre
   une et la monter. Un Plan Large ouvre une séquence (3 par banc, 4 avec le L12) ; une moitié gauche se
@@ -44,7 +47,7 @@ Cartes Objectif, modes, sets, Atelier) sans demande de l'auteur.
   un Raccord, un Plan Large peut entrer dans la séquence. Le L16 laisse prendre sur le Chutier, le L7
   donne une carte après le dernier tour. Fin à 10 plans.
 - Points encore à confirmer par l'auteur : fin de partie, pioche vide (le Chutier est remélangé), ce qui
-  suit un Raccord (un Plan Large seulement), l'Entracte (L10), l'assemblage.
+  suit un Raccord (un Plan Large seulement), l'Entracte (L10), les 12 cartes complétées de l'assemblage.
 
 ## Règles du projet
 

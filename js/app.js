@@ -8,7 +8,7 @@ import {
   moitiesDe, plHalf, halfInfo, appliquerMateriel, catalogue, grosPlansDisponibles, cleplan, planDeCle,
   doublonsNumeros, CADRAGES_POUVOIR, PORTEES, PORTEE_IDS, objPortee, objsDe, ciblesSequence, CIBLES_COMPTE,
   CIBLE_IDS, CIBLES_PRESENCE, cibleDe, libelleCibleCompte, planMarque, porteeReglable, porteeFigee,
-  CRITERES_DOUBLE, teinteTc, contenuBoite, etiquettePlan, visuelImprime,
+  CRITERES_DOUBLE, teinteTc, contenuBoite, etiquettePlan, visuelImprime, exemplairesBoite,
 } from './data.js';
 import {
   DEFAULTS, SCHEMA, PROFILS_IA, COULEURS_JOUEURS, PALETTE_JOUEURS, encreDe, cloneConfig, migrerCfg,
@@ -3183,8 +3183,9 @@ function melangerAssemblage(brasser) {
   // Seules les cartes complètes entrent dans le mélange : une place vide ne se brasse pas.
   const cartes = surLeModifie(cartesAssemblage).filter((c) => c.g && c.d);
   if (!cartes.length) return;
-  const avant = bilan(cartes, actives);
-  const r = melangerMoities(cartes, actives, Math.random, 40, brasser);
+  const attendus = exemplairesBoite();
+  const avant = bilan(cartes, actives, attendus);
+  const r = melangerMoities(cartes, actives, Math.random, 40, brasser, attendus);
   surLeModifie(() => {
     r.cartes.forEach((c, i) => poserAppariement(cartes[i].rang, c.g.ref, c.d.ref));
   });
@@ -3200,12 +3201,15 @@ function melangerAssemblage(brasser) {
 function texteAssemblage() {
   return surLeModifie(() => {
     const cartes = cartesAssemblage();
-    const rp = repartition(grosPlansTous(), cartes);
+    const rp = repartition(grosPlansTous(), cartes, exemplairesBoite());
     const nom = (m) => (m ? etiquetteGP(m.ref) : '—');
     return [`EDIT 4.1 — assemblage, ${cartes.length} carte${cartes.length > 1 ? 's' : ''} (gauche | droite)`,
       ...cartes.map((c) => `${c.id} : ${nom(c.g)} | ${nom(c.d)}`),
       ...(rp.absents ? [`Sur aucune carte : ${rp.lignes.filter((x) => !x.n).map(nom).join(', ')}`] : []),
-      ...(rp.repetes ? [`Sur plusieurs cartes : ${rp.lignes.filter((x) => x.n > 1).map((x) => `${nom(x)} ×${x.n}`).join(', ')}`] : []),
+      ...(rp.enTrop ? [`Plus que dans la boîte : ${rp.lignes.filter((x) => x.n > x.attendu)
+        .map((x) => `${nom(x)} ×${x.n} (boîte : ${x.attendu})`).join(', ')}`] : []),
+      ...(rp.enMoins ? [`Moins que dans la boîte : ${rp.lignes.filter((x) => x.n && x.n < x.attendu)
+        .map((x) => `${nom(x)} ×${x.n} (boîte : ${x.attendu})`).join(', ')}`] : []),
     ].join('\n');
   });
 }
@@ -3310,7 +3314,7 @@ const TRIS_CARTES = [
 const TRIS_MOITIES = [
   ['NUM', 'N° croissant', 'l’ordre des numéros'],
   ['RARE', 'Les non placés d’abord', 'les Gros Plans qui ne sont sur aucune carte en tête'],
-  ['FREQ', 'Les plus présents d’abord', 'ceux qui sont sur plusieurs cartes en tête'],
+  ['FREQ', 'Les plus présents d’abord', 'ceux qui sont sur le plus de cartes en tête'],
 ];
 
 /** Le rang de barres de tri : un bouton par ordre, celui en cours allumé. */
@@ -3365,10 +3369,12 @@ function carteAssemblage(c, f) {
 function tableauRepartition(rp) {
   const sur = mat.assemblage.surligne;
   const cases = trierMoities(rp.lignes, mat.assemblage.triMoities).map((m) => {
-    const etat = m.n === 0 ? 'absente' : m.n > 1 ? 'repetee' : '';
+    const etat = m.n === 0 ? 'absente' : m.n !== m.attendu ? 'repetee' : '';
     const vise = sur && sur.ref === m.ref;
+    const ex = (k) => `${k} exemplaire${k > 1 ? 's' : ''}`;
     return `<button class="case-moitie ${etat} ${vise ? 'vise' : ''}" data-surligne="${m.ref}"
-      title="${nomMoitie(m)}${m.n === 0 ? ' — sur aucune carte' : ` — sur ${m.n} carte${m.n > 1 ? 's' : ''}`}">
+      title="${nomMoitie(m)}${m.n === 0 ? ' — sur aucune carte' : ` — sur ${m.n} carte${m.n > 1 ? 's' : ''}`}${
+  m.n !== m.attendu ? ` ; la boîte en imprime ${ex(m.attendu)}` : ''}">
       <b>${etiquetteGP(m.num)}</b><i class="${teinteTc(m.tc)}">${m.transition ? NOMS_TRANSITION[m.transition] : tc(m.tc)}</i><span>${m.n}</span></button>`;
   }).join('');
   return `<div class="repartition"><div class="grille-moities">${cases}</div></div>`;
@@ -3377,10 +3383,11 @@ function tableauRepartition(rp) {
 function vueAssemblage() {
   const cartes = cartesAssemblage();
   const actives = mat.assemblage.contraintes;
-  const b = bilan(cartes, actives);
-  const f = fautesParCarte(cartes, actives);
+  const attendus = exemplairesBoite();
+  const b = bilan(cartes, actives, attendus);
+  const f = fautesParCarte(cartes, actives, attendus);
   const parRang = new Map(cartes.map((c, i) => [c.rang, f[i]]));
-  const rp = repartition(grosPlansTous(), cartes);
+  const rp = repartition(grosPlansTous(), cartes, attendus);
   const retouches = Object.keys(store.cfg.materiel.paires).length;
   const incompletes = cartes.filter((c) => !c.g || !c.d).length;
   const s = (k) => (k > 1 ? 's' : '');
@@ -3394,15 +3401,19 @@ function vueAssemblage() {
   côté : c’est l’<b>assemblage</b>, et il se règle ici.</p>
   <p class="encart repere-assemblage"><b>La convention de l’auteur</b> — un repère, pas un interdit :
   les minutages <b>01’, 10’, 20’, 30’</b> à gauche de la carte ; <b>40’, 50’, 60’, 70’</b> à droite ;
-  les <b>« -- »</b> et le <b>Raccord</b> où il reste de la place. Une moitié rangée du côté opposé
+  chaque <b>« -- »</b> deux fois, une à gauche et une à droite ; le <b>Raccord</b> où il reste de la
+  place. Une moitié rangée du côté opposé
   porte un <b class="demi-repere">⚠</b>.</p>
 
-  <div class="bilan-assemblage ${rp.absents || rp.repetes || incompletes ? 'a-revoir' : 'net'}">
+  <div class="bilan-assemblage ${rp.absents || rp.enTrop || rp.enMoins || incompletes ? 'a-revoir' : 'net'}">
     <b>${cartes.length} carte${s(cartes.length)}</b> · ${rp.lignes.length} Gros Plans —
     ${rp.absents ? `<b class="lg-absente">${rp.absents} sur aucune carte</b> :
-      ${rp.lignes.filter((m) => !m.n).map(nom).join(', ')}` : 'tous sont sur une carte'}
-    ${rp.repetes ? ` · <b class="lg-repetee">${rp.repetes} sur plusieurs cartes</b> :
-      ${rp.lignes.filter((m) => m.n > 1).map((m) => `${nom(m)} ×${m.n}`).join(', ')}` : ''}
+      ${rp.lignes.filter((m) => !m.n).map(nom).join(', ')}`
+    : `tous sont sur leurs cartes${rp.doubles ? `, les ${rp.doubles} « -- » en deux exemplaires` : ''}`}
+    ${rp.enTrop ? ` · <b class="lg-repetee">${rp.enTrop} en trop</b> :
+      ${rp.lignes.filter((m) => m.n > m.attendu).map((m) => `${nom(m)} ×${m.n} (boîte : ${m.attendu})`).join(', ')}` : ''}
+    ${rp.enMoins ? ` · <b class="lg-repetee">${rp.enMoins} en moins</b> :
+      ${rp.lignes.filter((m) => m.n && m.n < m.attendu).map((m) => `${nom(m)} ×${m.n} (boîte : ${m.attendu})`).join(', ')}` : ''}
     ${incompletes ? ` · <b class="lg-absente">${incompletes} carte${s(incompletes)} incomplète${s(incompletes)}</b>,
       qui ne se jouer${incompletes > 1 ? 'ont' : 'a'} pas tant qu’il lui manque une moitié` : ''}
   </div>
@@ -3449,10 +3460,12 @@ function vueAssemblage() {
     .map((c) => carteAssemblage(c, parRang.get(c.rang))).join('')}</div>
 
   <h3 style="margin-top:22px">Où sont les Gros Plans</h3>
-  <p class="aide">Sur combien de cartes chaque Gros Plan se trouve. <b class="lg-absente">En rouge</b>,
-  ceux qui ne sont sur <b>aucune carte</b> — ils ne se joueront pas. <b class="lg-repetee">En
-  orange</b>, ceux qui sont sur plusieurs. Un clic en prend un <b>en main</b> : les cartes qui le
-  portent s’allument, et un clic sur une place l’y pose.</p>
+  <p class="aide">Sur combien de cartes chaque Gros Plan se trouve. La boîte imprime deux fois
+  chaque « -- » — une fois en moitié gauche, une fois en moitié droite — et une fois les autres.
+  <b class="lg-absente">En rouge</b>, ceux qui ne sont sur <b>aucune carte</b> — ils ne se joueront
+  pas. <b class="lg-repetee">En orange</b>, ceux qui n’ont pas le nombre d’exemplaires de la boîte.
+  Un clic en prend un <b>en main</b> : les cartes qui le portent s’allument, et un clic sur une
+  place l’y pose.</p>
   ${barreTri('tri-moities', TRIS_MOITIES, mat.assemblage.triMoities)}
   ${tableauRepartition(rp)}`;
 }

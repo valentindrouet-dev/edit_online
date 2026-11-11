@@ -48,9 +48,9 @@ export const CONTRAINTES = [
     aide: 'les plans de mort se répartissent sur autant de cartes' },
   { id: 'SANS_MINUTAGE', label: 'Jamais deux « -- » ensemble',
     aide: 'un plan sans minutage se range partout : en mettre deux sur une carte en gâche un' },
-  { id: 'UNIQUE', label: 'Chaque Gros Plan une seule fois',
-    aide: 'un Gros Plan placé sur deux cartes est en double dans le paquet — le mélange ne peut pas '
-      + 'le corriger, il le signale' },
+  { id: 'EXEMPLAIRES', label: 'Pas plus d’exemplaires que la boîte',
+    aide: 'la boîte imprime deux fois chaque « -- », une fois les autres Gros Plans ; un Gros Plan posé '
+      + 'plus souvent est en trop — le mélange ne peut pas le corriger, il le signale' },
 ];
 
 export const CONTRAINTES_PAR_DEFAUT = ['CONVENTION', 'RACCORD', 'DOMINANTE', 'MORT'];
@@ -93,23 +93,24 @@ function comptes(cartes) {
 
 /**
  * Les fautes de chaque carte d'un assemblage, dans l'ordre des cartes. C'est
- * `fautes`, plus ce qui ne se lit que sur l'ensemble : un Gros Plan posé deux
- * fois.
+ * `fautes`, plus ce qui ne se lit que sur l'ensemble : un Gros Plan posé plus
+ * souvent que la boîte ne l'imprime. `attendus` dit, par numéro, combien de
+ * fois la boîte l'imprime — un, quand il n'y est pas.
  */
-export function fautesParCarte(cartes, actives) {
-  const n = actives.includes('UNIQUE') ? comptes(cartes) : null;
+export function fautesParCarte(cartes, actives, attendus = new Map()) {
+  const n = actives.includes('EXEMPLAIRES') ? comptes(cartes) : null;
   return cartes.map((c) => {
     const f = fautes(c.g, c.d, actives);
-    if (n && [c.g, c.d].some((m) => m && n.get(m.ref) > 1)) f.push('UNIQUE');
+    if (n && [c.g, c.d].some((m) => m && n.get(m.ref) > (attendus.get(m.ref) || 1))) f.push('EXEMPLAIRES');
     return f;
   });
 }
 
 /** Le compte des fautes d'un assemblage entier, contrainte par contrainte. */
-export function bilan(cartes, actives) {
+export function bilan(cartes, actives, attendus) {
   const par = Object.fromEntries(actives.map((id) => [id, 0]));
   let mauvaises = 0;
-  for (const f of fautesParCarte(cartes, actives)) {
+  for (const f of fautesParCarte(cartes, actives, attendus)) {
     for (const id of f) par[id] = (par[id] || 0) + 1;
     if (f.length) mauvaises++;
   }
@@ -145,12 +146,12 @@ function melanger(liste, rand) {
  * `cartes` : [{ g, d }], toutes complètes. Rend le meilleur assemblage trouvé,
  * dans le même ordre de cartes.
  */
-export function melangerMoities(cartes, actives, rand = Math.random, essais = 40, brasser = false) {
+export function melangerMoities(cartes, actives, rand = Math.random, essais = 40, brasser = false, attendus) {
   const depart = cartes.flatMap((c) => [c.g, c.d]);
   const n = cartes.length;
-  // « Une seule fois » ne dépend pas de la place des moitiés : aucun échange ne
-  // la répare. On la laisse hors du coût, le bilan la signalera.
-  const utiles = actives.filter((id) => id !== 'UNIQUE');
+  // Le nombre d'exemplaires ne dépend pas de la place des moitiés : aucun
+  // échange ne le répare. On le laisse hors du coût, le bilan le signalera.
+  const utiles = actives.filter((id) => id !== 'EXEMPLAIRES');
   const coutCarte = (o, k) => fautes(o[2 * k], o[2 * k + 1], utiles).reduce((s, id) => s + POIDS[id], 0);
   const coutTotal = (o) => { let s = 0; for (let k = 0; k < n; k++) s += coutCarte(o, k); return s; };
 
@@ -189,25 +190,27 @@ export function melangerMoities(cartes, actives, rand = Math.random, essais = 40
   const out = cartes.map((_, k) => ({ g: meilleur.ordre[2 * k], d: meilleur.ordre[2 * k + 1] }));
   return {
     cartes: out,
-    bilan: bilan(out, actives),
+    bilan: bilan(out, actives, attendus),
     // Ce qui a effectivement changé de place, pour le dire à l'écran.
     deplaces: meilleur.ordre.filter((m, i) => m !== depart[i]).length,
   };
 }
 
 /**
- * Le relevé des Gros Plans : sur combien de cartes chacun se trouve. Zéro,
- * c'est un plan qui existe mais qu'aucune carte ne porte — il ne se jouera
- * pas ; deux ou plus, c'est un plan en plusieurs exemplaires.
+ * Le relevé des Gros Plans : sur combien de cartes chacun se trouve, à côté de
+ * ce que la boîte en imprime (`attendus`, par numéro — un par défaut). Zéro,
+ * c'est un plan qu'aucune carte ne porte : il ne se jouera pas. Plus que la
+ * boîte, il est en trop ; moins, il en manque un exemplaire.
  */
-export function repartition(grosPlans, cartes) {
+export function repartition(grosPlans, cartes, attendus = new Map()) {
   const n = comptes(cartes);
-  const lignes = grosPlans.map((m) => ({ ...m, n: n.get(m.ref) || 0 }));
+  const lignes = grosPlans.map((m) => ({ ...m, n: n.get(m.ref) || 0, attendu: attendus.get(m.ref) || 1 }));
   return {
     lignes,
     absents: lignes.filter((x) => x.n === 0).length,
-    uniques: lignes.filter((x) => x.n === 1).length,
-    repetes: lignes.filter((x) => x.n > 1).length,
+    enTrop: lignes.filter((x) => x.n > x.attendu).length,
+    enMoins: lignes.filter((x) => x.n > 0 && x.n < x.attendu).length,
+    doubles: lignes.filter((x) => x.attendu > 1).length,
     max: lignes.reduce((m, x) => Math.max(m, x.n), 0),
   };
 }

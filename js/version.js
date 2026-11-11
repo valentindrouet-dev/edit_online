@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.05';
-export const BUILD_DATE = '2026-11-11 17:20';
+export const VERSION = '4.1.06';
+export const BUILD_DATE = '2026-11-11 17:30';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.06',
+    date: '11/11/2026',
+    items: [
+      "<b>L'assemblage de l'auteur : 32 cartes à deux Gros Plans.</b> Les 20 cartes de ses planches, et 12 de plus selon sa règle — 10' à 30' et l'Ouverture à gauche, 40' à 60' et la Fin à droite, deux dominantes différentes par carte.",
+      "Chaque Gros Plan <b>« -- »</b> est imprimé <b>deux fois</b>, une fois en moitié gauche, une fois en moitié droite : la pioche passe à 47 cartes, de quoi jouer à quatre sans manquer de place. Le Matériel compte désormais les exemplaires d'après la boîte.",
+    ],
+  },
   {
     v: '4.1.05',
     date: '11/11/2026',

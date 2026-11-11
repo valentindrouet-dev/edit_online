@@ -3,7 +3,8 @@
 // ---------------------------------------------------------------------------
 // Les icônes, les cadrages, le vocabulaire des pouvoirs, et la boîte : dix-neuf
 // Plans Larges — dont les quatre plans de départ — et cinquante-quatre Gros
-// Plans, assemblés deux par deux sur vingt-sept cartes.
+// Plans, assemblés deux par deux sur trente-deux cartes — les dix « -- » y sont
+// imprimés deux fois.
 
 // --- Les six éléments ------------------------------------------------------
 // Trois personnages (Héroïne, Ennemi, Allié) et trois éléments (Arme, Objet,
@@ -1110,16 +1111,30 @@ const famille41 = (p) => (p.transition ? 'TRANSITION' : p.mort ? 'MORT'
 /** Le nom de fichier d'un Gros Plan : GP00, GP07, GP100. */
 const fichierGP41 = (n) => `GP${String(n).padStart(2, '0')}`;
 
-// L'ASSEMBLAGE des vingt-sept cartes à deux Gros Plans — [gauche, droite].
-// PROVISOIRE : l'auteur le refera. Il suit sa règle — les 10', 20', 30' et
-// l'Ouverture à gauche ; les 40', 50', 60' et la Fin à droite ; les plans sans
-// minutage (« -- ») et le Raccord où il reste de la place.
+// L'ASSEMBLAGE des 32 cartes à deux Gros Plans — [gauche, droite].
+//
+// Les vingt premières sont celles de l'auteur, telles que ses planches les
+// montrent, dans leur ordre. Sa règle : les 10', 20', 30' et l'Ouverture à
+// gauche ; les 40', 50', 60' et la Fin à droite ; et chaque Gros Plan SANS
+// MINUTAGE (« -- ») imprimé DEUX FOIS — une fois en moitié gauche, une fois en
+// moitié droite. Deux icônes dominantes différentes sur une carte, jamais deux
+// plans de mort.
+//
+// Les douze dernières complètent la boîte avec ce qui restait, selon la même
+// règle : un Gros Plan de gauche avec un de droite, sans icône en commun,
+// l'Ouverture et la Fin sur deux cartes distinctes, et le Raccord avec le
+// second exemplaire du GP00.
 const ASSEMBLAGE_41 = [
-  [10, 6], [11, 7], [12, 8], [13, 9], [14, 100],
-  [15, 40], [16, 41], [20, 42], [21, 43], [22, 44], [23, 45], [24, 46],
-  [25, 50], [26, 51], [30, 52], [31, 53], [32, 54], [33, 55], [34, 56],
-  [35, 60], [101, 61],
-  [0, 62], [1, 63], [2, 64], [3, 65], [4, 66], [5, 102],
+  // Les planches de l'auteur.
+  [1, 65], [32, 1], [2, 64], [20, 2],
+  [3, 43], [30, 3], [4, 55], [26, 4],
+  [5, 54], [34, 5], [6, 45], [21, 6],
+  [7, 63], [13, 7], [8, 61], [22, 8],
+  [9, 62], [25, 9], [0, 52], [15, 42],
+  // Le complément.
+  [35, 44], [11, 46], [16, 56], [14, 66],
+  [12, 41], [31, 50], [10, 53], [23, 40],
+  [33, 51], [24, 102], [101, 60], [100, 0],
 ];
 
 const BOITE = {
@@ -1412,6 +1427,17 @@ export function imageImprimee(dossier, origine) {
 export function visuelImprime(cle) {
   const f = T().faces && T().faces[cle];
   return (f && f.visuel) || '';
+}
+
+/**
+ * Combien de fois la boîte imprime chaque Gros Plan, par numéro : deux pour les
+ * dix « -- », un pour les autres. C'est la référence du relevé de l'Assemblage —
+ * un Gros Plan posé plus souvent que la boîte ne l'imprime est en trop.
+ */
+export function exemplairesBoite() {
+  const n = new Map();
+  for (const [g, d] of T().paires) for (const x of [g, d]) if (x != null) n.set(x, (n.get(x) || 0) + 1);
+  return n;
 }
 
 export function carteActive(id) {
