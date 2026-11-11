@@ -23,21 +23,22 @@ export function tousLesPlans(banc) {
 }
 
 /**
- * Ce qui n'est pas un PLAN : le Raccord, l'Ouverture et la Fin. Ils relient ou
- * encadrent le film, ils ne le racontent pas. Quand une carte nomme le
- * « RACCORD », en revanche, elle parle de lui seul — voir `estRaccordSimple`.
+ * Les cartes de transition : le Raccord, l'Ouverture et la Fin. Ce sont des
+ * PLANS comme les autres — l'auteur le tranche : ils comptent partout où l'on
+ * compte des plans. Cette fonction ne sert plus qu'à les recenser à part. Quand
+ * une carte nomme le « RACCORD », elle parle de lui seul — voir `estRaccordSimple`.
  */
 export function estRaccord(p) {
   return !!p.transition;
 }
 
 /**
- * Les plans qui comptent dans le total du banc. Un Raccord, l'Ouverture, la Fin
- * ne sont pas des plans : ils relient ou encadrent le film, ils ne le racontent
- * pas. Ils ne comptent donc pas dans les douze plans qui arrêtent la partie.
+ * Les plans qui comptent dans le total du banc : toutes les cartes montées. Le
+ * Raccord, l'Ouverture et la Fin sont des plans, et comptent donc dans les
+ * douze qui arrêtent la partie.
  */
 export function plansComptes(banc) {
-  return tousLesPlans(banc).filter((p) => !estRaccord(p)).length;
+  return tousLesPlans(banc).length;
 }
 
 /**
@@ -81,15 +82,14 @@ export function compteGroupes(plans, els) {
 export function compteCible(plans, cible, banc) {
   switch (cible) {
     case 'CARTE':    return plans.length;
-    case 'PLAN':     return plans.filter((p) => !estRaccord(p)).length;
+    case 'PLAN':     return plans.length;
     case 'RACCORD':  return plans.filter(estRaccordSimple).length;
     case 'MORT':     return plans.filter((p) => p.mort).length;
     case 'ICONE':    return plans.reduce((s, p) => s + p.el.length, 0);
     // La **Valeur de Plan** — le mot de cinéma pour le cadrage : Plan Large,
     // Gros Plan. On compte celles qui sont DIFFÉRENTES, quel que soit le nombre
     // de cartes.
-    // Un Raccord n'est pas un plan : il n'a pas de Valeur de Plan.
-    case 'VALEUR':   return new Set(plans.filter((p) => !estRaccord(p)).map((p) => p.format)).size;
+    case 'VALEUR':   return new Set(plans.map((p) => p.format)).size;
     case 'SEQUENCE': return banc ? banc.sequences.length : 0;
     // Les plans sans minutage — l'afficheur « -- » des cartes.
     case 'TC_VIDE':  return plans.filter((p) => p.tc === TC_VIDE).length;
@@ -336,11 +336,10 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
     case 'CHRONO':
       return chronologique(portee) ? n : 0;
     // Le bout de ligne. La portée est déjà ce qu'il y a au-delà du porteur, de
-    // son côté : il reste à vérifier qu'aucun PLAN ne s'y trouve. Un Raccord
-    // n'y change rien — le bandeau écrit « Plan », et un Raccord n'en est pas
-    // un ici plus qu'ailleurs.
+    // son côté : il reste à vérifier qu'aucun plan ne s'y trouve — un Raccord
+    // en est un.
     case 'BOUT':
-      return portee.some((p) => !estRaccord(p)) ? 0 : n;
+      return portee.length ? 0 : n;
     case 'SANS_TC': {
       // La portée doit être vierge du minutage visé — dont le « -- » bleu des
       // plans sans minutage.
@@ -437,7 +436,7 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
       const k = Math.max(0, obj.seuil ?? 0);
       const tient = (p) => (obj.sens === 'MIN' ? p.el.length >= k
         : obj.sens === 'MAX' ? p.el.length <= k : p.el.length === k);
-      return n * portee.filter((p) => !estRaccord(p) && tient(p)).length;
+      return n * portee.filter(tient).length;
     }
     case 'DOUBLE': {
       // Une carte de la portée compte une fois de plus. On a donc besoin de ce
@@ -474,9 +473,9 @@ function valeurPlan(plan, banc, cfg, profond) {
   return s;
 }
 
-/** Les plans d'une séquence — un Raccord relie, il ne raconte pas : il n'en est pas un. */
+/** Les plans d'une séquence : toutes ses cartes, Raccord, Ouverture et Fin compris. */
 function plansDe(seq) {
-  return seq.filter((p) => !estRaccord(p));
+  return seq;
 }
 
 /**
@@ -622,9 +621,9 @@ export function compter(banc, cfg) {
     detail,
     lignes,
     recensement: recenser(banc),
-    // `plans` ne compte que les vrais plans — c'est ce total qui arrête la
-    // partie. `cartes` compte tout ce qui est posé, Raccords compris.
-    plans: montage.filter((p) => !estRaccord(p)).length,
+    // `plans` compte toutes les cartes montées — c'est ce total qui arrête la
+    // partie ; `cartesRaccord`, parmi elles, les Raccords, Ouvertures et Fins.
+    plans: montage.length,
     cartes: montage.length,
     sequences: banc.sequences.length,
     cartesRaccord: montage.filter(estRaccord).length,

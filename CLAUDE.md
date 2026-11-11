@@ -47,11 +47,13 @@ Cartes Objectif, modes, sets, Atelier) sans demande de l'auteur.
   monte à gauche d'une séquence, une droite à droite ; 3 cartes au plus de chaque côté du centre. Après
   un Raccord, un Plan Large peut entrer dans la séquence — ou un Gros Plan, jamais un second Raccord
   (variante `raccordAppellePL` : Plan Large seulement). Le L16 laisse prendre sur le Chutier, le L7
-  donne une carte après le dernier tour. Fin à **12 plans**. Pioche vide : chaque carte prise est
+  donne une carte après le dernier tour. Fin à **12 plans**. Le **Raccord, l'Ouverture et la Fin sont des
+  plans** : ils comptent partout où l'on compte des plans (fin de partie, « aucun PLAN après », plus
+  longue séquence…). Pioche vide : chaque carte prise est
   remplacée par la carte du dessus du Chutier, une par une (`chutierRiviere`) ; on ne défausse plus.
   Quand une valeur par défaut des règles change, monter `editionRegles` (`js/config.js`) et la faire
   reprendre dans `migrerCfg`.
-- Points encore à confirmer par l'auteur : le Plan de départ compté parmi les 12 plans, pas de défausse
+- Points encore à confirmer par l'auteur : le Plan de départ et les Raccords comptés parmi les 12 plans, pas de défausse
   quand la pioche est vide, l'Entracte (L10).
 - En cas de doute sur l'assemblage ou la lecture d'une carte, les **planches et images de l'auteur**
   font foi — et pour la lecture des pouvoirs, ses **aides de jeu** (`assets/aides/` : ICONES, EFFETS,

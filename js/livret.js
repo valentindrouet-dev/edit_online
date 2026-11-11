@@ -183,7 +183,7 @@ const COMPTENT = [
       ? `au moins ${o.seuil} Raccords` : 'un Raccord'}</b>. L’Ouverture et la Fin n’en sont pas.` },
   { si: (o) => o.kind === 'SEQ_AVEC' && o.sens !== 'SANS' && o.cible === 'PLAN',
     dit: (o) => `<b>${pts(o.n)} par séquence d’au moins ${o.seuil || 1} plans</b>. Le Raccord,
-      l’Ouverture et la Fin ne sont pas des plans.` },
+      l’Ouverture et la Fin sont des plans comme les autres.` },
   { si: (o) => o.kind === 'SEQ_AVEC' && o.sens !== 'SANS' && o.cible === 'ORDRE',
     dit: (o) => `<b>${pts(o.n)} par séquence dont les chronos sont dans l’ordre</b> :
       ${DANS_L_ORDRE}.` },
@@ -201,7 +201,7 @@ const COMPTENT = [
     dit: (o) => `<b>${pts(o.n)} par séquence placée au-dessus</b> de celle où ce plan est monté.` },
   { si: (o) => o.kind === 'SEQ_LONGUE',
     dit: (o) => `<b>${pts(o.n)} par plan de votre plus longue séquence</b>. Le Raccord, l’Ouverture
-      et la Fin ne sont pas des plans.` },
+      et la Fin sont des plans comme les autres.` },
   { si: (o) => o.kind === 'ABSENTES',
     dit: (o, pt) => `<b>${pts(o.n)} par icône absente</b> ${ou(pt)} : une fois pour chacune des six
       icônes que l’on n’y voit nulle part. Les icônes de ce plan comptent comme les autres.` },
@@ -234,7 +234,7 @@ const SE_DECLENCHENT = [
     dit: (o, pt) => `<b>${pts(o.n)} s’il n’y a aucun plan de mort</b> ${ou(pt)}.` },
   { si: (o) => o.kind === 'BOUT',
     dit: (o) => `<b>${pts(o.n)} si aucun plan n’est à sa ${o.sens === 'GAUCHE' ? 'gauche' : 'droite'}</b>
-      dans sa séquence. Un Raccord n’est pas un plan.` },
+      dans sa séquence. Un Raccord est un plan comme les autres.` },
   { si: (o, pt) => o.kind === 'SEUIL' && o.sens === 'MAX' && pt === 'AMONT',
     dit: (o) => `<b>${pts(o.n)} si ${o.seuil ? `au plus ${o.seuil} ${mots(o.cible).des} la précèdent`
       : `${mots(o.cible).aucun} ne la précède`}</b> dans tout le montage : elle ouvre le film.` },

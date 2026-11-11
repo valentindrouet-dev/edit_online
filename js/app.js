@@ -1814,7 +1814,7 @@ function vueFin() {
     <div class="panneau">
       <h2>Classement</h2>
       <table class="tbl">
-        <tr><th>#</th><th>Joueuse</th><th>Profil</th><th class="num">Plans</th><th class="num">Séquences</th><th class="num" title="Raccord, Ouverture, Fin : les cartes montées qui ne sont pas des plans">Hors plans</th><th class="num">Score</th></tr>
+        <tr><th>#</th><th>Joueuse</th><th>Profil</th><th class="num">Plans</th><th class="num">Séquences</th><th class="num" title="Raccords, Ouvertures et Fins montés — des plans comme les autres, comptés aussi à part">Raccords…</th><th class="num">Score</th></tr>
         ${cl.map((c, i) => `<tr>
           <td>${i + 1}</td>
           <td><span class="point-couleur" style="background:${c.joueur.couleur};display:inline-block;margin-right:6px"></span>${c.joueur.nom}</td>

@@ -140,8 +140,9 @@ export function corpsRegles(cfg) {
     ${cartesDepart.length > 1 ? 'différentes' : ''} (${couples}).</p>
     <p>Les <b>${larges.length} autres Plans Larges</b> et les <b>${doubles.length} cartes à deux Gros
     Plans</b> forment la <b>pioche</b> : ${pioche} cartes.</p>
-    <p>Trois Gros Plans ne sont pas des plans : le <b>Raccord</b>, l’<b>Ouverture</b> et la
-    <b>Fin</b>. Ils relient ou encadrent le film ; ils ne portent aucune icône.</p>
+    <p>Trois Gros Plans sont à part : le <b>Raccord</b>, l’<b>Ouverture</b> et la <b>Fin</b>. Ils
+    relient ou encadrent le film et ne portent aucune icône — mais ce sont des <b>plans</b> comme les
+    autres : partout où l’on compte des plans, ils comptent.</p>
     ${encart('Gauche ou droite ?', `Les Gros Plans à ${afficheur(10)}, ${afficheur(20)} et
       ${afficheur(30)} sont imprimés sur une moitié <b>gauche</b>, avec l’Ouverture ; ceux à
       ${afficheur(40)}, ${afficheur(50)} et ${afficheur(60)} sur une moitié <b>droite</b>, avec la
@@ -275,8 +276,8 @@ export function corpsRegles(cfg) {
   ${section('Fin de la partie', `
     <p>Dès qu’une joueuse monte son <b>${eme(tours)} plan</b>, Plan de départ compris, la fin est
     déclenchée : <b>chaque autre joueuse joue encore un tour</b>, puis on compte.</p>
-    <p>Le <b>Raccord</b>, l’<b>Ouverture</b> et la <b>Fin</b> ne sont pas des plans : ils prennent
-    une place dans la séquence, mais ne comptent pas parmi les ${tours} plans.</p>
+    <p>Toutes les cartes montées comptent parmi les ${tours} plans : le <b>Raccord</b>,
+    l’<b>Ouverture</b> et la <b>Fin</b> sont des plans comme les autres.</p>
     ${lTour ? encart('Un tour de plus', `Le Plan de départ <b>${lTour}</b> donne un tour
       supplémentaire à qui l’a dans son montage : une fois le dernier tour joué, elle prend et monte
       encore une carte.
@@ -316,8 +317,8 @@ export function corpsRegles(cfg) {
   ${section('Points à confirmer avec l’auteur', `
     ${encart('', `<p>Ces règles sont celles que le site joue. Voici où il a fallu trancher :</p>
     <ul class="lv-liste">
-      <li>Le <b>Plan de départ</b> compte parmi les ${tours} plans qui arrêtent la partie ; le Raccord,
-        l’Ouverture et la Fin n’en sont pas.</li>
+      <li>Le <b>Plan de départ</b>, comme le <b>Raccord</b>, l’<b>Ouverture</b> et la <b>Fin</b>, compte
+        parmi les ${tours} plans qui arrêtent la partie.</li>
       <li>Après une défausse, la rivière est <b>recomplétée tout de suite</b> : on choisit toujours
         parmi ${pluriel(riviere, 'carte')}.</li>
       ${parChutier && defausse ? '<li>Pioche vide : on <b>ne défausse plus</b> — la carte écartée reviendrait aussitôt du Chutier dans la rivière.</li>' : ''}

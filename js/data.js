@@ -115,7 +115,7 @@ export const CADRAGES_POUVOIR = ['PL', 'GP', 'DEP'];
 //             droite (`DROITE`) ou à sa gauche (`GAUCHE`), dans sa propre
 //             séquence. C'est le seul bandeau qui parle de la PLACE de sa
 //             carte plutôt que de ce que le banc porte : il paie le bout de
-//             ligne. Un Raccord ne l'arrête pas — ce n'est pas un plan, et le
+//             ligne. Un Raccord l'arrête — c'est un plan comme un autre, et le
 //             bandeau écrit bien « Plan »
 //
 // Quatre bandeaux comptent des SÉQUENCES plutôt que des plans — ils lisent la

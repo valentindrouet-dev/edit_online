@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.15';
-export const BUILD_DATE = '2026-11-11 20:44';
+export const VERSION = '4.1.16';
+export const BUILD_DATE = '2026-11-11 20:56';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.16',
+    date: '11/11/2026',
+    items: [
+      "<b>Le Raccord, l’Ouverture et la Fin sont des plans.</b> Une Fin suivie d’une autre Fin ou d’un Raccord ne rapporte plus rien (« 5 si aucun PLAN après »).",
+      "Ils comptent aussi parmi les 12 plans de la fin de partie et dans les pouvoirs qui comptent des plans ; règles et aide de jeu à jour.",
+    ],
+  },
   {
     v: '4.1.15',
     date: '11/11/2026',
