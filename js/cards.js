@@ -302,6 +302,9 @@ function objCoeur(obj, taille, compact, large) {
       <span class="tc-seuil">${obj.sens === 'EXACT' || !obj.sens
     ? `=&nbsp;${obj.seuil}` : seuilTexte(obj.sens, obj.seuil)}${
   compact ? '' : '&nbsp;icônes'}</span>`;
+    // « 2 × carte PLAN dans le CHUTIER » : les deux étiquettes de la carte.
+    case 'DANS_CHUTIER': return `<span class="mot">carte</span><span class="tag tag-blanc">Plan</span>
+      <span class="mot">${compact ? 'au' : 'dans le'}</span><span class="tag tag-gris">Chutier</span>`;
     // --- Les pouvoirs de règle : une phrase, dans la police du « × » -------
     case 'PIOCHER': case 'SEQ_PLUS': case 'PLAN_PLUS': case 'RACCORD_VAUT':
       return `<span class="regle-mot">${phraseRegleHTML(obj, compact)}</span>`;
@@ -643,6 +646,7 @@ function coutCoeur(obj, compact, P, large) {
     }
     case 'DOUBLE': return t('plus petite carte', '+ petite')
       + (obj.critere === 'POINTS' ? 0 : g + tt(compact ? 'cadr.' : 'cadrage'));
+    case 'DANS_CHUTIER': return mot('carte') + g + t('Plan') + g + mot(compact ? 'au' : 'dans le') + g + t('Chutier');
     default: return P.rond;
   }
 }

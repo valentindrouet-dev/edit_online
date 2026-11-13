@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.17';
-export const BUILD_DATE = '2026-11-13 11:42';
+export const VERSION = '4.1.18';
+export const BUILD_DATE = '2026-11-13 11:53';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.18',
+    date: '13/11/2026',
+    items: [
+      "<b>L8 revu</b> : « 2 × carte PLAN dans le CHUTIER » — 2 points par carte du Chutier de la table à la fin de la partie, une carte à deux Gros Plans comptant une fois.",
+      "Le décompte voit désormais le Chutier : points au coin des cartes, score, IA et aide de jeu en tiennent compte.",
+    ],
+  },
   {
     v: '4.1.17',
     date: '13/11/2026',

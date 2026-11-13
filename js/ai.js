@@ -11,7 +11,7 @@ import {
   limitePlans, placeDuCote, plansDuCote, peutDefausser,
 } from './engine.js';
 import {
-  compter, bonusRegle, chutierOuvert, plansComptes, bonusRaccord, estRaccordSimple, tousLesPlans,
+  compter, bonusRegle, chutierOuvert, plansComptes, bonusRaccord, estRaccordSimple, tousLesPlans, cfgDeTable,
 } from './scoring.js';
 import { objsDe, moitiesDe } from './data.js';
 import { PROFILS_IA } from './config.js';
@@ -166,9 +166,11 @@ function meilleurAvec(banc, carte, cfg, base, reste) {
 /** Ce que chaque carte offerte vaudrait pour ce banc-là — `null` si elle ne s'y pose pas. */
 function valeursPour(state, p, cartes) {
   const banc = state.bancs[p];
-  const base = compter(banc, state.cfg).total;
-  const reste = Math.max(0, plansRestants(banc, state.cfg) - 1);
-  return cartes.map((carte) => meilleurAvec(banc, carte, state.cfg, base, reste));
+  // Le décompte voit le Chutier : une carte qui paie ce qu'il contient y lit son prix.
+  const cfg = cfgDeTable(state);
+  const base = compter(banc, cfg).total;
+  const reste = Math.max(0, plansRestants(banc, cfg) - 1);
+  return cartes.map((carte) => meilleurAvec(banc, carte, cfg, base, reste));
 }
 
 // --- Avant de choisir : défausser ? -----------------------------------------
@@ -265,7 +267,7 @@ export function choisirDerushage(state, p, rand = Math.random) {
 
 export function choisirCoup(state, p, rand = Math.random) {
   const profil = PROFILS_IA[state.joueurs[p].type] || PROFILS_IA.EQUILIBRE;
-  const cfg = state.cfg;
+  const cfg = cfgDeTable(state);
   const banc = state.bancs[p];
   const coups = coupsPossibles(state, p);
   if (!coups.length) return null;

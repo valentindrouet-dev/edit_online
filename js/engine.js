@@ -12,7 +12,7 @@
 import {
   buildCartesDoubles, buildPlansLarges, buildDeparts, moitiesDe, plHalf, carteComplete, etiquettePlan,
 } from './data.js';
-import { compter, bancVide, plansComptes, bonusRegle, chutierOuvert } from './scoring.js';
+import { compter, bancVide, plansComptes, bonusRegle, chutierOuvert, cfgDeTable } from './scoring.js';
 
 // --- Aléatoire reproductible ----------------------------------------------
 
@@ -165,7 +165,7 @@ export function creerPartie(joueurs, cfg, graine) {
 /** Un point de plus sur la courbe de cette joueuse. */
 function noterCourbe(state, p) {
   if (!state.courbe) state.courbe = state.joueurs.map(() => []);
-  state.courbe[p].push(compter(state.bancs[p], state.cfg).total);
+  state.courbe[p].push(compter(state.bancs[p], cfgDeTable(state)).total);
 }
 
 function journal(state, texte, joueur = null) {
@@ -673,7 +673,8 @@ export function avancer(state) {
 // --- Scores ----------------------------------------------------------------
 
 export function scores(state) {
-  return state.bancs.map((b) => compter(b, state.cfg));
+  const cfg = cfgDeTable(state);
+  return state.bancs.map((b) => compter(b, cfg));
 }
 
 export function classement(state) {

@@ -48,7 +48,7 @@ export const DEFAULTS = {
     // Les pouvoirs du vocabulaire commun : ils comptent tous « une cible »
     // dans une portée, et ne se distinguent que par ce qu'ils en font.
     AILLEURS: true, CENTRE: true, LOT: true, SEUIL: true, ABSENTES: true, DOMINE: true,
-    EXTREME: true, PLAN_ICONES: true, DOUBLE: true,
+    EXTREME: true, PLAN_ICONES: true, DOUBLE: true, DANS_CHUTIER: true,
     // Les pouvoirs de RÈGLE. Ils ne rapportent pas de points là où ils sont
     // posés : les décocher n'annule pas un gain, cela retire un droit — plus de
     // prise sur le Chutier, plus de séquence ni de plan supplémentaire, et les

@@ -286,6 +286,8 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
     ? porteeDe(obj, sequence, banc, cfg, porteur).filter((p) => p !== porteur)
     : porteeDe(obj, sequence, banc, cfg, porteur);
   const n = obj.n;
+  // Le Chutier n'est pas sur le banc : c'est le moteur qui en donne le compte.
+  if (obj.kind === 'DANS_CHUTIER') return n * Math.max(0, cfg.chutierCartes || 0);
 
   switch (obj.kind) {
     case 'RACCORD':
@@ -583,6 +585,15 @@ export function raccordBonifie(plan, banc, cfg) {
 }
 
 /** Décompte complet d'un banc, ventilé par source. */
+/**
+ * La configuration d'une partie, augmentée de ce que la TABLE montre et que le
+ * banc ne sait pas : le nombre de cartes du Chutier (« 2 × carte Plan dans le
+ * Chutier »). Une copie : la configuration de la partie n'est pas touchée.
+ */
+export function cfgDeTable(state) {
+  return { ...state.cfg, chutierCartes: state.chutier ? state.chutier.length : 0 };
+}
+
 export function compter(banc, cfg) {
   const montage = tousLesPlans(banc);
   const mult = cfg.multiplicateurObjectif ?? 1;
@@ -592,7 +603,7 @@ export function compter(banc, cfg) {
     MORT: 0, ABSENT: 0, MINUTAGE: 0, CHRONO: 0, SANS_TC: 0, BOUT: 0,
     SEQ_TAILLE: 0, SEQ_VOISINES: 0, SEQ_LONGUE: 0, SEQ_AVEC: 0, SEQ_TOUTES: 0,
     AILLEURS: 0, CENTRE: 0, LOT: 0, SEUIL: 0, ABSENTES: 0, DOMINE: 0,
-    EXTREME: 0, PLAN_ICONES: 0, DOUBLE: 0,
+    EXTREME: 0, PLAN_ICONES: 0, DOUBLE: 0, DANS_CHUTIER: 0,
     // Les pouvoirs de règle restent à zéro : aucun ne rapporte là où il est
     // posé. Trois ouvrent un droit, que le moteur lit ; le quatrième dit ce que
     // valent les Cartes Raccord, et ce sont ELLES qui portent alors les points.
@@ -690,6 +701,7 @@ export const SOURCES_LABEL = {
   SEUIL: 'Pouvoirs à seuil',
   ABSENTES: 'Pouvoirs d’icônes absentes',
   DOMINE: 'Pouvoirs de cible dominante',
+  DANS_CHUTIER: 'Pouvoirs du Chutier',
   EXTREME: 'Pouvoirs d’icône la plus / la moins présente',
   PLAN_ICONES: 'Pouvoirs de plan chargé',
   DOUBLE: 'Pouvoirs de carte doublée',

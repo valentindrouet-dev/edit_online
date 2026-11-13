@@ -169,6 +169,10 @@ const COMPTENT = [
       des Raccords.` },
   { si: (o) => o.kind === 'PLAN',
     dit: (o, pt) => `<b>${pts(o.n)} par carte</b> ${ou(pt)}.` },
+  { si: (o) => o.kind === 'DANS_CHUTIER',
+    dit: (o) => `<b>${pts(o.n)} par carte dans le Chutier</b> à la fin de la partie — le Chutier de toute
+      la table, pas votre banc. Chaque carte qui s’y trouve compte une fois, Plan Large ou carte à deux
+      Gros Plans. Il grossit à chaque défausse, et se vide quand la pioche est épuisée.` },
   { si: (o) => o.kind === 'SEQ_TAILLE',
     dit: (o) => ((o.seuil || 1) <= 1 && o.sens !== 'MAX'
       ? `<b>${pts(o.n)} par séquence</b> de votre banc.`

@@ -283,6 +283,11 @@ export const OBJ = {
   // nulle part. Les six éléments sont les six candidats.
   absentes: (n, portee) => ({ kind: 'ABSENTES', n, portee: portee || 'MONTAGE' }),
 
+  // « n × carte PLAN dans le CHUTIER » (L8) : n points par carte du Chutier —
+  // celui de toute la table, pas le banc. Une carte à deux Gros Plans compte une
+  // fois, comme un Plan Large. Le moteur lui passe le compte (`chutierCartes`).
+  dansChutier: (n) => ({ kind: 'DANS_CHUTIER', n }),
+
   // Si CHAQUE séquence tient la taille demandée. `sens` : MIN — toutes ont au
   // moins `seuil` plans ; MAX — toutes en ont au plus. Un banc vide ne
   // rapporte rien : il n'y a pas de séquence à juger.
@@ -399,7 +404,7 @@ export const planMarque = (objs) => (objs || []).some(rapportePoints);
  * séquence lisent la forme du banc, et deux des pouvoirs ajoutés désignent
  * eux-mêmes où ils comptent — les autres lignes, un côté du centre.
  */
-export const KINDS_PORTEE_FIXE = ['CHRONO', 'AILLEURS', 'CENTRE', 'BOUT',
+export const KINDS_PORTEE_FIXE = ['CHRONO', 'AILLEURS', 'CENTRE', 'BOUT', 'DANS_CHUTIER',
   ...KINDS_SEQUENCE, ...KINDS_REGLE];
 
 /** Ce bandeau-là laisse-t-il choisir sa portée ? */
@@ -700,6 +705,7 @@ export function objLabel(o, cfg, opts = {}) {
   switch (o.kind) {
     // --- Les pouvoirs de règle : une phrase, pas un compte ------------------
     case 'PIOCHER': return 'Vous pouvez piocher vos Plans sur le Chutier';
+    case 'DANS_CHUTIER': return `${fois} carte Plan dans le Chutier`;
     case 'SEQ_PLUS': return `Vous pouvez poser ${o.n} séquence${
       o.n > 1 ? 's' : ''} supplémentaire${o.n > 1 ? 's' : ''}${
       cfg && cfg.sequencesMax > 0 ? ` (${cfg.sequencesMax + o.n})` : ''}`;
@@ -1037,7 +1043,7 @@ const PLANS_41 = [
   PL(5, 20, ['OBJET', 'HEROINE', 'ALLIE', 'VEHICULE'], OBJ.raccordVaut(1)),
   PL(6, 20, ['OBJET', 'ARME', 'VEHICULE'], OBJ.seqLongue(2)),
   PL(7, 30, ['ALLIE', 'ENNEMI', 'ARME'], OBJ.planPlus(1)),
-  PL(8, 30, ['ENNEMI', 'ALLIE', 'OBJET'], OBJ.seqAvec(4, 'SANS', 'HEROINE')),
+  PL(8, 30, ['ENNEMI', 'ALLIE', 'OBJET'], OBJ.dansChutier(2)),
   PL(9, 30, ['VEHICULE', 'HEROINE', 'ENNEMI'], OBJ.seqAvec(4, 'SANS', 'TC_VIDE')),
   PL(10, 35, [], OBJ.seqAvec(3, 'AVEC', 'ORDRE')),
   PL(11, 40, ['HEROINE', 'ENNEMI', 'VEHICULE', 'ARME'], OBJ.seqAvec(3, 'AVEC', 'PLAN', 3)),

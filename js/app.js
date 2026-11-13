@@ -29,7 +29,7 @@ import {
   resynchroniserBoite, bilanPaquet,
 } from './engine.js';
 import { choisirCoup, choisirDerushage, choisirDefausse, choisirDepart } from './ai.js';
-import {
+import { cfgDeTable,
   compter, SOURCES_LABEL, objsEffectifs, raccordBonifie, compteIcone, compteCible, compteGroupes, bancVide,
 } from './scoring.js';
 import { releve, voler, stopperVols } from './anim.js';
@@ -696,7 +696,7 @@ function bancBloc(st, i, titre, interactif) {
   // Ce que chaque séquence rapporte, affiché à son bout. Les points sont
   // portés par la carte qui les fait marquer.
   const ptsLigne = banc.sequences.map(() => 0);
-  const score = compter(banc, st.cfg);
+  const score = compter(banc, st.chutier ? cfgDeTable(st) : st.cfg);
   for (const l of score.lignes) {
     points.set(l.plan, (points.get(l.plan) || 0) + l.pts);
     const a = detail.get(l.plan) || []; a.push(l.pts); detail.set(l.plan, a);
@@ -1924,6 +1924,7 @@ const KINDS = [
   ['SEQ_LONGUE',   'par PLAN de la plus longue SÉQUENCE'],
   ['SEQ_AVEC',     'par SÉQUENCE avec / sans…'],
   ['SEQ_TOUTES',   'si CHAQUE SÉQUENCE a n plans…'],
+  ['DANS_CHUTIER', 'par carte PLAN dans le CHUTIER'],
   // Les neuf pouvoirs qui partagent le vocabulaire de cibles. Ils comptent
   // tous « quelque chose » — une carte, une icône, une valeur — et ne se
   // distinguent que par ce qu'ils en font.
@@ -4663,6 +4664,7 @@ function construireObj(kind, actuel) {
       actuel && actuel.sens === 'MAX' ? 'MAX' : undefined),
     SEQ_VOISINES: () => OBJ.seqVoisines(n, actuel && actuel.sens === 'APRES' ? 'APRES' : 'AVANT'),
     SEQ_LONGUE:   () => OBJ.seqLongue(n),
+    DANS_CHUTIER: () => OBJ.dansChutier(n),
     SEQ_AVEC:     () => OBJ.seqAvec(n, actuel && actuel.sens === 'SANS' ? 'SANS' : 'AVEC',
       actuel && actuel.cible ? actuel.cible : e0, actuel && actuel.seuil),
     SEQ_TOUTES:   () => OBJ.seqToutes(n, actuel && actuel.seuil ? actuel.seuil : 3,
@@ -5066,6 +5068,7 @@ function objDepuisCSV(r, suf = '') {
     // Les pouvoirs de règle. `points` y porte un nombre de séquences, de plans
     // ou de points par Raccord — pas un compte de points.
     case 'PIOCHER':      return OBJ.piocher();
+    case 'DANS_CHUTIER': return OBJ.dansChutier(n);
     case 'SEQ_PLUS':     return OBJ.sequencePlus(n);
     case 'PLAN_PLUS':    return OBJ.planPlus(n);
     case 'RACCORD_VAUT': return OBJ.raccordVaut(n);
