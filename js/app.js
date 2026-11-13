@@ -42,7 +42,7 @@ import { TransportLocal } from './net/local.js';
 import { TransportSupabase } from './net/supabase.js';
 import { enLigneDisponible } from './net/config.js';
 import { REGLES_VERSION, corpsRegles } from './regles.js';
-import { aideDeJeu } from './livret.js';
+import { aideDeJeu, fichierCarte } from './livret.js';
 
 const app = document.getElementById('app');
 
@@ -116,6 +116,9 @@ const store = {
   partie: null,
   labo: null,
   laboEnCours: false,
+  // Le relevé carte par carte du Laboratoire : quelle famille, dans quel ordre.
+  laboFamille: 'TOUT',
+  laboTri: 'med',
   moitieChoisie: null,  // 'G' | 'D' | 'PL' : la moitié qu'on s'apprête à monter
   // La carte visée dans la rivière, et la moitié retenue : { o, moitie }. Le
   // tour se joue d'un bout à l'autre depuis le même écran — on choisit dans
@@ -5870,6 +5873,7 @@ function vueLabo() {
 
   app.querySelector('#nb').addEventListener('change', (e) => { laboNb = +e.target.value; });
   app.querySelector('#lancer').addEventListener('click', lancerLabo);
+  brancherCartesLabo(r);
 }
 
 async function lancerLabo() {
@@ -5953,7 +5957,128 @@ function resultatsLabo(r) {
       <p class="aide" style="margin-top:10px">Taux de victoire par profil. Si le Stratège ne bat pas nettement
       le Novice, les décisions du jeu pèsent peu — c’est le premier signal d’équilibrage à corriger.</p>
     </div>
+  </div>
+
+  ${panneauCartesLabo(r)}`;
+}
+
+// --- Les points par carte ----------------------------------------------------
+
+const FAMILLES_LABO = [
+  ['TOUT', 'Toutes'], ['PL', 'Plans Larges'], ['GP', 'Gros Plans'],
+  ['TRANSITION', 'Raccord, Ouverture, Fin'], ['DEPART', 'Plans de départ'],
+];
+const TRIS_LABO = [
+  ['med', 'Médiane'], ['moy', 'Moyenne'], ['max', 'Maximum'], ['min', 'Minimum'],
+  ['presence', 'Présence'], ['tauxVictoire', 'Victoires'], ['nom', 'Numéro'],
+];
+
+/** La médiane d'une liste de nombres. */
+const mediane = (v) => {
+  if (!v.length) return 0;
+  const s = v.slice().sort((a, b) => a - b);
+  return s[Math.floor(s.length / 2)];
+};
+
+/**
+ * Ce que chaque carte rapporte à qui l'a montée : la bande min – max, la
+ * médiane qui la coupe, et ce qui distingue la carte de sa famille. Une carte
+ * comparée aux Gros Plans quand c'en est un, aux Plans Larges sinon : les deux
+ * n'ont ni le même poids ni la même place.
+ */
+function panneauCartesLabo(r) {
+  if (!r.cartes) return '';
+  const fam = store.laboFamille;
+  const tri = store.laboTri;
+  const vues = r.cartes.filter((c) => fam === 'TOUT' || c.famille === fam);
+  const cle = (c) => (tri === 'nom' ? 0 : c[tri]);
+  const numero = (c) => (c.famille === 'GP' || c.famille === 'TRANSITION' ? 100 : 0) + parseInt(c.nom.replace(/\D/g, ''), 10);
+  vues.sort((a, b) => (tri === 'nom' ? numero(a) - numero(b) : (cle(b) - cle(a)) || numero(a) - numero(b)));
+
+  // La médiane de chaque famille, sur les cartes assez montées pour qu'on en
+  // juge — et sans les pouvoirs de règle, qui ne rapportent rien eux-mêmes.
+  const repere = {};
+  for (const f of ['PL', 'GP', 'TRANSITION', 'DEPART']) {
+    repere[f] = mediane(r.cartes.filter((c) => c.famille === f && c.n >= 5 && !c.regle).map((c) => c.med));
+  }
+  const echelle = Math.max(1, ...vues.map((c) => c.max));
+  const t = (x) => (Math.round(x * 10) / 10).toFixed(1);
+  const pct = (x) => `${Math.round(x * 100)} %`;
+  const force = (c) => {
+    const ref = repere[c.famille];
+    if (c.regle || c.n < 5 || !ref) return '';
+    if (c.med >= ref * 1.6 && c.med - ref >= 3) return 'fort';
+    if (c.med <= ref * 0.5) return 'faible';
+    return '';
+  };
+  const victoire = (c) => {
+    if (c.n < 5) return '';
+    const d = c.tauxVictoire - c.victoireAttendue;
+    return d >= 0.15 ? 'fort' : d <= -0.15 ? 'faible' : '';
+  };
+  const lignes = vues.map((c) => {
+    const f = force(c);
+    const bande = c.n ? `<div class="lc-bande" title="de ${c.min} à ${c.max} — médiane ${c.med}, moyenne ${t(c.moy)}">
+        <i class="lc-etendue" style="left:${(Math.max(0, c.min) / echelle) * 100}%;width:${(Math.max(0, c.max - Math.max(0, c.min)) / echelle) * 100}%"></i>
+        <i class="lc-med" style="left:${(Math.max(0, c.med) / echelle) * 100}%"></i></div>` : '';
+    return `<tr class="${c.n ? '' : 'lc-jamais'}">
+      <td class="lc-carte"><img class="lc-vig ${c.famille === 'GP' || c.famille === 'TRANSITION' ? 'gp' : 'pl'}"
+        src="${fichierCarte(c.nom)}" alt="${c.nom}" loading="lazy" decoding="async"><b>${c.nom}</b></td>
+      <td class="lc-pouvoir">${c.pouvoir}${c.regle ? ' <span class="lc-note">pouvoir de règle</span>' : ''}</td>
+      <td class="num">${c.n ? `${c.n}<span class="lc-sous">${pct(c.presence)} des parties</span>` : '<span class="lc-sous">jamais montée</span>'}</td>
+      <td class="num">${c.n ? c.min : '—'}</td>
+      <td class="num lc-medv ${f}">${c.n ? c.med : '—'}</td>
+      <td class="num">${c.n ? c.max : '—'}</td>
+      <td class="num">${c.n ? t(c.moy) : '—'}</td>
+      <td class="lc-bande-td">${bande}</td>
+      <td class="num lc-vict ${victoire(c)}">${c.n ? pct(c.tauxVictoire) : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="panneau panneau-cartes-labo">
+    <h2>Points par carte — l’équilibrage</h2>
+    <p class="aide">Pour chaque carte de la boîte, ce que son pouvoir a rapporté à <b>qui l’a montée</b>, compté
+    en fin de partie sur les ${r.nbParties} parties : le minimum, la <b>médiane</b>, le maximum. Un Gros Plan
+    compte pour la moitié montée ; imprimé deux fois, chaque exemplaire compte pour lui. Une médiane en
+    <span class="lc-medv fort">orange</span> dépasse nettement celles de sa famille, en
+    <span class="lc-medv faible">bleu</span> elle reste loin derrière. « Victoires » : la part des bancs qui
+    l’ont montée et ont gagné — à comparer aux ${pct(1 / Math.max(1, r.joueurs.length))} d’une table équilibrée ;
+    c’est la seule mesure des <b>pouvoirs de règle</b>, qui ne rapportent rien eux-mêmes. Les IA choisissent
+    leurs cartes : une carte souvent montée est une carte qu’elles jugent bonne.</p>
+    <div class="barre-outils">
+      <div class="chips">${FAMILLES_LABO.map(([k, l]) => `<button class="chip ${fam === k ? 'on' : ''}" data-labo-famille="${k}">${l}</button>`).join('')}</div>
+      <label class="info">Trier par&nbsp;<select id="labo-tri">${TRIS_LABO.map(([k, l]) => `<option value="${k}" ${tri === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <button class="pill" id="labo-csv">⭳ Exporter en CSV</button>
+    </div>
+    <div class="tbl-defile"><table class="tbl tbl-cartes-labo">
+      <thead><tr><th>Carte</th><th>Pouvoir</th><th class="num">Montée</th><th class="num">Min</th>
+        <th class="num">Médiane</th><th class="num">Max</th><th class="num">Moyenne</th>
+        <th>Étendue <span class="lc-sous">0 – ${echelle} pts</span></th><th class="num">Victoires</th></tr></thead>
+      <tbody>${lignes}</tbody>
+    </table></div>
   </div>`;
+}
+
+function brancherCartesLabo(r) {
+  if (!r || !r.cartes) return;
+  app.querySelectorAll('[data-labo-famille]').forEach((b) => b.addEventListener('click', () => {
+    store.laboFamille = b.dataset.laboFamille;
+    vueLabo();
+  }));
+  const tri = app.querySelector('#labo-tri');
+  if (tri) tri.addEventListener('change', () => { store.laboTri = tri.value; vueLabo(); });
+  const csv = app.querySelector('#labo-csv');
+  if (csv) csv.addEventListener('click', () => {
+    const champ = (v) => `"${String(v).replace(/"/g, '""')}"`;
+    const virgule = (x) => String(Math.round(x * 100) / 100).replace('.', ',');
+    const tete = ['carte', 'famille', 'chrono', 'pouvoir', 'montee', 'presence', 'min', 'mediane', 'max',
+      'moyenne', 'ecart_type', 'victoires'];
+    const lignes = r.cartes.map((c) => [c.nom, c.famille, c.tc, champ(c.pouvoir), c.n, virgule(c.presence),
+      c.n ? c.min : '', c.n ? c.med : '', c.n ? c.max : '', c.n ? virgule(c.moy) : '', c.n ? virgule(c.ecart) : '',
+      c.n ? virgule(c.tauxVictoire) : ''].join(';'));
+    telecharger(new Blob([`\ufeff${tete.join(';')}\n${lignes.join('\n')}\n`], { type: 'text/csv' }),
+      `edit-points-par-carte-${r.nbParties}-parties.csv`);
+  });
 }
 
 function tuile(k, v, s, cls = '') {

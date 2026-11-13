@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.18';
-export const BUILD_DATE = '2026-11-13 11:53';
+export const VERSION = '4.1.19';
+export const BUILD_DATE = '2026-11-13 16:33';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.19',
+    date: '13/11/2026',
+    items: [
+      "<b>Laboratoire : points par carte.</b> Après une campagne, chaque carte de la boîte montre ce qu’elle a rapporté à qui l’a montée — min, médiane, max, moyenne —, sa présence et le taux de victoire de son banc.",
+      "Médianes hors norme signalées par famille, tri et filtres, <b>export CSV</b> pour l’équilibrage.",
+    ],
+  },
   {
     v: '4.1.18',
     date: '13/11/2026',

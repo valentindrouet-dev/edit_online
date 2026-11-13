@@ -7,7 +7,25 @@ import {
   nouvelleGraine, coupsPossibles,
 } from './engine.js';
 import { choisirCoup, choisirDerushage, choisirDefausse, choisirDepart } from './ai.js';
-import { SOURCES_LABEL } from './scoring.js';
+import { SOURCES_LABEL, tousLesPlans } from './scoring.js';
+import { catalogue, objsDe, objLabel, estRegleKind, DEPARTS } from './data.js';
+
+/**
+ * Ce que chaque carte montée a rapporté à son banc, une fois la partie finie :
+ * la somme de ses pouvoirs — deux s'il en porte deux —, carte par carte. Un
+ * Gros Plan imprimé deux fois compte deux fois, chaque exemplaire pour lui.
+ */
+function pointsParCarte(state, sc, gagnants) {
+  const out = [];
+  state.bancs.forEach((banc, i) => {
+    const parPlan = new Map();
+    for (const l of sc[i].lignes) parPlan.set(l.plan, (parPlan.get(l.plan) || 0) + l.pts);
+    for (const p of tousLesPlans(banc)) {
+      out.push({ cle: p.cle, pts: parPlan.get(p) || 0, gagne: gagnants.includes(i), depart: !!p.depart });
+    }
+  });
+  return out;
+}
 
 /** Joue une partie entière en mémoire et renvoie son résumé. */
 export function simulerPartie(joueurs, cfg, graine) {
@@ -54,7 +72,48 @@ export function simulerPartie(joueurs, cfg, graine) {
     defausses: state.defausses || 0,
     prisesChutier: state.prisesChutier || 0,
     passes: state.passesTotal || 0,
+    cartes: pointsParCarte(state, sc, gagnants),
   };
+}
+
+/**
+ * Le relevé carte par carte d'une campagne : pour chaque plan de la boîte, ce
+ * qu'il a rapporté à qui l'a monté — minimum, médiane, maximum —, combien de
+ * fois il l'a été, et combien de fois son banc a gagné. C'est l'outil de
+ * l'équilibrage : une carte dont la médiane écrase celles de sa famille est trop
+ * forte, une carte jamais montée ou qui ne rapporte rien est à revoir.
+ */
+function releveCartes(parties, cfg, nbJoueurs) {
+  const departs = new Set(DEPARTS().map((d) => String(d.num)));
+  const fiches = new Map();
+  for (const plan of catalogue()) {
+    const objs = objsDe(plan).filter(Boolean);
+    fiches.set(plan.cle, {
+      cle: plan.cle,
+      nom: plan.format === 'GP' ? `GP${String(plan.numOrigine ?? plan.num).padStart(2, '0')}` : `L${plan.numOrigine ?? plan.num}`,
+      famille: plan.format === 'GP' ? (plan.famille === 'TRANSITION' ? 'TRANSITION' : 'GP')
+        : (departs.has(plan.cle) ? 'DEPART' : 'PL'),
+      tc: plan.tc,
+      pouvoir: objs.map((o) => objLabel(o, cfg)).join(' + ') || '—',
+      regle: objs.length > 0 && objs.every((o) => estRegleKind(o.kind)),
+      valeurs: [], victoires: 0, parties: new Set(),
+    });
+  }
+  parties.forEach((partie, k) => {
+    for (const c of partie.cartes || []) {
+      const f = fiches.get(c.cle);
+      if (!f) continue;
+      f.valeurs.push(c.pts);
+      if (c.gagne) f.victoires++;
+      f.parties.add(k);
+    }
+  });
+  return [...fiches.values()].map(({ valeurs, victoires, parties: vues, ...f }) => ({
+    ...f, ...stats(valeurs),
+    presence: parties.length ? vues.size / parties.length : 0,
+    tauxVictoire: valeurs.length ? victoires / valeurs.length : 0,
+    victoireAttendue: nbJoueurs ? 1 / nbJoueurs : 0,
+  }));
 }
 
 function stats(values) {
@@ -138,6 +197,7 @@ export async function campagne(joueurs, cfg, nbParties, opts = {}) {
     serrees, tauxSerre: parties.length ? serrees / parties.length : 0,
     ecartVainqueur: stats(ecartsVainqueur),
     distribution: histogramme(tousScores),
+    cartes: releveCartes(parties, cfg, joueurs.length),
   };
 }
 
