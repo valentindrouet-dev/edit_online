@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.16';
-export const BUILD_DATE = '2026-11-11 20:56';
+export const VERSION = '4.1.17';
+export const BUILD_DATE = '2026-11-13 11:42';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.17',
+    date: '13/11/2026',
+    items: [
+      "<b>Cinq cartes revues</b> (GP33, L2, L3, L4, L19) : nouvelles images et pouvoirs relus — GP33 « 1 × ◁ Allié ▷ », L3 « 4 × SÉQUENCE ▷▷ », L19 « 4 × ◁◁ SÉQUENCE ».",
+      "<b>L4</b> : « 4 × SÉQUENCE avec 6 icônes différentes » — une cible nouvelle du moteur, les six types d’icônes dans la séquence.",
+    ],
+  },
   {
     v: '4.1.16',
     date: '11/11/2026',

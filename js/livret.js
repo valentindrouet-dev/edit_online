@@ -107,6 +107,8 @@ function mots(cible) {
     case 'TC_VIDE': return { un: 'carte sans chrono', des: 'cartes sans chrono',
       aucun: `aucune carte sans chrono (${afficheur(TC_VIDE)})`, une: 'une carte sans chrono' };
     case 'ICONE': return { un: 'icône', des: 'icônes', aucun: 'aucune icône', une: 'une icône' };
+    case 'DIFFERENTES': return { un: 'icône différente', des: 'icônes différentes',
+      aucun: 'aucune icône', une: 'une icône différente' };
     default: return { un: String(cible), des: String(cible), aucun: `aucun ${cible}`, une: String(cible) };
   }
 }
@@ -184,6 +186,10 @@ const COMPTENT = [
   { si: (o) => o.kind === 'SEQ_AVEC' && o.sens !== 'SANS' && o.cible === 'PLAN',
     dit: (o) => `<b>${pts(o.n)} par séquence d’au moins ${o.seuil || 1} plans</b>. Le Raccord,
       l’Ouverture et la Fin sont des plans comme les autres.` },
+  { si: (o) => o.kind === 'SEQ_AVEC' && o.sens !== 'SANS' && o.cible === 'DIFFERENTES',
+    dit: (o) => `<b>${pts(o.n)} par séquence qui montre ${o.seuil || 1} icônes différentes</b>${
+      (o.seuil || 1) >= 6 ? ' — les six : Héroïne, Ennemi, Allié, Objet, Arme et Véhicule' : ''}. Le crâne
+      n’en est pas une.` },
   { si: (o) => o.kind === 'SEQ_AVEC' && o.sens !== 'SANS' && o.cible === 'ORDRE',
     dit: (o) => `<b>${pts(o.n)} par séquence dont les chronos sont dans l’ordre</b> :
       ${DANS_L_ORDRE}.` },

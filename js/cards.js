@@ -334,6 +334,7 @@ function cibleHTML(cible, taille, compact) {
     case 'SEQUENCE': return tagSeq(compact);
     case 'ICONE':    return `<span class="tag tag-blanc">${compact ? 'Ic.' : 'Icône'}</span>`;
     case 'VALEUR':   return `<span class="tag tag-blanc">${compact ? 'Val.' : 'Valeur de Plan'}</span>`;
+    case 'DIFFERENTES': return `<span class="mot">${compact ? 'diff.' : 'différentes'}</span><span class="tag tag-blanc">?</span>`;
     case 'TC_VIDE':  return '<span class="tag tag-chrono">--</span>';
     case 'ORDRE':    return '<span class="tag tag-chrono">↗ ordre</span>';
     default:         return FORMATS[cible] ? tagCadrage(cible, compact) : elIcon(cible, taille);

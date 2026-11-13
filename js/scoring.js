@@ -90,6 +90,8 @@ export function compteCible(plans, cible, banc) {
     // Gros Plan. On compte celles qui sont DIFFÉRENTES, quel que soit le nombre
     // de cartes.
     case 'VALEUR':   return new Set(plans.map((p) => p.format)).size;
+    // Les types d'icônes DIFFÉRENTS que montrent ces plans, parmi les six.
+    case 'DIFFERENTES': return new Set(plans.flatMap((p) => p.el).filter((e) => ELEMENT_IDS.includes(e))).size;
     case 'SEQUENCE': return banc ? banc.sequences.length : 0;
     // Les plans sans minutage — l'afficheur « -- » des cartes.
     case 'TC_VIDE':  return plans.filter((p) => p.tc === TC_VIDE).length;

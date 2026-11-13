@@ -461,7 +461,7 @@ const PLURIELS_CADRAGE = { PL: 'Plans Larges', GP: 'Gros Plans', DEP: 'Plans de 
 
 export const CIBLES_COMPTE = [
   { id: 'CARTE',    label: 'Carte (Raccords compris)', court: 'Carte',   pl: 'Cartes', f: true },
-  { id: 'PLAN',     label: 'Plan (hors Raccord)',      court: 'Plan',    pl: 'Plans' },
+  { id: 'PLAN',     label: 'Plan (Raccord, Ouverture, Fin compris)', court: 'Plan', pl: 'Plans' },
   { id: 'RACCORD',  label: 'Carte Raccord',            court: 'Raccord', pl: 'Raccords' },
   { id: 'MORT',     label: 'Plan de mort',             court: 'Plan de mort', pl: 'Plans de mort' },
   ...CADRAGES_POUVOIR.map((f) => ({ id: f, label: FORMATS[f].label, court: FORMATS[f].label,
@@ -476,6 +476,9 @@ export const CIBLES_COMPTE = [
   // « -- » —, et l'ORDRE — une séquence dont les minutages se suivent.
   { id: 'TC_VIDE',  label: 'Plan sans chrono (« -- »)', court: 'plan sans chrono', pl: 'plans sans chrono' },
   { id: 'ORDRE',    label: 'Chronos dans l’ordre',      court: 'chronos dans l’ordre', pl: 'chronos dans l’ordre' },
+  // « SÉQUENCE avec 6 différentes ? » (L4) : les types d'icônes DIFFÉRENTS
+  // que la séquence montre, parmi les six — le crâne n'en est pas un.
+  { id: 'DIFFERENTES', label: 'Icônes différentes', court: 'icône différente', pl: 'icônes différentes', f: true },
 ];
 
 export const CIBLE_IDS = CIBLES_COMPTE.map((c) => c.id);
@@ -541,8 +544,10 @@ export function ciblesSequence() {
     ...CADRAGES_VISABLES.map((f) => ({ id: f, label: FORMATS[f].label })),
     { id: 'RACCORD', label: 'Raccord' },
     { id: 'MORT', label: 'Plan de mort' },
-    // « Séquence avec 3+ Plans » : les plans de la ligne, Raccords exclus.
-    { id: 'PLAN', label: 'Plan (hors Raccord)' },
+    // « Séquence avec 3+ Plans » : les plans de la ligne, Raccords compris.
+    { id: 'PLAN', label: 'Plan (Raccords compris)' },
+    // « Séquence avec 6 différentes » : les types d'icônes différents.
+    { id: 'DIFFERENTES', label: 'Icônes différentes' },
     // « Valeur de Plan » ne se compte pas comme les autres : ce ne sont pas
     // les plans porteurs qu'on dénombre mais les cadrages DIFFÉRENTS de la
     // ligne. « Une séquence avec 3 Valeurs de Plan » demande donc les trois.
@@ -564,6 +569,7 @@ export function libelleCible(cible) {
   if (cible === 'MORT') return 'Plan de mort';
   if (cible === 'PLAN') return 'Plan';
   if (cible === 'VALEUR') return 'Valeur de Plan';
+  if (cible === 'DIFFERENTES') return 'Icônes différentes';
   if (FORMATS[cible]) return FORMATS[cible].label;
   return ELEMENTS[cible] ? ELEMENTS[cible].label : cible;
 }
@@ -1026,8 +1032,8 @@ const PD41 = [5, 7, 12, 16];
 const PLANS_41 = [
   PL(1, 10, ['OBJET', 'ARME', 'HEROINE'], OBJ.seqAvec(5, 'AVEC', 'OBJET', 3)),
   PL(2, 10, ['ALLIE', 'VEHICULE', 'ENNEMI'], OBJ.seqAvec(3, 'AVEC', 'RACCORD')),
-  PL(3, 10, ['HEROINE', 'ENNEMI', 'ARME'], OBJ.seqVoisines(3, 'APRES')),
-  PL(4, 20, ['ALLIE', 'HEROINE', 'OBJET'], OBJ.absentes(10, 'MONTAGE')),
+  PL(3, 10, ['HEROINE', 'ENNEMI', 'ARME'], OBJ.seqVoisines(4, 'APRES')),
+  PL(4, 20, ['ALLIE', 'HEROINE', 'OBJET'], OBJ.seqAvec(4, 'AVEC', 'DIFFERENTES', 6)),
   PL(5, 20, ['OBJET', 'HEROINE', 'ALLIE', 'VEHICULE'], OBJ.raccordVaut(1)),
   PL(6, 20, ['OBJET', 'ARME', 'VEHICULE'], OBJ.seqLongue(2)),
   PL(7, 30, ['ALLIE', 'ENNEMI', 'ARME'], OBJ.planPlus(1)),
@@ -1042,7 +1048,7 @@ const PLANS_41 = [
   PL(16, 50, ['ARME', 'ARME', 'HEROINE', 'ENNEMI'], OBJ.piocher()),
   PL(17, 60, ['ALLIE', 'HEROINE', 'VEHICULE'], OBJ.extreme(1, 'PLUS', 'MONTAGE')),
   PL(18, 60, ['ENNEMI', 'HEROINE', 'ALLIE'], OBJ.seqAvec(4, 'AVEC', 'HEROINE+ALLIE+ENNEMI'), { mort: true }),
-  PL(19, 60, ['HEROINE', 'VEHICULE', 'OBJET'], OBJ.seqVoisines(3, 'AVANT'), { mort: true }),
+  PL(19, 60, ['HEROINE', 'VEHICULE', 'OBJET'], OBJ.seqVoisines(4, 'AVANT'), { mort: true }),
 ];
 
 // Les cinquante-quatre GROS PLANS, 60 × 80 mm chacun. Leur numéro dit leur
@@ -1077,7 +1083,7 @@ const GP_41 = [
   X41(30, 30, ['ARME', 'ENNEMI'], OBJ.domine(6, 'ARME')),
   X41(31, 30, ['OBJET', 'ENNEMI'], OBJ.seuilCible(4, 'ORDRE', 'MIN', 1, 'SEQUENCE')),
   X41(32, 30, ['ENNEMI', 'OBJET'], OBJ.seuilCible(6, 'ENNEMI', 'MIN', 6, 'MONTAGE')),
-  X41(33, 30, ['ALLIE', 'OBJET'], OBJ.element(1, 'ALLIE', 'APRES')),
+  X41(33, 30, ['ALLIE', 'OBJET'], OBJ.element(1, 'ALLIE', 'SEQUENCE')),
   X41(34, 30, ['OBJET', 'ARME'], OBJ.absent(5, 'HEROINE', 'SEQUENCE')),
   X41(35, 30, ['HEROINE', 'ALLIE'], OBJ.seqTaille(2, 1)),
   X41(40, 40, ['VEHICULE', 'VEHICULE'], OBJ.element(2, 'VEHICULE', 'SEQUENCE')),
