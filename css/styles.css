@@ -2931,22 +2931,22 @@ b, strong { font-weight: 700; }
 
 /* --- Le Laboratoire : les points par carte ---------------------------------- */
 .tbl-cartes-labo td { vertical-align: middle; }
-.tbl-cartes-labo .lc-carte { white-space: nowrap; }
-.tbl-cartes-labo .lc-carte b { font-family: var(--etroit); font-weight: 800; margin-left: 8px; vertical-align: middle; }
-.lc-vig { height: 38px; width: auto; vertical-align: middle; border-radius: 2px; box-shadow: 0 0 0 1.5px var(--encre); }
-.lc-vig.pl { aspect-ratio: 3 / 2; }
-.lc-vig.gp { aspect-ratio: 3 / 4; }
-.lc-pouvoir { font-size: .85rem; min-width: 14em; }
-.lc-note { font-family: var(--etroit); font-size: .72rem; font-weight: 800; text-transform: uppercase;
+.tbl-cartes-labo .pc-carte { white-space: nowrap; }
+.tbl-cartes-labo .pc-carte b { font-family: var(--etroit); font-weight: 800; margin-left: 8px; vertical-align: middle; }
+.pc-vig { height: 38px; width: auto; vertical-align: middle; border-radius: 2px; box-shadow: 0 0 0 1.5px var(--encre); }
+.pc-vig.pl { aspect-ratio: 3 / 2; }
+.pc-vig.gp { aspect-ratio: 3 / 4; }
+.pc-pouvoir { font-size: .85rem; min-width: 14em; }
+.pc-note { font-family: var(--etroit); font-size: .72rem; font-weight: 800; text-transform: uppercase;
   background: var(--encre); color: var(--violet-clair); padding: 1px 6px; border-radius: 1px; }
-.lc-sous { display: block; font-size: .72rem; color: var(--gris); font-weight: 500; }
-.lc-medv { font-weight: 800; }
-.lc-medv.fort, .lc-vict.fort { background: var(--orange-pale); color: #9a4a00; }
-.lc-medv.faible, .lc-vict.faible { background: var(--ciel-pale); color: #1d5d78; }
-span.lc-medv { padding: 0 5px; border-radius: 2px; }
-.lc-bande-td { min-width: 150px; }
-.lc-bande { position: relative; height: 14px; background: var(--trame-claire) 0 0 / 6px 6px, var(--papier);
+.pc-sous { display: block; font-size: .72rem; color: var(--gris); font-weight: 500; }
+.pc-medv { font-weight: 800; }
+.pc-medv.fort, .pc-vict.fort { background: var(--orange-pale); color: #9a4a00; }
+.pc-medv.faible, .pc-vict.faible { background: var(--ciel-pale); color: #1d5d78; }
+span.pc-medv { padding: 0 5px; border-radius: 2px; }
+.pc-bande-td { min-width: 150px; }
+.pc-bande { position: relative; height: 14px; background: var(--trame-claire) 0 0 / 6px 6px, var(--papier);
   border: 1.5px solid var(--encre); border-radius: 1px; }
-.lc-etendue { position: absolute; top: 2px; bottom: 2px; background: var(--violet-clair); }
-.lc-med { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1.5px; background: var(--encre); }
-tr.lc-jamais td { opacity: .55; }
+.pc-etendue { position: absolute; top: 2px; bottom: 2px; background: var(--violet-clair); }
+.pc-med { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1.5px; background: var(--encre); }
+tr.pc-jamais td { opacity: .55; }

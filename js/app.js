@@ -6018,20 +6018,20 @@ function panneauCartesLabo(r) {
   };
   const lignes = vues.map((c) => {
     const f = force(c);
-    const bande = c.n ? `<div class="lc-bande" title="de ${c.min} à ${c.max} — médiane ${c.med}, moyenne ${t(c.moy)}">
-        <i class="lc-etendue" style="left:${(Math.max(0, c.min) / echelle) * 100}%;width:${(Math.max(0, c.max - Math.max(0, c.min)) / echelle) * 100}%"></i>
-        <i class="lc-med" style="left:${(Math.max(0, c.med) / echelle) * 100}%"></i></div>` : '';
-    return `<tr class="${c.n ? '' : 'lc-jamais'}">
-      <td class="lc-carte"><img class="lc-vig ${c.famille === 'GP' || c.famille === 'TRANSITION' ? 'gp' : 'pl'}"
+    const bande = c.n ? `<div class="pc-bande" title="de ${c.min} à ${c.max} — médiane ${c.med}, moyenne ${t(c.moy)}">
+        <i class="pc-etendue" style="left:${(Math.max(0, c.min) / echelle) * 100}%;width:${(Math.max(0, c.max - Math.max(0, c.min)) / echelle) * 100}%"></i>
+        <i class="pc-med" style="left:${(Math.max(0, c.med) / echelle) * 100}%"></i></div>` : '';
+    return `<tr class="${c.n ? '' : 'pc-jamais'}">
+      <td class="pc-carte"><img class="pc-vig ${c.famille === 'GP' || c.famille === 'TRANSITION' ? 'gp' : 'pl'}"
         src="${fichierCarte(c.nom)}" alt="${c.nom}" loading="lazy" decoding="async"><b>${c.nom}</b></td>
-      <td class="lc-pouvoir">${c.pouvoir}${c.regle ? ' <span class="lc-note">pouvoir de règle</span>' : ''}</td>
-      <td class="num">${c.n ? `${c.n}<span class="lc-sous">${pct(c.presence)} des parties</span>` : '<span class="lc-sous">jamais montée</span>'}</td>
+      <td class="pc-pouvoir">${c.pouvoir}${c.regle ? ' <span class="pc-note">pouvoir de règle</span>' : ''}</td>
+      <td class="num">${c.n ? `${c.n}<span class="pc-sous">${pct(c.presence)} des parties</span>` : '<span class="pc-sous">jamais montée</span>'}</td>
       <td class="num">${c.n ? c.min : '—'}</td>
-      <td class="num lc-medv ${f}">${c.n ? c.med : '—'}</td>
+      <td class="num pc-medv ${f}">${c.n ? c.med : '—'}</td>
       <td class="num">${c.n ? c.max : '—'}</td>
       <td class="num">${c.n ? t(c.moy) : '—'}</td>
-      <td class="lc-bande-td">${bande}</td>
-      <td class="num lc-vict ${victoire(c)}">${c.n ? pct(c.tauxVictoire) : '—'}</td>
+      <td class="pc-bande-td">${bande}</td>
+      <td class="num pc-vict ${victoire(c)}">${c.n ? pct(c.tauxVictoire) : '—'}</td>
     </tr>`;
   }).join('');
 
@@ -6040,8 +6040,8 @@ function panneauCartesLabo(r) {
     <p class="aide">Pour chaque carte de la boîte, ce que son pouvoir a rapporté à <b>qui l’a montée</b>, compté
     en fin de partie sur les ${r.nbParties} parties : le minimum, la <b>médiane</b>, le maximum. Un Gros Plan
     compte pour la moitié montée ; imprimé deux fois, chaque exemplaire compte pour lui. Une médiane en
-    <span class="lc-medv fort">orange</span> dépasse nettement celles de sa famille, en
-    <span class="lc-medv faible">bleu</span> elle reste loin derrière. « Victoires » : la part des bancs qui
+    <span class="pc-medv fort">orange</span> dépasse nettement celles de sa famille, en
+    <span class="pc-medv faible">bleu</span> elle reste loin derrière. « Victoires » : la part des bancs qui
     l’ont montée et ont gagné — à comparer aux ${pct(1 / Math.max(1, r.joueurs.length))} d’une table équilibrée ;
     c’est la seule mesure des <b>pouvoirs de règle</b>, qui ne rapportent rien eux-mêmes. Les IA choisissent
     leurs cartes : une carte souvent montée est une carte qu’elles jugent bonne.</p>
@@ -6053,7 +6053,7 @@ function panneauCartesLabo(r) {
     <div class="tbl-defile"><table class="tbl tbl-cartes-labo">
       <thead><tr><th>Carte</th><th>Pouvoir</th><th class="num">Montée</th><th class="num">Min</th>
         <th class="num">Médiane</th><th class="num">Max</th><th class="num">Moyenne</th>
-        <th>Étendue <span class="lc-sous">0 – ${echelle} pts</span></th><th class="num">Victoires</th></tr></thead>
+        <th>Étendue <span class="pc-sous">0 – ${echelle} pts</span></th><th class="num">Victoires</th></tr></thead>
       <tbody>${lignes}</tbody>
     </table></div>
   </div>`;

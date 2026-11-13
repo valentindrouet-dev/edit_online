@@ -1,8 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.19';
-export const BUILD_DATE = '2026-11-13 16:33';
+export const VERSION = '4.1.20';
+export const BUILD_DATE = '2026-11-13 16:39';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.20',
+    date: '13/11/2026',
+    items: [
+      "<b>Laboratoire :</b> les lignes du tableau « Points par carte » sont de nouveau alignées — la colonne Pouvoir reprenait le style d’une autre.",
+    ],
+  },
   {
     v: '4.1.19',
     date: '13/11/2026',
