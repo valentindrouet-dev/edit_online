@@ -101,7 +101,8 @@ export const CADRAGES_POUVOIR = ['PL', 'GP', 'DEP'];
 //   PAIRE     n points par GROUPE d'icônes réunies dans la portée — deux, ou
 //             trois. Quatre icônes font deux couples, cinq en font deux aussi :
 //             c'est un appariement, pas une adjacence. Un groupe qui demande
-//             deux fois la même icône en demande deux exemplaires
+//             deux fois la même icône en demande deux exemplaires. Avec `sens`
+//             CHACUNE, plus de groupe : n points par icône de l'un de ces types
 //   MORT      n points par plan de mort
 //   ABSENT    n points si l'élément visé n'apparaît nulle part
 //   MINUTAGE  n points par plan du montage dont le minutage est strictement
@@ -209,6 +210,11 @@ export const OBJ = {
   // elle vient après la portée pour que les huit cartes imprimées, écrites
   // avant qu'un trio soit possible, restent telles quelles.
   paire:   (n, a, b, portee, c) => ({ kind: 'PAIRE', n, els: c ? [a, b, c] : [a, b],
+    ...(portee ? { portee } : {}) }),
+  // Les mêmes icônes réunies, mais comptées UNE PAR UNE (`sens` CHACUNE) :
+  // « 1 × Héroïne Ennemi Allié dans cette séquence » paie chaque icône de l'un
+  // de ces types, pas les trios complets.
+  chacune: (n, els, portee) => ({ kind: 'PAIRE', n, els: els.slice(), sens: 'CHACUNE',
     ...(portee ? { portee } : {}) }),
   mort:    (n, portee) => ({ kind: 'MORT', n, ...(portee ? { portee } : {}) }),
   // « n si CIBLE est absente ». La cible n'est plus une icône seulement : une
@@ -621,6 +627,10 @@ function objQuoi(o) {
     case 'PAIRE': {
       // « couple de Héroïne » quand c'est la même icône répétée, sinon la
       // liste — et « trio » dès qu'elles sont trois.
+      if (o.sens === 'CHACUNE') {
+        const noms = [...new Set(o.els)].map((x) => ELEMENTS[x].label);
+        return noms.length > 1 ? `${noms.slice(0, -1).join(', ')} ou ${noms[noms.length - 1]}` : noms[0];
+      }
       const mot = o.els.length > 2 ? 'trio' : 'couple';
       const memes = o.els.every((x) => x === o.els[0]);
       return memes ? `${mot} de ${ELEMENTS[o.els[0]].label}`
@@ -1064,9 +1074,10 @@ const PLANS_41 = [
   // Le L20, arrivé après les autres : sans chrono (« -- »), sans dominante, sur
   // l'illustration du L6.
   PL(20, 0, ['OBJET', 'ARME', 'VEHICULE'], OBJ.seqAvec(4, 'AVEC', 'OBJET+VEHICULE+ARME')),
-  // « 1 × Héroïne + Ennemi + Allié dans cette séquence » : un point par trio
-  // réuni dans la séquence du L21.
-  PL(21, 20, ['HEROINE', 'ENNEMI', 'ALLIE'], OBJ.paire(1, 'HEROINE', 'ENNEMI', 'SEQUENCE', 'ALLIE')),
+  // « 1 × Héroïne Ennemi Allié dans cette séquence » : un point par icône de
+  // l'un de ces trois types dans la séquence du L21 — chacune compte, ce ne
+  // sont pas des trios (lecture de l'auteur).
+  PL(21, 20, ['HEROINE', 'ENNEMI', 'ALLIE'], OBJ.chacune(1, ['HEROINE', 'ENNEMI', 'ALLIE'], 'SEQUENCE')),
   PL(22, 50, ['ALLIE', 'OBJET', 'ARME'], OBJ.seqLongue(3, 'COURTE')),
 ];
 

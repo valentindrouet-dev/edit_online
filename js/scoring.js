@@ -305,6 +305,13 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
         ? portee.filter((p) => p.el.includes(obj.el)).length
         : compteIcone(portee, obj.el));
     case 'PAIRE':
+      // « Chacune » : chaque icône de l'un des types compte, une par une.
+      if (obj.sens === 'CHACUNE') {
+        const types = [...new Set(obj.els)];
+        return n * (cfg.elementParIcone === false
+          ? portee.filter((p) => p.el.some((e) => types.includes(e))).length
+          : types.reduce((s, e) => s + compteIcone(portee, e), 0));
+      }
       return n * compteGroupes(portee, obj.els);
     case 'MORT':
       return n * portee.filter((p) => p.mort).length;

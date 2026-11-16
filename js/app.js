@@ -2917,7 +2917,11 @@ function blocPouvoir(o, ou, rang = 1) {
       <select data-champ-obj="${ou}"${R} data-part="el1">${elOpts(o.els[1])}</select>
       <span class="plus">+</span>
       <select data-champ-obj="${ou}"${R} data-part="el2">
-        ${opt('', '— aucune', !o.els[2])}${elOpts(o.els[2])}</select>`;
+        ${opt('', '— aucune', !o.els[2])}${elOpts(o.els[2])}</select>
+      <select data-champ-obj="${ou}"${R} data-part="sens">
+        ${opt('GROUPE', 'par groupe complet', o.sens !== 'CHACUNE')}
+        ${opt('CHACUNE', 'chaque icône compte', o.sens === 'CHACUNE')}
+      </select>`;
   } else if (kind === 'SANS_TC') {
     complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
         ${opt('EGAL', 'à', o.sens !== 'AVANT' && o.sens !== 'APRES')}
@@ -3761,7 +3765,9 @@ function declencheurs(obj, plans) {
       : compteIcone(plans, obj.el);
     // Un groupe s'apparie : quatre icônes font deux couples, cinq aussi. C'est
     // le décompte qui sait le faire — il n'y a pas deux façons de compter.
-    case 'PAIRE': return compteGroupes(plans, obj.els);
+    case 'PAIRE': return obj.sens === 'CHACUNE'
+      ? [...new Set(obj.els)].reduce((s, e) => s + compteIcone(plans, e), 0)
+      : compteGroupes(plans, obj.els);
     case 'MORT':    return plans.filter((p) => p.mort).length;
     case 'MINUTAGE': return plans.filter((p) => (obj.sens === 'EGAL' ? p.tc === obj.seuil
       : obj.sens === 'APRES' ? p.tc > obj.seuil : p.tc < obj.seuil)).length;
@@ -5069,7 +5075,7 @@ function objDepuisCSV(r, suf = '') {
       // entier, et une icône inconnue fait tomber le pouvoir.
       const els = cible.split('+').filter(Boolean);
       if (els.length < 2 || els.length > 3 || !els.every((x) => ELEMENT_IDS.includes(x))) return null;
-      return OBJ.paire(n, els[0], els[1], portee, els[2]);
+      return sens0 === 'CHACUNE' ? OBJ.chacune(n, els, portee) : OBJ.paire(n, els[0], els[1], portee, els[2]);
     }
     // --- Les pouvoirs du vocabulaire commun --------------------------------
     // Une cible que la colonne ne reconnaît pas fait tomber le pouvoir : mieux

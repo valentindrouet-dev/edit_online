@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.26';
-export const BUILD_DATE = '2026-11-16 21:04';
+export const VERSION = '4.1.27';
+export const BUILD_DATE = '2026-11-16 21:08';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.27',
+    date: '16/11/2026',
+    items: [
+      "<b>L21 corrigé</b> : 1 point par icône Héroïne, Ennemi ou Allié de sa séquence — chacune compte, ce ne sont plus des trios.",
+      "Le pouvoir à plusieurs icônes se règle « par groupe complet » ou « chaque icône compte » dans le Matériel.",
+    ],
+  },
   {
     v: '4.1.26',
     date: '16/11/2026',

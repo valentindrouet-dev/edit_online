@@ -151,6 +151,9 @@ const COMPTENT = [
     dit: (o, pt, c) => `<b>${pts(o.n)} par ${icone(o.el)}</b> ${ou(pt)}. ${c.elementParIcone === false
       ? 'On compte les plans qui la montrent.'
       : 'Chaque icône compte : un plan qui la montre deux fois compte deux fois.'}` },
+  { si: (o) => o.kind === 'PAIRE' && o.sens === 'CHACUNE',
+    dit: (o, pt) => `<b>${pts(o.n)} par icône</b> ${[...new Set(o.els)].map(icone).join(', ')} ${ou(pt)} :
+      chacune compte, quel que soit son type.` },
   { si: (o) => o.kind === 'PAIRE',
     dit: (o, pt) => `<b>${pts(o.n)} par ${o.els.length > 2 ? 'groupe' : 'couple'}</b>
       ${o.els.map(icone).join(' + ')} ${ou(pt)} : une icône de chaque. Trois de l’une et deux de
