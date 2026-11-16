@@ -363,8 +363,13 @@ export function valeurObjectif(obj, sequence, banc, cfg, porteur, profond = fals
       return n * banc.sequences.filter((s) => (obj.sens === 'MAX'
         ? plansDe(s).length <= k : plansDe(s).length >= k)).length;
     }
-    case 'SEQ_LONGUE':
-      return n * banc.sequences.reduce((m, s) => Math.max(m, plansDe(s).length), 0);
+    case 'SEQ_LONGUE': {
+      // La plus longue, ou la plus courte (`sens` COURTE) : un banc sans
+      // séquence ne rapporte rien.
+      if (!banc.sequences.length) return 0;
+      const tailles = banc.sequences.map((s) => plansDe(s).length);
+      return n * (obj.sens === 'COURTE' ? Math.min(...tailles) : Math.max(...tailles));
+    }
     case 'SEQ_VOISINES': {
       // « Au-dessus » et « en dessous » se lisent dans l'ordre du banc : en
       // lignes, c'est la pile ; sur une bande unique, c'est l'ordre de gauche
@@ -692,7 +697,7 @@ export const SOURCES_LABEL = {
   BOUT: 'Pouvoirs de bout de séquence',
   SEQ_TAILLE: 'Pouvoirs de séquence longue',
   SEQ_VOISINES: 'Pouvoirs de séquences voisines',
-  SEQ_LONGUE: 'Pouvoirs de plus longue séquence',
+  SEQ_LONGUE: 'Pouvoirs de plus longue ou plus courte séquence',
   SEQ_AVEC: 'Pouvoirs de séquence avec / sans',
   SEQ_TOUTES: 'Pouvoirs de séquences toutes égales',
   AILLEURS: 'Pouvoirs des autres séquences',

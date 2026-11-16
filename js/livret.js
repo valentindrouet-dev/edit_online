@@ -210,7 +210,7 @@ const COMPTENT = [
   { si: (o) => o.kind === 'SEQ_VOISINES' && o.sens !== 'APRES',
     dit: (o) => `<b>${pts(o.n)} par séquence placée au-dessus</b> de celle où ce plan est monté.` },
   { si: (o) => o.kind === 'SEQ_LONGUE',
-    dit: (o) => `<b>${pts(o.n)} par plan de votre plus longue séquence</b>. Le Raccord, l’Ouverture
+    dit: (o) => `<b>${pts(o.n)} par plan de votre plus ${o.sens === 'COURTE' ? 'courte' : 'longue'} séquence</b>. Le Raccord, l’Ouverture
       et la Fin sont des plans comme les autres.` },
   { si: (o) => o.kind === 'ABSENTES',
     dit: (o, pt) => `<b>${pts(o.n)} par icône absente</b> ${ou(pt)} : une fois pour chacune des six

@@ -1924,7 +1924,7 @@ const KINDS = [
   // la forme du banc, pas son contenu carte par carte.
   ['SEQ_TAILLE',   'par SÉQUENCE de n plans ou plus / ou moins…'],
   ['SEQ_VOISINES', 'par SÉQUENCE au-dessus / en dessous…'],
-  ['SEQ_LONGUE',   'par PLAN de la plus longue SÉQUENCE'],
+  ['SEQ_LONGUE',   'par PLAN de la plus longue / courte SÉQUENCE'],
   ['SEQ_AVEC',     'par SÉQUENCE avec / sans…'],
   ['SEQ_TOUTES',   'si CHAQUE SÉQUENCE a n plans…'],
   ['DANS_CHUTIER', 'par carte PLAN dans le CHUTIER'],
@@ -1997,7 +1997,7 @@ function nbAjoutees() {
 /**
  * Le premier numéro libre d'une série. Les Gros Plans se numérotent à part des
  * Plans Larges et des Plans de départ — un GP05 et un L5 ne se confondent pas.
- * Les numéros de la boîte s'arrêtent à GP102 et à L20 : un plan créé prend la
+ * Les numéros de la boîte s'arrêtent à GP102 et à L22 : un plan créé prend la
  * suite. Un plan supprimé garde son numéro, pour retrouver sa place si on le
  * restaure.
  */
@@ -2006,7 +2006,7 @@ function prochainNumero(grosPlan) {
   const pris = new Set(surLeModifie(() => catalogue()
     .filter((p) => (p.format === 'GP') === !!grosPlan).map((p) => p.numOrigine)));
   for (const x of (grosPlan ? a.scenes : [...a.larges, ...a.departs])) pris.add(x.num);
-  let n = grosPlan ? 103 : 21;
+  let n = grosPlan ? 103 : 23;
   while (pris.has(n)) n++;
   return n;
 }
@@ -2945,6 +2945,11 @@ function blocPouvoir(o, ou, rang = 1) {
     complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
         ${opt('DROITE', 'à droite de ce plan', o.sens !== 'GAUCHE')}
         ${opt('GAUCHE', 'à gauche de ce plan', o.sens === 'GAUCHE')}
+      </select>`;
+  } else if (kind === 'SEQ_LONGUE') {
+    complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
+        ${opt('LONGUE', 'de la plus longue séquence', o.sens !== 'COURTE')}
+        ${opt('COURTE', 'de la plus courte séquence', o.sens === 'COURTE')}
       </select>`;
   } else if (kind === 'SEQ_VOISINES') {
     complement = `<select data-champ-obj="${ou}"${R} data-part="sens">
@@ -4677,7 +4682,7 @@ function construireObj(kind, actuel) {
     SEQ_TAILLE:   () => OBJ.seqTaille(n, actuel && actuel.seuil ? Math.max(1, actuel.seuil) : 3,
       actuel && actuel.sens === 'MAX' ? 'MAX' : undefined),
     SEQ_VOISINES: () => OBJ.seqVoisines(n, actuel && actuel.sens === 'APRES' ? 'APRES' : 'AVANT'),
-    SEQ_LONGUE:   () => OBJ.seqLongue(n),
+    SEQ_LONGUE:   () => OBJ.seqLongue(n, actuel && actuel.sens),
     DANS_CHUTIER: () => OBJ.dansChutier(n),
     SEQ_AVEC:     () => OBJ.seqAvec(n, actuel && actuel.sens === 'SANS' ? 'SANS' : 'AVEC',
       actuel && actuel.cible ? actuel.cible : e0, actuel && actuel.seuil),
@@ -5055,7 +5060,7 @@ function objDepuisCSV(r, suf = '') {
     case 'MINUTAGE': return OBJ.minutage(n, sens0 === 'EGAL' ? 'EGAL' : sens, seuil, portee);
     case 'SEQ_TAILLE':   return OBJ.seqTaille(n, Math.max(1, seuil || 1), sens0 === 'MAX' ? 'MAX' : undefined);
     case 'SEQ_VOISINES': return OBJ.seqVoisines(n, sens0 === 'APRES' ? 'APRES' : 'AVANT');
-    case 'SEQ_LONGUE':   return OBJ.seqLongue(n);
+    case 'SEQ_LONGUE':   return OBJ.seqLongue(n, sens0);
     case 'SEQ_AVEC': return ciblesSequence().some((c) => c.id === cible) || CIBLE_IDS.includes(cible)
       || (String(cible).includes('+') && String(cible).split('+').every((e) => ELEMENT_IDS.includes(e)))
       ? OBJ.seqAvec(n, sens0 === 'SANS' ? 'SANS' : 'AVEC', cible, seuil) : null;

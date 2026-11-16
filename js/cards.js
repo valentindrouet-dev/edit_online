@@ -203,8 +203,11 @@ function objCoeur(obj, taille, compact, large) {
     // « de la plus longue » n'est pas une chose du jeu : c'est du texte qui
     // relie deux cartouches. Il s'écrivait dans la pastille violette de la
     // Séquence, qui désigne pourtant une seule chose — la séquence.
-    case 'SEQ_LONGUE': return `<span class="tag tag-blanc">Plan</span>
-      <span class="mot">${compact ? '+ longue' : 'de la plus longue'}</span>${tagSeq(compact)}`;
+    case 'SEQ_LONGUE': {
+      const q = obj.sens === 'COURTE' ? 'courte' : 'longue';
+      return `<span class="tag tag-blanc">Plan</span>
+      <span class="mot">${compact ? '+ ' + q : 'de la plus ' + q}</span>${tagSeq(compact)}`;
+    }
     case 'SEQ_AVEC': {
       // La cible se dessine comme partout ailleurs. Cette branche la redessinait
       // pour son compte, et n'avait prévu ni la Valeur de Plan ni le plan de
@@ -588,7 +591,7 @@ function coutCoeur(obj, compact, P, large) {
       return large ? haut + g + bas : BLOC_SEQ * Math.max(haut, bas);
     }
     case 'SEQ_VOISINES': return t('Séquence', 'Séq') + g + P.rond * 1.1;
-    case 'SEQ_LONGUE': return t('Plan') + g + mot('de la plus longue') + g
+    case 'SEQ_LONGUE': return t('Plan') + g + mot(obj.sens === 'COURTE' ? 'de la plus courte' : 'de la plus longue') + g
       + t('Séquence', 'Séq');
     case 'SEQ_AVEC': {
       const k = Math.max(1, obj.seuil || 1);

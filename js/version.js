@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.25';
-export const BUILD_DATE = '2026-11-16 21:00';
+export const VERSION = '4.1.26';
+export const BUILD_DATE = '2026-11-16 21:04';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.26',
+    date: '16/11/2026',
+    items: [
+      "<b>Deux nouveaux Plans Larges</b> : <b>L21</b> (20', 1 × trio Héroïne + Ennemi + Allié dans sa séquence) et <b>L22</b> (50', 3 × plan de votre plus courte séquence) — la boîte compte 64 cartes.",
+      "Nouveau pouvoir « plus courte séquence », réglable dans le Matériel.",
+    ],
+  },
   {
     v: '4.1.25',
     date: '16/11/2026',

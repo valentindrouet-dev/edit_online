@@ -124,7 +124,8 @@ export const CADRAGES_POUVOIR = ['PL', 'GP', 'DEP'];
 //                plus `seuil` plans quand `sens` vaut MAX
 //   SEQ_VOISINES n points par séquence placée au-dessus (`AVANT`) ou en
 //                dessous (`APRES`) de celle qui porte le bandeau
-//   SEQ_LONGUE   n points par plan de la plus longue séquence du banc
+//   SEQ_LONGUE   n points par plan de la plus longue séquence du banc — ou de
+//                la plus courte quand `sens` vaut COURTE
 //   SEQ_AVEC     n points par séquence qui porte la cible visée — une icône, un
 //                cadrage, un Raccord — au moins `seuil` fois (`AVEC`), ou moins
 //                de `seuil` fois (`SANS`). Le seuil compte des PLANS porteurs
@@ -227,7 +228,8 @@ export const OBJ = {
   seqTaille:   (n, seuil, sens) => ({ kind: 'SEQ_TAILLE', n, seuil,
     ...(sens === 'MAX' ? { sens: 'MAX' } : {}) }),
   seqVoisines: (n, sens) => ({ kind: 'SEQ_VOISINES', n, sens }),
-  seqLongue:   (n) => ({ kind: 'SEQ_LONGUE', n }),
+  // `sens` : la plus longue séquence par défaut ; COURTE — la plus courte.
+  seqLongue:   (n, sens) => ({ kind: 'SEQ_LONGUE', n, ...(sens === 'COURTE' ? { sens: 'COURTE' } : {}) }),
   // `seuil` : combien d'EXEMPLAIRES de la cible la séquence doit montrer —
   // « au moins 3 Armes ». Trois armes sont trois armes, qu'elles soient sur
   // trois plans ou sur deux : c'est ce que le bandeau écrit, « 3+ 🗡 ». Un
@@ -629,7 +631,7 @@ function objQuoi(o) {
     case 'MINUTAGE': return `Plan ${o.sens === 'APRES' ? 'après' : o.sens === 'EGAL' ? 'à' : 'avant'} ${tcTexte(o.seuil)}`;
     case 'SEQ_TAILLE': return `séquence de ${o.seuil} plan${o.seuil > 1 ? 's' : ''} ou ${o.sens === 'MAX' ? 'moins' : 'plus'}`;
     case 'SEQ_VOISINES': return `séquence ${o.sens === 'APRES' ? 'en dessous' : 'au-dessus'} de celle-ci`;
-    case 'SEQ_LONGUE': return 'Plan de votre plus longue séquence';
+    case 'SEQ_LONGUE': return `Plan de votre plus ${o.sens === 'COURTE' ? 'courte' : 'longue'} séquence`;
     case 'SEQ_AVEC': {
       // Sans seuil, la lecture d'origine : « avec » ou « sans ». Avec un seuil,
       // c'est un compte d'EXEMPLAIRES — et « sans » devient « moins de ». La
@@ -1017,7 +1019,7 @@ export function recenserBoite(cfg) {
 //   desactives  = [id de carte, …]       — les cartes écartées du paquet
 //
 // La clé d'un plan : « GP13 » pour un Gros Plan, son seul numéro pour un Plan
-// Large ou un Plan de départ — les deux séries se numérotent à part, L1 à L20
+// Large ou un Plan de départ — les deux séries se numérotent à part, L1 à L22
 // et GP00 à GP102.
 
 /** La clé d'un plan. */
@@ -1033,7 +1035,8 @@ export function cleplan(num, grosPlan) {
 // la carte ; le L6, le L20 et le GP00 n'en ont pas, et l'Entracte (L10) n'a aucune
 // icône.
 //
-// Les vingt Plans Larges : L1 à L19 par chrono croissant, puis le L20, sans chrono.
+// Les vingt-deux Plans Larges : L1 à L19 par chrono croissant, puis le L20, sans
+// chrono, et les L21 et L22, arrivés en novembre.
 // Quatre d'entre eux sont les plans de départ : L5, L7, L12 et L16.
 const PD41 = [5, 7, 12, 16];
 const PLANS_41 = [
@@ -1061,6 +1064,10 @@ const PLANS_41 = [
   // Le L20, arrivé après les autres : sans chrono (« -- »), sans dominante, sur
   // l'illustration du L6.
   PL(20, 0, ['OBJET', 'ARME', 'VEHICULE'], OBJ.seqAvec(4, 'AVEC', 'OBJET+VEHICULE+ARME')),
+  // « 1 × Héroïne + Ennemi + Allié dans cette séquence » : un point par trio
+  // réuni dans la séquence du L21.
+  PL(21, 20, ['HEROINE', 'ENNEMI', 'ALLIE'], OBJ.paire(1, 'HEROINE', 'ENNEMI', 'SEQUENCE', 'ALLIE')),
+  PL(22, 50, ['ALLIE', 'OBJET', 'ARME'], OBJ.seqLongue(3, 'COURTE')),
 ];
 
 // Les cinquante-huit GROS PLANS, 60 × 80 mm chacun. Leur numéro dit leur
