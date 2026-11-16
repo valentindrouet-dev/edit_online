@@ -11,9 +11,9 @@ dossier (`python3 -m http.server`).
 
 - **20 Plans Larges** (une image pleine carte, 120 × 80 mm), dont **4 Plans de départ** : leurs six
   couples font six cartes de départ recto verso.
-- **54 Gros Plans**, deux par carte : 36 cartes à deux Gros Plans, moitié gauche et moitié droite. Le
-  Raccord y est imprimé huit fois, l'Ouverture et la Fin deux fois, neuf des Gros Plans sans minutage
-  (« -- ») deux fois — 72 moitiés.
+- **58 Gros Plans**, deux par carte : 40 cartes à deux Gros Plans, moitié gauche et moitié droite. Le
+  Raccord y est imprimé douze fois, l'Ouverture et la Fin deux fois, neuf des Gros Plans sans chrono
+  (« -- ») deux fois — 80 moitiés.
 - Une pioche face cachée, une rivière de 4 cartes visibles, et le **Chutier**, la défausse face visible.
 - À son tour : on peut défausser une carte de la rivière, puis on en prend une et on la monte. Un Plan
   Large ouvre une séquence (3 par banc) ; une moitié gauche se monte à gauche d'une séquence, une
@@ -51,7 +51,7 @@ assets/s41/             les vraies cartes : L1…L20, GP00…GP102, DOS (et illu
 assets/icones/          les sept icônes, découpées sur les cartes
 assets/marque/          le logo EDIT
 js/version.js           version du site et journal des modifications
-js/data.js              le matériel : icônes, pouvoirs, les 20 Plans Larges, les 54 Gros Plans, l'assemblage
+js/data.js              le matériel : icônes, pouvoirs, les 20 Plans Larges, les 58 Gros Plans, l'assemblage
 js/config.js            variables par défaut, profils d'IA, description des réglages
 js/engine.js            pioche, rivière, Chutier, coups légaux, pose, fin de partie
 js/scoring.js           séquences, portée des pouvoirs, décompte

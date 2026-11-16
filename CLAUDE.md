@@ -34,11 +34,12 @@ Cartes Objectif, modes, sets, Atelier) sans demande de l'auteur.
 - **Plans Larges** : L1 à L20, une image pleine carte (120 × 80 mm). Quatre sont les **Plans de départ**
   (L5, L7, L12, L16) : leurs six couples font six **cartes de départ** recto verso — le seul recto verso
   du jeu. Chaque joueuse en reçoit une et choisit sa face.
-- **Gros Plans** : 54 (`GP00`…`GP66`, `GP100` Raccord, `GP101` Ouverture 01', `GP102` Fin 70'), deux par
-  carte — 36 **cartes à deux Gros Plans**, moitié GAUCHE et moitié DROITE (`ASSEMBLAGE_41`, `[gauche,
+- **Gros Plans** : 58 (`GP00`…`GP67`, `GP100` Raccord, `GP101` Ouverture 01', `GP102` Fin 70'), deux par
+  carte — 40 **cartes à deux Gros Plans**, moitié GAUCHE et moitié DROITE (`ASSEMBLAGE_41`, `[gauche,
   droite]`), toutes tirées des planches de l'auteur : 10' à 30' et Ouverture à gauche, 40' à 60' et Fin à
-  droite, deux dominantes différentes par carte. Exemplaires : Raccord ×8 (4 à gauche, 4 à droite),
-  Ouverture ×2, Fin ×2, GP01–GP09 ×2 (une fois de chaque côté), les autres ×1 — 72 moitiés.
+  droite, deux dominantes différentes par carte. Exemplaires : Raccord ×12 (6 à gauche, 6 à droite),
+  Ouverture ×2, Fin ×2, GP01–GP09 ×2 (une fois de chaque côté), les autres ×1 — 80 moitiés. Les
+  quatre dernières cartes (GP17, GP36, GP57, GP67, chacune avec un Raccord) sont arrivées en novembre.
   `exemplairesBoite()` les compte.
 - **Dos des cartes** : `assets/s41/DOS.webp`, le verso de l'auteur (le même pour toute la pioche).
 - **Règles** (`js/engine.js`) : une pioche face cachée, une rivière de 4 cartes, le **Chutier** (défausse

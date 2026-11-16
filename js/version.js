@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.21';
-export const BUILD_DATE = '2026-11-16 16:42';
+export const VERSION = '4.1.22';
+export const BUILD_DATE = '2026-11-16 20:52';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.22',
+    date: '16/11/2026',
+    items: [
+      "<b>Quatre nouvelles cartes à deux Gros Plans</b>, chacune avec un Raccord : GP17 « 2 × 10’ », GP36 « 2 × 30’ », GP57 « 3 × RACCORD », GP67 « 1 × PLAN ▷▷ ».",
+      "La boîte passe à 40 cartes à deux Gros Plans et 12 Raccords ; la pioche compte 56 cartes.",
+    ],
+  },
   {
     v: '4.1.21',
     date: '16/11/2026',

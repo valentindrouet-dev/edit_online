@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
 // EDIT — le matériel du jeu, version 4.1
 // ---------------------------------------------------------------------------
-// Les icônes, les cadrages, le vocabulaire des pouvoirs, et la boîte : dix-neuf
-// Plans Larges — dont les quatre plans de départ — et cinquante-quatre Gros
-// Plans, assemblés deux par deux sur trente-six cartes — certains y sont
+// Les icônes, les cadrages, le vocabulaire des pouvoirs, et la boîte : vingt
+// Plans Larges — dont les quatre plans de départ — et cinquante-huit Gros
+// Plans, assemblés deux par deux sur quarante cartes — certains y sont
 // imprimés plusieurs fois.
 
 // --- Les six éléments ------------------------------------------------------
@@ -1061,7 +1061,7 @@ const PLANS_41 = [
   PL(20, 0, ['OBJET', 'ARME', 'VEHICULE'], OBJ.seqAvec(4, 'AVEC', 'OBJET+VEHICULE+ARME')),
 ];
 
-// Les cinquante-quatre GROS PLANS, 60 × 80 mm chacun. Leur numéro dit leur
+// Les cinquante-huit GROS PLANS, 60 × 80 mm chacun. Leur numéro dit leur
 // minutage : GP0x « -- », GP1x 10', … GP6x 60', et GP100 à 102 le Raccord,
 // l'Ouverture (01') et la Fin (70').
 const X41 = (n, tc, el, obj, extra = {}) => ({ n, tc, el, obj, ...extra });
@@ -1083,6 +1083,7 @@ const GP_41 = [
   X41(14, 10, ['HEROINE', 'VEHICULE'], OBJ.seuilCible(6, 'HEROINE', 'MIN', 6, 'MONTAGE')),
   X41(15, 10, ['ARME', 'HEROINE'], OBJ.element(1, 'ARME', 'SUITE')),
   X41(16, 10, ['ENNEMI', 'VEHICULE'], OBJ.seqTaille(2, 1)),
+  X41(17, 10, ['ENNEMI', 'ARME'], OBJ.minutage(2, 'EGAL', 10, 'MONTAGE')),
   X41(20, 20, ['ARME', 'HEROINE'], OBJ.bout(4, 'GAUCHE')),
   X41(21, 20, ['HEROINE', 'VEHICULE'], OBJ.element(1, 'HEROINE', 'SUITE')),
   X41(22, 20, ['ENNEMI', 'VEHICULE'], OBJ.domine(6, 'ENNEMI')),
@@ -1096,6 +1097,7 @@ const GP_41 = [
   X41(33, 30, ['ALLIE', 'OBJET'], OBJ.element(1, 'ALLIE', 'SEQUENCE')),
   X41(34, 30, ['OBJET', 'ARME'], OBJ.absent(5, 'HEROINE', 'SEQUENCE')),
   X41(35, 30, ['HEROINE', 'ALLIE'], OBJ.seqTaille(2, 1)),
+  X41(36, 30, ['HEROINE', 'OBJET'], OBJ.minutage(2, 'EGAL', 30, 'MONTAGE')),
   X41(40, 40, ['VEHICULE', 'VEHICULE'], OBJ.element(2, 'VEHICULE', 'SEQUENCE')),
   X41(41, 40, ['HEROINE', 'VEHICULE'], OBJ.seuilCible(6, 'VEHICULE', 'MIN', 6, 'MONTAGE')),
   X41(42, 40, ['VEHICULE', 'ENNEMI'], OBJ.absent(6, 'RACCORD', 'MONTAGE')),
@@ -1110,6 +1112,7 @@ const GP_41 = [
   X41(54, 50, ['HEROINE', 'ARME'], OBJ.element(2, 'ARME', 'SEQUENCE')),
   X41(55, 50, ['ARME', 'ALLIE'], OBJ.seuilCible(6, 'MORT', 'MIN', 2, 'MONTAGE')),
   X41(56, 50, ['ALLIE', 'ARME'], OBJ.minutage(2, 'EGAL', 50, 'SEQUENCE')),
+  X41(57, 50, ['ENNEMI', 'OBJET'], OBJ.raccord(3)),
   X41(60, 60, ['VEHICULE'], OBJ.element(1, 'VEHICULE', 'AMONT'), { mort: true }),
   X41(61, 60, ['HEROINE', 'VEHICULE'], OBJ.element(1, 'HEROINE', 'AMONT'), { mort: true }),
   X41(62, 60, ['HEROINE', 'OBJET'], OBJ.domine(6, 'HEROINE'), { mort: true }),
@@ -1117,6 +1120,7 @@ const GP_41 = [
   X41(64, 60, ['OBJET', 'ENNEMI'], OBJ.mort(3, 'SEQUENCE'), { mort: true }),
   X41(65, 60, ['ALLIE', 'OBJET'], OBJ.domine(6, 'ALLIE'), { mort: true }),
   X41(66, 60, ['ARME', 'ALLIE'], OBJ.seuilCible(4, 'ORDRE', 'MIN', 1, 'SEQUENCE'), { mort: true }),
+  X41(67, 60, ['ALLIE', 'VEHICULE'], OBJ.plan(1, 'SUITE')),
   X41(100, 0, [], OBJ.raccord(1), { transition: 'RACCORD', titre: 'Raccord' }),
   X41(101, 1, [], OBJ.seuilCible(5, 'PLAN', 'MAX', 0, 'AMONT'), { transition: 'OUVERTURE', titre: 'BBG présente' }),
   X41(102, 70, [], OBJ.seuilCible(5, 'PLAN', 'MAX', 0, 'SUITE'), { transition: 'CREDITS', titre: 'Fin' }),
@@ -1127,7 +1131,7 @@ const famille41 = (p) => (p.transition ? 'TRANSITION' : p.mort ? 'MORT'
 /** Le nom de fichier d'un Gros Plan : GP00, GP07, GP100. */
 const fichierGP41 = (n) => `GP${String(n).padStart(2, '0')}`;
 
-// L'ASSEMBLAGE des 36 cartes à deux Gros Plans — [gauche, droite] —, tel que
+// L'ASSEMBLAGE des 40 cartes à deux Gros Plans — [gauche, droite] —, tel que
 // les planches de l'auteur le montrent, dans leur ordre.
 //
 // Sa règle : les 10', 20', 30' et l'Ouverture à gauche ; les 40', 50', 60' et
@@ -1146,6 +1150,8 @@ const ASSEMBLAGE_41 = [
   [101, 40], [101, 51], [33, 102], [24, 102],
   [100, 50], [100, 44], [100, 41], [100, 53],
   [23, 100], [12, 100], [11, 100], [10, 100],
+  // Les quatre cartes ajoutées en novembre, chacune avec un Raccord.
+  [17, 100], [36, 100], [100, 57], [100, 67],
 ];
 
 const BOITE = {
