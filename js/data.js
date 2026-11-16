@@ -1017,7 +1017,7 @@ export function recenserBoite(cfg) {
 //   desactives  = [id de carte, …]       — les cartes écartées du paquet
 //
 // La clé d'un plan : « GP13 » pour un Gros Plan, son seul numéro pour un Plan
-// Large ou un Plan de départ — les deux séries se numérotent à part, L1 à L19
+// Large ou un Plan de départ — les deux séries se numérotent à part, L1 à L20
 // et GP00 à GP102.
 
 /** La clé d'un plan. */
@@ -1030,20 +1030,21 @@ export function cleplan(num, grosPlan) {
 // le site ne les redessine pas. Ce qui suit est ce que le MOTEUR a besoin d'en
 // savoir pour compter — minutage en minutes, icônes, pouvoir —, lu sur chaque
 // carte. La première icône est la DOMINANTE, la grande, qui donne sa couleur à
-// la carte ; le L6 et le GP00 n'en ont pas, et l'Entracte (L10) n'a aucune icône.
+// la carte ; le L6, le L20 et le GP00 n'en ont pas, et l'Entracte (L10) n'a aucune
+// icône.
 //
-// Les dix-neuf Plans Larges sont numérotés L1 à L19, par minutage croissant.
+// Les vingt Plans Larges : L1 à L19 par chrono croissant, puis le L20, sans chrono.
 // Quatre d'entre eux sont les plans de départ : L5, L7, L12 et L16.
 const PD41 = [5, 7, 12, 16];
 const PLANS_41 = [
   PL(1, 10, ['OBJET', 'ARME', 'HEROINE'], OBJ.seqAvec(5, 'AVEC', 'OBJET', 3)),
   PL(2, 10, ['ALLIE', 'VEHICULE', 'ENNEMI'], OBJ.seqAvec(3, 'AVEC', 'RACCORD')),
   PL(3, 10, ['HEROINE', 'ENNEMI', 'ARME'], OBJ.seqVoisines(4, 'APRES')),
-  PL(4, 20, ['ALLIE', 'HEROINE', 'OBJET'], OBJ.seqAvec(4, 'AVEC', 'DIFFERENTES', 6)),
-  PL(5, 20, ['OBJET', 'HEROINE', 'ALLIE', 'VEHICULE'], OBJ.raccordVaut(1)),
+  PL(4, 20, ['ALLIE', 'HEROINE', 'OBJET'], OBJ.seqAvec(4, 'AVEC', 'ENNEMI+ARME+VEHICULE+HEROINE+ALLIE+OBJET')),
+  PL(5, 20, ['OBJET', 'HEROINE', 'ALLIE', 'VEHICULE'], OBJ.raccordVaut(2)),
   PL(6, 20, ['OBJET', 'ARME', 'VEHICULE'], OBJ.seqLongue(2)),
   PL(7, 30, ['ALLIE', 'ENNEMI', 'ARME'], OBJ.planPlus(1)),
-  PL(8, 30, ['ENNEMI', 'ALLIE', 'OBJET'], OBJ.dansChutier(2)),
+  PL(8, 30, ['ENNEMI', 'ALLIE', 'OBJET'], OBJ.dansChutier(1)),
   PL(9, 30, ['VEHICULE', 'HEROINE', 'ENNEMI'], OBJ.seqAvec(4, 'SANS', 'TC_VIDE')),
   PL(10, 35, [], OBJ.seqAvec(3, 'AVEC', 'ORDRE')),
   PL(11, 40, ['HEROINE', 'ENNEMI', 'VEHICULE', 'ARME'], OBJ.seqAvec(3, 'AVEC', 'PLAN', 3)),
@@ -1055,6 +1056,9 @@ const PLANS_41 = [
   PL(17, 60, ['ALLIE', 'HEROINE', 'VEHICULE'], OBJ.extreme(1, 'PLUS', 'MONTAGE')),
   PL(18, 60, ['ENNEMI', 'HEROINE', 'ALLIE'], OBJ.seqAvec(4, 'AVEC', 'HEROINE+ALLIE+ENNEMI'), { mort: true }),
   PL(19, 60, ['HEROINE', 'VEHICULE', 'OBJET'], OBJ.seqVoisines(4, 'AVANT'), { mort: true }),
+  // Le L20, arrivé après les autres : sans chrono (« -- »), sans dominante, sur
+  // l'illustration du L6.
+  PL(20, 0, ['OBJET', 'ARME', 'VEHICULE'], OBJ.seqAvec(4, 'AVEC', 'OBJET+VEHICULE+ARME')),
 ];
 
 // Les cinquante-quatre GROS PLANS, 60 × 80 mm chacun. Leur numéro dit leur

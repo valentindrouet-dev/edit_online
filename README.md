@@ -9,7 +9,7 @@ dossier (`python3 -m http.server`).
 
 ## Le jeu, en bref
 
-- **19 Plans Larges** (une image pleine carte, 120 × 80 mm), dont **4 Plans de départ** : leurs six
+- **20 Plans Larges** (une image pleine carte, 120 × 80 mm), dont **4 Plans de départ** : leurs six
   couples font six cartes de départ recto verso.
 - **54 Gros Plans**, deux par carte : 36 cartes à deux Gros Plans, moitié gauche et moitié droite. Le
   Raccord y est imprimé huit fois, l'Ouverture et la Fin deux fois, neuf des Gros Plans sans minutage
@@ -47,11 +47,11 @@ outils/verifier.mjs     contrôle rapide (≈ 15 s) : moteur, chargement, écran
 outils/versionner.mjs   version.json et cache du service worker
 outils/cartes.py        fait entrer les cartes de l'auteur (PNG 300 dpi) dans assets/s41
 css/styles.css
-assets/s41/             les vraies cartes : L1…L19, GP00…GP102, DOS (et illus/, l'illustration seule)
+assets/s41/             les vraies cartes : L1…L20, GP00…GP102, DOS (et illus/, l'illustration seule)
 assets/icones/          les sept icônes, découpées sur les cartes
 assets/marque/          le logo EDIT
 js/version.js           version du site et journal des modifications
-js/data.js              le matériel : icônes, pouvoirs, les 19 Plans Larges, les 54 Gros Plans, l'assemblage
+js/data.js              le matériel : icônes, pouvoirs, les 20 Plans Larges, les 54 Gros Plans, l'assemblage
 js/config.js            variables par défaut, profils d'IA, description des réglages
 js/engine.js            pioche, rivière, Chutier, coups légaux, pose, fin de partie
 js/scoring.js           séquences, portée des pouvoirs, décompte

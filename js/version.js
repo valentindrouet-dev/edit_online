@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.20';
-export const BUILD_DATE = '2026-11-13 16:39';
+export const VERSION = '4.1.21';
+export const BUILD_DATE = '2026-11-16 16:42';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.21',
+    date: '16/11/2026',
+    items: [
+      "<b>Nouveau Plan Large : le L20</b> — sans chrono, Objet, Arme, Véhicule, « 4 × SÉQUENCE avec Objet + Véhicule + Arme ». La pioche passe à 52 cartes.",
+      "<b>Trois Plans Larges revus</b> : L5 « Chaque Raccord vaut +2 », L8 « 1 × carte PLAN dans le Chutier », L4 redessiné avec ses six icônes (même décompte).",
+    ],
+  },
   {
     v: '4.1.20',
     date: '13/11/2026',

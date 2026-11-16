@@ -31,7 +31,7 @@ Cartes Objectif, modes, sets, Atelier) sans demande de l'auteur.
   `js/data.js`) — jamais un dessin refait. Il les livre en PNG 300 dpi ; `python3 outils/cartes.py
   <dossier> assets/s41 [--illus]` en fait les copies d'écran. Les données du moteur (minutage, icônes —
   la dominante en premier —, pouvoir) se LISENT sur l'image et se rangent dans `PLANS_41` / `GP_41`.
-- **Plans Larges** : L1 à L19, une image pleine carte (120 × 80 mm). Quatre sont les **Plans de départ**
+- **Plans Larges** : L1 à L20, une image pleine carte (120 × 80 mm). Quatre sont les **Plans de départ**
   (L5, L7, L12, L16) : leurs six couples font six **cartes de départ** recto verso — le seul recto verso
   du jeu. Chaque joueuse en reçoit une et choisit sa face.
 - **Gros Plans** : 54 (`GP00`…`GP66`, `GP100` Raccord, `GP101` Ouverture 01', `GP102` Fin 70'), deux par

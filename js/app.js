@@ -1997,7 +1997,7 @@ function nbAjoutees() {
 /**
  * Le premier numéro libre d'une série. Les Gros Plans se numérotent à part des
  * Plans Larges et des Plans de départ — un GP05 et un L5 ne se confondent pas.
- * Les numéros de la boîte s'arrêtent à GP102 et à L19 : un plan créé prend la
+ * Les numéros de la boîte s'arrêtent à GP102 et à L20 : un plan créé prend la
  * suite. Un plan supprimé garde son numéro, pour retrouver sa place si on le
  * restaure.
  */
@@ -2006,7 +2006,7 @@ function prochainNumero(grosPlan) {
   const pris = new Set(surLeModifie(() => catalogue()
     .filter((p) => (p.format === 'GP') === !!grosPlan).map((p) => p.numOrigine)));
   for (const x of (grosPlan ? a.scenes : [...a.larges, ...a.departs])) pris.add(x.num);
-  let n = grosPlan ? 103 : 20;
+  let n = grosPlan ? 103 : 21;
   while (pris.has(n)) n++;
   return n;
 }
