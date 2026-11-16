@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.23';
-export const BUILD_DATE = '2026-11-16 20:53';
+export const VERSION = '4.1.24';
+export const BUILD_DATE = '2026-11-16 20:56';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.24',
+    date: '16/11/2026',
+    items: [
+      "<b>Cinq Gros Plans revus</b> (images et décompte) : GP00 « 2 × -- », GP33 « 2 × ◁ Allié ▷ », GP56 « 2 × 50’ » dans tout le montage, Ouverture et Fin à 6 points.",
+      "<b>Matériel</b> : les cartes à deux Gros Plans se trient par numéro de carte (D01, D02…).",
+    ],
+  },
   {
     v: '4.1.23',
     date: '16/11/2026',

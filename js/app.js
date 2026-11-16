@@ -2191,6 +2191,9 @@ const TRIS = [
   ['num', 'Numéro croissant'], ['num-desc', 'Numéro décroissant'],
   ['tc', 'Chrono croissant'], ['tc-desc', 'Chrono décroissant'],
   ['famille', 'Famille'],
+  // Les cartes à deux Gros Plans par leur numéro de carte — D01, D02… Les
+  // tuiles qui n'en ont pas (un plan seul, une carte de départ) viennent après.
+  ['carte', 'N° de carte (D01, D02…)'], ['carte-desc', 'N° de carte décroissant'],
 ];
 
 /** Les plans d'une tuile — un pour un plan isolé, tous ceux de la carte sinon. */
@@ -2240,12 +2243,20 @@ function trier(tuiles) {
   const num = (a, b) => serie(a) - serie(b) || n1(a) - n1(b) || n2(a) - n2(b);
   const tcm = (t) => Math.min(...plansTuile(t).map((h) => h.tc));
   const fam = (t) => plansTuile(t)[0].famille || '';
+  const nc = (t) => (t.genre === 'CARTE' && /^D\d+$/.test(t.id) ? parseInt(t.id.slice(1), 10) : null);
+  const parCarte = (sens) => (a, b) => {
+    const x = nc(a), y = nc(b);
+    if (x === null || y === null) return (x === null) - (y === null) || num(a, b);
+    return sens * (x - y);
+  };
   const c = [...tuiles];
   switch (mat.tri) {
     case 'num-desc': c.sort((a, b) => serie(a) - serie(b) || n1(b) - n1(a) || n2(b) - n2(a)); break;
     case 'tc':       c.sort((a, b) => tcm(a) - tcm(b) || num(a, b)); break;
     case 'tc-desc':  c.sort((a, b) => tcm(b) - tcm(a) || num(a, b)); break;
     case 'famille':  c.sort((a, b) => fam(a).localeCompare(fam(b)) || num(a, b)); break;
+    case 'carte':      c.sort(parCarte(1)); break;
+    case 'carte-desc': c.sort(parCarte(-1)); break;
     default:         c.sort(num);
   }
   return c;

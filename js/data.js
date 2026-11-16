@@ -1066,7 +1066,7 @@ const PLANS_41 = [
 // l'Ouverture (01') et la Fin (70').
 const X41 = (n, tc, el, obj, extra = {}) => ({ n, tc, el, obj, ...extra });
 const GP_41 = [
-  X41(0, 0, ['OBJET', 'ARME', 'VEHICULE'], OBJ.minutage(1, 'EGAL', 0, 'MONTAGE')),
+  X41(0, 0, ['OBJET', 'ARME', 'VEHICULE'], OBJ.minutage(2, 'EGAL', 0, 'MONTAGE')),
   X41(1, 0, ['HEROINE'], OBJ.element(1, 'HEROINE', 'MONTAGE')),
   X41(2, 0, ['ENNEMI'], OBJ.element(1, 'ENNEMI', 'MONTAGE')),
   X41(3, 0, ['ALLIE'], OBJ.element(1, 'ALLIE', 'MONTAGE')),
@@ -1094,7 +1094,7 @@ const GP_41 = [
   X41(30, 30, ['ARME', 'ENNEMI'], OBJ.domine(6, 'ARME')),
   X41(31, 30, ['OBJET', 'ENNEMI'], OBJ.seuilCible(4, 'ORDRE', 'MIN', 1, 'SEQUENCE')),
   X41(32, 30, ['ENNEMI', 'OBJET'], OBJ.seuilCible(6, 'ENNEMI', 'MIN', 6, 'MONTAGE')),
-  X41(33, 30, ['ALLIE', 'OBJET'], OBJ.element(1, 'ALLIE', 'SEQUENCE')),
+  X41(33, 30, ['ALLIE', 'OBJET'], OBJ.element(2, 'ALLIE', 'SEQUENCE')),
   X41(34, 30, ['OBJET', 'ARME'], OBJ.absent(5, 'HEROINE', 'SEQUENCE')),
   X41(35, 30, ['HEROINE', 'ALLIE'], OBJ.seqTaille(2, 1)),
   X41(36, 30, ['HEROINE', 'OBJET'], OBJ.minutage(2, 'EGAL', 30, 'MONTAGE')),
@@ -1111,7 +1111,7 @@ const GP_41 = [
   X41(53, 50, ['ENNEMI', 'ARME'], OBJ.absent(5, 'ENNEMI', 'SUITE')),
   X41(54, 50, ['HEROINE', 'ARME'], OBJ.element(2, 'ARME', 'SEQUENCE')),
   X41(55, 50, ['ARME', 'ALLIE'], OBJ.seuilCible(6, 'MORT', 'MIN', 2, 'MONTAGE')),
-  X41(56, 50, ['ALLIE', 'ARME'], OBJ.minutage(2, 'EGAL', 50, 'SEQUENCE')),
+  X41(56, 50, ['ALLIE', 'ARME'], OBJ.minutage(2, 'EGAL', 50, 'MONTAGE')),
   X41(57, 50, ['ENNEMI', 'OBJET'], OBJ.raccord(3)),
   X41(60, 60, ['VEHICULE'], OBJ.element(1, 'VEHICULE', 'AMONT'), { mort: true }),
   X41(61, 60, ['HEROINE', 'VEHICULE'], OBJ.element(1, 'HEROINE', 'AMONT'), { mort: true }),
@@ -1122,8 +1122,8 @@ const GP_41 = [
   X41(66, 60, ['ARME', 'ALLIE'], OBJ.seuilCible(4, 'ORDRE', 'MIN', 1, 'SEQUENCE'), { mort: true }),
   X41(67, 60, ['ALLIE', 'VEHICULE'], OBJ.plan(1, 'SUITE')),
   X41(100, 0, [], OBJ.raccord(2), { transition: 'RACCORD', titre: 'Raccord' }),
-  X41(101, 1, [], OBJ.seuilCible(5, 'PLAN', 'MAX', 0, 'AMONT'), { transition: 'OUVERTURE', titre: 'BBG présente' }),
-  X41(102, 70, [], OBJ.seuilCible(5, 'PLAN', 'MAX', 0, 'SUITE'), { transition: 'CREDITS', titre: 'Fin' }),
+  X41(101, 1, [], OBJ.seuilCible(6, 'PLAN', 'MAX', 0, 'AMONT'), { transition: 'OUVERTURE', titre: 'BBG présente' }),
+  X41(102, 70, [], OBJ.seuilCible(6, 'PLAN', 'MAX', 0, 'SUITE'), { transition: 'CREDITS', titre: 'Fin' }),
 ];
 /** La famille d'un Gros Plan : le crâne d'abord, puis ce que montre sa grande icône. */
 const famille41 = (p) => (p.transition ? 'TRANSITION' : p.mort ? 'MORT'
