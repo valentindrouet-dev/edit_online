@@ -259,7 +259,7 @@ const SE_DECLENCHENT = [
 const CHANGENT_UNE_REGLE = [
   { si: (o) => o.kind === 'RACCORD_VAUT',
     dit: (o) => `<b>Chaque Raccord vaut ${o.n < 0 ? '−' : '+'}${Math.abs(o.n)}.</b>
-      Le « 1 × Raccord » d’un Raccord de votre montage se lit « ${1 + o.n} × Raccord ». Ce plan-ci ne
+      Le « 2 × Raccord » d’un Raccord de votre montage se lit « ${2 + o.n} × Raccord ». Ce plan-ci ne
       marque rien lui-même.` },
   { si: (o) => o.kind === 'PLAN_PLUS',
     dit: (o) => `<b>${o.n > 1 ? `${o.n} tours` : 'Un tour'} de plus.</b> Quand le dernier tour est

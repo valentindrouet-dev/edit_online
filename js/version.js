@@ -1,8 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.22';
-export const BUILD_DATE = '2026-11-16 20:52';
+export const VERSION = '4.1.23';
+export const BUILD_DATE = '2026-11-16 20:53';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.23',
+    date: '16/11/2026',
+    items: [
+      "<b>Le Raccord passe à « 2 × RACCORD »</b> : nouvelle image, et chacun des 12 Raccords rapporte 2 points par Raccord du montage.",
+    ],
+  },
   {
     v: '4.1.22',
     date: '16/11/2026',

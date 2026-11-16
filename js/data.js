@@ -1121,7 +1121,7 @@ const GP_41 = [
   X41(65, 60, ['ALLIE', 'OBJET'], OBJ.domine(6, 'ALLIE'), { mort: true }),
   X41(66, 60, ['ARME', 'ALLIE'], OBJ.seuilCible(4, 'ORDRE', 'MIN', 1, 'SEQUENCE'), { mort: true }),
   X41(67, 60, ['ALLIE', 'VEHICULE'], OBJ.plan(1, 'SUITE')),
-  X41(100, 0, [], OBJ.raccord(1), { transition: 'RACCORD', titre: 'Raccord' }),
+  X41(100, 0, [], OBJ.raccord(2), { transition: 'RACCORD', titre: 'Raccord' }),
   X41(101, 1, [], OBJ.seuilCible(5, 'PLAN', 'MAX', 0, 'AMONT'), { transition: 'OUVERTURE', titre: 'BBG présente' }),
   X41(102, 70, [], OBJ.seuilCible(5, 'PLAN', 'MAX', 0, 'SUITE'), { transition: 'CREDITS', titre: 'Fin' }),
 ];
