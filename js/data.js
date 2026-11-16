@@ -1041,13 +1041,15 @@ const PLANS_41 = [
   PL(2, 10, ['ALLIE', 'VEHICULE', 'ENNEMI'], OBJ.seqAvec(3, 'AVEC', 'RACCORD')),
   PL(3, 10, ['HEROINE', 'ENNEMI', 'ARME'], OBJ.seqVoisines(4, 'APRES')),
   PL(4, 20, ['ALLIE', 'HEROINE', 'OBJET'], OBJ.seqAvec(4, 'AVEC', 'ENNEMI+ARME+VEHICULE+HEROINE+ALLIE+OBJET')),
-  PL(5, 20, ['OBJET', 'HEROINE', 'ALLIE', 'VEHICULE'], OBJ.raccordVaut(2)),
+  // « Chaque RACCORD vaut 2 » : 2 points par Raccord du montage, que le L5
+  // marque lui-même — en plus de ce que chaque Raccord rapporte.
+  PL(5, 20, ['OBJET', 'HEROINE', 'ALLIE', 'VEHICULE'], OBJ.raccord(2, 'MONTAGE')),
   PL(6, 20, ['OBJET', 'ARME', 'VEHICULE'], OBJ.seqLongue(2)),
   PL(7, 30, ['ALLIE', 'ENNEMI', 'ARME'], OBJ.planPlus(1)),
   PL(8, 30, ['ENNEMI', 'ALLIE', 'OBJET'], OBJ.dansChutier(1)),
   PL(9, 30, ['VEHICULE', 'HEROINE', 'ENNEMI'], OBJ.seqAvec(4, 'SANS', 'TC_VIDE')),
-  PL(10, 35, [], OBJ.seqAvec(3, 'AVEC', 'ORDRE')),
-  PL(11, 40, ['HEROINE', 'ENNEMI', 'VEHICULE', 'ARME'], OBJ.seqAvec(3, 'AVEC', 'PLAN', 3)),
+  PL(10, 35, [], OBJ.seqAvec(4, 'AVEC', 'ORDRE')),
+  PL(11, 40, ['HEROINE', 'ENNEMI', 'VEHICULE', 'ARME'], OBJ.seqAvec(4, 'AVEC', 'PLAN', 3)),
   PL(12, 40, ['VEHICULE', 'VEHICULE', 'HEROINE', 'ENNEMI'], OBJ.sequencePlus(1)),
   PL(13, 40, ['ENNEMI', 'ALLIE', 'OBJET'], OBJ.seqAvec(4, 'SANS', 'ARME')),
   PL(14, 50, ['HEROINE', 'ENNEMI', 'ARME'], OBJ.seqAvec(4, 'SANS', 'ALLIE')),

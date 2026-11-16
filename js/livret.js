@@ -363,8 +363,8 @@ export function lexiquePouvoirs(cfg, { comptes = false, boite = lireBoite() } = 
     'Les points tombent une fois, si la condition est tenue à la fin de la partie.',
     SE_DECLENCHENT, boite, c, comptes)}
   ${blocLexique('Ils changent une règle',
-    'Les pouvoirs des Plans de départ ne rapportent pas de points : ils vous donnent un droit, tant '
-    + 'que le plan est dans votre montage.', CHANGENT_UNE_REGLE, boite, c, comptes)}`;
+    'Ces pouvoirs ne rapportent pas de points : ils vous donnent un droit, tant que le plan est dans '
+    + 'votre montage.', CHANGENT_UNE_REGLE, boite, c, comptes)}`;
 }
 
 // --- L'aide de jeu ----------------------------------------------------------

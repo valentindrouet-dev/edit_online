@@ -1,8 +1,16 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.24';
-export const BUILD_DATE = '2026-11-16 20:56';
+export const VERSION = '4.1.25';
+export const BUILD_DATE = '2026-11-16 21:00';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.25',
+    date: '16/11/2026',
+    items: [
+      "<b>L5 « Chaque RACCORD vaut 2 »</b> : le Plan de départ marque lui-même 2 points par Raccord du montage ; il ne gonfle plus le chiffre des Raccords.",
+      "<b>L10</b> et <b>L11</b> passent à 4 points par séquence ; L4 et L8 : images confirmées, décompte inchangé.",
+    ],
+  },
   {
     v: '4.1.24',
     date: '16/11/2026',
