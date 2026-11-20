@@ -1,8 +1,15 @@
 // Compteur de version — incrémenter à chaque modification livrée.
-export const VERSION = '4.1.27';
-export const BUILD_DATE = '2026-11-16 21:08';
+export const VERSION = '4.1.28';
+export const BUILD_DATE = '2026-11-20 15:52';
 
 export const CHANGELOG = [
+  {
+    v: '4.1.28',
+    date: '20/11/2026',
+    items: [
+      "<b>L4 mis à jour</b> : nouvelle image, et 5 points (au lieu de 4) par séquence avec les six icônes.",
+    ],
+  },
   {
     v: '4.1.27',
     date: '16/11/2026',
